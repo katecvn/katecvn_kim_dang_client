@@ -1,0 +1,228 @@
+[
+  {
+    "id": 1,
+    "code": "01",
+    "name": "Thành phố Hà Nội",
+    "level": "Thành phố Trung ương",
+    "region": 1,
+    "region_name": "Miền Bắc",
+    "merged_provinces": []
+  },
+  { "id": 4, "code": "04", "name": "Tỉnh Cao Bằng", "level": "Tỉnh", "region": 1, "region_name": "Miền Bắc", "merged_provinces": [] },
+  {
+    "id": 8,
+    "code": "08",
+    "name": "Tỉnh Tuyên Quang",
+    "level": "Tỉnh",
+    "region": 1,
+    "region_name": "Miền Bắc",
+    "merged_provinces": ["Hà Giang, Tuyên Quang"]
+  },
+  { "id": 11, "code": "11", "name": "Tỉnh Điện Biên", "level": "Tỉnh", "region": 1, "region_name": "Miền Bắc", "merged_provinces": [] },
+  { "id": 12, "code": "12", "name": "Tỉnh Lai Châu", "level": "Tỉnh", "region": 1, "region_name": "Miền Bắc", "merged_provinces": [] },
+  { "id": 14, "code": "14", "name": "Tỉnh Sơn La", "level": "Tỉnh", "region": 1, "region_name": "Miền Bắc", "merged_provinces": [] },
+  {
+    "id": 15,
+    "code": "15",
+    "name": "Tỉnh Lào Cai",
+    "level": "Tỉnh",
+    "region": 1,
+    "region_name": "Miền Bắc",
+    "merged_provinces": ["Lào Cai, Yên Bái"]
+  },
+  {
+    "id": 19,
+    "code": "19",
+    "name": "Tỉnh Thái Nguyên",
+    "level": "Tỉnh",
+    "region": 1,
+    "region_name": "Miền Bắc",
+    "merged_provinces": ["Thái Nguyên, Bắc Kạn"]
+  },
+  { "id": 20, "code": "20", "name": "Tỉnh Lạng Sơn", "level": "Tỉnh", "region": 1, "region_name": "Miền Bắc", "merged_provinces": [] },
+  { "id": 22, "code": "22", "name": "Tỉnh Quảng Ninh", "level": "Tỉnh", "region": 1, "region_name": "Miền Bắc", "merged_provinces": [] },
+  {
+    "id": 24,
+    "code": "24",
+    "name": "Tỉnh Bắc Ninh",
+    "level": "Tỉnh",
+    "region": 1,
+    "region_name": "Miền Bắc",
+    "merged_provinces": ["Bắc Ninh, Bắc Giang"]
+  },
+  {
+    "id": 25,
+    "code": "25",
+    "name": "Tỉnh Phú Thọ",
+    "level": "Tỉnh",
+    "region": 1,
+    "region_name": "Miền Bắc",
+    "merged_provinces": ["Hòa Bình, Vĩnh Phúc, Phú Thọ"]
+  },
+  {
+    "id": 31,
+    "code": "31",
+    "name": "Thành phố Hải Phòng",
+    "level": "Thành phố Trung ương",
+    "region": 1,
+    "region_name": "Miền Bắc",
+    "merged_provinces": ["Hải Phòng, Hải Dương"]
+  },
+  {
+    "id": 33,
+    "code": "33",
+    "name": "Tỉnh Hưng Yên",
+    "level": "Tỉnh",
+    "region": 1,
+    "region_name": "Miền Bắc",
+    "merged_provinces": ["Hưng Yên, Thái Bình"]
+  },
+  {
+    "id": 37,
+    "code": "37",
+    "name": "Tỉnh Ninh Bình",
+    "level": "Tỉnh",
+    "region": 1,
+    "region_name": "Miền Bắc",
+    "merged_provinces": ["Nam Định, Ninh Bình, Nam Hà"]
+  },
+  { "id": 38, "code": "38", "name": "Tỉnh Thanh Hóa", "level": "Tỉnh", "region": 2, "region_name": "Miền Trung", "merged_provinces": [] },
+  { "id": 40, "code": "40", "name": "Tỉnh Nghệ An", "level": "Tỉnh", "region": 2, "region_name": "Miền Trung", "merged_provinces": [] },
+  { "id": 42, "code": "42", "name": "Tỉnh Hà Tĩnh", "level": "Tỉnh", "region": 2, "region_name": "Miền Trung", "merged_provinces": [] },
+  {
+    "id": 44,
+    "code": "44",
+    "name": "Tỉnh Quảng Trị",
+    "level": "Tỉnh",
+    "region": 2,
+    "region_name": "Miền Trung",
+    "merged_provinces": ["Quảng Bình, Quảng Trị"]
+  },
+  {
+    "id": 46,
+    "code": "46",
+    "name": "Thành phố Huế",
+    "level": "Thành phố Trung ương",
+    "region": 2,
+    "region_name": "Miền Trung",
+    "merged_provinces": []
+  },
+  {
+    "id": 48,
+    "code": "48",
+    "name": "Thành phố Đà Nẵng",
+    "level": "Thành phố Trung ương",
+    "region": 2,
+    "region_name": "Miền Trung",
+    "merged_provinces": ["Đà Nẵng, Quảng Nam"]
+  },
+  {
+    "id": 51,
+    "code": "51",
+    "name": "Tỉnh Quảng Ngãi",
+    "level": "Tỉnh",
+    "region": 2,
+    "region_name": "Miền Trung",
+    "merged_provinces": ["Quảng Ngãi, Kon Tum"]
+  },
+  {
+    "id": 52,
+    "code": "52",
+    "name": "Tỉnh Gia Lai",
+    "level": "Tỉnh",
+    "region": 2,
+    "region_name": "Miền Trung",
+    "merged_provinces": ["Gia Lai, Bình Định"]
+  },
+  {
+    "id": 56,
+    "code": "56",
+    "name": "Tỉnh Khánh Hòa",
+    "level": "Tỉnh",
+    "region": 2,
+    "region_name": "Miền Trung",
+    "merged_provinces": ["Khánh Hòa, Ninh Thuận"]
+  },
+  {
+    "id": 66,
+    "code": "66",
+    "name": "Tỉnh Đắk Lắk",
+    "level": "Tỉnh",
+    "region": 2,
+    "region_name": "Miền Trung",
+    "merged_provinces": ["Đắk Lắk, Phú Yên"]
+  },
+  {
+    "id": 68,
+    "code": "68",
+    "name": "Tỉnh Lâm Đồng",
+    "level": "Tỉnh",
+    "region": 2,
+    "region_name": "Miền Trung",
+    "merged_provinces": ["Lâm Đồng, Đắk Nông, Bình Thuận"]
+  },
+  {
+    "id": 75,
+    "code": "75",
+    "name": "Tỉnh Đồng Nai",
+    "level": "Tỉnh",
+    "region": 3,
+    "region_name": "Miền Nam",
+    "merged_provinces": ["Bình Phước, Đồng Nai"]
+  },
+  {
+    "id": 79,
+    "code": "79",
+    "name": "Thành phố Hồ Chí Minh",
+    "level": "Thành phố Trung ương",
+    "region": 3,
+    "region_name": "Miền Nam",
+    "merged_provinces": ["Thành phố Hồ Chí Minh, Bình Dương, Bà Rịa - Vũng Tàu"]
+  },
+  {
+    "id": 80,
+    "code": "80",
+    "name": "Tỉnh Tây Ninh",
+    "level": "Tỉnh",
+    "region": 3,
+    "region_name": "Miền Nam",
+    "merged_provinces": ["Long An, Tây Ninh"]
+  },
+  {
+    "id": 82,
+    "code": "82",
+    "name": "Tỉnh Đồng Tháp",
+    "level": "Tỉnh",
+    "region": 3,
+    "region_name": "Miền Nam",
+    "merged_provinces": ["Đồng Tháp, Tiền Giang"]
+  },
+  {
+    "id": 86,
+    "code": "86",
+    "name": "Tỉnh Vĩnh Long",
+    "level": "Tỉnh",
+    "region": 3,
+    "region_name": "Miền Nam",
+    "merged_provinces": ["Vĩnh Long, Trà Vinh, Bến Tre"]
+  },
+  {
+    "id": 89,
+    "code": "89",
+    "name": "Tỉnh An Giang",
+    "level": "Tỉnh",
+    "region": 3,
+    "region_name": "Miền Nam",
+    "merged_provinces": ["An Giang, Kiên Giang"]
+  },
+  {
+    "id": 92,
+    "code": "92",
+    "name": "Thành phố Cần Thơ",
+    "level": "Thành phố Trung ương",
+    "region": 3,
+    "region_name": "Miền Nam",
+    "merged_provinces": ["Cần Thơ, Hậu Giang, Sóc Trăng"]
+  },
+  { "id": 96, "code": "96", "name": "Tỉnh Cà Mau", "level": "Tỉnh", "region": 3, "region_name": "Miền Nam", "merged_provinces": ["Cà Mau, Bạc Liêu"] }
+]

@@ -1,0 +1,95 @@
+import { DataTableRowActions } from './DataTableRowAction'
+import { DataTableColumnHeader } from './DataTableColumnHeader'
+import { dateFormat } from '@/utils/date-format'
+import { statuses } from '../data'
+import { Badge } from '@/components/ui/badge'
+import { normalizeText } from '@/utils/normalize-text'
+
+export const columns = [
+  {
+    accessorKey: 'title',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Tên thuế" />
+    ),
+    cell: ({ row }) => <div className="w-48">{row.getValue('title')}</div>,
+    enableSorting: true,
+    enableHiding: true,
+    filterFn: (row, id, value) => {
+      const title = normalizeText(row.original.title)
+      const searchValue = normalizeText(value)
+
+      return title.includes(searchValue)
+    },
+  },
+  {
+    accessorKey: 'percentage',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Phần trăm" />
+    ),
+    cell: ({ row }) => (
+      <div className="w-28">{row.getValue('percentage')}%</div>
+    ),
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'status',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Trạng thái" />
+    ),
+    cell: ({ row }) => {
+      const statusValue = row.getValue('status')
+      const status = statuses.find((status) => status.value === statusValue)
+
+      return (
+        <div className="flex w-[150px] items-center">
+          <span>
+            <Badge variant={status.value !== 'published' ? 'destructive' : ''}>
+              {status.icon && <status.icon className="mr-2 h-4 w-4" />}
+              {status.label}
+            </Badge>
+          </span>
+        </div>
+      )
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'createdAt',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Ngày tạo" />
+    ),
+    cell: ({ row }) => {
+      return (
+        <div className="flex space-x-2">
+          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
+            {dateFormat(row.getValue('createdAt'))}
+          </span>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: 'updatedAt',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Cập nhật" />
+    ),
+    cell: ({ row }) => {
+      return (
+        <div className="flex space-x-2">
+          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
+            {dateFormat(row.getValue('updatedAt'))}
+          </span>
+        </div>
+      )
+    },
+  },
+  {
+    id: 'actions',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Thao tác" />
+    ),
+    cell: ({ row }) => <DataTableRowActions row={row} />,
+  },
+]

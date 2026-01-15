@@ -1,0 +1,331 @@
+import api from '@/utils/axios'
+import { handleError } from '@/utils/handle-error'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { toast } from 'sonner'
+
+export const getProducts = createAsyncThunk(
+  'product',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/product')
+      const { data } = response.data
+      return data
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
+export const deleteProduct = createAsyncThunk(
+  'product/delete',
+  async (data, { rejectWithValue, dispatch }) => {
+    try {
+      await api.delete(`/product/${data}/delete`)
+      await dispatch(getProducts()).unwrap()
+      toast.success('Xóa thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
+// =====================
+// NEW: form-data helpers (support nested arrays/objects)
+// =====================
+const buildFormData = (data) => {
+  const formData = new FormData()
+
+  // Helper append primitive (skip null/undefined)
+  const appendIfPresent = (key, val) => {
+    if (val === null || val === undefined) return
+    formData.append(key, val)
+  }
+
+  // Helper append array primitives
+  const appendArray = (key, arr) => {
+    if (Array.isArray(arr) && arr.length) {
+      arr.forEach((item, i) => {
+        if (item === null || item === undefined) return
+        formData.append(`${key}[${i}]`, item)
+      })
+    } else {
+      // keep backward-compatible for server side parsers
+      formData.append(`${key}[]`, '')
+    }
+  }
+
+  // Helper append array of objects
+  const appendArrayObjects = (key, arr, fields) => {
+    if (Array.isArray(arr) && arr.length) {
+      arr.forEach((obj, i) => {
+        fields.forEach((f) => {
+          const v = obj?.[f]
+          if (v === null || v === undefined) return
+          formData.append(`${key}[${i}][${f}]`, v)
+        })
+      })
+    } else {
+      formData.append(`${key}[]`, '')
+    }
+  }
+
+  // taxIds
+  appendArray('taxIds', data.taxIds)
+
+  // attributeIdsWithValue
+  appendArrayObjects('attributeIdsWithValue', data.attributeIdsWithValue, [
+    'attributeId',
+    'value',
+  ])
+
+  // NEW: unitConversions
+  // Payload: unitConversions[{ unitId, conversionFactor }]
+  // Lưu ý: conversionFactor là number/string đều được, backend sẽ toNumber().
+  appendArrayObjects('unitConversions', data.unitConversions, [
+    'unitId',
+    'conversionFactor',
+  ])
+
+  // fields primitives
+  ;[
+    'code',
+    'categoryId',
+    'supplierId',
+    'unitId',
+    'basePrice',
+    'price',
+    'name',
+    'description',
+    'note',
+    'type',
+    'source',
+    'applyWarranty',
+    'manageSerial',
+  ].forEach((field) => appendIfPresent(field, data[field]))
+
+  // salaryCoefficient
+  if (data.salaryCoefficient) {
+    const sc = data.salaryCoefficient
+    appendIfPresent('salaryCoefficient[coefficient]', sc.coefficient)
+    appendIfPresent('salaryCoefficient[type]', sc.type)
+    appendIfPresent('salaryCoefficient[effectiveDate]', sc.effectiveDate)
+  }
+
+  // document
+  if (data.document) {
+    formData.append('document', data.document)
+  }
+
+  // hasExpiry (always send)
+  formData.append('hasExpiry', !!data.hasExpiry)
+
+  // warrantyPolicy
+  if (data.applyWarranty && data.warrantyPolicy) {
+    const wp = data.warrantyPolicy
+    appendIfPresent('warrantyPolicy[periodMonths]', wp.periodMonths)
+    formData.append('warrantyPolicy[conditions]', wp.conditions || '')
+    appendIfPresent('warrantyPolicy[warrantyCost]', wp.warrantyCost || 0)
+    appendIfPresent('warrantyPolicy[status]', wp.status)
+  }
+
+  return formData
+}
+
+export const createProduct = createAsyncThunk(
+  'product/create',
+  async (data, { rejectWithValue, dispatch }) => {
+    try {
+      const formData = buildFormData(data)
+
+      await api.post('/product/create', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+
+      await dispatch(getProducts()).unwrap()
+      toast.success('Tạo sản phẩm thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
+export const updateProduct = createAsyncThunk(
+  'product/update',
+  async ({ id, data }, { rejectWithValue, dispatch }) => {
+    try {
+      const formData = buildFormData(data)
+
+      await api.put(`/product/${id}/update`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+
+      await dispatch(getProducts()).unwrap()
+      toast.success('Cập nhật dữ liệu thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
+export const getProductDetail = createAsyncThunk(
+  'product/detail',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/product/${id}`)
+      const { data } = response.data
+      return data
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
+export const copyProduct = createAsyncThunk(
+  'product/copy',
+  async (id, { rejectWithValue }) => {
+    try {
+      await api.get(`/product/copy/${id}`)
+      toast.success('Sao chép sản phẩm thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
+export const getProductSaleHistory = createAsyncThunk(
+  'product/sale-history',
+  async ({ id, params }, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/product/${id}/sale-history`, { params })
+      const { data } = response.data
+      return data
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
+const initialState = {
+  products: [],
+  product: null,
+  saleHistory: {
+    data: [],
+    pagination: null,
+    totalsByUnit: {},
+  },
+  loading: false,
+  error: null,
+}
+
+export const productSlice = createSlice({
+  name: 'product',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(getProducts.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getProducts.fulfilled, (state, action) => {
+        state.loading = false
+        state.products = action.payload
+      })
+      .addCase(getProducts.rejected, (state, action) => {
+        state.loading = false
+        state.error =
+          action.payload?.message || action.payload || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+
+      .addCase(deleteProduct.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(deleteProduct.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(deleteProduct.rejected, (state, action) => {
+        state.loading = false
+        state.error =
+          action.payload?.message || action.payload || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+
+      .addCase(createProduct.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(createProduct.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(createProduct.rejected, (state, action) => {
+        state.loading = false
+        state.error =
+          action.payload?.message || action.payload || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+
+      .addCase(updateProduct.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(updateProduct.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(updateProduct.rejected, (state, action) => {
+        state.loading = false
+        state.error =
+          action.payload?.message || action.payload || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+
+      .addCase(getProductDetail.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getProductDetail.fulfilled, (state, action) => {
+        state.loading = false
+        state.product = action.payload
+      })
+      .addCase(getProductDetail.rejected, (state, action) => {
+        state.loading = false
+        state.error =
+          action.payload?.message || action.payload || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+
+      .addCase(copyProduct.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(copyProduct.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(copyProduct.rejected, (state, action) => {
+        state.loading = false
+        state.error =
+          action.payload?.message || action.payload || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+
+      .addCase(getProductSaleHistory.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getProductSaleHistory.fulfilled, (state, action) => {
+        state.loading = false
+        state.saleHistory.data = action.payload?.data
+        state.saleHistory.pagination = action.payload?.pagination
+        state.saleHistory.totalsByUnit = action.payload?.totalsByUnit
+      })
+      .addCase(getProductSaleHistory.rejected, (state, action) => {
+        state.loading = false
+        state.error =
+          action.payload?.message || action.payload || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+  },
+})
+
+export default productSlice.reducer

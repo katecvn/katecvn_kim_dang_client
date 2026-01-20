@@ -141,6 +141,18 @@ export const sideLinks = [
         permission: 'GET_RECEIPT_USER',
       },
       {
+        title: 'Hóa đơn mua',
+        href: '/purchase-order',
+        icon: <IconReceiptDollar size={18} />,
+        permission: 'GET_PURCHASE_ORDER',
+      },
+      {
+        title: 'Hóa đơn mua của tôi',
+        href: '/purchase-order-user',
+        icon: <IconReceiptPound size={18} />,
+        permission: ['GET_PURCHASE_ORDER_USER', 'GET_PURCHASE_ORDER'],
+      },
+      {
         title: 'Thuế',
         href: '/tax',
         icon: <IconReceiptTax size={18} />,

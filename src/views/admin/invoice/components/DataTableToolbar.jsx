@@ -19,7 +19,13 @@ import ExportInvoiceDialog from './ExportInvoiceDialog'
 import { getCustomers } from '@/stores/CustomerSlice'
 import { exportQuotationPdf } from '../helpers/ExportQuotationPdf'
 import { buildQuotationData } from '../helpers/BuildQuotationData'
+import { exportAgreementPdf } from '../helpers/ExportAgreementPdf'
+import { buildAgreementData } from '../helpers/BuildAgreementData'
+import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
+import { buildInstallmentData } from '../helpers/BuildInstallmentData'
 import QuotationPreviewDialog from './QuotationPreviewDialog'
+import AgreementPreviewDialog from './AgreementPreviewDialog'
+import InstallmentPreviewDialog from './InstallmentPreviewDialog'
 import { statuses } from '../data'
 
 const DataTableToolbar = ({ table, isMyInvoice }) => {
@@ -34,6 +40,16 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
   const [quotationData, setQuotationData] = useState(null)
   const [quotationFileName, setQuotationFileName] = useState('quotation.pdf')
   const [quotationExporting, setQuotationExporting] = useState(false)
+
+  const [showAgreementPreview, setShowAgreementPreview] = useState(false)
+  const [agreementData, setAgreementData] = useState(null)
+  const [agreementFileName, setAgreementFileName] = useState('thoa-thuan-mua-ban.pdf')
+  const [agreementExporting, setAgreementExporting] = useState(false)
+
+  const [showInstallmentPreview, setShowInstallmentPreview] = useState(false)
+  const [installmentData, setInstallmentData] = useState(null)
+  const [installmentFileName, setInstallmentFileName] = useState('hop-dong-tra-cham.docx')
+  const [installmentExporting, setInstallmentExporting] = useState(false)
 
   const handleShowCreateReceiptDialog = () => {
     const selectedRows = table.getSelectedRowModel().rows
@@ -286,6 +302,134 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
                 toast.error('Xuất báo giá thất bại')
               } finally {
                 setQuotationExporting(false)
+              }
+            }}
+          />
+        )}
+
+        {/* In Thỏa Thuận Mua Bán */}
+        <Button
+          className=""
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            const selectedRows = table.getSelectedRowModel().rows
+            if (selectedRows.length !== 1) {
+              toast.warning('Vui lòng chọn 1 (Một) hóa đơn để in thỏa thuận mua bán')
+              return
+            }
+
+            const invoiceId = selectedRows[0].original.id
+            const getAdminInvoice = JSON.parse(
+              localStorage.getItem('permissionCodes'),
+            ).includes('GET_INVOICE')
+
+            try {
+              const data = getAdminInvoice
+                ? await getInvoiceDetail(invoiceId)
+                : await getInvoiceDetailByUser(invoiceId)
+
+              const baseAgreementData = buildAgreementData(data)
+
+              setAgreementData(baseAgreementData)
+              setAgreementFileName(`thoa-thuan-mua-ban-${data.code || 'agreement'}.pdf`)
+              setShowAgreementPreview(true)
+            } catch (error) {
+              console.error('Load agreement data error:', error)
+              toast.error('Không lấy được dữ liệu thỏa thuận mua bán')
+            }
+          }}
+          loading={loading || agreementExporting}
+        >
+          <IconFileTypePdf className="mr-2 size-4" aria-hidden="true" />
+          In Thỏa Thuận Mua Bán
+        </Button>
+
+        {agreementData && (
+          <AgreementPreviewDialog
+            open={showAgreementPreview}
+            onOpenChange={(open) => {
+              if (!open) {
+                setShowAgreementPreview(false)
+              }
+            }}
+            initialData={agreementData}
+            onConfirm={async (finalData) => {
+              try {
+                setAgreementExporting(true)
+                await exportAgreementPdf(finalData, agreementFileName)
+                toast.success('Đã in thỏa thuận mua bán thành công')
+                setShowAgreementPreview(false)
+                table.resetRowSelection()
+              } catch (error) {
+                console.error('Export agreement error:', error)
+                toast.error('In thỏa thuận mua bán thất bại')
+              } finally {
+                setAgreementExporting(false)
+              }
+            }}
+          />
+        )}
+
+        {/* In Hợp Đồng Bán Hàng Trả Chậm */}
+        <Button
+          className=""
+          variant="outline"
+          size="sm"
+          onClick={async () => {
+            const selectedRows = table.getSelectedRowModel().rows
+            if (selectedRows.length !== 1) {
+              toast.warning('Vui lòng chọn 1 (Một) hóa đơn để in hợp đồng trả chậm')
+              return
+            }
+
+            const invoiceId = selectedRows[0].original.id
+            const getAdminInvoice = JSON.parse(
+              localStorage.getItem('permissionCodes'),
+            ).includes('GET_INVOICE')
+
+            try {
+              const data = getAdminInvoice
+                ? await getInvoiceDetail(invoiceId)
+                : await getInvoiceDetailByUser(invoiceId)
+
+              const baseInstallmentData = buildInstallmentData(data)
+
+              setInstallmentData(baseInstallmentData)
+              setInstallmentFileName(`hop-dong-tra-cham-${data.code || 'contract'}.docx`)
+              setShowInstallmentPreview(true)
+            } catch (error) {
+              console.error('Load installment data error:', error)
+              toast.error('Không lấy được dữ liệu hợp đồng trả chậm')
+            }
+          }}
+          loading={loading || installmentExporting}
+        >
+          <IconFileTypePdf className="mr-2 size-4" aria-hidden="true" />
+          In Hợp Đồng Bán Hàng Trả Chậm
+        </Button>
+
+        {installmentData && (
+          <InstallmentPreviewDialog
+            open={showInstallmentPreview}
+            onOpenChange={(open) => {
+              if (!open) {
+                setShowInstallmentPreview(false)
+              }
+            }}
+            initialData={installmentData}
+            onConfirm={async (finalData) => {
+              try {
+                setInstallmentExporting(true)
+                await exportInstallmentWord(finalData, installmentFileName)
+                toast.success('Đã xuất hợp đồng trả chậm thành công')
+                setShowInstallmentPreview(false)
+                table.resetRowSelection()
+              } catch (error) {
+                console.error('Export installment error:', error)
+                toast.error('Xuất hợp đồng trả chậm thất bại')
+              } finally {
+                setInstallmentExporting(false)
               }
             }}
           />

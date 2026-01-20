@@ -17,6 +17,7 @@ import permissionSliceReducer from './PermissionSlice'
 import settingSliceReducer from './SettingSlice'
 import parentRolePermissionSliceReducer from './ParentAccountRolePermissionSlice'
 import invoiceSliceReducer from './InvoiceSlice'
+import purchaseOrderSliceReducer from './PurchaseOrderSlice'
 import receiptSliceReducer from './ReceiptSlice'
 import statisticSliceReducer from './StatisticSlice'
 import paymentSliceReducer from './PaymentSlice'
@@ -56,6 +57,7 @@ export const store = configureStore({
     setting: settingSliceReducer,
     parentRolePermission: parentRolePermissionSliceReducer,
     invoice: invoiceSliceReducer,
+    purchaseOrder: purchaseOrderSliceReducer,
     receipt: receiptSliceReducer,
     statistic: statisticSliceReducer,
     payment: paymentSliceReducer,

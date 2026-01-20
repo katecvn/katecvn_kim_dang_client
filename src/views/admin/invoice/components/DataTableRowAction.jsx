@@ -152,6 +152,22 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can>
 
+          {/* In hợp đồng (nếu invoice từ contract) */}
+          {invoice?.salesContractId && (
+            <Can permission="VIEW_SALES_CONTRACT">
+              <DropdownMenuItem
+                onClick={() => {
+                  window.open(`/sales-contracts?view=${invoice.salesContractId}`, '_blank')
+                }}
+              >
+                In hợp đồng
+                <DropdownMenuShortcut>
+                  <IconFileTypePdf className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
+
           <Can permission="DELETE_INVOICE">
             <DropdownMenuItem onSelect={() => setShowDeleteInvoiceDialog(true)}>
               Xóa
@@ -210,7 +226,7 @@ const DataTableRowActions = ({ row }) => {
               console.error('Create e-invoice error: ', error)
               toast.error(
                 error?.response?.data?.message ||
-                  'Phát hành hóa đơn điện tử thất bại',
+                'Phát hành hóa đơn điện tử thất bại',
               )
             } finally {
               setEInvoiceLoading(false)

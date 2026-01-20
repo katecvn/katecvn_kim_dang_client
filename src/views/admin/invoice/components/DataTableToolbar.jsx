@@ -9,6 +9,7 @@ import CreateInvoiceDialog from './CreateInvoiceDialog'
 import { IconFileTypePdf, IconFileTypeXls } from '@tabler/icons-react'
 import { toast } from 'sonner'
 import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
+import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
 import PrintInvoiceView from './PrintInvoiceView'
 import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
 import { useDispatch, useSelector } from 'react-redux'
@@ -34,6 +35,8 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
   const [showCreateInvoiceDialog, setShowCreateInvoiceDialog] = useState(false)
 
   const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
+  const [showCreateSalesContractDialog, setShowCreateSalesContractDialog] = useState(false)
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([])
   const [selectedInvoices, setSelectedInvoices] = useState([])
 
   const [showQuotationPreview, setShowQuotationPreview] = useState(false)
@@ -84,6 +87,19 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
 
     setSelectedInvoices(invoices)
     setShowCreateReceiptDialog(true)
+  }
+
+  const handleShowCreateSalesContractDialog = () => {
+    const selectedRows = table.getSelectedRowModel().rows
+
+    if (selectedRows.length !== 1) {
+      toast.warning('Vui lòng chọn 1 (Một) hóa đơn')
+      return
+    }
+
+    const invoiceIds = selectedRows.map((row) => row.original.id)
+    setSelectedInvoiceIds(invoiceIds)
+    setShowCreateSalesContractDialog(true)
   }
 
   const dispatch = useDispatch()
@@ -244,7 +260,7 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
         )}
 
         {/* Báo giá PDF */}
-        <Button
+        {/* <Button
           className=""
           variant="outline"
           size="sm"
@@ -279,7 +295,7 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
         >
           <IconFileTypePdf className="mr-2 size-4" aria-hidden="true" />
           Báo giá PDF
-        </Button>
+        </Button> */}
 
         {quotationData && (
           <QuotationPreviewDialog
@@ -448,6 +464,19 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
           </Button>
         </Can>
 
+        {/* Tạo hợp đồng */}
+        <Can permission={['CREATE_SALES_CONTRACT']}>
+          <Button
+            className=""
+            variant="outline"
+            size="sm"
+            onClick={handleShowCreateSalesContractDialog}
+          >
+            <PlusIcon className="mr-2 size-4" aria-hidden="true" />
+            Tạo Hợp Đồng
+          </Button>
+        </Can>
+
         {/* Tạo hóa đơn chung */}
         <Can permission={['CREATE_INVOICE']}>
           <Button
@@ -477,6 +506,17 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
             invoices={selectedInvoices}
             open={showCreateReceiptDialog}
             onOpenChange={setShowCreateReceiptDialog}
+            showTrigger={false}
+            table={table}
+          />
+        )}
+
+        {/* Dialog tạo hợp đồng */}
+        {showCreateSalesContractDialog && (
+          <CreateSalesContractDialog
+            invoiceIds={selectedInvoiceIds}
+            open={showCreateSalesContractDialog}
+            onOpenChange={setShowCreateSalesContractDialog}
             showTrigger={false}
             table={table}
           />

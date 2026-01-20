@@ -5,6 +5,8 @@ import ExpiryPage from '@/views/admin/expiry/ExpiryPage'
 import GoogleDriveCallback from '@/views/admin/google_drive/GoogleDriveCallback'
 import InvoicePage from '@/views/admin/invoice/InvoicePage'
 import MyInvoicePage from '@/views/admin/invoice/MyInvoicePage'
+import SalesContractPage from '@/views/admin/sales-contract/SalesContractPage'
+import MySalesContractPage from '@/views/admin/sales-contract/MySalesContractPage'
 import PurchaseOrderPage from '@/views/admin/purchase-order/PurchaseOrderPage'
 import MyPurchaseOrderPage from '@/views/admin/purchase-order/MyPurchaseOrderPage'
 import ProductPage from '@/views/admin/product/ProductPage'
@@ -87,6 +89,16 @@ const routes = [
   {
     path: '/invoice',
     element: InvoicePage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/sales-contracts',
+    element: SalesContractPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/sales-contract-user',
+    element: MySalesContractPage,
     layout: AdminLayout,
   },
   {

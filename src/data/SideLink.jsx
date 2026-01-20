@@ -114,7 +114,7 @@ export const sideLinks = [
   {
     title: 'Hóa đơn & Thu chi',
     icon: <IconReceiptDollar size={18} />,
-    permission: ['GET_INVOICE', 'GET_RECEIPT', 'GET_TAX'],
+    permission: ['GET_INVOICE', 'GET_RECEIPT', 'GET_TAX', 'GET_SALES_CONTRACT'],
     sub: [
       {
         title: 'Hóa đơn bán',
@@ -127,6 +127,18 @@ export const sideLinks = [
         href: '/invoice-user',
         icon: <IconReceiptPound size={18} />,
         permission: ['GET_INVOICE_USER', 'GET_INVOICE'],
+      },
+      {
+        title: 'Hợp đồng bán hàng',
+        href: '/sales-contracts',
+        icon: <IconReceipt size={18} />,
+        permission: 'GET_SALES_CONTRACT',
+      },
+      {
+        title: 'Hợp đồng của tôi',
+        href: '/sales-contract-user',
+        icon: <IconReceiptRupee size={18} />,
+        permission: ['GET_SALES_CONTRACT_USER', 'GET_SALES_CONTRACT'],
       },
       {
         title: 'Phiếu thu',

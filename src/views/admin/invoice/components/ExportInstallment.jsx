@@ -1,7 +1,7 @@
 import React from 'react'
 
 export default function InstallmentContract({ data = {} }) {
-  const LOGO_PATH = '/logo/logo-kim-dang.png'
+  const LOGO_PATH = '/logo/logo-kim-dang-square.png'
 
   const vnd = (n) => {
     if (typeof n === 'number') {
@@ -117,19 +117,22 @@ export default function InstallmentContract({ data = {} }) {
         <div style={{
           flex: '0 0 40%',
           borderRight: '1px dashed #999',
-          paddingRight: '15px'
+          paddingRight: '15px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center'
         }}>
           {company.logo && (
-            <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-              <img
-                src={company.logo}
-                alt="Logo"
-                style={{
-                  height: '60px',
-                  objectFit: 'contain'
-                }}
-              />
-            </div>
+            <img
+              src={company.logo}
+              alt="Logo"
+              style={{
+                height: '60px',
+                objectFit: 'contain',
+                marginBottom: '8px'
+              }}
+            />
           )}
           <div style={{
             fontWeight: 'bold',

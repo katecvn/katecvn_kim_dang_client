@@ -816,6 +816,49 @@ const CreateInvoiceDialog = ({
 
   const getProductTypeLabel = (type) => productTypeMap[type] || type
 
+  // Show available products for quick select (simplified - no complex calculation yet)
+  const popularProducts = useMemo(() => {
+    if (!products || products.length === 0) return []
+
+    // Just show first 15 products that have stock
+    return products
+      .filter(p => 1 > 0)
+      .slice(0, 15)
+  }, [products])
+
+  // Handle quick select from popular products
+  const handleQuickSelectProduct = (product) => {
+    // Check if product is already selected
+    const isAlreadySelected = selectedProducts.some(p => p.id === product.id)
+
+    if (isAlreadySelected) {
+      // Remove product if already selected
+      const newSelectedProducts = selectedProducts.filter(p => p.id !== product.id)
+      setSelectedProducts(newSelectedProducts)
+
+      // Clean up related states
+      const newProductIds = newSelectedProducts.map(p => p.id)
+      setSelectedUnitIds(prev => {
+        const next = { ...prev }
+        delete next[product.id]
+        return next
+      })
+      setBaseUnitPrices(prev => {
+        const next = { ...prev }
+        delete next[product.id]
+        return next
+      })
+      setPriceOverrides(prev => {
+        const next = { ...prev }
+        delete next[product.id]
+        return next
+      })
+    } else {
+      // Add product to selected list
+      handleSelectProduct([...selectedProducts.map(p => ({ value: p.id, label: p.name })), { value: product.id, label: product.name }])
+    }
+  }
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange} {...props}>
@@ -919,7 +962,7 @@ const CreateInvoiceDialog = ({
                                           product?.unitConversions,
                                         ) &&
                                           product.unitConversions.length >
-                                            0 && (
+                                          0 && (
                                             <div className="mt-1 break-words text-[11px] text-muted-foreground">
                                               Quy đổi:{' '}
                                               {product.unitConversions
@@ -931,8 +974,8 @@ const CreateInvoiceDialog = ({
                                                   // 1 base = f * u
                                                   return f > 0
                                                     ? `1 ${getBaseUnitName(
-                                                        product,
-                                                      )} = ${f} ${u}`
+                                                      product,
+                                                    )} = ${f} ${u}`
                                                     : null
                                                 })
                                                 .filter(Boolean)
@@ -1168,10 +1211,10 @@ const CreateInvoiceDialog = ({
                                                   acc.expiries?.[0]
                                                     ?.productId === product.id,
                                               ) && (
-                                                <span className="text-[10px] italic text-primary">
-                                                  Gợi ý
-                                                </span>
-                                              )}
+                                                  <span className="text-[10px] italic text-primary">
+                                                    Gợi ý
+                                                  </span>
+                                                )}
                                             </>
                                           ) : (
                                             <span className="text-xs italic text-muted-foreground">
@@ -1208,15 +1251,15 @@ const CreateInvoiceDialog = ({
                                               className={cn(
                                                 'h-7 w-full justify-start text-left font-normal',
                                                 !productStartDate[product.id] &&
-                                                  'text-muted-foreground',
+                                                'text-muted-foreground',
                                               )}
                                             >
                                               {productStartDate[product.id]
                                                 ? dateFormat(
-                                                    productStartDate[
-                                                      product.id
-                                                    ],
-                                                  )
+                                                  productStartDate[
+                                                  product.id
+                                                  ],
+                                                )
                                                 : 'Ngày bắt đầu'}
                                             </Button>
                                           </PopoverTrigger>
@@ -1314,13 +1357,81 @@ const CreateInvoiceDialog = ({
                             product.type,
                           )}, ĐVT gốc: ${getBaseUnitName(
                             product,
-                          )}, HS: ${product?.coefficient?.coefficient || 0}, Tồn: ${
-                            product?.productStocks?.[0]?.quantity || 0
-                          })`,
+                          )}, HS: ${product?.coefficient?.coefficient || 0}, Tồn: ${product?.productStocks?.[0]?.quantity || 0
+                            })`,
                           value: product.id,
                         }))}
                         placeholder="Tìm kiếm sản phẩm"
                       />
+
+                      {/* Popular Products Quick Select */}
+                      {popularProducts.length > 0 && (
+                        <div className="mt-4 rounded-lg border bg-muted/30 p-3">
+                          <h3 className="mb-3 text-sm font-semibold text-foreground">
+                            Sản phẩm phổ biến
+                          </h3>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                            {popularProducts.map((product) => {
+                              const isSelected = selectedProducts.some(
+                                (p) => p.id === product.id,
+                              )
+                              const stock = product.productStocks?.[0]?.quantity || 0
+
+                              return (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  onClick={() => handleQuickSelectProduct(product)}
+                                  className={cn(
+                                    'group relative flex flex-col items-start gap-1 rounded-md border p-2 text-left transition-all hover:border-primary hover:bg-accent',
+                                    isSelected
+                                      ? 'border-primary bg-primary/10'
+                                      : 'border-border bg-background',
+                                  )}
+                                >
+                                  {/* Selected indicator */}
+                                  {isSelected && (
+                                    <div className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                                      <CheckIcon className="h-3 w-3" />
+                                    </div>
+                                  )}
+
+                                  {/* Product name */}
+                                  <div className="w-full pr-6">
+                                    <p className="line-clamp-2 text-xs font-medium leading-tight">
+                                      {product.name}
+                                    </p>
+                                  </div>
+
+                                  {/* Price and stock */}
+                                  <div className="flex w-full flex-col gap-0.5">
+                                    <p className="text-xs font-semibold text-primary">
+                                      {moneyFormat(product.price)}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      Tồn: {stock}
+                                    </p>
+                                  </div>
+
+                                  {/* Add/Remove indicator */}
+                                  <div className="absolute bottom-1 right-1">
+                                    {isSelected ? (
+                                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                                        <X className="h-3 w-3" />
+                                      </div>
+                                    ) : (
+                                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                                        <Plus className="h-3 w-3" />
+                                      </div>
+                                    )}
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
 
                       <div className="grid gap-4 md:grid-cols-[2fr,1fr]">
                         <div className="flex flex-col space-y-4">
@@ -1551,9 +1662,9 @@ const CreateInvoiceDialog = ({
                                     >
                                       {field.value
                                         ? customers.find(
-                                            (customer) =>
-                                              customer.id === field.value,
-                                          )?.name
+                                          (customer) =>
+                                            customer.id === field.value,
+                                        )?.name
                                         : 'Chọn khách hàng'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
@@ -1822,7 +1933,7 @@ const CreateInvoiceDialog = ({
                                           {moneyFormat(
                                             (handleCalculateSubTotalInvoice() -
                                               calculateTotalDiscount()) *
-                                              (ratio.sub / 10),
+                                            (ratio.sub / 10),
                                           )}
                                           )
                                         </FormLabel>

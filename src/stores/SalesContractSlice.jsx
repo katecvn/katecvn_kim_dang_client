@@ -1,0 +1,213 @@
+import api from '@/utils/axios'
+import { handleError } from '@/utils/handle-error'
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { toast } from 'sonner'
+
+export const getSalesContracts = createAsyncThunk(
+  'salesContract/get-sales-contracts',
+  async ({ fromDate = null, toDate = null }, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/sales-contracts', {
+        params: {
+          fromDate: fromDate ?? undefined,
+          toDate: toDate ?? undefined,
+        },
+      })
+      const { data } = response.data
+      return data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const getSalesContractDetail = createAsyncThunk(
+  'salesContract/get-sales-contract-detail',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/sales-contracts/${id}`)
+      const { data } = response.data
+      return data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const createSalesContract = createAsyncThunk(
+  'salesContract/create-sales-contract',
+  async (contractData, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await api.post('/sales-contracts/create', contractData)
+      toast.success('Tạo hợp đồng thành công')
+      dispatch(getSalesContracts({}))
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      toast.error(message)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const updateSalesContract = createAsyncThunk(
+  'salesContract/update-sales-contract',
+  async ({ id, data }, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await api.put(`/sales-contracts/${id}/update`, data)
+      toast.success('Cập nhật hợp đồng thành công')
+      dispatch(getSalesContracts({}))
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      toast.error(message)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const deleteSalesContract = createAsyncThunk(
+  'salesContract/delete-sales-contract',
+  async (id, { rejectWithValue, dispatch }) => {
+    try {
+      await api.delete(`/sales-contracts/${id}/delete`)
+      toast.success('Xóa hợp đồng thành công')
+      dispatch(getSalesContracts({}))
+      return id
+    } catch (error) {
+      const message = handleError(error)
+      toast.error(message)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const updateSalesContractStatus = createAsyncThunk(
+  'salesContract/update-status',
+  async ({ id, status }, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await api.put(`/sales-contracts/${id}/update-status`, { status })
+      toast.success('Cập nhật trạng thái thành công')
+      dispatch(getSalesContracts({}))
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      toast.error(message)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const getMySalesContracts = createAsyncThunk(
+  'salesContract/get-my-sales-contracts',
+  async ({ fromDate = null, toDate = null }, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/sales-contracts/by-user', {
+        params: {
+          fromDate: fromDate ?? undefined,
+          toDate: toDate ?? undefined,
+        },
+      })
+      const { data } = response.data
+      return data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const reviewSalesContract = createAsyncThunk(
+  'salesContract/review-sales-contract',
+  async (invoiceIds, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/sales-contracts/review', {
+        params: { invoices: invoiceIds },
+        paramsSerializer: (params) => {
+          const qs = require('qs')
+          return qs.stringify(params, { arrayFormat: 'indices' })
+        },
+      })
+      return response.data?.data || []
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+const salesContractSlice = createSlice({
+  name: 'salesContract',
+  initialState: {
+    contracts: [],
+    loading: false,
+    error: null,
+  },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      // Get Sales Contracts
+      .addCase(getSalesContracts.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getSalesContracts.fulfilled, (state, action) => {
+        state.loading = false
+        state.contracts = action.payload
+      })
+      .addCase(getSalesContracts.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Get My Sales Contracts
+      .addCase(getMySalesContracts.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getMySalesContracts.fulfilled, (state, action) => {
+        state.loading = false
+        state.contracts = action.payload
+      })
+      .addCase(getMySalesContracts.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Create Sales Contract
+      .addCase(createSalesContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(createSalesContract.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(createSalesContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Update Sales Contract
+      .addCase(updateSalesContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(updateSalesContract.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(updateSalesContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Delete Sales Contract
+      .addCase(deleteSalesContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(deleteSalesContract.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(deleteSalesContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+  },
+})
+
+export default salesContractSlice.reducer

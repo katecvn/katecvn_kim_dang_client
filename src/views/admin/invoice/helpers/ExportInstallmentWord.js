@@ -23,37 +23,35 @@ export async function exportInstallmentWord(data, filename = 'hop-dong-tra-cham.
     // 2. Create PizZip instance
     const zip = new PizZip(arrayBuffer)
     
-    // 3. Generate QR code data
-    const qrCodeData = generateQRCodeData(data)
-    
-    // 4. Create Docxtemplater instance
+    // 3. Create Docxtemplater instance (NO image module)
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
-      nullGetter: () => '', // Return empty string for null/undefined values
+      nullGetter: () => '',
     })
     
-    // 5. Prepare data for template
-    const templateData = prepareTemplateData(data, qrCodeData)
+    // 4. Prepare data for template
+    const templateData = prepareTemplateData(data)
     
-    // 6. Set data
+    // 5. Set data
     doc.setData(templateData)
     
-    // 7. Render document
+    // 6. Render document
     doc.render()
     
-    // 8. Generate blob
+    // 7. Generate blob
     const blob = doc.getZip().generate({
       type: 'blob',
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       compression: 'DEFLATE',
     })
     
-    // 9. Download file
+    // 8. Download Word file
     saveAs(blob, filename)
     
-    // 10. Also generate and download QR code image separately
-    await downloadQRCodeImage(qrCodeData, filename.replace('.docx', '-qr.png'))
+    // 9. Also generate and download QR code image separately
+    const qrData = generateQRCodeData(data)
+    await downloadQRCodeImage(qrData, filename.replace('.docx', '-qr.png'))
     
     return true
   } catch (error) {
@@ -62,8 +60,48 @@ export async function exportInstallmentWord(data, filename = 'hop-dong-tra-cham.
   }
 }
 
+
 /**
- * Generate QR Code data for contract
+ * Generate QR Code as base64 data URL
+ */
+async function generateQRCodeBase64(data) {
+  const contract = data?.contract || {}
+  const customer = data?.customer || {}
+  const items = data?.items || []
+  
+  // Create QR data object
+  const qrData = {
+    contractNo: contract.no || '',
+    customerName: customer.name || '',
+    customerPhone: customer.phone || '',
+    customerId: customer.idCard || '',
+    date: contract.date || new Date().toISOString(),
+    itemCount: items.length,
+    totalAmount: items.reduce((sum, item) => sum + (item.total || 0), 0),
+  }
+  
+  // Convert to JSON string
+  const qrString = JSON.stringify(qrData)
+  
+  // Generate QR code as data URL
+  try {
+    const dataUrl = await QRCode.toDataURL(qrString, {
+      width: 400,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    })
+    return dataUrl
+  } catch (error) {
+    console.error('QR Code generation error:', error)
+    return null
+  }
+}
+
+/**
+ * Generate QR Code data for contract (text only)
  */
 function generateQRCodeData(data) {
   const contract = data?.contract || {}
@@ -113,7 +151,7 @@ async function downloadQRCodeImage(qrDataString, filename) {
 /**
  * Prepare data for Word template
  */
-function prepareTemplateData(data, qrCodeData) {
+function prepareTemplateData(data) {
   const contract = data?.contract || {}
   const company = data?.company || {}
   const customer = data?.customer || {}
@@ -155,9 +193,6 @@ function prepareTemplateData(data, qrCodeData) {
     
     // Payment info - match template placeholders
     delivery_date: payment.deliveryDate || '',
-    
-    // QR Code data as text (for reference or manual insertion)
-    qr_data: qrCodeData,
   }
 }
 

@@ -163,6 +163,35 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                 <div className="flex-1 space-y-6 rounded-lg border p-4">
                   <h2 className="text-lg font-semibold">Thông tin đơn</h2>
 
+                  {/* Contract Source Alert */}
+                  {invoice?.salesContractId && (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
+                      <div className="flex items-start gap-3">
+                        <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                            Nguồn từ hợp đồng bán hàng
+                          </p>
+                          <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                            Số HĐ: <span className="font-medium">{invoice.contractNumber || `#${invoice.salesContractId}`}</span>
+                          </p>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 mt-1"
+                            onClick={() => {
+                              window.open(`/sales-contracts?view=${invoice.salesContractId}`, '_blank')
+                            }}
+                          >
+                            Xem hợp đồng gốc →
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-6">
                     <div className="overflow-x-auto rounded-lg border">
                       <Table className="min-w-full">
@@ -228,7 +257,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                               </TableCell>
                               <TableCell>
                                 {product?.warranties[0]?.periodMonths &&
-                                product.warranty
+                                  product.warranty
                                   ? `${product.warranty}`
                                   : 'Không có'}
                               </TableCell>
@@ -314,11 +343,10 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                           <strong>Trạng thái hóa đơn: </strong>
                           {invoice?.status && (
                             <span
-                              className={`ml-2 flex items-center ${
-                                statuses.find(
-                                  (status) => status.value === invoice?.status,
-                                )?.color || ''
-                              }`}
+                              className={`ml-2 flex items-center ${statuses.find(
+                                (status) => status.value === invoice?.status,
+                              )?.color || ''
+                                }`}
                             >
                               {React.createElement(
                                 statuses.find(
@@ -406,22 +434,22 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                       <TableCell className="break-words">
                                         {cn?.invoiceItems?.length
                                           ? cn.invoiceItems.map((ii, idx) => (
-                                              <span
-                                                key={ii.id ?? idx}
-                                                className="inline"
-                                              >
-                                                {ii.productName}{' '}
-                                                {ii.quantity ? (
-                                                  <span className="font-semibold text-orange-500">
-                                                    x{ii.quantity}
-                                                  </span>
-                                                ) : null}
-                                                {idx <
+                                            <span
+                                              key={ii.id ?? idx}
+                                              className="inline"
+                                            >
+                                              {ii.productName}{' '}
+                                              {ii.quantity ? (
+                                                <span className="font-semibold text-orange-500">
+                                                  x{ii.quantity}
+                                                </span>
+                                              ) : null}
+                                              {idx <
                                                 cn.invoiceItems.length - 1
-                                                  ? ', '
-                                                  : ''}
-                                              </span>
-                                            ))
+                                                ? ', '
+                                                : ''}
+                                            </span>
+                                          ))
                                           : '—'}
                                       </TableCell>
 
@@ -496,7 +524,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                                         invoiceId,
                                                       ),
                                                     ).unwrap()
-                                                  } catch {}
+                                                  } catch { }
                                                 }
                                               }}
                                               creditNote={editingCN}

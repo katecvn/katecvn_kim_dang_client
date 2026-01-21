@@ -19,6 +19,7 @@ const createInvoiceSchema = z
     paymentNote: z.string().max(190, 'Tối đa 190 ký tự'),
     bankAccount: z.any().nullable(),
     dueDate: z.string().nullable().optional(),
+    orderDate: z.string().nullable().optional(),
   })
   .refine((data) => data.paymentMethod !== 'transfer' || !!data.bankAccount, {
     path: ['bankAccount'],
@@ -42,6 +43,7 @@ const updateInvoiceSchema = z.object({
   paymentNote: z.string().max(190, 'Tối đa 190 ký tự'),
   bankAccount: z.any().nullable(),
   dueDate: z.string().nullable().optional(),
+  orderDate: z.string().nullable().optional(),
 })
 
 const createOtherExpensesSchema = z.object({

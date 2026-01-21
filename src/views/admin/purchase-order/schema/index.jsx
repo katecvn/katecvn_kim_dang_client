@@ -2,7 +2,10 @@ import { z } from 'zod'
 
 const createPurchaseOrderSchema = z.object({
   supplierId: z.string().nonempty('Nhà cung cấp là bắt buộc'),
-  expectedDeliveryDate: z.string().nullable().optional(),
+  orderDate: z.date({
+    required_error: 'Ngày đặt hàng là bắt buộc',
+  }),
+  expectedDeliveryDate: z.date().nullable().optional(),
   note: z.string().max(500).nullable().optional(),
   paymentTerms: z.string().max(500).nullable().optional(),
   status: z.string().nonempty('Trạng thái là bắt buộc'),

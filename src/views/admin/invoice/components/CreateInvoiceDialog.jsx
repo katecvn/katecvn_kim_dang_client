@@ -32,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { CheckIcon, Mail, MapPin, Pencil, Plus, X } from 'lucide-react'
+import { CheckIcon, Mail, MapPin, Pencil, Plus, X, Search } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getProducts } from '@/stores/ProductSlice'
 import { Textarea } from '@/components/ui/textarea'
@@ -89,16 +89,19 @@ import CreateOtherExpenses from './CreateOtherExpenses'
 import { dateFormat } from '@/utils/date-format'
 import { DatePicker } from '@/components/custom/DatePicker'
 import { getExpiriesByCustomerId } from '@/stores/ExpirySlice'
-import { exportQuotationPdf } from '../helpers/ExportQuotationPdf'
-import { buildQuotationData } from '../helpers/BuildQuotationData'
+
+
 import { MoneyInputQuick } from '@/components/custom/MoneyInputQuick'
-import QuotationPreviewDialog from './QuotationPreviewDialog'
+
 import CreateProductDialog from '../../product/components/CreateProductDialog'
 import Can from '@/utils/can'
 import { getSettingApi } from '@/api/setting'
+import CategorySidebar from './CategorySidebar'
+import ProductGrid from './ProductGrid'
+import ShoppingCart from './ShoppingCart'
+import InvoiceSidebar from './InvoiceSidebar'
 
 const CreateInvoiceDialog = ({
-  type,
   open,
   onOpenChange,
   showTrigger = true,
@@ -225,8 +228,14 @@ const CreateInvoiceDialog = ({
       revenueSharing: null,
       paymentMethod: paymentMethods[0].value,
       paymentNote: '',
+      orderDate: null,
     },
   })
+
+  // ====== NEW: CATEGORY FILTERING ======
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [filteredProducts, setFilteredProducts] = useState([])
+  const [searchQuery, setSearchQuery] = useState('')
 
   // =========================
   // UNIT CONVERSION HELPERS
@@ -308,6 +317,152 @@ const CreateInvoiceDialog = ({
     },
     [baseUnitPrices, priceOverrides, selectedUnitIds, getFactor, getBaseUnitId],
   )
+
+  // ====== CATEGORY EXTRACTION ======
+  const categories = useMemo(() => {
+    if (!products || products.length === 0) return []
+
+    const categoryMap = new Map()
+
+    products.forEach(product => {
+      const categoryId = product.categoryId || 'uncategorized'
+      const categoryName = product.category?.name || 'Chưa phân loại'
+
+      if (!categoryMap.has(categoryId)) {
+        categoryMap.set(categoryId, {
+          id: categoryId,
+          name: categoryName,
+          icon: product.category?.icon,
+          count: 0
+        })
+      }
+
+      const category = categoryMap.get(categoryId)
+      category.count++
+    })
+
+    return Array.from(categoryMap.values())
+  }, [products])
+
+  const productCounts = useMemo(() => {
+    const counts = {}
+    products.forEach(product => {
+      const categoryId = product.categoryId || 'uncategorized'
+      counts[categoryId] = (counts[categoryId] || 0) + 1
+    })
+    return counts
+  }, [products])
+
+  // ====== PRODUCT FILTERING ======
+  useEffect(() => {
+    let filtered = products
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(p => (p.categoryId || 'uncategorized') === selectedCategory)
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        p.code?.toLowerCase().includes(query)
+      )
+    }
+
+    setFilteredProducts(filtered)
+  }, [selectedCategory, products, searchQuery])
+
+  // ====== PRODUCT SELECTION HANDLERS ======
+  const handleAddProduct = (product) => {
+    const isAlreadySelected = selectedProducts.some(p => p.id === product.id)
+
+    if (isAlreadySelected) {
+      // Remove from cart
+      const newSelectedProducts = selectedProducts.filter(p => p.id !== product.id)
+      setSelectedProducts(newSelectedProducts)
+
+      // Cleanup states
+      setSelectedUnitIds(prev => {
+        const next = { ...prev }
+        delete next[product.id]
+        return next
+      })
+      setBaseUnitPrices(prev => {
+        const next = { ...prev }
+        delete next[product.id]
+        return next
+      })
+      setPriceOverrides(prev => {
+        const next = { ...prev }
+        delete next[product.id]
+        return next
+      })
+    } else {
+      // Add to cart
+      handleSelectProduct([
+        ...selectedProducts.map(p => ({ value: p.id, label: p.name })),
+        { value: product.id, label: product.name }
+      ])
+    }
+  }
+
+  const handleRemoveProduct = (productId) => {
+    const newSelectedProducts = selectedProducts.filter(p => p.id !== productId)
+    setSelectedProducts(newSelectedProducts)
+
+    // Cleanup all related states
+    setSelectedUnitIds(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
+    setBaseUnitPrices(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
+    setPriceOverrides(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
+    setDiscounts(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
+    setQuantities(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
+    setNotes(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
+    setGiveaway(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
+    setSelectedTaxes(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
+  }
+
+  const handleUnitChange = (productId, unitId) => {
+    setSelectedUnitIds(prev => ({ ...prev, [productId]: Number(unitId) }))
+    setPriceOverrides(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
+  }
 
   const onSubmit = async (data) => {
     // validations liên quan expiry/account giữ nguyên
@@ -856,7 +1011,7 @@ const CreateInvoiceDialog = ({
     } else {
       // Add product to selected list
       handleSelectProduct([...selectedProducts.map(p => ({ value: p.id, label: p.name })), { value: product.id, label: product.name }])
-    }
+    } ``
   }
 
   return (
@@ -866,1196 +1021,121 @@ const CreateInvoiceDialog = ({
           <DialogTrigger asChild>
             <Button className="mx-2" variant="outline" size="sm">
               <PlusIcon className="mr-2 size-4" aria-hidden="true" />
-              Lưu
+              Tạo hóa đơn
             </Button>
           </DialogTrigger>
         )}
 
-        <DialogContent className="md:h-auto md:max-w-full">
-          <DialogHeader>
-            <DialogTitle>Thêm hóa đơn mới</DialogTitle>
+        <DialogContent className="max-w-screen max-h-screen w-screen h-screen p-0 m-0">
+          <DialogHeader className="px-6 pt-4">
+            <DialogTitle>
+              Tạo hóa đơn mới
+            </DialogTitle>
             <DialogDescription>
-              Hoàn thành các thông tin dưới đây để có thể thêm hóa đơn mới
+              Chọn sản phẩm và điền thông tin để tạo hóa đơn
             </DialogDescription>
           </DialogHeader>
 
-          <div className="max-h-[65vh] overflow-auto md:max-h-[75vh]">
-            <Form {...form}>
-              <form id="create-invoice" onSubmit={form.handleSubmit(onSubmit)}>
-                <div className="flex flex-col gap-6 lg:flex-row">
-                  <div className="flex-1 space-y-6 rounded-lg border p-4 lg:max-w-[79vw]">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold">Thông tin đơn</h2>
-                      <Can permission={'CREATE_PRODUCT'}>
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={() => setShowCreateProductDialog(true)}
-                        >
-                          <PlusIcon
-                            className="mr-2 size-4"
-                            aria-hidden="true"
-                          />
-                          Thêm sản phẩm
-                        </Button>
-                      </Can>
-                    </div>
-
-                    <div className="space-y-6">
-                      {selectedProducts.length > 0 && (
-                        <div className="overflow-x-auto rounded-lg border">
-                          <Table className="min-w-full">
-                            <TableHeader>
-                              <TableRow className="bg-secondary text-xs">
-                                <TableHead className="w-8">TT</TableHead>
-                                <TableHead className="min-w-40">
-                                  Sản phẩm
-                                </TableHead>
-                                <TableHead className="min-w-16">SL</TableHead>
-                                <TableHead className="min-w-16">Tặng</TableHead>
-                                <TableHead className="min-w-24">ĐVT</TableHead>
-                                <TableHead className="min-w-20">Giá</TableHead>
-                                <TableHead className="min-w-20">Thuế</TableHead>
-                                <TableHead className="min-w-28 md:w-16">
-                                  Giảm giá
-                                </TableHead>
-                                <TableHead className="min-w-28">
-                                  Tổng cộng
-                                </TableHead>
-                                <TableHead className="min-w-28 md:w-20">
-                                  BH
-                                </TableHead>
-                                <TableHead className="min-w-28">
-                                  Ghi chú
-                                </TableHead>
-                                <TableHead className="min-w-24">
-                                  Hạn dùng
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-
-                            <TableBody>
-                              {selectedProducts.map((product, index) => {
-                                const currentUnitId =
-                                  selectedUnitIds[product.id] ||
-                                  getBaseUnitId(product) ||
-                                  product?.prices?.[0]?.unitId
-
-                                const unitOptions = getUnitOptions(product)
-
-                                return (
-                                  <TableRow key={product.id}>
-                                    <TableCell>{index + 1}</TableCell>
-
-                                    <TableCell>
-                                      <div>
-                                        <div className="font-medium">
-                                          {product.name}
-                                        </div>
-
-                                        <span className="break-words text-xs text-muted-foreground">
-                                          {`ĐVT gốc: ${getBaseUnitName(product)}`}
-                                        </span>
-
-                                        {Array.isArray(
-                                          product?.unitConversions,
-                                        ) &&
-                                          product.unitConversions.length >
-                                          0 && (
-                                            <div className="mt-1 break-words text-[11px] text-muted-foreground">
-                                              Quy đổi:{' '}
-                                              {product.unitConversions
-                                                .map((c) => {
-                                                  const f = Number(
-                                                    c?.conversionFactor || 0,
-                                                  )
-                                                  const u = c?.unit?.name || '—'
-                                                  // 1 base = f * u
-                                                  return f > 0
-                                                    ? `1 ${getBaseUnitName(
-                                                      product,
-                                                    )} = ${f} ${u}`
-                                                    : null
-                                                })
-                                                .filter(Boolean)
-                                                .join(' • ')}
-                                            </div>
-                                          )}
-
-                                        {product?.attributes && (
-                                          <div className="break-words text-sm text-muted-foreground">
-                                            {product.attributes
-                                              .map(
-                                                (attribute) =>
-                                                  `${attribute.name}: ${attribute.pivot.value} (${attributes[attribute.unit]})`,
-                                              )
-                                              .join(', ')}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </TableCell>
-
-                                    <TableCell>
-                                      <Input
-                                        value={quantities[product.id] || 1}
-                                        type="number"
-                                        className="h-7 w-16"
-                                        onChange={(e) =>
-                                          handleQuantityChange(
-                                            product.id,
-                                            e.target.value,
-                                          )
-                                        }
-                                      />
-                                    </TableCell>
-
-                                    <TableCell>
-                                      <Input
-                                        value={giveaway[product.id] || 0}
-                                        type="number"
-                                        className="h-7 w-16"
-                                        min={0}
-                                        onChange={(e) =>
-                                          handleGiveawayChange(
-                                            product.id,
-                                            e.target.value,
-                                          )
-                                        }
-                                      />
-                                    </TableCell>
-
-                                    {/* ===== ĐVT (chọn theo quy đổi) ===== */}
-                                    <TableCell>
-                                      <Select
-                                        value={
-                                          currentUnitId
-                                            ? currentUnitId.toString()
-                                            : ''
-                                        }
-                                        onValueChange={(val) => {
-                                          const newUnitId = Number(val)
-                                          setSelectedUnitIds((prev) => ({
-                                            ...prev,
-                                            [product.id]: newUnitId,
-                                          }))
-
-                                          // đổi đơn vị thì bỏ override để tự tính lại
-                                          setPriceOverrides((prev) => {
-                                            const next = { ...prev }
-                                            delete next[product.id]
-                                            return next
-                                          })
-                                        }}
-                                      >
-                                        <SelectTrigger className="h-7 w-28">
-                                          <SelectValue placeholder="ĐVT" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectGroup>
-                                            {unitOptions.map((o) => (
-                                              <SelectItem
-                                                key={o.unitId}
-                                                value={o.unitId.toString()}
-                                              >
-                                                {o.unitName}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectGroup>
-                                        </SelectContent>
-                                      </Select>
-                                    </TableCell>
-
-                                    {/* ===== Giá theo ĐVT ===== */}
-                                    <TableCell className="text-end">
-                                      <MoneyInputQuick
-                                        value={getDisplayPrice(product) ?? 0}
-                                        onChange={(num) =>
-                                          handlePriceChange(
-                                            product.id,
-                                            String(num),
-                                          )
-                                        }
-                                        placeholder="0"
-                                        className="h-7 w-24"
-                                      />
-                                    </TableCell>
-
-                                    <TableCell>
-                                      <FormField
-                                        control={form.control}
-                                        name="taxes"
-                                        render={() => (
-                                          <FormItem>
-                                            {(
-                                              product?.prices?.[0]?.taxes || []
-                                            ).map((tax) => (
-                                              <FormItem
-                                                key={tax.id}
-                                                className="flex flex-row items-start space-x-3 space-y-0"
-                                              >
-                                                <FormControl>
-                                                  <Checkbox
-                                                    onCheckedChange={(
-                                                      isChecked,
-                                                    ) =>
-                                                      handleTaxChange(
-                                                        product.id,
-                                                        tax.id,
-                                                        isChecked,
-                                                      )
-                                                    }
-                                                    checked={
-                                                      selectedTaxes[
-                                                        product.id
-                                                      ]?.includes(tax.id) ||
-                                                      false
-                                                    }
-                                                  />
-                                                </FormControl>
-                                                <FormLabel className="text-sm font-normal">
-                                                  {tax.title} -{' '}
-                                                  <strong className="text-destructive">
-                                                    ({tax.percentage}%)
-                                                  </strong>
-                                                </FormLabel>
-                                              </FormItem>
-                                            ))}
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </TableCell>
-
-                                    <TableCell>
-                                      <MoneyInputQuick
-                                        value={discounts[product.id] ?? 0}
-                                        onChange={(num) =>
-                                          handleDiscountChange(
-                                            product.id,
-                                            String(num),
-                                          )
-                                        }
-                                        placeholder="0"
-                                        className="h-7 w-24"
-                                      />
-                                    </TableCell>
-
-                                    <TableCell className="text-end">
-                                      {moneyFormat(
-                                        calculateSubTotal(product.id),
-                                      )}
-                                    </TableCell>
-
-                                    <TableCell className="text-center">
-                                      {product.warrantyPolicy ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                          <Checkbox
-                                            checked={
-                                              !!applyWarrantyItems[product.id]
-                                            }
-                                            onCheckedChange={(checked) =>
-                                              handleApplyWarrantyChange(
-                                                product.id,
-                                                checked,
-                                              )
-                                            }
-                                          />
-                                          <span className="text-[11px] text-muted-foreground">
-                                            {
-                                              product.warrantyPolicy
-                                                .periodMonths
-                                            }{' '}
-                                            tháng
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <span className="text-[11px] italic text-muted-foreground">
-                                          Không BH
-                                        </span>
-                                      )}
-                                    </TableCell>
-
-                                    <TableCell className="text-end">
-                                      <Textarea
-                                        onChange={(e) =>
-                                          handleNoteChange(
-                                            product.id,
-                                            e.target.value,
-                                          )
-                                        }
-                                        placeholder="Ghi chú"
-                                        rows={1}
-                                        type="text"
-                                        className="h-7 w-full"
-                                      />
-                                    </TableCell>
-
-                                    <TableCell className="align-top">
-                                      <div className="flex flex-col gap-1.5">
-                                        <div className="flex items-center justify-center gap-1">
-                                          {product.hasExpiry ? (
-                                            <>
-                                              <Checkbox
-                                                checked={
-                                                  !!applyExpiryItems[product.id]
-                                                }
-                                                onCheckedChange={(checked) =>
-                                                  handleApplyExpiryChange(
-                                                    product.id,
-                                                    checked,
-                                                  )
-                                                }
-                                              />
-                                              {customerAccounts.some(
-                                                (acc) =>
-                                                  acc.expiries?.[0]
-                                                    ?.productId === product.id,
-                                              ) && (
-                                                  <span className="text-[10px] italic text-primary">
-                                                    Gợi ý
-                                                  </span>
-                                                )}
-                                            </>
-                                          ) : (
-                                            <span className="text-xs italic text-muted-foreground">
-                                              Không áp dụng
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        <Input
-                                          className="h-7"
-                                          placeholder="Tài khoản"
-                                          value={accountName[product.id] || ''}
-                                          onChange={(e) =>
-                                            handleAccountNameChange(
-                                              product.id,
-                                              e.target.value,
-                                            )
-                                          }
-                                          list="accountNameSuggestions"
-                                          disabled={
-                                            !applyExpiryItems[product.id]
-                                          }
-                                        />
-
-                                        <Popover>
-                                          <PopoverTrigger
-                                            asChild
-                                            disabled={
-                                              !applyExpiryItems[product.id]
-                                            }
-                                          >
-                                            <Button
-                                              variant="outline"
-                                              className={cn(
-                                                'h-7 w-full justify-start text-left font-normal',
-                                                !productStartDate[product.id] &&
-                                                'text-muted-foreground',
-                                              )}
-                                            >
-                                              {productStartDate[product.id]
-                                                ? dateFormat(
-                                                  productStartDate[
-                                                  product.id
-                                                  ],
-                                                )
-                                                : 'Ngày bắt đầu'}
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0">
-                                            <DatePicker
-                                              mode="single"
-                                              selected={
-                                                productStartDate[product.id]
-                                              }
-                                              onSelect={(date) =>
-                                                handleStartDateChange(
-                                                  product.id,
-                                                  date,
-                                                )
-                                              }
-                                              disabled={
-                                                !applyExpiryItems[product.id]
-                                              }
-                                            />
-                                          </PopoverContent>
-                                        </Popover>
-
-                                        <div className="flex gap-1">
-                                          <Input
-                                            type="number"
-                                            min={1}
-                                            className="h-7 w-20 text-center"
-                                            value={
-                                              expiryDurations[product.id]
-                                                ?.value || 1
-                                            }
-                                            onChange={(e) =>
-                                              handleExpiryDurationChange(
-                                                product.id,
-                                                'value',
-                                                Number(e.target.value),
-                                              )
-                                            }
-                                            disabled={
-                                              !applyExpiryItems[product.id]
-                                            }
-                                          />
-
-                                          <Select
-                                            value={
-                                              expiryDurations[product.id]
-                                                ?.unit || 'month'
-                                            }
-                                            onValueChange={(value) =>
-                                              handleExpiryDurationChange(
-                                                product.id,
-                                                'unit',
-                                                value,
-                                              )
-                                            }
-                                            disabled={
-                                              !applyExpiryItems[product.id]
-                                            }
-                                          >
-                                            <SelectTrigger className="h-7 w-full">
-                                              <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectItem value="month">
-                                                Tháng
-                                              </SelectItem>
-                                              <SelectItem value="year">
-                                                Năm
-                                              </SelectItem>
-                                            </SelectContent>
-                                          </Select>
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                )
-                              })}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      )}
-
-                      <MultipleSelector
-                        emptyIndicator={
-                          <p className="text-center text-xs leading-10 text-muted-foreground">
-                            Không có kết quả nào được tìm thấy
-                          </p>
-                        }
-                        hidePlaceholderWhenSelected={true}
-                        onChange={(value) => handleSelectProduct(value)}
-                        options={products.map((product) => ({
-                          label: `${product.name} - ${moneyFormat(
-                            product.price,
-                          )} - (Loại: ${getProductTypeLabel(
-                            product.type,
-                          )}, ĐVT gốc: ${getBaseUnitName(
-                            product,
-                          )}, HS: ${product?.coefficient?.coefficient || 0}, Tồn: ${product?.productStocks?.[0]?.quantity || 0
-                            })`,
-                          value: product.id,
-                        }))}
-                        placeholder="Tìm kiếm sản phẩm"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden border-t">
+              {/* 4-COLUMN LAYOUT */}
+              <div className="flex flex-1 overflow-hidden">
+                {/* LEFT SECTION: Category + Products */}
+                <div className="flex flex-col flex-1">
+                  {/* UNIFIED SEARCH BAR spanning columns 1 & 2 */}
+                  <div className="p-4 border-b bg-background/80 backdrop-blur-sm">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Tìm kiếm sản phẩm..."
+                        className="pl-9"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                       />
-
-                      {/* Popular Products Quick Select */}
-                      {popularProducts.length > 0 && (
-                        <div className="mt-4 rounded-lg border bg-muted/30 p-3">
-                          <h3 className="mb-3 text-sm font-semibold text-foreground">
-                            Sản phẩm phổ biến
-                          </h3>
-                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                            {popularProducts.map((product) => {
-                              const isSelected = selectedProducts.some(
-                                (p) => p.id === product.id,
-                              )
-                              const stock = product.productStocks?.[0]?.quantity || 0
-
-                              return (
-                                <button
-                                  key={product.id}
-                                  type="button"
-                                  onClick={() => handleQuickSelectProduct(product)}
-                                  className={cn(
-                                    'group relative flex flex-col items-start gap-1 rounded-md border p-2 text-left transition-all hover:border-primary hover:bg-accent',
-                                    isSelected
-                                      ? 'border-primary bg-primary/10'
-                                      : 'border-border bg-background',
-                                  )}
-                                >
-                                  {/* Selected indicator */}
-                                  {isSelected && (
-                                    <div className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                                      <CheckIcon className="h-3 w-3" />
-                                    </div>
-                                  )}
-
-                                  {/* Product name */}
-                                  <div className="w-full pr-6">
-                                    <p className="line-clamp-2 text-xs font-medium leading-tight">
-                                      {product.name}
-                                    </p>
-                                  </div>
-
-                                  {/* Price and stock */}
-                                  <div className="flex w-full flex-col gap-0.5">
-                                    <p className="text-xs font-semibold text-primary">
-                                      {moneyFormat(product.price)}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                      Tồn: {stock}
-                                    </p>
-                                  </div>
-
-                                  {/* Add/Remove indicator */}
-                                  <div className="absolute bottom-1 right-1">
-                                    {isSelected ? (
-                                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-                                        <X className="h-3 w-3" />
-                                      </div>
-                                    ) : (
-                                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                                        <Plus className="h-3 w-3" />
-                                      </div>
-                                    )}
-                                  </div>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-
-                      <div className="grid gap-4 md:grid-cols-[2fr,1fr]">
-                        <div className="flex flex-col space-y-4">
-                          <FormField
-                            control={form.control}
-                            name="note"
-                            render={({ field }) => (
-                              <FormItem className="mb-2 space-y-1">
-                                <FormLabel>Ghi chú</FormLabel>
-                                <FormControl>
-                                  <Textarea
-                                    rows={3}
-                                    placeholder="Nhập ghi chú nếu có"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          {selectedCustomer && (
-                            <div className="mt-2">
-                              <div className="mb-1 text-sm font-semibold">
-                                Tài khoản khách hàng
-                              </div>
-                              {customerAccounts.length > 0 ? (
-                                <ul className="space-y-1">
-                                  {customerAccounts.map((acc) => (
-                                    <li
-                                      key={acc.id}
-                                      className="flex items-center justify-between border-b pb-1"
-                                    >
-                                      <span className="font-small text-sm">
-                                        {acc.accountName}
-                                      </span>
-                                      <span className="font-small text-sm">
-                                        {acc.expiries?.[0]?.product?.name}
-                                      </span>
-                                      <span className="ml-2 text-xs text-muted-foreground">
-                                        HSD:{' '}
-                                        {acc.expiries?.[0]?.endDate
-                                          ? dateFormat(acc.expiries[0].endDate)
-                                          : 'Chưa có hạn'}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <div className="text-xs text-muted-foreground">
-                                  Khách hàng chưa có tài khoản nào.
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="flex justify-between">
-                            <div className="text-sm font-bold">Tạm tính:</div>
-                            <div className="text-sm">
-                              {moneyFormat(handleCalculateSubTotalInvoice())}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <div className="text-sm font-bold">Thuế:</div>
-                            <div className="text-sm">
-                              {moneyFormat(calculateTotalTax())}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <div className="text-sm font-bold">Giảm giá:</div>
-                            <div className="text-sm">
-                              {moneyFormat(calculateTotalDiscount())}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <div className="text-sm font-bold">
-                              Phí vận chuyển:
-                            </div>
-                            <div className="text-sm">
-                              {moneyFormat(otherExpenses.price)}
-                            </div>
-                          </div>
-
-                          <div className="text-sm font-bold text-primary">
-                            <Button
-                              onClick={() =>
-                                setShowCreateOtherExpensesDialog(true)
-                              }
-                              type="button"
-                              variant="outline"
-                              className="h-6 border border-primary"
-                            >
-                              <IconPencil className="h-4 w-4" /> Cập nhật phí
-                              vận chuyển
-                            </Button>
-                          </div>
-
-                          <div className="flex justify-between border-t py-2">
-                            <div className="text-sm font-bold">
-                              Tổng số tiền:
-                            </div>
-                            <div className="text-sm">
-                              {moneyFormat(calculateTotalAmount())}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-start border-t py-2">
-                            <div className="text-sm font-bold">
-                              Số tiền viết bằng chữ:
-                              <span className="ml-1">
-                                {toVietnamese(calculateTotalAmount())}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    </div>
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      Hiển thị {filteredProducts.length} / {products.length} sản phẩm
                     </div>
                   </div>
 
-                  <div className="w-full rounded-lg border p-4 lg:w-72">
-                    <div className="flex items-center justify-between">
-                      <h2 className="py-2 text-lg font-semibold">Khách hàng</h2>
+                  {/* Category + Product Grid Row */}
+                  <div className="flex flex-1 overflow-hidden">
+                    {/* COLUMN 1: Category Sidebar */}
+                    <CategorySidebar
+                      categories={categories}
+                      selectedCategory={selectedCategory}
+                      onCategoryChange={setSelectedCategory}
+                      productCounts={productCounts}
+                    />
 
-                      {selectedCustomer && (
-                        <div
-                          className="h-5 w-5 cursor-pointer text-destructive"
-                          title="Chọn lại"
-                        >
-                          <X
-                            className="h-5 w-5"
-                            onClick={() => {
-                              setSelectedCustomer(null)
-                              form.setValue('customerId', null)
-                              setCustomerAccounts([])
-                              setProductStartDate({})
-                              setAccountName({})
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {selectedCustomer ? (
-                      <div className="space-y-6">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage
-                              src={`https://ui-avatars.com/api/?bold=true&background=random&name=${selectedCustomer?.name}`}
-                              alt={selectedCustomer?.name}
-                            />
-                            <AvatarFallback>AD</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">
-                              {selectedCustomer.name}
-                            </div>
-                            <div className="cursor-pointer text-sm text-primary hover:text-secondary-foreground">
-                              {selectedCustomer.invoiceCount} hóa đơn
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="mb-2 flex items-center justify-between">
-                            <div className="font-medium">
-                              Thông tin khách hàng
-                            </div>
-                            <a
-                              role="button"
-                              onClick={() => setShowUpdateCustomerDialog(true)}
-                              size="icon"
-                              title="Cập nhật thông tin khách hàng"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </a>
-                          </div>
-
-                          <div className="mt-4 space-y-2 text-sm">
-                            <div className="flex cursor-pointer items-center text-primary hover:text-secondary-foreground">
-                              <div className="mr-2 h-4 w-4 ">
-                                <MobileIcon className="h-4 w-4" />
-                              </div>
-                              <a href={`tel:${selectedCustomer.phone}`}>
-                                {selectedCustomer.phone || 'Chưa cập nhật'}
-                              </a>
-                            </div>
-
-                            <div className="flex items-center text-muted-foreground">
-                              <div className="mr-2 h-4 w-4 ">
-                                <Mail className="h-4 w-4" />
-                              </div>
-                              <a href={`mailto:${selectedCustomer.email}`}>
-                                {selectedCustomer.email || 'Chưa cập nhật'}
-                              </a>
-                            </div>
-
-                            <div className="flex items-center text-primary hover:text-secondary-foreground">
-                              <div className="mr-2 h-4 w-4 ">
-                                <MapPin className="h-4 w-4" />
-                              </div>
-                              {selectedCustomer.address || 'Chưa cập nhật'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <FormField
-                          control={form.control}
-                          name="customerId"
-                          render={({ field }) => (
-                            <FormItem className="mb-2 space-y-1">
-                              <FormLabel required={true}>Khách hàng</FormLabel>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant="outline"
-                                      className={cn(
-                                        '!mt-[4px] w-full justify-between font-normal',
-                                        !field.value && 'text-muted-foreground',
-                                      )}
-                                    >
-                                      {field.value
-                                        ? customers.find(
-                                          (customer) =>
-                                            customer.id === field.value,
-                                        )?.name
-                                        : 'Chọn khách hàng'}
-                                      <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                  <Command>
-                                    <CommandInput
-                                      placeholder="Tìm kiếm..."
-                                      className="h-9"
-                                    />
-                                    <CommandEmpty>Không tìm thấy</CommandEmpty>
-                                    <CommandGroup>
-                                      <CommandList>
-                                        {customers &&
-                                          customers.map((customer) => (
-                                            <CommandItem
-                                              value={customer.id}
-                                              key={customer.id}
-                                              onSelect={async () => {
-                                                await handleSelectCustomer(
-                                                  customer,
-                                                )
-                                              }}
-                                            >
-                                              {customer.name} - {customer.phone}
-                                              <CheckIcon
-                                                className={cn(
-                                                  'ml-auto h-4 w-4',
-                                                  customer.id === field.value
-                                                    ? 'opacity-100'
-                                                    : 'opacity-0',
-                                                )}
-                                              />
-                                            </CommandItem>
-                                          ))}
-                                      </CommandList>
-                                    </CommandGroup>
-                                  </Command>
-                                </PopoverContent>
-                              </Popover>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <div
-                          className="my-3 flex cursor-pointer items-center text-sm text-primary hover:text-secondary-foreground hover:underline"
-                          onClick={() => setShowCreateCustomerDialog(true)}
-                        >
-                          <div className="mr-2 h-4 w-4">
-                            <Plus className="h-4 w-4" />
-                          </div>
-                          Thêm khách hàng mới
-                        </div>
-                      </>
-                    )}
-
-                    <Separator />
-
-                    <div
-                      className="my-3 flex cursor-pointer items-center text-sm text-primary hover:text-secondary-foreground hover:underline"
-                      onClick={() => handleCreateReceipt()}
-                    >
-                      <div className="mr-2 h-4 w-4">
-                        <IconReceipt2 className="h-4 w-4" />
-                      </div>
-                      Tạo phiếu thu
-                    </div>
-
-                    {isCreateReceipt && (
-                      <div className="mb-3">
-                        <FormField
-                          control={form.control}
-                          name="totalAmount"
-                          render={() => (
-                            <FormItem className="mb-2 space-y-1">
-                              <FormLabel required={true}>Số tiền thu</FormLabel>
-                              <FormControl>
-                                <Input
-                                  value={moneyFormat(
-                                    totalAmount || calculateTotalAmount(),
-                                  )}
-                                  placeholder="0"
-                                  className="w-full text-end"
-                                  onChange={handleInputChange}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <div className="mb-3">
-                          <FormField
-                            control={form.control}
-                            name="paymentMethod"
-                            render={({ field }) => (
-                              <FormItem className="mb-3 space-y-1">
-                                <FormLabel required={true}>
-                                  Phương thức thanh toán
-                                </FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Chọn phương thức" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectGroup>
-                                      {paymentMethods.map((method) => (
-                                        <SelectItem
-                                          key={method.label}
-                                          value={method.value}
-                                        >
-                                          <div className="flex items-center">
-                                            <div className="mr-2 h-4 w-4">
-                                              <method.icon className="h-4 w-4 text-primary" />
-                                            </div>
-                                            {method.label}
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        {paymentMethod === 'transfer' && (
-                          <FormField
-                            control={form.control}
-                            name="bankAccount"
-                            render={({ field }) => (
-                              <FormItem className="mb-3 space-y-1">
-                                <FormLabel required={true}>
-                                  Tài khoản nhận tiền
-                                </FormLabel>
-
-                                <Select
-                                  onValueChange={(value) => {
-                                    const selectedBank = banks.find(
-                                      (b) => b.accountNumber === value,
-                                    )
-                                    field.onChange(selectedBank)
-                                  }}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Chọn tài khoản ngân hàng" />
-                                    </SelectTrigger>
-                                  </FormControl>
-
-                                  <SelectContent>
-                                    {banks.map((bank, index) => (
-                                      <SelectItem
-                                        key={index}
-                                        value={bank.accountNumber}
-                                      >
-                                        <div className="flex flex-col">
-                                          <span className="font-medium">
-                                            {bank.bankName} –{' '}
-                                            {bank.accountNumber}
-                                          </span>
-                                          <span className="text-xs text-muted-foreground">
-                                            {bank.accountName} ·{' '}
-                                            {bank.bankBranch}
-                                          </span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )}
-
-                        <div className="mb-3">
-                          <FormField
-                            control={form.control}
-                            name="dueDate"
-                            render={({ field }) => (
-                              <FormItem className="mb-3 space-y-1">
-                                <FormLabel>Hạn chót đóng tiền</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="date"
-                                    value={field.value || ''}
-                                    onChange={field.onChange}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="paymentNote"
-                            render={({ field }) => (
-                              <FormItem className="mb-2 space-y-1">
-                                <FormLabel>Ghi chú thanh toán</FormLabel>
-                                <FormControl>
-                                  <Textarea
-                                    rows={3}
-                                    placeholder="Nhập ghi chú nếu có"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <Separator />
-
-                    <div
-                      className="my-3 flex cursor-pointer items-center text-sm text-primary hover:text-secondary-foreground hover:underline"
-                      onClick={() => setIsSharing(true)}
-                    >
-                      <div className="mr-2 h-4 w-4">
-                        <IconUserShare className="h-4 w-4" />
-                      </div>
-                      Tỉ lệ hưởng doanh số
-                    </div>
-
-                    {isSharing && (
-                      <>
-                        <FormField
-                          control={form.control}
-                          name="revenueSharing.ratio"
-                          render={({ field }) => (
-                            <FormItem className="mb-2 space-y-3">
-                              <FormLabel>Chọn mức</FormLabel>
-                              <FormControl>
-                                <RadioGroup
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                  className="flex flex-col space-y-1"
-                                >
-                                  {sharingRatios?.payload.map(
-                                    (ratio, index) => (
-                                      <FormItem
-                                        key={`ratio-${index}`}
-                                        className="flex items-center space-x-3 space-y-0"
-                                      >
-                                        <FormControl>
-                                          <RadioGroupItem
-                                            value={(ratio.sub / 10).toString()}
-                                          />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">
-                                          {ratio.main}/{ratio.sub} (Chia:{' '}
-                                          {moneyFormat(
-                                            (handleCalculateSubTotalInvoice() -
-                                              calculateTotalDiscount()) *
-                                            (ratio.sub / 10),
-                                          )}
-                                          )
-                                        </FormLabel>
-                                      </FormItem>
-                                    ),
-                                  )}
-                                </RadioGroup>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="revenueSharing.userId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Chọn người</FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Chọn người ăn chia" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {users
-                                    ?.filter(
-                                      (user) =>
-                                        user.id !==
-                                        authUserWithRoleHasPermissions.id,
-                                    )
-                                    .map((user) => (
-                                      <SelectItem
-                                        key={`user-${user.id}`}
-                                        value={user.id.toString()}
-                                      >
-                                        {user.fullName}
-                                      </SelectItem>
-                                    ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </>
-                    )}
-
-                    {isSharing && (
-                      <div className="my-3 flex cursor-pointer items-center justify-end text-sm font-semibold text-destructive">
-                        <div
-                          className="flex items-center rounded-md border border-destructive px-2 py-1"
-                          onClick={() => {
-                            setIsSharing(false)
-                            form.setValue('revenueSharing', null)
-                          }}
-                        >
-                          <div className="mr-2 h-4 w-4">
-                            <IconCircleX className="h-4 w-4" />
-                          </div>
-                          Hủy
-                        </div>
-                      </div>
-                    )}
+                    {/* COLUMN 2: Product Grid */}
+                    <ProductGrid
+                      products={filteredProducts}
+                      onAddProduct={handleAddProduct}
+                      selectedProductIds={selectedProducts.map(p => p.id)}
+                      loading={false}
+                    />
                   </div>
                 </div>
-              </form>
-            </Form>
-          </div>
 
-          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:space-x-0">
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => form.reset()}
-                className="w-full sm:w-auto"
-              >
-                Hủy
-              </Button>
-            </DialogClose>
+                {/* COLUMN 3: Shopping Cart */}
+                <ShoppingCart
+                  selectedProducts={selectedProducts}
+                  quantities={quantities}
+                  selectedUnitIds={selectedUnitIds}
+                  priceOverrides={priceOverrides}
+                  discounts={discounts}
+                  selectedTaxes={selectedTaxes}
+                  notes={notes}
+                  giveaway={giveaway}
+                  onQuantityChange={handleQuantityChange}
+                  onUnitChange={handleUnitChange}
+                  onPriceChange={handlePriceChange}
+                  onDiscountChange={handleDiscountChange}
+                  onTaxChange={handleTaxChange}
+                  onNoteChange={handleNoteChange}
+                  onGiveawayChange={handleGiveawayChange}
+                  onRemoveProduct={handleRemoveProduct}
+                  getUnitOptions={getUnitOptions}
+                  getDisplayPrice={getDisplayPrice}
+                  calculateSubTotal={calculateSubTotal}
+                  calculateTaxForProduct={calculateTaxForProduct}
+                />
 
-            <Button
-              form="create-invoice"
-              disabled={
-                loading || !selectedCustomer || !selectedProducts.length
-              }
-              onClick={() => setHasPrintQuotation(true)}
-              className="w-full sm:w-auto"
-            >
-              <IconFileTypePdf className="me-2 h-4 w-4" />
-              Lưu và in báo giá
-            </Button>
-
-            <Button
-              form="create-invoice"
-              disabled={
-                loading || !selectedCustomer || !selectedProducts.length
-              }
-              onClick={() => setHasPrintInvoice(true)}
-              className="w-full sm:w-auto"
-            >
-              <IconFileTypePdf className="me-2 h-4 w-4" /> Lưu và in
-            </Button>
-
-            <Button
-              form="create-invoice"
-              disabled={
-                loading || !selectedCustomer || !selectedProducts.length
-              }
-              className="w-full sm:w-auto"
-            >
-              <IconDatabasePlus className="me-2 h-4 w-4" /> Lưu
-            </Button>
-          </DialogFooter>
+                {/* COLUMN 4: Invoice Sidebar */}
+                <InvoiceSidebar
+                  form={form}
+                  customers={customers}
+                  selectedCustomer={selectedCustomer}
+                  onSelectCustomer={(customer) => {
+                    setSelectedCustomer(customer)
+                    if (customer) {
+                      form.setValue('customerId', customer.id.toString())
+                      handleSelectCustomer(customer)
+                    } else {
+                      form.setValue('customerId', '')
+                    }
+                  }}
+                  paymentMethods={paymentMethods}
+                  calculateSubTotal={handleCalculateSubTotalInvoice}
+                  calculateTotalTax={calculateTotalTax}
+                  calculateTotalDiscount={calculateTotalDiscount}
+                  calculateTotalAmount={calculateTotalAmount}
+                  calculateExpenses={calculateExpenses}
+                  onSubmit={onSubmit}
+                  loading={loading}
+                  onShowCreateCustomer={() => setShowCreateCustomerDialog(true)}
+                  onShowUpdateCustomer={() => setShowUpdateCustomerDialog(true)}
+                  onPrintInvoice={() => setHasPrintInvoice(true)}
+                  onPrintQuotation={() => setHasPrintQuotation(true)}
+                />
+              </div>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
+      {/* Supporting Dialogs */}
       {showUpdateCustomerDialog && (
         <UpdateCustomerDialog
           open={showUpdateCustomerDialog}

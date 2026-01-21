@@ -1,0 +1,138 @@
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/custom/Button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Plus, Package } from 'lucide-react'
+import { moneyFormat } from '@/utils/money-format'
+import { cn } from '@/lib/utils'
+
+const ProductGrid = ({
+  products,
+  onAddProduct,
+  selectedProductIds = [],
+  loading = false
+}) => {
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <Package className="h-12 w-12 mx-auto text-muted-foreground animate-pulse" />
+          <p className="mt-2 text-sm text-muted-foreground">Đang tải sản phẩm...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 flex flex-col bg-background">
+      {/* Product List */}
+      <ScrollArea className="flex-1">
+        {products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64">
+            <Package className="h-16 w-16 text-muted-foreground/50" />
+            <p className="mt-4 text-sm text-muted-foreground">
+              Không tìm thấy sản phẩm
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 p-4">
+            {products.map((product) => {
+              const isSelected = selectedProductIds.includes(product.id)
+              const stock = product.productStocks?.[0]?.quantity || 0
+              const isOutOfStock = stock <= 0
+
+              return (
+                <Card
+                  key={product.id}
+                  className={cn(
+                    "group cursor-pointer transition-all hover:shadow-sm",
+                    isSelected && "ring-2 ring-primary bg-primary/5",
+                    isOutOfStock && "opacity-60"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (!isOutOfStock) onAddProduct(product)
+                  }}
+                >
+                  <CardContent className="p-2.5">
+                    <div className="flex items-center gap-3">
+                      {/* Product Image */}
+                      <div className="w-16 h-16 rounded-md bg-muted overflow-hidden relative shrink-0">
+                        {product.image ? (
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-7 w-7 text-muted-foreground/30" />
+                          </div>
+                        )}
+
+                        {/* Stock Badge */}
+                        {isOutOfStock && (
+                          <Badge variant="destructive" className="absolute top-0.5 right-0.5 text-[9px] px-1 py-0 h-4">
+                            Hết
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0 flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm line-clamp-1">
+                            {product.name}
+                          </h4>
+
+                          {product.code && (
+                            <p className="text-[11px] text-muted-foreground">
+                              {product.code}
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-sm font-semibold text-primary">
+                              {moneyFormat(product.price)}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Tồn: {stock}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Product Description/Note */}
+                        {product.note && (
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                              {product.note}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Add Button */}
+                      {!isOutOfStock && (
+                        <Button
+                          size="sm"
+                          variant={isSelected ? "default" : "outline"}
+                          className="shrink-0 h-7 text-xs"
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          {isSelected ? 'Đã chọn' : 'Thêm'}
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        )}
+      </ScrollArea>
+    </div>
+  )
+}
+
+export default ProductGrid

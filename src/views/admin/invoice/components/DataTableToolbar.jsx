@@ -28,6 +28,15 @@ import QuotationPreviewDialog from './QuotationPreviewDialog'
 import AgreementPreviewDialog from './AgreementPreviewDialog'
 import InstallmentPreviewDialog from './InstallmentPreviewDialog'
 import { statuses } from '../data'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import { EllipsisVertical } from 'lucide-react'
 
 const DataTableToolbar = ({ table, isMyInvoice }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -142,6 +151,117 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
     dispatch(getCustomers())
   }, [dispatch])
 
+  const isMobile = useMediaQuery('(max-width: 768px)')
+
+  // Mobile Toolbar - Simplified
+  if (isMobile) {
+    return (
+      <div className="space-y-2">
+        {/* Search section */}
+        <Input
+          placeholder="Tìm mã HĐ hoặc tên KH"
+          value={table.getColumn('code')?.getFilterValue() || ''}
+          onChange={(e) => {
+            table.getColumn('code')?.setFilterValue(e.target.value)
+          }}
+          className="h-8 w-full text-sm"
+        />
+
+        {/* Quick actions */}
+        <div className="flex gap-2">
+          <Can permission={['CREATE_INVOICE']}>
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1 h-8 text-xs"
+              onClick={() => setShowCreateInvoiceDialog(true)}
+            >
+              <PlusIcon className="mr-1 h-3 w-3" />
+              Thêm
+            </Button>
+          </Can>
+
+          {/* Menu button */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 px-2">
+                <EllipsisVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handlePrintInvoice} className="text-xs">
+                <IconFileTypePdf className="mr-2 h-3 w-3" />
+                In HĐ
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setShowExportDialog(true)}
+                className="text-xs"
+              >
+                <IconFileTypeXls className="mr-2 h-3 w-3" />
+                Xuất file
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleShowCreateReceiptDialog}
+                className="text-xs"
+              >
+                <PlusIcon className="mr-2 h-3 w-3" />
+                Phiếu thu
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={handleShowCreateSalesContractDialog}
+                className="text-xs"
+              >
+                <PlusIcon className="mr-2 h-3 w-3" />
+                Hợp đồng
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Dialogs */}
+        {showCreateInvoiceDialog && (
+          <CreateInvoiceDialog
+            type="common_invoice"
+            open={showCreateInvoiceDialog}
+            onOpenChange={setShowCreateInvoiceDialog}
+            showTrigger={false}
+          />
+        )}
+        {showExportDialog && (
+          <ExportInvoiceDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+            showTrigger={false}
+            isMyInvoice={isMyInvoice}
+          />
+        )}
+        {invoice && setting && (
+          <PrintInvoiceView invoice={invoice} setting={setting} />
+        )}
+        {showCreateReceiptDialog && (
+          <CreateReceiptDialog
+            invoices={selectedInvoices}
+            open={showCreateReceiptDialog}
+            onOpenChange={setShowCreateReceiptDialog}
+            showTrigger={false}
+            table={table}
+          />
+        )}
+        {showCreateSalesContractDialog && (
+          <CreateSalesContractDialog
+            invoiceIds={selectedInvoiceIds}
+            open={showCreateSalesContractDialog}
+            onOpenChange={setShowCreateSalesContractDialog}
+            showTrigger={false}
+            table={table}
+          />
+        )}
+      </div>
+    )
+  }
+
+  // Desktop Toolbar - Original
   return (
     <div
       className="

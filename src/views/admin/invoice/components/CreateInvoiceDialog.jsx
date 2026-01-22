@@ -1,50 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 
 import { Button } from '@/components/custom/Button'
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { CaretSortIcon, MobileIcon, PlusIcon } from '@radix-ui/react-icons'
+import { PlusIcon } from '@radix-ui/react-icons'
 
 import {
   Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
 } from '@/components/ui/form'
 
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { CheckIcon, Mail, MapPin, Pencil, Plus, X, Search } from 'lucide-react'
+import { X, Search } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getProducts } from '@/stores/ProductSlice'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import {
   Popover,
@@ -52,49 +28,23 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
 import { getCustomers } from '@/stores/CustomerSlice'
 import UpdateCustomerDialog from '../../customer/components/UpdateCustomerDialog'
 import CreateCustomerDialog from '../../customer/components/CreateCustomerDialog'
-import { moneyFormat, toVietnamese } from '@/utils/money-format'
-import MultipleSelector from '@/components/custom/MultiSelector'
-import { attributes, productTypeMap } from '../data'
+import { productTypeMap } from '../data'
 import { createInvoiceSchema } from '../schema'
 import { getSetting } from '@/stores/SettingSlice'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { getUsers } from '@/stores/UserSlice'
-import {
-  IconCircleX,
-  IconDatabasePlus,
-  IconFileTypePdf,
-  IconPencil,
-  IconReceipt2,
-  IconUserShare,
-} from '@tabler/icons-react'
-import { Separator } from '@/components/ui/separator'
 import { createInvoice } from '@/stores/InvoiceSlice'
 import { toast } from 'sonner'
-import { Checkbox } from '@/components/ui/checkbox'
 import { paymentMethods } from '../../receipt/data'
 import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
 import PrintInvoiceView from './PrintInvoiceView'
 import CreateOtherExpenses from './CreateOtherExpenses'
-import { dateFormat } from '@/utils/date-format'
-import { DatePicker } from '@/components/custom/DatePicker'
 import { getExpiriesByCustomerId } from '@/stores/ExpirySlice'
 
 
-import { MoneyInputQuick } from '@/components/custom/MoneyInputQuick'
-
 import CreateProductDialog from '../../product/components/CreateProductDialog'
-import Can from '@/utils/can'
 import { getSettingApi } from '@/api/setting'
 import CategorySidebar from './CategorySidebar'
 import ProductGrid from './ProductGrid'
@@ -114,6 +64,8 @@ const CreateInvoiceDialog = ({
   const authUserWithRoleHasPermissions =
     useSelector((state) => state.auth.authUserWithRoleHasPermissions) || {}
 
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [productStartDate, setProductStartDate] = useState({})
   const [hasPrintQuotation, setHasPrintQuotation] = useState(false)
@@ -129,6 +81,8 @@ const CreateInvoiceDialog = ({
     useState(false)
   const [showCreateCustomerDialog, setShowCreateCustomerDialog] =
     useState(false)
+  const [mobileView, setMobileView] = useState('products') // 'products' | 'cart'
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
 
   const [selectedProducts, setSelectedProducts] = useState([])
 
@@ -167,8 +121,25 @@ const CreateInvoiceDialog = ({
   const [invoice, setInvoice] = useState(null)
   const [banks, setBanks] = useState([])
 
+  // ====== CONTRACT PRODUCT SELECTION ======
+  const [selectedContractProducts, setSelectedContractProducts] = useState({})
+  const [isPrintContract, setIsPrintContract] = useState(false)
+
   const handleStartDateChange = (productId, date) => {
     setProductStartDate((prev) => ({ ...prev, [productId]: date }))
+  }
+
+  // Handle contract product selection
+  const handleContractProductToggle = (productId, checked) => {
+    setSelectedContractProducts((prev) => {
+      const next = { ...prev, [productId]: checked }
+
+      // Auto-sync isPrintContract checkbox
+      const hasAnySelected = Object.values(next).some(val => val === true)
+      setIsPrintContract(hasAnySelected)
+
+      return next
+    })
   }
 
   useEffect(() => {
@@ -216,6 +187,8 @@ const CreateInvoiceDialog = ({
     setIsCreateReceipt(false)
     setHasPrintQuotation(false)
     setHasPrintInvoice(false)
+    setSelectedContractProducts({})
+    setIsPrintContract(false)
   }, [open])
 
   const form = useForm({
@@ -1014,9 +987,315 @@ const CreateInvoiceDialog = ({
     } ``
   }
 
+  // Expose mobile view control to window for mobile nav
+  useEffect(() => {
+    if (!isDesktop && open) {
+      window.__invoiceDialog = {
+        setMobileView,
+        selectedProductsCount: selectedProducts.length
+      }
+    }
+    return () => {
+      delete window.__invoiceDialog
+    }
+  }, [isDesktop, open, setMobileView, selectedProducts.length])
+
+  // Mobile: Render as full page
+  if (!isDesktop && open) {
+    return (
+      <>
+        <div className="fixed inset-0 top-0 bottom-16 bg-background z-50 flex flex-col">
+          {/* Mobile Header */}
+          <div className="px-4 py-3 border-b flex items-center justify-between bg-background">
+            <div className="flex items-center gap-2">
+              {mobileView === 'cart' && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMobileView('products')}
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </Button>
+              )}
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {mobileView === 'products' ? 'Chọn sản phẩm' : 'Giỏ hàng'}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {mobileView === 'products'
+                    ? `${selectedProducts.length} sản phẩm đã chọn`
+                    : 'Hoàn tất đơn hàng'
+                  }
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Form Content */}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
+              {mobileView === 'products' ? (
+                /* View 1: Product Selection (Columns 1+2) */
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  {/* Search Bar */}
+                  <div className="p-4 border-b bg-background/80 backdrop-blur-sm">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Tìm kiếm sản phẩm..."
+                        className="pl-9"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      Hiển thị {filteredProducts.length} / {products.length} sản phẩm
+                    </div>
+                  </div>
+
+                  {/* Category + Product Grid */}
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Category Sidebar - Horizontal scroll with filter */}
+                    <div className="border-b p-2 flex items-center gap-2">
+                      <div className="flex-1 overflow-x-auto">
+                        <div className="flex gap-2">
+                          {/* All Categories Option */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCategory('all')}
+                            className={cn(
+                              "px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all",
+                              selectedCategory === 'all'
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted/50 text-muted-foreground hover:bg-muted/80"
+                            )}
+                          >
+                            Tất cả
+                          </button>
+
+                          {categories.map((category) => {
+                            const isActive = selectedCategory === category.id
+                            return (
+                              <button
+                                key={category.id}
+                                type="button"
+                                onClick={() => setSelectedCategory(category.id)}
+                                className={cn(
+                                  "px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all",
+                                  isActive
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted/50 text-muted-foreground hover:bg-muted/80"
+                                )}
+                              >
+                                {category.name}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Filter Dropdown */}
+                      <Popover open={showCategoryDropdown} onOpenChange={setShowCategoryDropdown}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                            </svg>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-56 p-2"
+                          side="bottom"
+                          align="end"
+                          sideOffset={8}
+                          alignOffset={-4}
+                        >
+                          <div className="space-y-1 max-h-[40vh] flex flex-col overflow-y-auto">
+                            {/* All Categories Option */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedCategory('all')
+                                setShowCategoryDropdown(false)
+                              }}
+                              className={cn(
+                                "w-full text-left px-3 py-1.5 rounded-md text-xs transition-colors",
+                                selectedCategory === 'all'
+                                  ? "bg-primary text-primary-foreground"
+                                  : "text-muted-foreground hover:bg-muted"
+                              )}
+                            >
+                              Tất cả danh mục
+                            </button>
+
+                            {categories?.length > 0 ? categories.map((category) => {
+                              const isActive = selectedCategory === category.id
+                              return (
+                                <button
+                                  key={category.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedCategory(category.id)
+                                    setShowCategoryDropdown(false)
+                                  }}
+                                  className={cn(
+                                    "w-full text-left px-3 py-1.5 rounded-md text-xs transition-colors",
+                                    isActive
+                                      ? "bg-primary text-primary-foreground"
+                                      : "text-muted-foreground hover:bg-muted"
+                                  )}
+                                >
+                                  {category.name}
+                                </button>
+                              )
+                            }) : (
+                              <div className="px-3 py-2 text-xs text-muted-foreground text-center">
+                                Không có danh mục
+                              </div>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* Product Grid - Vertical scroll */}
+                    <div className="flex-1 overflow-y-auto">
+                      <ProductGrid
+                        products={filteredProducts}
+                        onAddProduct={handleAddProduct}
+                        selectedProductIds={selectedProducts.map(p => p.id)}
+                        loading={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* View 2: Cart & Checkout (Columns 3+4) - Single Scroll */
+                <div className="flex-1 overflow-y-auto">
+                  <div className="flex flex-col">
+                    {/* Shopping Cart */}
+                    <div className="[&>div]:!w-full [&>div]:border-0 [&>div]:!bg-transparent [&>div]:shadow-none">
+                      <ShoppingCart
+                        selectedProducts={selectedProducts}
+                        quantities={quantities}
+                        selectedUnitIds={selectedUnitIds}
+                        priceOverrides={priceOverrides}
+                        discounts={discounts}
+                        selectedTaxes={selectedTaxes}
+                        notes={notes}
+                        giveaway={giveaway}
+                        selectedContractProducts={selectedContractProducts}
+                        onContractProductToggle={handleContractProductToggle}
+                        onQuantityChange={handleQuantityChange}
+                        onUnitChange={handleUnitChange}
+                        onPriceChange={handlePriceChange}
+                        onDiscountChange={handleDiscountChange}
+                        onTaxChange={handleTaxChange}
+                        onNoteChange={handleNoteChange}
+                        onGiveawayChange={handleGiveawayChange}
+                        onRemoveProduct={handleRemoveProduct}
+                        getUnitOptions={getUnitOptions}
+                        getDisplayPrice={getDisplayPrice}
+                        calculateSubTotal={calculateSubTotal}
+                        calculateTaxForProduct={calculateTaxForProduct}
+                      />
+                    </div>
+
+                    {/* Invoice Sidebar */}
+                    <div className="border-t [&>div]:!w-full [&>div]:!max-w-full">
+                      <InvoiceSidebar
+                        form={form}
+                        customers={customers}
+                        selectedCustomer={selectedCustomer}
+                        onSelectCustomer={(customer) => {
+                          setSelectedCustomer(customer)
+                          if (customer) {
+                            form.setValue('customerId', customer.id.toString())
+                            handleSelectCustomer(customer)
+                          } else {
+                            form.setValue('customerId', '')
+                          }
+                        }}
+                        paymentMethods={paymentMethods}
+                        calculateSubTotal={handleCalculateSubTotalInvoice}
+                        calculateTotalTax={calculateTotalTax}
+                        calculateTotalDiscount={calculateTotalDiscount}
+                        calculateTotalAmount={calculateTotalAmount}
+                        calculateExpenses={calculateExpenses}
+                        onSubmit={onSubmit}
+                        loading={loading}
+                        onShowCreateCustomer={() => setShowCreateCustomerDialog(true)}
+                        onShowUpdateCustomer={() => setShowUpdateCustomerDialog(true)}
+                        onPrintInvoice={() => setHasPrintInvoice(true)}
+                        onPrintQuotation={() => setHasPrintQuotation(true)}
+                        isPrintContract={isPrintContract}
+                        setIsPrintContract={setIsPrintContract}
+                        selectedContractProducts={selectedContractProducts}
+                      />
+                    </div>
+
+                    {/* Fixed "Buy More" Button - Mobile Only */}
+                    {/* <Button
+                      type="button"
+                      variant="default"
+                      className="fixed bottom-24 right-4 rounded-full shadow-lg md:hidden"
+                      size="lg"
+                      onClick={() => setMobileView('products')}
+                    >
+                      <Plus className="h-5 w-5 mr-2" />
+                      Mua thêm
+                    </Button> */}
+                  </div>
+                </div>
+              )}
+            </form>
+          </Form>
+        </div>
+
+        {/* Supporting Dialogs */}
+        {showUpdateCustomerDialog && (
+          <UpdateCustomerDialog
+            open={showUpdateCustomerDialog}
+            onOpenChange={setShowUpdateCustomerDialog}
+            customer={selectedCustomer}
+          />
+        )}
+        {showCreateCustomerDialog && (
+          <CreateCustomerDialog
+            open={showCreateCustomerDialog}
+            onOpenChange={setShowCreateCustomerDialog}
+          />
+        )}
+        {showCreateProductDialog && (
+          <CreateProductDialog
+            open={showCreateProductDialog}
+            onOpenChange={setShowCreateProductDialog}
+          />
+        )}
+      </>
+    )
+  }
+
+  // Desktop: Render as Dialog
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange} {...props}>
+      <Dialog open={open} onOpenChange={onOpenChange} modal={isDesktop} {...props}>
         {showTrigger && (
           <DialogTrigger asChild>
             <Button className="mx-2" variant="outline" size="sm">
@@ -1026,7 +1305,7 @@ const CreateInvoiceDialog = ({
           </DialogTrigger>
         )}
 
-        <DialogContent className="max-w-screen max-h-screen w-screen h-screen p-0 m-0">
+        <DialogContent className="max-w-screen w-screen p-0 m-0 h-[calc(100vh-64px)] md:max-h-screen md:h-screen">
           <DialogHeader className="px-6 pt-4">
             <DialogTitle>
               Tạo hóa đơn mới
@@ -1088,6 +1367,8 @@ const CreateInvoiceDialog = ({
                   selectedTaxes={selectedTaxes}
                   notes={notes}
                   giveaway={giveaway}
+                  selectedContractProducts={selectedContractProducts}
+                  onContractProductToggle={handleContractProductToggle}
                   onQuantityChange={handleQuantityChange}
                   onUnitChange={handleUnitChange}
                   onPriceChange={handlePriceChange}
@@ -1128,6 +1409,9 @@ const CreateInvoiceDialog = ({
                   onShowUpdateCustomer={() => setShowUpdateCustomerDialog(true)}
                   onPrintInvoice={() => setHasPrintInvoice(true)}
                   onPrintQuotation={() => setHasPrintQuotation(true)}
+                  isPrintContract={isPrintContract}
+                  setIsPrintContract={setIsPrintContract}
+                  selectedContractProducts={selectedContractProducts}
                 />
               </div>
             </form>

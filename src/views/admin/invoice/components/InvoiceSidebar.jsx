@@ -62,6 +62,9 @@ const InvoiceSidebar = ({
   onShowUpdateCustomer,
   onPrintInvoice,
   onPrintQuotation,
+  isPrintContract,
+  setIsPrintContract,
+  selectedContractProducts = {},
 }) => {
   const dispatch = useDispatch()
   const [newCustomerData, setNewCustomerData] = useState({
@@ -72,7 +75,6 @@ const InvoiceSidebar = ({
     represent: '',
   })
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false)
-  const [isPrintContract, setIsPrintContract] = useState(false)
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(null)
   const [openOrderDatePicker, setOpenOrderDatePicker] = useState(false)
   const [openDeliveryDatePicker, setOpenDeliveryDatePicker] = useState(false)
@@ -124,6 +126,21 @@ const InvoiceSidebar = ({
     } finally {
       setIsCreatingCustomer(false)
     }
+  }
+
+  // Handle print contract checkbox with validation
+  const handlePrintContractChange = (checked) => {
+    if (checked) {
+      // Check if at least one product is selected for contract
+      const hasSelectedProducts = Object.values(selectedContractProducts).some(val => val === true)
+
+      if (!hasSelectedProducts) {
+        toast.error('Vui lòng chọn ít nhất 1 sản phẩm để in hợp đồng')
+        return
+      }
+    }
+
+    setIsPrintContract(checked)
   }
 
   const subtotal = calculateSubTotal()
@@ -267,9 +284,9 @@ const InvoiceSidebar = ({
                   )}
                 />
 
-                {/* Inline Create Customer Form - visible only when no customer selected */}
+                {/* Customer Input Fields - Auto-create on submit */}
                 <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
-                  <div className="text-xs font-medium text-muted-foreground">Hoặc tạo mới</div>
+                  <div className="text-xs font-medium text-muted-foreground">Hoặc nhập thông tin khách hàng mới</div>
 
                   <FormItem className="space-y-1">
                     <FormLabel className="text-xs">Tên khách hàng</FormLabel>
@@ -296,7 +313,7 @@ const InvoiceSidebar = ({
                   </FormItem>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Email</FormLabel>
+                    <FormLabel className="text-xs">Email (tùy chọn)</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Nhập email"
@@ -319,17 +336,9 @@ const InvoiceSidebar = ({
                     </FormControl>
                   </FormItem>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-8 text-xs"
-                    onClick={handleCreateCustomerInline}
-                    disabled={isCreatingCustomer}
-                    loading={isCreatingCustomer}
-                  >
-                    {isCreatingCustomer ? 'Đang tạo...' : 'Tạo khách hàng mới'}
-                  </Button>
+                  <p className="text-[10px] text-muted-foreground italic">
+                    * Khách hàng sẽ được tạo tự động khi lưu hóa đơn
+                  </p>
                 </div>
               </>
             )}
@@ -342,7 +351,7 @@ const InvoiceSidebar = ({
             control={form.control}
             name="orderDate"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Ngày đặt hàng</FormLabel>
                 <Popover open={openOrderDatePicker} onOpenChange={setOpenOrderDatePicker}>
                   <PopoverTrigger asChild>
@@ -476,7 +485,7 @@ const InvoiceSidebar = ({
           <Checkbox
             id="print-contract"
             checked={isPrintContract}
-            onCheckedChange={setIsPrintContract}
+            onCheckedChange={handlePrintContractChange}
           />
           <label
             htmlFor="print-contract"
@@ -487,7 +496,7 @@ const InvoiceSidebar = ({
         </div>
 
         {isPrintContract && (
-          <div className="mb-2">
+          <div className="mb-2 flex flex-col">
             <label className="text-sm font-medium">Ngày dự kiến giao hàng</label>
             <Popover open={openDeliveryDatePicker} onOpenChange={setOpenDeliveryDatePicker}>
               <PopoverTrigger asChild>
@@ -530,7 +539,7 @@ const InvoiceSidebar = ({
         </Button>
 
         {/* Create and Print Buttons */}
-        <div className="space-y-2">
+        <div className="space-y-2 flex flex-col">
           <Button
             type="button"
             className="w-full"

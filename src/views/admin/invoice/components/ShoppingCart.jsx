@@ -19,6 +19,8 @@ const ShoppingCart = ({
   selectedTaxes,
   notes,
   giveaway,
+  selectedContractProducts = {},
+  onContractProductToggle,
   onQuantityChange,
   onUnitChange,
   onPriceChange,
@@ -60,6 +62,20 @@ const ShoppingCart = ({
     )
   }
 
+
+  // Calculate if all products are selected for contract
+  const allProductsSelected = selectedProducts.length > 0 &&
+    selectedProducts.every(product => selectedContractProducts[product.id])
+
+  const someProductsSelected = selectedProducts.some(product => selectedContractProducts[product.id])
+
+  // Handle select all / deselect all
+  const handleSelectAllForContract = (checked) => {
+    selectedProducts.forEach(product => {
+      onContractProductToggle?.(product.id, checked)
+    })
+  }
+
   return (
     <div className="w-[560px] bg-gradient-to-b border-l from-background to-muted/20 flex flex-col relative">
       {/* Left divider */}
@@ -69,14 +85,33 @@ const ShoppingCart = ({
       <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
 
       {/* Header */}
-      <div className="p-4 border-b bg-background/80 backdrop-blur-sm">
+      <div className="p-4 border-b bg-background/80 backdrop-blur-sm space-y-2">
         <h3 className="font-semibold flex items-center gap-2">
           <CartIcon className="h-4 w-4" />
-          Giỏ hàng
+          <span className="hidden md:inline">Giỏ hàng</span>
+          <span className="md:hidden">Chi tiết đơn hàng</span>
           <span className="text-xs text-muted-foreground">
             ({selectedProducts.length})
           </span>
         </h3>
+
+        {/* Select All Checkbox */}
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={allProductsSelected}
+            onCheckedChange={handleSelectAllForContract}
+            className="h-4 w-4"
+            ref={(el) => {
+              if (el && someProductsSelected && !allProductsSelected) {
+                el.setAttribute('data-state', 'indeterminate')
+              }
+            }}
+          />
+          <label className="text-xs text-muted-foreground cursor-pointer flex-1" onClick={() => handleSelectAllForContract(!allProductsSelected)}>
+            <span className="hidden sm:inline">Chọn tất cả sản phẩm để tạo hợp đồng</span>
+            <span className="sm:hidden">Chọn tất cả để tạo hợp đồng</span>
+          </label>
+        </div>
       </div>
 
       {/* Cart Items */}
@@ -94,6 +129,7 @@ const ShoppingCart = ({
             const total = subtotal + taxAmount
             const productTaxes = product?.prices?.[0]?.taxes || []
             const selectedProductTaxes = selectedTaxes[product.id] || []
+            const isSelectedForContract = selectedContractProducts[product.id] || false
 
             return (
               <div
@@ -102,6 +138,15 @@ const ShoppingCart = ({
               >
                 {/* Main Product Row */}
                 <div className="flex items-start gap-3">
+                  {/* Contract Selection Checkbox */}
+                  <div className="flex items-center pt-5">
+                    <Checkbox
+                      checked={isSelectedForContract}
+                      onCheckedChange={(checked) => onContractProductToggle?.(product.id, checked)}
+                      className="h-4 w-4"
+                    />
+                  </div>
+
                   {/* Product Image */}
                   <div className="w-16 h-16 rounded-md bg-muted overflow-hidden shrink-0 border">
                     {product.image ? (

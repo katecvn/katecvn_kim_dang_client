@@ -7,6 +7,16 @@ const MobileNavigation = ({ onCategoryClick }) => {
   const location = useLocation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activeNav, setActiveNav] = useState(null)
+  const [cartCount, setCartCount] = useState(0)
+
+  // Poll for cart count changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const count = window.__invoiceDialog?.selectedProductsCount || 0
+      setCartCount(count)
+    }, 500)
+    return () => clearInterval(interval)
+  }, [])
 
   const navItems = [
     {
@@ -19,7 +29,7 @@ const MobileNavigation = ({ onCategoryClick }) => {
     {
       label: 'Đơn hàng',
       icon: Package,
-      path: '/purchase-order',
+      path: '/invoice',
       isCenter: false
     },
     {
@@ -29,9 +39,9 @@ const MobileNavigation = ({ onCategoryClick }) => {
       isCenter: true
     },
     {
-      label: 'Hóa đơn',
+      label: 'Đơn mua',
       icon: Receipt,
-      path: '/invoice',
+      path: '/purchase-order',
       isCenter: false
     },
     {
@@ -82,13 +92,28 @@ const MobileNavigation = ({ onCategoryClick }) => {
           return (
             <div key={item.path} className="flex-1 flex justify-center">
               {item.isCenter ? (
-                // Center floating action button
-                <Link
-                  to={item.path}
-                  onClick={() => handleNavClick(item.path)}
+                // Center floating action button with badge
+                <button
+                  onClick={() => {
+                    // If invoice dialog is open, switch to cart view
+                    if (window.__invoiceDialog) {
+                      window.__invoiceDialog.setMobileView('cart')
+                    } else {
+                      // Otherwise navigate normally
+                      handleNavClick(item.path)
+                      window.location.href = item.path
+                    }
+                  }}
                   className="absolute -top-6 left-1/2 -translate-x-1/2"
                 >
                   <div className="relative">
+                    {/* Cart Badge */}
+                    {cartCount > 0 && (
+                      <div className="absolute -top-1 -right-1 z-10 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full border-2 border-background">
+                        {cartCount}
+                      </div>
+                    )}
+
                     {/* Glow effect */}
                     <div className={cn(
                       "absolute inset-0 rounded-full blur-xl transition-all duration-300",
@@ -113,7 +138,7 @@ const MobileNavigation = ({ onCategoryClick }) => {
                       {item.label}
                     </span>
                   </div>
-                </Link>
+                </button>
               ) : item.isToggleSidebar ? (
                 // Category button - toggle sidebar
                 <button

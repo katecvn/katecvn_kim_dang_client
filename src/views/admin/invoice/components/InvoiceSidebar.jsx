@@ -49,6 +49,8 @@ const InvoiceSidebar = ({
   form,
   customers,
   selectedCustomer,
+  customerEditData,
+  onCustomerEditDataChange,
   onSelectCustomer,
   paymentMethods,
   calculateSubTotal,
@@ -65,6 +67,8 @@ const InvoiceSidebar = ({
   isPrintContract,
   setIsPrintContract,
   selectedContractProducts = {},
+  expectedDeliveryDate,
+  onExpectedDeliveryDateChange,
 }) => {
   const dispatch = useDispatch()
   const [newCustomerData, setNewCustomerData] = useState({
@@ -72,12 +76,15 @@ const InvoiceSidebar = ({
     phone: '',
     email: '',
     address: '',
-    represent: '',
+    identityCard: '',
+    identityDate: null,
+    identityPlace: '',
   })
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false)
-  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(null)
   const [openOrderDatePicker, setOpenOrderDatePicker] = useState(false)
   const [openDeliveryDatePicker, setOpenDeliveryDatePicker] = useState(false)
+  const [openIdentityDatePicker, setOpenIdentityDatePicker] = useState(false)
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false)
 
   const handleCreateCustomerInline = async () => {
     if (!newCustomerData.name.trim()) {
@@ -92,6 +99,18 @@ const InvoiceSidebar = ({
       toast.error('Vui lòng nhập địa chỉ')
       return
     }
+    if (!newCustomerData.identityCard.trim()) {
+      toast.error('Vui lòng nhập số CMND/CCCD')
+      return
+    }
+    if (!newCustomerData.identityDate) {
+      toast.error('Vui lòng chọn ngày cấp')
+      return
+    }
+    if (!newCustomerData.identityPlace.trim()) {
+      toast.error('Vui lòng nhập nơi cấp')
+      return
+    }
 
     try {
       setIsCreatingCustomer(true)
@@ -102,7 +121,9 @@ const InvoiceSidebar = ({
           phone: newCustomerData.phone,
           email: newCustomerData.email,
           address: newCustomerData.address,
-          represent: newCustomerData.represent || '',
+          identityCard: newCustomerData.identityCard || '',
+          identityDate: newCustomerData.identityDate || null,
+          identityPlace: newCustomerData.identityPlace || '',
           note: '',
           type: 'company',
           taxCode: '',
@@ -116,7 +137,9 @@ const InvoiceSidebar = ({
           phone: '',
           email: '',
           address: '',
-          represent: '',
+          identityCard: '',
+          identityDate: null,
+          identityPlace: '',
         })
         onSelectCustomer(newCustomer)
       }
@@ -126,6 +149,29 @@ const InvoiceSidebar = ({
     } finally {
       setIsCreatingCustomer(false)
     }
+  }
+
+  const handleLoadCustomerToEdit = (customer) => {
+    onCustomerEditDataChange({
+      name: customer?.name || '',
+      phone: customer?.phone || '',
+      email: customer?.email || '',
+      address: customer?.address || '',
+      identityCard: customer?.identityCard || '',
+      identityDate: customer?.identityDate || null,
+      identityPlace: customer?.identityPlace || '',
+    })
+    setIsEditingCustomer(true)
+  }
+
+  // Auto-load customer data when selected
+  const handleAutoLoadCustomer = (customer) => {
+    handleLoadCustomerToEdit(customer)
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditingCustomer(false)
+    onCustomerEditDataChange(null)
   }
 
   // Handle print contract checkbox with validation
@@ -166,70 +212,182 @@ const InvoiceSidebar = ({
             <label className="text-sm font-medium">Khách hàng</label>
 
             {selectedCustomer ? (
-              <div className="border rounded-lg p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src={`https://ui-avatars.com/api/?bold=true&background=random&name=${selectedCustomer?.name}`}
-                      alt={selectedCustomer?.name}
-                    />
-                    <AvatarFallback>
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">
-                      {selectedCustomer?.name}
+              <>
+                <div className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={`https://ui-avatars.com/api/?bold=true&background=random&name=${selectedCustomer?.name}`}
+                        alt={selectedCustomer?.name}
+                      />
+                      <AvatarFallback>
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {selectedCustomer?.name}
+                      </div>
+                      {selectedCustomer?.code && (
+                        <div className="text-xs text-muted-foreground">
+                          {selectedCustomer?.code}
+                        </div>
+                      )}
                     </div>
-                    {selectedCustomer?.code && (
-                      <div className="text-xs text-muted-foreground">
-                        {selectedCustomer?.code}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => onSelectCustomer(null)}
+                    >
+                      <CheckIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-1.5 text-xs">
+                    {selectedCustomer?.phone && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MobileIcon className="h-3 w-3" />
+                        <a
+                          href={`tel:${selectedCustomer?.phone}`}
+                          className="hover:text-primary"
+                        >
+                          {selectedCustomer?.phone}
+                        </a>
+                      </div>
+                    )}
+                    {selectedCustomer?.email && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-3 w-3" />
+                        <a
+                          href={`mailto:${selectedCustomer?.email}`}
+                          className="hover:text-primary truncate"
+                        >
+                          {selectedCustomer?.email}
+                        </a>
+                      </div>
+                    )}
+                    {selectedCustomer?.address && (
+                      <div className="flex items-start gap-2 text-muted-foreground">
+                        <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                        <span className="line-clamp-2">{selectedCustomer?.address}</span>
                       </div>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => onSelectCustomer(null)}
-                  >
-                    <CheckIcon className="h-4 w-4" />
-                  </Button>
                 </div>
 
+                {/* Customer Edit Fields - Always visible when customer selected */}
                 <Separator />
+                <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                  <div className="text-xs font-medium text-muted-foreground">Thông tin khách hàng (có thể sửa)</div>
 
-                <div className="space-y-1.5 text-xs">
-                  {selectedCustomer?.phone && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MobileIcon className="h-3 w-3" />
-                      <a
-                        href={`tel:${selectedCustomer?.phone}`}
-                        className="hover:text-primary"
-                      >
-                        {selectedCustomer?.phone}
-                      </a>
-                    </div>
-                  )}
-                  {selectedCustomer?.email && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Mail className="h-3 w-3" />
-                      <a
-                        href={`mailto:${selectedCustomer?.email}`}
-                        className="hover:text-primary truncate"
-                      >
-                        {selectedCustomer?.email}
-                      </a>
-                    </div>
-                  )}
-                  {selectedCustomer?.address && (
-                    <div className="flex items-start gap-2 text-muted-foreground">
-                      <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                      <span className="line-clamp-2">{selectedCustomer?.address}</span>
-                    </div>
-                  )}
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Tên khách hàng</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập tên"
+                        value={customerEditData?.name || ''}
+                        onChange={(e) => onCustomerEditDataChange({ ...customerEditData, name: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Số điện thoại</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập SĐT"
+                        value={customerEditData?.phone || ''}
+                        onChange={(e) => onCustomerEditDataChange({ ...customerEditData, phone: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Email (tùy chọn)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập email"
+                        value={customerEditData?.email || ''}
+                        onChange={(e) => onCustomerEditDataChange({ ...customerEditData, email: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Địa chỉ</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập địa chỉ"
+                        value={customerEditData?.address || ''}
+                        onChange={(e) => onCustomerEditDataChange({ ...customerEditData, address: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">CMND/CCCD</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập số CMND/CCCD"
+                        value={customerEditData?.identityCard || ''}
+                        onChange={(e) => onCustomerEditDataChange({ ...customerEditData, identityCard: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Ngày cấp</FormLabel>
+                    <Popover open={openIdentityDatePicker} onOpenChange={setOpenIdentityDatePicker}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              'h-8 w-full justify-start text-left font-normal text-xs',
+                              !customerEditData?.identityDate && 'text-muted-foreground'
+                            )}
+                          >
+                            <Calendar className="mr-2 h-3 w-3" />
+                            {customerEditData?.identityDate
+                              ? new Date(customerEditData.identityDate).toLocaleDateString('vi-VN')
+                              : 'Chọn ngày cấp'}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <DatePicker
+                          mode="single"
+                          selected={customerEditData?.identityDate ? new Date(customerEditData.identityDate) : undefined}
+                          onSelect={(date) => {
+                            onCustomerEditDataChange({ ...customerEditData, identityDate: date ? date.toISOString() : null })
+                            setOpenIdentityDatePicker(false)
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Nơi cấp</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập nơi cấp"
+                        value={customerEditData?.identityPlace || ''}
+                        onChange={(e) => onCustomerEditDataChange({ ...customerEditData, identityPlace: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
                 </div>
-              </div>
+              </>
             ) : (
               <>
                 <FormField
@@ -331,6 +489,62 @@ const InvoiceSidebar = ({
                         placeholder="Nhập địa chỉ"
                         value={newCustomerData.address}
                         onChange={(e) => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">CMND/CCCD</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập số CMND/CCCD"
+                        value={newCustomerData.identityCard}
+                        onChange={(e) => setNewCustomerData({ ...newCustomerData, identityCard: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Ngày cấp</FormLabel>
+                    <Popover open={openIdentityDatePicker} onOpenChange={setOpenIdentityDatePicker}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              'h-8 w-full justify-start text-left font-normal text-xs',
+                              !newCustomerData.identityDate && 'text-muted-foreground'
+                            )}
+                          >
+                            <Calendar className="mr-2 h-3 w-3" />
+                            {newCustomerData.identityDate
+                              ? new Date(newCustomerData.identityDate).toLocaleDateString('vi-VN')
+                              : 'Chọn ngày cấp'}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <DatePicker
+                          mode="single"
+                          selected={newCustomerData.identityDate ? new Date(newCustomerData.identityDate) : undefined}
+                          onSelect={(date) => {
+                            setNewCustomerData({ ...newCustomerData, identityDate: date ? date.toISOString() : null })
+                            setOpenIdentityDatePicker(false)
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Nơi cấp</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập nơi cấp"
+                        value={newCustomerData.identityPlace}
+                        onChange={(e) => setNewCustomerData({ ...newCustomerData, identityPlace: e.target.value })}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -518,7 +732,7 @@ const InvoiceSidebar = ({
                   mode="single"
                   selected={expectedDeliveryDate ? new Date(expectedDeliveryDate) : undefined}
                   onSelect={(date) => {
-                    setExpectedDeliveryDate(date ? date.toISOString() : null)
+                    onExpectedDeliveryDateChange(date ? date.toISOString() : null)
                     setOpenDeliveryDatePicker(false)
                   }}
                 />

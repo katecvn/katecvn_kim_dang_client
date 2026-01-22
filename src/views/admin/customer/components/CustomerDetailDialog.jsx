@@ -18,6 +18,9 @@ import {
   Mail,
   MapPin,
   UserIcon,
+  CreditCard,
+  CalendarDays,
+  MapPinned,
 } from 'lucide-react'
 import { useDispatch } from 'react-redux'
 import { getExpiriesByCustomerId } from '@/stores/ExpirySlice'
@@ -78,7 +81,7 @@ const CustomerDetailDialog = ({ customer, showTrigger = true, ...props }) => {
         setTotalItems(res.data.totalItems)
         setTotalPages(res.data.totalPages)
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [customer?.id, dispatch, page, limit])
 
   useEffect(() => {
@@ -307,6 +310,41 @@ const CustomerDetailDialog = ({ customer, showTrigger = true, ...props }) => {
                       </div>
                       {customer?.note || 'Không có ghi chú'}
                     </div>
+
+                    {/* Identity Information */}
+                    {(customer?.identityCard || customer?.identityDate || customer?.identityPlace) && (
+                      <>
+                        <div className="my-2 border-t" />
+                        <div className="font-medium text-sm mb-2">Thông tin CMND/CCCD</div>
+
+                        {customer?.identityCard && (
+                          <div className="flex items-center text-primary hover:text-secondary-foreground">
+                            <div className="mr-2 h-4 w-4">
+                              <CreditCard className="h-4 w-4" />
+                            </div>
+                            <span>{customer.identityCard}</span>
+                          </div>
+                        )}
+
+                        {customer?.identityDate && (
+                          <div className="flex items-center text-primary hover:text-secondary-foreground">
+                            <div className="mr-2 h-4 w-4">
+                              <CalendarDays className="h-4 w-4" />
+                            </div>
+                            <span>Ngày cấp: {dateFormat(customer.identityDate)}</span>
+                          </div>
+                        )}
+
+                        {customer?.identityPlace && (
+                          <div className="flex items-center text-primary hover:text-secondary-foreground">
+                            <div className="mr-2 h-4 w-4">
+                              <MapPinned className="h-4 w-4" />
+                            </div>
+                            <span>{customer.identityPlace}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

@@ -67,6 +67,7 @@ const CreateInvoiceDialog = ({
   const isDesktop = useMediaQuery('(min-width: 768px)')
 
   const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [customerEditData, setCustomerEditData] = useState(null)
   const [productStartDate, setProductStartDate] = useState({})
   const [hasPrintQuotation, setHasPrintQuotation] = useState(false)
   const [applyWarrantyItems, setApplyWarrantyItems] = useState({})
@@ -124,6 +125,7 @@ const CreateInvoiceDialog = ({
   // ====== CONTRACT PRODUCT SELECTION ======
   const [selectedContractProducts, setSelectedContractProducts] = useState({})
   const [isPrintContract, setIsPrintContract] = useState(false)
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(null)
 
   const handleStartDateChange = (productId, date) => {
     setProductStartDate((prev) => ({ ...prev, [productId]: date }))
@@ -182,6 +184,7 @@ const CreateInvoiceDialog = ({
     setAccountName({})
     setCustomerAccounts([])
     setSelectedCustomer(null)
+    setCustomerEditData(null)
     setTotalAmount('')
     setIsSharing(false)
     setIsCreateReceipt(false)
@@ -189,6 +192,7 @@ const CreateInvoiceDialog = ({
     setHasPrintInvoice(false)
     setSelectedContractProducts({})
     setIsPrintContract(false)
+    setExpectedDeliveryDate(null)
   }, [open])
 
   const form = useForm({
@@ -438,6 +442,18 @@ const CreateInvoiceDialog = ({
   }
 
   const onSubmit = async (data) => {
+    // Validate: must have at least one product
+    if (!selectedProducts || selectedProducts.length === 0) {
+      toast.error('Vui lòng chọn ít nhất 1 sản phẩm')
+      return
+    }
+
+    // Validate: if printing contract, must have expected delivery date
+    if (isPrintContract && !expectedDeliveryDate) {
+      toast.error('Vui lòng chọn ngày dự kiến giao hàng khi in hợp đồng')
+      return
+    }
+
     // validations liên quan expiry/account giữ nguyên
     for (const product of selectedProducts) {
       const selectedAccount = customerAccounts.find(
@@ -566,7 +582,6 @@ const CreateInvoiceDialog = ({
       customerId: data.customerId,
       date: new Date().toISOString(),
       note: data.note,
-      type,
       taxAmount: calculateTotalTax(),
       amount: calculateTotalAmount(),
       discount: calculateTotalDiscount(),
@@ -580,6 +595,12 @@ const CreateInvoiceDialog = ({
       bankAccount: data.paymentMethod === 'transfer' ? data.bankAccount : null,
       dueDate: data.dueDate || null,
       ...(otherExpenses?.price > 0 && { otherExpenses: [otherExpenses] }),
+      ...(customerEditData && { customerUpdateData: customerEditData }),
+      ...(isPrintContract && { 
+        printContract: true, 
+        selectedContractProductIds: Object.keys(selectedContractProducts).filter(id => selectedContractProducts[id]).map(Number),
+        expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate).toISOString() : null
+      }),
     }
 
     if (data.revenueSharing) {
@@ -887,6 +908,18 @@ const CreateInvoiceDialog = ({
   const handleSelectCustomer = async (customer) => {
     setSelectedCustomer(customer)
     form.setValue('customerId', customer?.id.toString())
+    
+    // Initialize customerEditData with customer info
+    setCustomerEditData({
+      name: customer?.name || '',
+      phone: customer?.phone || '',
+      email: customer?.email || '',
+      address: customer?.address || '',
+      represent: customer?.represent || '',
+      identityCard: customer?.identityCard || '',
+      identityDate: customer?.identityDate || null,
+      identityPlace: customer?.identityPlace || '',
+    })
 
     try {
       const res = await dispatch(
@@ -941,8 +974,6 @@ const CreateInvoiceDialog = ({
       form.setValue('bankAccount', null)
     }
   }, [paymentMethod, form])
-
-  const getProductTypeLabel = (type) => productTypeMap[type] || type
 
   // Show available products for quick select (simplified - no complex calculation yet)
   const popularProducts = useMemo(() => {
@@ -1223,6 +1254,8 @@ const CreateInvoiceDialog = ({
                         form={form}
                         customers={customers}
                         selectedCustomer={selectedCustomer}
+                        customerEditData={customerEditData}
+                        onCustomerEditDataChange={setCustomerEditData}
                         onSelectCustomer={(customer) => {
                           setSelectedCustomer(customer)
                           if (customer) {
@@ -1230,6 +1263,7 @@ const CreateInvoiceDialog = ({
                             handleSelectCustomer(customer)
                           } else {
                             form.setValue('customerId', '')
+                            setCustomerEditData(null)
                           }
                         }}
                         paymentMethods={paymentMethods}
@@ -1247,6 +1281,8 @@ const CreateInvoiceDialog = ({
                         isPrintContract={isPrintContract}
                         setIsPrintContract={setIsPrintContract}
                         selectedContractProducts={selectedContractProducts}
+                        expectedDeliveryDate={expectedDeliveryDate}
+                        onExpectedDeliveryDateChange={setExpectedDeliveryDate}
                       />
                     </div>
 
@@ -1290,6 +1326,11 @@ const CreateInvoiceDialog = ({
         )}
       </>
     )
+  }
+
+  // Don't render desktop dialog on mobile to prevent state loss
+  if (!isDesktop) {
+    return null
   }
 
   // Desktop: Render as Dialog
@@ -1388,6 +1429,8 @@ const CreateInvoiceDialog = ({
                   form={form}
                   customers={customers}
                   selectedCustomer={selectedCustomer}
+                  customerEditData={customerEditData}
+                  onCustomerEditDataChange={setCustomerEditData}
                   onSelectCustomer={(customer) => {
                     setSelectedCustomer(customer)
                     if (customer) {
@@ -1395,6 +1438,7 @@ const CreateInvoiceDialog = ({
                       handleSelectCustomer(customer)
                     } else {
                       form.setValue('customerId', '')
+                      setCustomerEditData(null)
                     }
                   }}
                   paymentMethods={paymentMethods}
@@ -1412,6 +1456,8 @@ const CreateInvoiceDialog = ({
                   isPrintContract={isPrintContract}
                   setIsPrintContract={setIsPrintContract}
                   selectedContractProducts={selectedContractProducts}
+                  expectedDeliveryDate={expectedDeliveryDate}
+                  onExpectedDeliveryDateChange={setExpectedDeliveryDate}
                 />
               </div>
             </form>

@@ -111,9 +111,9 @@ const buildFormData = (data) => {
     appendIfPresent('salaryCoefficient[effectiveDate]', sc.effectiveDate)
   }
 
-  // document
-  if (data.document) {
-    formData.append('document', data.document)
+  // image (previously named "document")
+  if (data.image) {
+    formData.append('image', data.image)
   }
 
   // hasExpiry (always send)

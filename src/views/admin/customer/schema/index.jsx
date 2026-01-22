@@ -37,6 +37,15 @@ const createCustomerSchema = z.object({
     .string()
     .max(120, { message: 'Mã số thuế không được vượt quá 120 ký tự' })
     .nullable(),
+  identityCard: z
+    .string()
+    .max(20, { message: 'Số CMND/CCCD không được vượt quá 20 ký tự' })
+    .nullable(),
+  identityDate: z.string().nullable(),
+  identityPlace: z
+    .string()
+    .max(255, { message: 'Nơi cấp không được vượt quá 255 ký tự' })
+    .nullable(),
 })
 
 const updateCustomerSchema = z.object({
@@ -73,6 +82,15 @@ const updateCustomerSchema = z.object({
   taxCode: z
     .string()
     .max(120, { message: 'Mã số thuế không được vượt quá 120 ký tự' })
+    .nullable(),
+  identityCard: z
+    .string()
+    .max(20, { message: 'Số CMND/CCCD không được vượt quá 20 ký tự' })
+    .nullable(),
+  identityDate: z.string().nullable(),
+  identityPlace: z
+    .string()
+    .max(255, { message: 'Nơi cấp không được vượt quá 255 ký tự' })
     .nullable(),
 })
 

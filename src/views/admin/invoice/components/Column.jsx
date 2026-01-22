@@ -92,17 +92,16 @@ export const columns = [
           r.customer.phone === customer.phone &&
           new Date(r.createdAt).getMonth() === new Date(createdAt).getMonth() &&
           new Date(r.createdAt).getFullYear() ===
-            new Date(createdAt).getFullYear() &&
+          new Date(createdAt).getFullYear() &&
           r.id !== id,
       )
 
       return (
         <div
-          className={`${
-            isDuplicate
+          className={`${isDuplicate
               ? 'flex w-40 flex-col break-words bg-yellow-200 p-2'
               : 'flex w-40 flex-col break-words'
-          }`}
+            }`}
           title={customer.name}
         >
           <span className="font-semibold">{customer.name}</span>
@@ -287,6 +286,38 @@ export const columns = [
             {statusObj?.label || 'Không xác định'}
           </Badge>
         </>
+      )
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'expectedDeliveryDate',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Ngày dự kiến giao" />
+    ),
+    cell: ({ row }) => {
+      const deliveryDate = row.original.expectedDeliveryDate
+      const status = row.original.status
+
+      if (!deliveryDate) {
+        return <span className="text-muted-foreground italic">—</span>
+      }
+
+      const date = new Date(deliveryDate)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      // Check if overdue: date < today AND status is not delivered/paid
+      const isOverdue = date < today && status !== 'delivered' && status !== 'paid'
+
+      return (
+        <span
+          className={isOverdue ? 'text-red-500 font-bold' : ''}
+          title={isOverdue ? 'Quá hạn giao hàng' : ''}
+        >
+          {dateFormat(deliveryDate)}
+        </span>
       )
     },
     enableSorting: true,

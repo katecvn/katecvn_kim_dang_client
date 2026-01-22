@@ -35,7 +35,7 @@ const MobileNavigation = ({ onCategoryClick }) => {
     {
       label: 'Giỏ hàng',
       icon: ShoppingCart,
-      path: '/sales-contract',
+      path: '/invoice',
       isCenter: true
     },
     {

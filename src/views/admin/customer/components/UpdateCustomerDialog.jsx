@@ -28,6 +28,13 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { types } from '../data'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { CalendarIcon } from 'lucide-react'
+import { format } from 'date-fns'
+import { vi } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
+import { useState } from 'react'
 
 const UpdateCustomerDialog = ({
   customer,
@@ -50,8 +57,13 @@ const UpdateCustomerDialog = ({
       note: customer.note,
       type: customer.type,
       taxCode: customer.taxCode,
+      identityCard: customer.identityCard || '',
+      identityDate: customer.identityDate || null,
+      identityPlace: customer.identityPlace || '',
     },
   })
+
+  const [openIdentityDatePicker, setOpenIdentityDatePicker] = useState(false)
 
   const dispatch = useDispatch()
   const onSubmit = async (data) => {
@@ -165,6 +177,82 @@ const UpdateCustomerDialog = ({
                       <FormLabel>Mã số thuế</FormLabel>
                       <FormControl>
                         <Input placeholder="Nhập mã số thuế" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="identityCard"
+                  render={({ field }) => (
+                    <FormItem className="mb-2 space-y-1">
+                      <FormLabel>CMND/CCCD</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nhập số CMND/CCCD" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="identityDate"
+                  render={({ field }) => (
+                    <FormItem className="mb-2 space-y-1">
+                      <FormLabel>Ngày cấp</FormLabel>
+                      <Popover open={openIdentityDatePicker} onOpenChange={setOpenIdentityDatePicker}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground',
+                              )}
+                            >
+                              {field.value ? (
+                                format(new Date(field.value), 'dd/MM/yyyy', {
+                                  locale: vi,
+                                })
+                              ) : (
+                                <span>Chọn ngày cấp</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => {
+                              field.onChange(date ? format(date, 'yyyy-MM-dd') : null)
+                              setOpenIdentityDatePicker(false)
+                            }}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date('1900-01-01')
+                            }
+                            initialFocus
+                            locale={vi}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="identityPlace"
+                  render={({ field }) => (
+                    <FormItem className="mb-2 space-y-1">
+                      <FormLabel>Nơi cấp</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nhập nơi cấp" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -189,6 +189,23 @@ const ShoppingCart = ({
 
                     {/* Price and Quantity Row */}
                     <div className="flex items-center gap-2">
+                      {/* Unit Selection */}
+                      <div className="flex-1">
+                        <label className="text-[10px] text-muted-foreground mb-1 block">Đơn vị</label>
+                        <Select value={String(currentUnitId)} onValueChange={(val) => onUnitChange(product.id, val)}>
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {unitOptions.map((opt) => (
+                              <SelectItem key={opt.unitId} value={String(opt.unitId)}>
+                                {opt.unitName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       {/* Editable Price */}
                       <div className="flex-1">
                         <label className="text-[10px] text-muted-foreground mb-1 block">Đơn giá</label>

@@ -36,7 +36,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { EllipsisVertical } from 'lucide-react'
+import { EllipsisVertical, TruckIcon } from 'lucide-react'
+import DeliveryReminderDialog from './DeliveryReminderDialog'
 
 const DataTableToolbar = ({ table, isMyInvoice }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -62,6 +63,8 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
   const [installmentData, setInstallmentData] = useState(null)
   const [installmentFileName, setInstallmentFileName] = useState('hop-dong-tra-cham.docx')
   const [installmentExporting, setInstallmentExporting] = useState(false)
+
+  const [showDeliveryReminderDialog, setShowDeliveryReminderDialog] = useState(false)
 
   const handleShowCreateReceiptDialog = () => {
     const selectedRows = table.getSelectedRowModel().rows
@@ -193,7 +196,7 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
                 <IconFileTypePdf className="mr-2 h-3 w-3" />
                 In HĐ
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => setShowExportDialog(true)}
                 className="text-xs"
               >
@@ -201,14 +204,14 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
                 Xuất file
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={handleShowCreateReceiptDialog}
                 className="text-xs"
               >
                 <PlusIcon className="mr-2 h-3 w-3" />
                 Phiếu thu
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={handleShowCreateSalesContractDialog}
                 className="text-xs"
               >
@@ -597,6 +600,24 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
           </Button>
         </Can>
 
+        {/* Gửi nhắc giao hàng */}
+        <Button
+          className=""
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const selectedRows = table.getSelectedRowModel().rows
+            if (selectedRows.length === 0) {
+              toast.warning('Vui lòng chọn ít nhất 1 đơn hàng')
+              return
+            }
+            setShowDeliveryReminderDialog(true)
+          }}
+        >
+          <TruckIcon className="mr-2 size-4" aria-hidden="true" />
+          Gửi nhắc giao hàng
+        </Button>
+
         {/* Tạo hóa đơn chung */}
         <Can permission={['CREATE_INVOICE']}>
           <Button
@@ -639,6 +660,15 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
             onOpenChange={setShowCreateSalesContractDialog}
             showTrigger={false}
             table={table}
+          />
+        )}
+
+        {/* Dialog gửi nhắc giao hàng */}
+        {showDeliveryReminderDialog && (
+          <DeliveryReminderDialog
+            open={showDeliveryReminderDialog}
+            onOpenChange={setShowDeliveryReminderDialog}
+            selectedInvoices={table.getSelectedRowModel().rows.map((r) => r.original)}
           />
         )}
 

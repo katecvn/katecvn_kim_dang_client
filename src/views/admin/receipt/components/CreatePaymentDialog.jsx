@@ -40,8 +40,11 @@ import { createPaymentSchema } from '../schema'
 import { useLocation } from 'react-router-dom'
 import { getMyReceipts, getReceipts } from '@/stores/ReceiptSlice'
 import { getSetting } from '@/stores/SettingSlice'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Input } from '@/components/ui/input'
+import { generateVietQR, downloadQRCode, copyPaymentInfo } from '@/utils/generate-vietqr'
+import { toast } from 'sonner'
+import { Download, Copy } from 'lucide-react'
 
 const CreatePaymentDialog = ({
   receipt,
@@ -54,6 +57,7 @@ const CreatePaymentDialog = ({
   const dispatch = useDispatch()
   const setting = useSelector((state) => state.setting.setting)
   const banks = setting?.payload?.banks || []
+  const [qrCodeUrl, setQrCodeUrl] = useState(null)
 
   useEffect(() => {
     dispatch(getSetting('general_information'))
@@ -96,6 +100,41 @@ const CreatePaymentDialog = ({
   }
 
   const paymentMethod = form.watch('paymentMethod')
+  const selectedBankAccount = form.watch('bankAccount')
+  const paymentAmount = form.watch('paymentAmount')
+
+  // Generate QR code when bank account and amount are available
+  useEffect(() => {
+    const generateQR = async () => {
+      if (paymentMethod === 'transfer' && selectedBankAccount && paymentAmount) {
+        const content = `Thanh toan ${receipt.code}`
+        const qrUrl = await generateVietQR(selectedBankAccount, paymentAmount, content)
+        setQrCodeUrl(qrUrl)
+      } else {
+        setQrCodeUrl(null)
+      }
+    }
+    generateQR()
+  }, [paymentMethod, selectedBankAccount, paymentAmount, receipt.code])
+
+  const handleDownloadQR = () => {
+    if (qrCodeUrl) {
+      downloadQRCode(qrCodeUrl, `vietqr-${receipt.code}.png`)
+      toast.success('Đã tải QR code')
+    }
+  }
+
+  const handleCopyPaymentInfo = async () => {
+    if (selectedBankAccount && paymentAmount) {
+      const content = `Thanh toan ${receipt.code}`
+      const success = await copyPaymentInfo(selectedBankAccount, paymentAmount, content)
+      if (success) {
+        toast.success('Đã copy thông tin thanh toán')
+      } else {
+        toast.error('Không thể copy thông tin')
+      }
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
@@ -241,6 +280,74 @@ const CreatePaymentDialog = ({
                   )}
                 />
               </div>
+
+              {/* VietQR Display */}
+              {paymentMethod === 'transfer' && qrCodeUrl && (
+                <div className="col-span-2 rounded-lg border p-4">
+                  <div className="text-center">
+                    <h3 className="mb-3 font-semibold">Quét mã QR để thanh toán</h3>
+
+                    {/* QR Code Image */}
+                    <div className="mb-3 flex justify-center">
+                      <img
+                        src={qrCodeUrl}
+                        alt="VietQR Payment"
+                        className="h-64 w-64 rounded border"
+                      />
+                    </div>
+
+                    {/* Bank Details */}
+                    {selectedBankAccount && (
+                      <div className="mb-3 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Ngân hàng:</span>
+                          <span className="font-medium">{selectedBankAccount.bankName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Số TK:</span>
+                          <span className="font-medium">{selectedBankAccount.accountNumber}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Chủ TK:</span>
+                          <span className="font-medium">{selectedBankAccount.accountName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Số tiền:</span>
+                          <span className="font-bold text-primary">
+                            {moneyFormat(paymentAmount)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Nội dung:</span>
+                          <span className="font-medium">Thanh toan {receipt.code}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadQR}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Tải QR
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopyPaymentInfo}
+                      >
+                        <Copy className="mr-2 h-4 w-4" />
+                        Copy thông tin
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid gap-4 md:grid-cols-1">
                 <FormField

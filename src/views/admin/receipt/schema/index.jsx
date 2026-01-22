@@ -29,6 +29,8 @@ const createReceiptSchema = z
     bankAccount: z.any().optional().nullable(),
 
     dueDate: z.string().optional().nullable(),
+
+    isDeposit: z.boolean().optional().default(false),
   })
   .superRefine((data, ctx) => {
     if (data.paymentMethod === 'transfer' && !data.bankAccount) {

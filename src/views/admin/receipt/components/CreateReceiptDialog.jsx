@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -88,6 +89,7 @@ const CreateReceiptDialog = ({
       paymentNote: '',
       bankAccount: null,
       dueDate: null,
+      isDeposit: false,
     }),
   })
 
@@ -323,6 +325,25 @@ const CreateReceiptDialog = ({
                                       />
                                     </FormControl>
                                     <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              {/* Deposit Checkbox */}
+                              <FormField
+                                control={form.control}
+                                name="isDeposit"
+                                render={({ field }) => (
+                                  <FormItem className="flex items-center gap-2 space-y-0">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="cursor-pointer font-normal">
+                                      Đây là phiếu cọc
+                                    </FormLabel>
                                   </FormItem>
                                 )}
                               />

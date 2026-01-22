@@ -122,7 +122,7 @@ const CreateProductDialog = ({
         type: 'multiplier',
         effectiveDate: new Date(),
       },
-      document: new File([], ''),
+      image: new File([], ''),
       hasExpiry: false,
       code: '',
       manageSerial: false,
@@ -231,7 +231,7 @@ const CreateProductDialog = ({
             data.salaryCoefficient.effectiveDate,
           ),
         },
-        document: selectedFile,
+        image: selectedFile,
         hasExpiry: data.hasExpiry,
         manageSerial: data.manageSerial,
         applyWarranty: data.applyWarranty,
@@ -635,10 +635,10 @@ const CreateProductDialog = ({
 
                 <FormField
                   control={form.control}
-                  name="document"
+                  name="image"
                   render={() => (
                     <FormItem className="mb-2 space-y-1">
-                      <FormLabel>Minh chứng</FormLabel>
+                      <FormLabel>Hình ảnh</FormLabel>
                       <FormControl>
                         <Input type="file" onChange={handleFileChange} />
                       </FormControl>

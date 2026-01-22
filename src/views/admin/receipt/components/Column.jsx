@@ -96,7 +96,14 @@ export const columns = [
             className="w-28 cursor-pointer text-primary hover:underline"
             onClick={() => setShowViewReceiptDialog(true)}
           >
-            {row.getValue('code')}
+            <div className="flex items-center gap-2">
+              <span>{row.getValue('code')}</span>
+              {row.original.isDeposit && (
+                <Badge variant="secondary" className="text-xs">
+                  Cọc
+                </Badge>
+              )}
+            </div>
           </div>
         </>
       )

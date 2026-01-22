@@ -50,7 +50,7 @@ const baseCreateSchema = z.object({
   unitConversions: z.array(unitConversionSchema).optional().default([]),
 
   categoryId: z.string().nonempty('Danh mục là bắt buộc'),
-  supplierId: z.string().nonempty('Nhà cung cấp là bắt buộc'),
+  // supplierId: z.string().nonempty('Nhà cung cấp là bắt buộc'),
   unitId: z.string().nonempty('Đơn vị là bắt buộc'),
 
   price: z
@@ -64,7 +64,7 @@ const baseCreateSchema = z.object({
   description: z.string().nullable(),
   note: z.string().nullable(),
   type: z.string().nonempty('Loại là bắt buộc'),
-  source: z.string().nonempty('Nguồn là bắt buộc'),
+  // source: z.string().nonempty('Nguồn là bắt buộc'),
 
   salaryCoefficient: z.object({
     coefficient: z
@@ -77,7 +77,7 @@ const baseCreateSchema = z.object({
     effectiveDate: dateString,
   }),
 
-  document: z.instanceof(File),
+  image: z.instanceof(File),
   hasExpiry: z.boolean().optional(),
   code: z.string().optional(),
 

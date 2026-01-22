@@ -25,11 +25,7 @@ const dictionary = {
 const hundred = 'trăm'
 const digitUnits = 'x nghìn triệu tỉ nghìn'.split(' ')
 
-/**
- * Convert two-digit block to Vietnamese string.
- * @param {string} twoDigitBlock Block of two digits
- * @returns {string} Vietnamese representation of the two digits
- */
+// Convert two-digit block to Vietnamese string.
 function convertTwoDigitBlock(twoDigitBlock) {
   let unitWord = dictionary.units[twoDigitBlock[1]]
   const result = [dictionary.tens[twoDigitBlock[0]]]
@@ -42,11 +38,7 @@ function convertTwoDigitBlock(twoDigitBlock) {
   return result.join(' ')
 }
 
-/**
- * Convert three-digit block to Vietnamese string.
- * @param {string} threeDigitBlock Block of three digits
- * @returns {string} Vietnamese representation of the three digits
- */
+// Convert three-digit block to Vietnamese string.
 function convertThreeDigitBlock(threeDigitBlock) {
   switch (threeDigitBlock.length) {
     case 1:
@@ -66,21 +58,12 @@ function convertThreeDigitBlock(threeDigitBlock) {
   }
 }
 
-/**
- * Get the unit of the current digit block.
- * @param {number} index Index of the block
- * @returns {string} Unit string for the current digit block
- */
+// Get the unit of the current digit block.
 function getDigitUnit(index) {
   return digitUnits[index]
 }
 
-/**
- * Convert a number to its Vietnamese string representation.
- * @param {number|string} input Number to convert
- * @param {string} [currency] Optional currency suffix
- * @returns {string} Vietnamese string representation of the number
- */
+// Convert a number to its Vietnamese string representation.
 function toVietnamese(input, currency = 'đồng') {
   const numberString = parseInt(input, 10) + ''
   if (!numberString || numberString === 'NaN') return ''

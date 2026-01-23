@@ -33,6 +33,8 @@ export const deleteProduct = createAsyncThunk(
 // NEW: form-data helpers (support nested arrays/objects)
 // =====================
 const buildFormData = (data) => {
+  console.log('📦 Data received in buildFormData:', data)  // ← THÊM DÒNG NÀY
+  console.log('📦 supplierId value:', data.supplierId)
   const formData = new FormData()
 
   // Helper append primitive (skip null/undefined)
@@ -86,22 +88,21 @@ const buildFormData = (data) => {
     'conversionFactor',
   ])
 
-  // fields primitives
-  ;[
-    'code',
-    'categoryId',
-    'supplierId',
-    'unitId',
-    'basePrice',
-    'price',
-    'name',
-    'description',
-    'note',
-    'type',
-    'source',
-    'applyWarranty',
-    'manageSerial',
-  ].forEach((field) => appendIfPresent(field, data[field]))
+    // fields primitives
+    ;[
+      'code',
+      'categoryId',
+      'supplierId',
+      'unitId',
+      'basePrice',
+      'price',
+      'name',
+      'description',
+      'note',
+      'type',
+      'applyWarranty',
+      'manageSerial',
+    ].forEach((field) => appendIfPresent(field, data[field]))
 
   // salaryCoefficient
   if (data.salaryCoefficient) {

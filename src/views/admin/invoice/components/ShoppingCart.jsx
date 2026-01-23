@@ -2,13 +2,20 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { X, ShoppingCart as CartIcon, Minus, Plus, Package } from 'lucide-react'
 import { moneyFormat } from '@/utils/money-format'
 import { MoneyInputQuick } from '@/components/custom/MoneyInputQuick'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
+import { getPublicUrl } from '@/utils/file'
 
 const ShoppingCart = ({
   selectedProducts,
@@ -36,25 +43,25 @@ const ShoppingCart = ({
 }) => {
   if (selectedProducts.length === 0) {
     return (
-      <div className="w-[560px] bg-gradient-to-b border-l from-background to-muted/20 flex flex-col relative">
+      <div className="relative flex w-[560px] flex-col border-l bg-gradient-to-b from-background to-muted/20">
         {/* Left divider */}
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 top-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
         {/* Right divider */}
-        <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
+        <div className="absolute bottom-0 right-0 top-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
 
-        <div className="p-4 border-b bg-background/80 backdrop-blur-sm">
-          <h3 className="font-semibold flex items-center gap-2">
+        <div className="border-b bg-background/80 p-4 backdrop-blur-sm">
+          <h3 className="flex items-center gap-2 font-semibold">
             <CartIcon className="h-4 w-4" />
             Giỏ hàng
             <span className="text-xs text-muted-foreground">(0)</span>
           </h3>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
           <CartIcon className="h-16 w-16 text-muted-foreground/30" />
           <p className="mt-4 text-sm text-muted-foreground">
             Chưa có sản phẩm nào
           </p>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="mt-1 text-xs text-muted-foreground">
             Click vào sản phẩm để thêm vào giỏ hàng
           </p>
         </div>
@@ -62,31 +69,33 @@ const ShoppingCart = ({
     )
   }
 
-
   // Calculate if all products are selected for contract
-  const allProductsSelected = selectedProducts.length > 0 &&
-    selectedProducts.every(product => selectedContractProducts[product.id])
+  const allProductsSelected =
+    selectedProducts.length > 0 &&
+    selectedProducts.every((product) => selectedContractProducts[product.id])
 
-  const someProductsSelected = selectedProducts.some(product => selectedContractProducts[product.id])
+  const someProductsSelected = selectedProducts.some(
+    (product) => selectedContractProducts[product.id],
+  )
 
   // Handle select all / deselect all
   const handleSelectAllForContract = (checked) => {
-    selectedProducts.forEach(product => {
+    selectedProducts.forEach((product) => {
       onContractProductToggle?.(product.id, checked)
     })
   }
 
   return (
-    <div className="w-[560px] bg-gradient-to-b border-l from-background to-muted/20 flex flex-col relative">
+    <div className="relative flex w-[560px] flex-col border-l bg-gradient-to-b from-background to-muted/20">
       {/* Left divider */}
-      <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
+      <div className="absolute bottom-0 left-0 top-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
 
       {/* Right divider */}
-      <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
+      <div className="absolute bottom-0 right-0 top-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
 
       {/* Header */}
-      <div className="p-4 border-b bg-background/80 backdrop-blur-sm space-y-2">
-        <h3 className="font-semibold flex items-center gap-2">
+      <div className="space-y-2 border-b bg-background/80 p-4 backdrop-blur-sm">
+        <h3 className="flex items-center gap-2 font-semibold">
           <CartIcon className="h-4 w-4" />
           <span className="hidden md:inline">Giỏ hàng</span>
           <span className="md:hidden">Chi tiết đơn hàng</span>
@@ -107,8 +116,13 @@ const ShoppingCart = ({
               }
             }}
           />
-          <label className="text-xs text-muted-foreground cursor-pointer flex-1" onClick={() => handleSelectAllForContract(!allProductsSelected)}>
-            <span className="hidden sm:inline">Chọn tất cả sản phẩm để tạo hợp đồng</span>
+          <label
+            className="flex-1 cursor-pointer text-xs text-muted-foreground"
+            onClick={() => handleSelectAllForContract(!allProductsSelected)}
+          >
+            <span className="hidden sm:inline">
+              Chọn tất cả sản phẩm để tạo hợp đồng
+            </span>
             <span className="sm:hidden">Chọn tất cả để tạo hợp đồng</span>
           </label>
         </div>
@@ -116,10 +130,11 @@ const ShoppingCart = ({
 
       {/* Cart Items */}
       <ScrollArea className="flex-1">
-        <div className="p-3 space-y-3">
+        <div className="space-y-3 p-3">
           {selectedProducts.map((product, index) => {
             const unitOptions = getUnitOptions(product)
-            const currentUnitId = selectedUnitIds[product.id] || unitOptions[0]?.unitId
+            const currentUnitId =
+              selectedUnitIds[product.id] || unitOptions[0]?.unitId
             const currentPrice = getDisplayPrice(product)
             const currentQuantity = quantities[product.id] || 1
             const currentDiscount = discounts[product.id] || 0
@@ -129,12 +144,14 @@ const ShoppingCart = ({
             const total = subtotal + taxAmount
             const productTaxes = product?.prices?.[0]?.taxes || []
             const selectedProductTaxes = selectedTaxes[product.id] || []
-            const isSelectedForContract = selectedContractProducts[product.id] || false
+            const isSelectedForContract =
+              selectedContractProducts[product.id] || false
+            const imagePath = getPublicUrl(product.image)
 
             return (
               <div
                 key={product.id}
-                className="p-3 bg-card rounded-lg border hover:shadow-sm transition-shadow"
+                className="rounded-lg border bg-card p-3 transition-shadow hover:shadow-sm"
               >
                 {/* Main Product Row */}
                 <div className="flex items-start gap-3">
@@ -142,36 +159,38 @@ const ShoppingCart = ({
                   <div className="flex items-center pt-5">
                     <Checkbox
                       checked={isSelectedForContract}
-                      onCheckedChange={(checked) => onContractProductToggle?.(product.id, checked)}
+                      onCheckedChange={(checked) =>
+                        onContractProductToggle?.(product.id, checked)
+                      }
                       className="h-4 w-4"
                     />
                   </div>
 
                   {/* Product Image */}
-                  <div className="w-16 h-16 rounded-md bg-muted overflow-hidden shrink-0 border">
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md border bg-muted">
                     {product.image ? (
                       <img
-                        src={product.image}
+                        src={imagePath}
                         alt={product.name}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
+                      <div className="flex h-full w-full items-center justify-center">
                         <Package className="h-6 w-6 text-muted-foreground/30" />
                       </div>
                     )}
                   </div>
 
                   {/* Product Info & Controls */}
-                  <div className="flex-1 min-w-0 space-y-2">
+                  <div className="min-w-0 flex-1 space-y-2">
                     {/* Name and Remove Button */}
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm line-clamp-1">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="line-clamp-1 text-sm font-medium">
                           {product.name}
                         </h4>
                         {product.code && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                          <p className="mt-0.5 text-[10px] text-muted-foreground">
                             {product.code}
                           </p>
                         )}
@@ -191,14 +210,22 @@ const ShoppingCart = ({
                     <div className="flex items-center gap-2">
                       {/* Unit Selection */}
                       <div className="flex-1">
-                        <label className="text-[10px] text-muted-foreground mb-1 block">Đơn vị</label>
-                        <Select value={String(currentUnitId)} onValueChange={(val) => onUnitChange(product.id, val)}>
+                        <label className="mb-1 block text-[10px] text-muted-foreground">
+                          Đơn vị
+                        </label>
+                        <Select
+                          value={String(currentUnitId)}
+                          onValueChange={(val) => onUnitChange(product.id, val)}
+                        >
                           <SelectTrigger className="h-8 text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {unitOptions.map((opt) => (
-                              <SelectItem key={opt.unitId} value={String(opt.unitId)}>
+                              <SelectItem
+                                key={opt.unitId}
+                                value={String(opt.unitId)}
+                              >
                                 {opt.unitName}
                               </SelectItem>
                             ))}
@@ -208,24 +235,35 @@ const ShoppingCart = ({
 
                       {/* Editable Price */}
                       <div className="flex-1">
-                        <label className="text-[10px] text-muted-foreground mb-1 block">Đơn giá</label>
+                        <label className="mb-1 block text-[10px] text-muted-foreground">
+                          Đơn giá
+                        </label>
                         <MoneyInputQuick
                           value={currentPrice}
-                          onChange={(num) => onPriceChange(product.id, String(num))}
+                          onChange={(num) =>
+                            onPriceChange(product.id, String(num))
+                          }
                           className="h-8 text-sm"
                         />
                       </div>
 
                       {/* Quantity Controls */}
                       <div className="flex-1">
-                        <label className="text-[10px] text-muted-foreground mb-1 block">Số lượng</label>
+                        <label className="mb-1 block text-[10px] text-muted-foreground">
+                          Số lượng
+                        </label>
                         <div className="flex items-center gap-1">
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => onQuantityChange(product.id, Math.max(1, currentQuantity - 1))}
+                            onClick={() =>
+                              onQuantityChange(
+                                product.id,
+                                Math.max(1, currentQuantity - 1),
+                              )
+                            }
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
@@ -233,15 +271,22 @@ const ShoppingCart = ({
                             type="number"
                             min="1"
                             value={currentQuantity}
-                            onChange={(e) => onQuantityChange(product.id, Number(e.target.value))}
-                            className="h-8 w-14 text-center text-sm p-0"
+                            onChange={(e) =>
+                              onQuantityChange(
+                                product.id,
+                                Number(e.target.value),
+                              )
+                            }
+                            className="h-8 w-14 p-0 text-center text-sm"
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => onQuantityChange(product.id, currentQuantity + 1)}
+                            onClick={() =>
+                              onQuantityChange(product.id, currentQuantity + 1)
+                            }
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
@@ -250,8 +295,10 @@ const ShoppingCart = ({
                     </div>
 
                     {/* Subtotal */}
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <span className="text-xs text-muted-foreground">Thành tiền:</span>
+                    <div className="flex items-center justify-between border-t pt-2">
+                      <span className="text-xs text-muted-foreground">
+                        Thành tiền:
+                      </span>
                       <span className="text-sm font-semibold text-primary">
                         {moneyFormat(subtotal)}
                       </span>
@@ -265,13 +312,15 @@ const ShoppingCart = ({
       </ScrollArea>
 
       {/* Cart Summary */}
-      <div className="p-4 border-t bg-muted/30">
+      <div className="border-t bg-muted/30 p-4">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Tạm tính:</span>
           <span className="text-lg font-bold text-primary">
-            {moneyFormat(selectedProducts.reduce((total, product) => {
-              return total + calculateSubTotal(product.id)
-            }, 0))}
+            {moneyFormat(
+              selectedProducts.reduce((total, product) => {
+                return total + calculateSubTotal(product.id)
+              }, 0),
+            )}
           </span>
         </div>
       </div>

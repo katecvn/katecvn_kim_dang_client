@@ -448,6 +448,21 @@ const CreateInvoiceDialog = ({
       return
     }
 
+    // Validate: customer either selected or filled manually with all required fields
+    const hasSelectedCustomer = !!data.customerId
+    const hasNewCustomerData = customerEditData && 
+      customerEditData.name?.trim() &&
+      customerEditData.phone?.trim() &&
+      customerEditData.address?.trim() &&
+      customerEditData.identityCard?.trim() &&
+      customerEditData.identityDate &&
+      customerEditData.identityPlace?.trim()
+
+    if (!hasSelectedCustomer && !hasNewCustomerData) {
+      toast.error('Vui lòng chọn khách hàng hoặc nhập đầy đủ thông tin khách hàng mới (Tên, SĐT, Địa chỉ, CCCD, Ngày cấp, Nơi cấp)')
+      return
+    }
+
     // Validate: if printing contract, must have expected delivery date
     if (isPrintContract && !expectedDeliveryDate) {
       toast.error('Vui lòng chọn ngày dự kiến giao hàng khi in hợp đồng')

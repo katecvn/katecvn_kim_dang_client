@@ -4,7 +4,7 @@ import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
 import { useState } from 'react'
 import PriceLogDialog from './PriceLogDialog'
-import { PRODUCT_SOURCE, PRODUCT_TYPE } from '../data'
+import { PRODUCT_TYPE } from '../data'
 import { normalizeText } from '@/utils/normalize-text'
 import ViewProductDialog from './ViewProductDialog'
 import Can from '@/utils/can'
@@ -122,34 +122,19 @@ export const columns = [
     enableHiding: false,
   },
   {
-    accessorKey: 'source',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nguồn" />
-    ),
-    cell: ({ row }) => {
-      const sourceKey = row.getValue('source')
-      const source = PRODUCT_SOURCE.find((item) => item.value === sourceKey)
-      return (
-        <div className="w-16">{source ? source.name : 'Không xác định'}</div>
-      )
-    },
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
     accessorKey: 'type',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Loại" />
     ),
     cell: ({ row }) => {
-      const sourceKey = row.getValue('type')
-      const source = PRODUCT_TYPE.find((item) => item.value === sourceKey)
+      const typeKey = row.getValue('type')
+      const type = PRODUCT_TYPE.find((item) => item.value === typeKey)
       return (
-        <div className="w-20">{source ? source.name : 'Không xác định'}</div>
+        <div className="w-20 hidden sm:block">{type ? type.name : 'Không xác định'}</div>
       )
     },
     enableSorting: false,
-    enableHiding: false,
+    enableHiding: true,
   },
   {
     accessorKey: 'price',

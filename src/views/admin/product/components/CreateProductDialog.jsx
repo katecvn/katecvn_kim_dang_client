@@ -44,7 +44,6 @@ import { CalendarIcon, TrashIcon } from 'lucide-react'
 import {
   CATEGORY_STATUS,
   matchAttributes,
-  PRODUCT_SOURCE,
   PRODUCT_TYPE,
   TAX_STATUS,
 } from '../data'
@@ -67,7 +66,6 @@ const CreateProductDialog = ({
   open,
   onOpenChange,
   showTrigger = true,
-  productSource,
   ...props
 }) => {
   const loading = useSelector((state) => state.product.loading)
@@ -116,7 +114,6 @@ const CreateProductDialog = ({
       description: '',
       note: '',
       type: 'physical',
-      source: productSource,
       salaryCoefficient: {
         coefficient: '',
         type: 'multiplier',
@@ -223,7 +220,6 @@ const CreateProductDialog = ({
         description: data.description,
         note: data.note,
         type: data.type,
-        source: data.source,
         salaryCoefficient: {
           coefficient: data.salaryCoefficient.coefficient,
           type: data.salaryCoefficient.type,
@@ -502,40 +498,6 @@ const CreateProductDialog = ({
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="source"
-                  render={({ field }) => (
-                    <FormItem className="mb-2 space-y-1">
-                      <FormLabel>Nguồn sản phẩm</FormLabel>
-                      <Select
-                        disabled={true}
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Chọn nguồn sản phẩm" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectGroup>
-                            {PRODUCT_SOURCE?.map((source) => (
-                              <SelectItem
-                                key={source.id}
-                                value={source.value.toString()}
-                              >
-                                {source.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

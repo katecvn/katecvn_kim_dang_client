@@ -3,7 +3,7 @@ import { z } from 'zod'
 const createInvoiceSchema = z
   .object({
     schoolId: z.string().nullable(),
-    customerId: z.string().nonempty('Khách hàng là bắt buộc'),
+    customerId: z.string().optional().nullable(),
     status: z.string().nonempty('Trạng thái là bắt buộc'),
     note: z.string().max(120).nullable(),
     revenueSharing: z
@@ -28,7 +28,7 @@ const createInvoiceSchema = z
 
 const updateInvoiceSchema = z.object({
   schoolId: z.string().nullable(),
-  customerId: z.string().nonempty('Khách hàng là bắt buộc'),
+  customerId: z.string().optional().nullable(),
   note: z.string().max(120).nullable(),
   revenueSharing: z
     .union([

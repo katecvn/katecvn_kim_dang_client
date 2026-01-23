@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Plus, Package } from 'lucide-react'
 import { moneyFormat } from '@/utils/money-format'
 import { cn } from '@/lib/utils'
+import { getPublicUrl } from '@/utils/file'
 
 const ProductGrid = ({
   products,
@@ -38,6 +39,7 @@ const ProductGrid = ({
           <div className="flex flex-col gap-2 p-4">
             {products.map((product) => {
               const isSelected = selectedProductIds.includes(product.id)
+              const imagePath = getPublicUrl(product.image);
               const stock = product.productStocks?.[0]?.quantity || 0
               const isOutOfStock = stock <= 0
 
@@ -61,7 +63,7 @@ const ProductGrid = ({
                       <div className="w-16 h-16 rounded-md bg-muted overflow-hidden relative shrink-0">
                         {product.image ? (
                           <img
-                            src={product.image}
+                            src={imagePath}
                             alt={product.name}
                             className="w-full h-full object-cover"
                           />

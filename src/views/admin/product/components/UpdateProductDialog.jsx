@@ -44,7 +44,6 @@ import { CalendarIcon, TrashIcon } from 'lucide-react'
 import {
   CATEGORY_STATUS,
   matchAttributes,
-  PRODUCT_SOURCE,
   PRODUCT_TYPE,
   TAX_STATUS,
 } from '../data'
@@ -146,15 +145,15 @@ const UpdateProductDialog = ({
       source: product?.source ?? '',
       salaryCoefficient: product?.coefficient
         ? {
-            coefficient: product?.coefficient?.coefficient ?? '',
-            effectiveDate: product?.coefficient?.effectiveDate ?? '',
-            type: product?.coefficient?.type ?? '',
-          }
+          coefficient: product?.coefficient?.coefficient ?? '',
+          effectiveDate: product?.coefficient?.effectiveDate ?? '',
+          type: product?.coefficient?.type ?? '',
+        }
         : {
-            coefficient: '',
-            effectiveDate: '',
-            type: 'multiplier',
-          },
+          coefficient: '',
+          effectiveDate: '',
+          type: 'multiplier',
+        },
       document: new File([], ''),
       hasExpiry: product?.hasExpiry ?? false,
       code: product?.code ?? '',
@@ -237,39 +236,39 @@ const UpdateProductDialog = ({
         })) ?? [],
       salaryCoefficient: product.coefficient
         ? {
-            coefficient: product.coefficient.coefficient?.toString?.() ?? '',
-            effectiveDate: product.coefficient.effectiveDate ?? '',
-            type: product.coefficient.type ?? '',
-          }
+          coefficient: product.coefficient.coefficient?.toString?.() ?? '',
+          effectiveDate: product.coefficient.effectiveDate ?? '',
+          type: product.coefficient.type ?? '',
+        }
         : {
-            coefficient: '',
-            effectiveDate: '',
-            type: 'multiplier',
-          },
+          coefficient: '',
+          effectiveDate: '',
+          type: 'multiplier',
+        },
       document: new File([], ''),
       hasExpiry: product.hasExpiry ?? false,
       manageSerial: product.manageSerial ?? false,
       applyWarranty: !!product.warrantyPolicy,
       warrantyPolicy: product.warrantyPolicy
         ? {
-            periodMonths:
-              product.warrantyPolicy.periodMonths?.toString?.() ?? '',
-            conditions: product.warrantyPolicy.conditions ?? '',
-            warrantyCost:
-              product.warrantyPolicy.warrantyCost?.toString?.() ?? '0',
-            status: product.warrantyPolicy.status ?? 'active',
-          }
+          periodMonths:
+            product.warrantyPolicy.periodMonths?.toString?.() ?? '',
+          conditions: product.warrantyPolicy.conditions ?? '',
+          warrantyCost:
+            product.warrantyPolicy.warrantyCost?.toString?.() ?? '0',
+          status: product.warrantyPolicy.status ?? 'active',
+        }
         : {
-            periodMonths: '',
-            conditions: '',
-            warrantyCost: '0',
-            status: 'active',
-          },
+          periodMonths: '',
+          conditions: '',
+          warrantyCost: '0',
+          status: 'active',
+        },
       unitConversions: product?.unitConversions?.length
         ? product.unitConversions.map((c) => ({
-            unitId: c.unitId?.toString?.() || '',
-            conversionFactor: normalizeFloatString(c?.conversionFactor),
-          }))
+          unitId: c.unitId?.toString?.() || '',
+          conversionFactor: normalizeFloatString(c?.conversionFactor),
+        }))
         : [{ ...defaultUnitConversion }],
     })
 
@@ -317,7 +316,6 @@ const UpdateProductDialog = ({
         description: data.description,
         note: data.note,
         type: data.type,
-        source: data.source,
         salaryCoefficient: {
           coefficient: data.salaryCoefficient.coefficient,
           type: data.salaryCoefficient.type,
@@ -325,17 +323,17 @@ const UpdateProductDialog = ({
             data.salaryCoefficient.effectiveDate,
           ),
         },
-        document: selectedFile,
+        image: selectedFile,
         hasExpiry: data.hasExpiry,
         manageSerial: data.manageSerial,
         applyWarranty: data.applyWarranty,
         warrantyPolicy: data.applyWarranty
           ? {
-              periodMonths: data.warrantyPolicy.periodMonths,
-              conditions: data.warrantyPolicy.conditions || null,
-              warrantyCost: data.warrantyPolicy.warrantyCost || 0,
-              status: data.warrantyPolicy.status || 'inactive',
-            }
+            periodMonths: data.warrantyPolicy.periodMonths,
+            conditions: data.warrantyPolicy.conditions || null,
+            warrantyCost: data.warrantyPolicy.warrantyCost || 0,
+            status: data.warrantyPolicy.status || 'inactive',
+          }
           : null,
 
         // NEW
@@ -622,40 +620,6 @@ const UpdateProductDialog = ({
 
                 <FormField
                   control={form.control}
-                  name="source"
-                  render={({ field }) => (
-                    <FormItem className="mb-2 space-y-1">
-                      <FormLabel>Nguồn sản phẩm</FormLabel>
-                      <Select
-                        disabled={true}
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Chọn nguồn sản phẩm" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectGroup>
-                            {PRODUCT_SOURCE?.map((source) => (
-                              <SelectItem
-                                key={source.id}
-                                value={source.value.toString()}
-                              >
-                                {source.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="type"
                   render={({ field }) => (
                     <FormItem className="mb-2 space-y-1">
@@ -748,16 +712,17 @@ const UpdateProductDialog = ({
 
                 <FormField
                   control={form.control}
-                  name="document"
+                  name="image"
                   render={() => {
-                    const oldDocumentPath = product?.coefficient?.document
-                    const oldDocumentUrl = getPublicUrl(oldDocumentPath)
-                    const isImage = isImageFile(oldDocumentPath)
-                    const fileName = getFileNameFromPath(oldDocumentPath)
+                    // Support both old 'document' and new 'image' fields for backward compatibility
+                    const oldImagePath = product?.image || product?.document || product?.coefficient?.image
+                    const oldImageUrl = getPublicUrl(oldImagePath)
+                    const isImage = isImageFile(oldImagePath)
+                    const fileName = getFileNameFromPath(oldImagePath)
 
                     return (
                       <FormItem className="mb-2 space-y-1">
-                        <FormLabel>Minh chứng</FormLabel>
+                        <FormLabel>Hình ảnh</FormLabel>
                         <FormControl>
                           <div className="space-y-2">
                             <Input
@@ -766,14 +731,14 @@ const UpdateProductDialog = ({
                               className="max-w-xs"
                             />
 
-                            {oldDocumentPath && oldDocumentUrl && (
+                            {oldImagePath && oldImageUrl && (
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-muted-foreground">
-                                  Minh chứng hiện tại:
+                                  Ảnh:
                                 </span>
 
                                 <a
-                                  href={oldDocumentUrl}
+                                  href={oldImageUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-2 text-xs text-blue-600 underline"
@@ -781,8 +746,8 @@ const UpdateProductDialog = ({
                                   {isImage ? (
                                     <>
                                       <img
-                                        src={oldDocumentUrl}
-                                        alt={fileName || 'Minh chứng cũ'}
+                                        src={oldImageUrl}
+                                        alt={fileName || 'Ảnh hiện tại'}
                                         className="h-10 w-10 rounded border object-cover"
                                       />
                                       <span>Xem ảnh</span>
@@ -1040,8 +1005,8 @@ const UpdateProductDialog = ({
                                   const newValue = checked
                                     ? [...(field.value || []), tax.id]
                                     : field.value?.filter(
-                                        (value) => value !== tax.id,
-                                      ) || []
+                                      (value) => value !== tax.id,
+                                    ) || []
                                   field.onChange(newValue)
                                 }}
                               />

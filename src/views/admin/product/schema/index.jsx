@@ -50,7 +50,7 @@ const baseCreateSchema = z.object({
   unitConversions: z.array(unitConversionSchema).optional().default([]),
 
   categoryId: z.string().nonempty('Danh mục là bắt buộc'),
-  // supplierId: z.string().nonempty('Nhà cung cấp là bắt buộc'),
+  supplierId: z.string().nonempty('Nhà cung cấp là bắt buộc'),
   unitId: z.string().nonempty('Đơn vị là bắt buộc'),
 
   price: z

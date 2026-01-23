@@ -34,7 +34,6 @@ import {
 } from '@/components/ui/tooltip'
 import { dateFormat } from '@/utils/date-format'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getSchool } from '@/api/school'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   deleteCreditNoteById,
@@ -44,11 +43,13 @@ import {
 import { toast } from 'sonner'
 import ConfirmActionButton from '@/components/custom/ConfirmActionButton'
 import UpdateCreditNoteDialog from './UpdateCreditNoteDialog'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import { cn } from '@/lib/utils'
 
 const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
+  const isDesktop = useMediaQuery('(min-width: 768px)')
   const [invoice, setInvoice] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [school, setSchool] = useState(null)
   const creditNotes = useSelector(
     (state) => state.creditNote.creditNotesByInvoiceId,
   )
@@ -68,20 +69,6 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
         : await getInvoiceDetailByUser(invoiceId)
 
       setInvoice(data)
-      if (data.type === 'kafood') {
-        const possibleIds = [
-          data?.invoiceItems?.[0]?.schoolId,
-          data?.invoiceItems?.schoolId,
-          data?.invoiceItems?.[0]?.options?.[0]?.schoolId,
-        ]
-
-        const schoolId = possibleIds.find(
-          (id) => typeof id === 'number' && !isNaN(id),
-        )
-
-        const response = await getSchool(schoolId)
-        setSchool(response)
-      }
     } catch (error) {
       setLoading(false)
       console.log('Fetch invoice detail error:', error)
@@ -140,15 +127,23 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
         </DialogTrigger>
       ) : null}
 
-      <DialogContent className="md:h-auto md:max-w-full">
-        <DialogHeader>
-          <DialogTitle>Thông tin chi tiết hóa đơn: {invoice?.code}</DialogTitle>
-          <DialogDescription>
+      <DialogContent className={cn(
+        "md:h-auto md:max-w-full",
+        !isDesktop && "h-screen max-h-screen w-screen max-w-none m-0 p-0 rounded-none"
+      )}>
+        <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
+          <DialogTitle className={cn(!isDesktop && "text-base")}>
+            Thông tin chi tiết hóa đơn: {invoice?.code}
+          </DialogTitle>
+          <DialogDescription className={cn(!isDesktop && "text-xs")}>
             Dưới đây là thông tin chi tiết hóa đơn: {invoice?.code}.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[75vh] overflow-auto">
+        <div className={cn(
+          "overflow-auto",
+          isDesktop ? "max-h-[75vh]" : "h-full px-4 pb-4"
+        )}>
           {loading ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
               {Array.from({ length: 6 }).map((_, index) => (
@@ -159,159 +154,179 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
             </div>
           ) : (
             <>
-              <div className="flex flex-col gap-6 lg:flex-row">
-                <div className="flex-1 space-y-6 rounded-lg border p-4">
-                  <h2 className="text-lg font-semibold">Thông tin đơn</h2>
+              <div className={cn(
+                "flex gap-6",
+                isDesktop ? "flex-row" : "flex-col"
+              )}>
+                <div className={cn(
+                  "flex-1 rounded-lg border",
+                  isDesktop ? "space-y-6 p-4" : "space-y-4 p-3"
+                )}>
+                  <h2 className={cn(
+                    "font-semibold",
+                    isDesktop ? "text-lg" : "text-base"
+                  )}>Thông tin đơn</h2>
 
-                  {/* Contract Source Alert */}
-                  {invoice?.salesContractId && (
-                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
-                      <div className="flex items-start gap-3">
-                        <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                            Nguồn từ hợp đồng bán hàng
-                          </p>
-                          <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                            Số HĐ: <span className="font-medium">{invoice.contractNumber || `#${invoice.salesContractId}`}</span>
-                          </p>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="h-auto p-0 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 mt-1"
-                            onClick={() => {
-                              window.open(`/sales-contracts?view=${invoice.salesContractId}`, '_blank')
-                            }}
-                          >
-                            Xem hợp đồng gốc →
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
-                  <div className="space-y-6">
-                    <div className="overflow-x-auto rounded-lg border">
-                      <Table className="min-w-full">
-                        <TableHeader>
-                          <TableRow className="bg-secondary text-xs">
-                            <TableHead className="w-8">TT</TableHead>
-                            <TableHead className="min-w-40">Sản phẩm</TableHead>
-                            <TableHead className="min-w-20">SL</TableHead>
-                            <TableHead className="min-w-16">Tặng</TableHead>
-                            <TableHead className="min-w-16">ĐVT</TableHead>
-                            <TableHead className="min-w-20">Giá</TableHead>
-                            <TableHead className="min-w-16">Thuế</TableHead>
-                            <TableHead className="min-w-28 md:w-16">
-                              Giảm giá
-                            </TableHead>
-                            <TableHead className="min-w-28">
-                              Tổng cộng
-                            </TableHead>
-                            <TableHead className="min-w-28 md:w-20">
-                              BH
-                            </TableHead>
-                            <TableHead className="min-w-28">Ghi chú</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {invoice?.invoiceItems.map((product, index) => (
-                            <TableRow key={product.id}>
-                              <TableCell>{index + 1}</TableCell>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">
-                                    {product.productName}
-                                  </div>
-                                  {product?.options && (
-                                    <div className="break-words text-sm text-muted-foreground">
-                                      {product?.options
-                                        ?.filter((option) => !!option.code) // Only show options exclude school information
-                                        ?.map(
-                                          (option) =>
-                                            `${option.name} ${option?.pivot?.value || ''}`,
-                                        )
-                                        .join(', ')}
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>{product.quantity}</TableCell>
-                              <TableCell>{product.giveaway}</TableCell>
-                              <TableCell>
-                                {product.unitName || 'Không có'}
-                              </TableCell>
-                              <TableCell className="text-end">
-                                {moneyFormat(product.price)}
-                              </TableCell>
-                              <TableCell className="text-end">
-                                {moneyFormat(product.taxAmount)}
-                              </TableCell>
-                              <TableCell className="text-end">
-                                {moneyFormat(product.discount)}
-                              </TableCell>
-                              <TableCell className="text-end">
-                                {moneyFormat(product.total)}
-                              </TableCell>
-                              <TableCell>
-                                {product?.warranties[0]?.periodMonths &&
-                                  product.warranty
-                                  ? `${product.warranty}`
-                                  : 'Không có'}
-                              </TableCell>
-                              <TableCell>
-                                {product.note || 'Không có'}
-                              </TableCell>
+
+                  <div className={cn("space-y-6", !isDesktop && "space-y-4")}>
+                    {/* Product Items - Table on Desktop, Cards on Mobile */}
+                    {isDesktop ? (
+                      <div className="overflow-x-auto rounded-lg border">
+                        <Table className="min-w-full">
+                          <TableHeader>
+                            <TableRow className="bg-secondary text-xs">
+                              <TableHead className="w-8">TT</TableHead>
+                              <TableHead className="min-w-40">Sản phẩm</TableHead>
+                              <TableHead className="min-w-20">SL</TableHead>
+                              <TableHead className="min-w-16">Tặng</TableHead>
+                              <TableHead className="min-w-16">ĐVT</TableHead>
+                              <TableHead className="min-w-20">Giá</TableHead>
+                              <TableHead className="min-w-16">Thuế</TableHead>
+                              <TableHead className="min-w-28 md:w-16">
+                                Giảm giá
+                              </TableHead>
+                              <TableHead className="min-w-28">
+                                Tổng cộng
+                              </TableHead>
+                              <TableHead className="min-w-28 md:w-20">
+                                BH
+                              </TableHead>
+                              <TableHead className="min-w-28">Ghi chú</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-[2fr,1fr]">
-                      <div className="flex flex-col gap-2">
-                        <div className="text-sm">
-                          <strong className="text-destructive">
-                            Ghi chú:{' '}
-                          </strong>
-                          <span className="text-primary">
-                            {invoice?.note || 'Không có'}
-                          </span>
-                        </div>
-                        {invoice?.expires?.length > 0 && (
-                          <div className="text-sm">
-                            <strong className="text-destructive">
-                              Thông tin quản lý hạn dùng:
-                            </strong>
-                            <ul className="ml-4 list-disc text-primary">
-                              {invoice.expires.map((exp) => {
-                                const matchedProduct =
-                                  invoice.invoiceItems?.find(
-                                    (item) => item.productId === exp.productId,
-                                  )
-
-                                return (
-                                  <li key={exp.id}>
-                                    <span className="font-medium">
-                                      {matchedProduct?.productName ||
-                                        `Sản phẩm ID ${exp.productId}`}
-                                    </span>
-                                    {': '}
-                                    từ{' '}
-                                    <strong>
-                                      {dateFormat(exp.startDate)}
-                                    </strong>{' '}
-                                    đến{' '}
-                                    <strong>{dateFormat(exp.endDate)}</strong>
-                                  </li>
-                                )
-                              })}
-                            </ul>
-                          </div>
-                        )}
+                          </TableHeader>
+                          <TableBody>
+                            {invoice?.invoiceItems.map((product, index) => (
+                              <TableRow key={product.id}>
+                                <TableCell>{index + 1}</TableCell>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">
+                                      {product.productName}
+                                    </div>
+                                    {product?.options && (
+                                      <div className="break-words text-sm text-muted-foreground">
+                                        {product?.options
+                                          ?.filter((option) => !!option.code)
+                                          ?.map(
+                                            (option) =>
+                                              `${option.name} ${option?.pivot?.value || ''}`,
+                                          )
+                                          .join(', ')}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{product.quantity}</TableCell>
+                                <TableCell>{product.giveaway}</TableCell>
+                                <TableCell>
+                                  {product.unitName || 'Không có'}
+                                </TableCell>
+                                <TableCell className="text-end">
+                                  {moneyFormat(product.price)}
+                                </TableCell>
+                                <TableCell className="text-end">
+                                  {moneyFormat(product.taxAmount)}
+                                </TableCell>
+                                <TableCell className="text-end">
+                                  {moneyFormat(product.discount)}
+                                </TableCell>
+                                <TableCell className="text-end">
+                                  {moneyFormat(product.total)}
+                                </TableCell>
+                                <TableCell>
+                                  {product?.warranties[0]?.periodMonths &&
+                                    product.warranty
+                                    ? `${product.warranty}`
+                                    : 'Không có'}
+                                </TableCell>
+                                <TableCell>
+                                  {product.note || 'Không có'}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
-                      <div className="space-y-4 text-sm">
+                    ) : (
+                      <div className="space-y-3">
+                        {invoice?.invoiceItems.map((product, index) => (
+                          <div key={product.id} className="border rounded-lg p-3 space-y-2 bg-card">
+                            {/* Header: STT + Product Name */}
+                            <div className="font-medium text-sm">
+                              {index + 1}. {product.productName}
+                            </div>
+
+                            {/* Options if any */}
+                            {product?.options && (
+                              <div className="text-xs text-muted-foreground">
+                                {product.options
+                                  ?.filter((option) => !!option.code)
+                                  ?.map((option) => `${option.name} ${option?.pivot?.value || ''}`)
+                                  .join(', ')}
+                              </div>
+                            )}
+
+                            {/* Grid of details */}
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-muted-foreground">SL: </span>
+                                <span className="font-medium">{product.quantity}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Tặng: </span>
+                                <span className="font-medium">{product.giveaway}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">ĐVT: </span>
+                                <span className="font-medium">{product.unitName || 'Không có'}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Giá: </span>
+                                <span className="font-medium">{moneyFormat(product.price)}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Thuế: </span>
+                                <span className="font-medium">{moneyFormat(product.taxAmount)}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Giảm: </span>
+                                <span className="font-medium text-red-500">{moneyFormat(product.discount)}</span>
+                              </div>
+                            </div>
+
+                            {/* Total - prominent */}
+                            <div className="flex justify-between border-t pt-2 font-semibold text-sm">
+                              <span>Tổng cộng:</span>
+                              <span className="text-primary">{moneyFormat(product.total)}</span>
+                            </div>
+
+                            {/* Warranty & Note */}
+                            <div className="text-xs space-y-1 border-t pt-2">
+                              <div>
+                                <span className="text-muted-foreground">BH: </span>
+                                <span>{product?.warranties[0]?.periodMonths && product.warranty ? product.warranty : 'Không có'}</span>
+                              </div>
+                              {product.note && (
+                                <div>
+                                  <span className="text-muted-foreground">Ghi chú: </span>
+                                  <span>{product.note}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className={cn(
+                      "grid gap-4",
+                      isDesktop ? "md:grid-cols-[2fr,1fr]" : "grid-cols-1"
+                    )}>
+                      {/* Totals Section - Order 1 on mobile, Order 2 on desktop */}
+                      <div className={cn(
+                        "space-y-4 text-sm",
+                        isDesktop ? "order-2" : "order-1"
+                      )}>
                         <div className="flex justify-between">
                           <strong>Giảm giá:</strong>
                           <span>{moneyFormat(invoice?.discount)}</span>
@@ -331,7 +346,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                           <span>{moneyFormat(invoice?.amount)}</span>
                         </div>
                         <div className="flex justify-start border-t py-2">
-                          <div className="text-sm font-bold">
+                          <div className={cn("font-bold", isDesktop ? "text-sm" : "text-xs")}>
                             Số tiền viết bằng chữ:{' '}
                             <span className="font-bold">
                               {toVietnamese(invoice?.amount)}
@@ -363,14 +378,166 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                           )}
                         </div>
                       </div>
+
+                      {/* Notes Section - Order 2 on mobile, Order 1 on desktop */}
+                      <div className={cn(
+                        "flex flex-col gap-2",
+                        isDesktop ? "order-1" : "order-2"
+                      )}>
+                        <div className={cn(isDesktop ? "text-sm" : "text-xs")}>
+                          <strong className="text-destructive">
+                            Ghi chú:{' '}
+                          </strong>
+                          <span className="text-primary">
+                            {invoice?.note || 'Không có'}
+                          </span>
+                        </div>
+                        {invoice?.expires?.length > 0 && (
+                          <div className={cn(isDesktop ? "text-sm" : "text-xs")}>
+                            <strong className="text-destructive">
+                              Thông tin quản lý hạn dùng:
+                            </strong>
+                            <ul className="ml-4 list-disc text-primary">
+                              {invoice.expires.map((exp) => {
+                                const matchedProduct =
+                                  invoice.invoiceItems?.find(
+                                    (item) => item.productId === exp.productId,
+                                  )
+
+                                return (
+                                  <li key={exp.id}>
+                                    <span className="font-medium">
+                                      {matchedProduct?.productName ||
+                                        `Sản phẩm ID ${exp.productId}`}
+                                    </span>
+                                    {': '}
+                                    từ{' '}
+                                    <strong>
+                                      {dateFormat(exp.startDate)}
+                                    </strong>{' '}
+                                    đến{' '}
+                                    <strong>{dateFormat(exp.endDate)}</strong>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    {/* ========== HỢP ĐỒNG BÁN HÀNG ========== */}
+                    {invoice?.salesContract && (
+                      <>
+                        <Separator className="my-4" />
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">Hợp đồng bán hàng</h3>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                window.print()
+                              }}
+                            >
+                              <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                              </svg>
+                              In hợp đồng
+                            </Button>
+                          </div>
+
+                          <div className="space-y-3 rounded-lg border p-4 text-sm">
+                            <div className="flex justify-between">
+                              <strong>Mã hợp đồng:</strong>
+                              <span className="font-medium text-primary">{invoice.salesContract.code}</span>
+                            </div>
+
+                            <div className="flex justify-between">
+                              <strong>Trạng thái:</strong>
+                              <span className={`font-medium ${invoice.salesContract.status === 'draft' ? 'text-yellow-600' :
+                                invoice.salesContract.status === 'active' ? 'text-green-600' :
+                                  invoice.salesContract.status === 'completed' ? 'text-blue-600' :
+                                    'text-gray-600'
+                                }`}>
+                                {invoice.salesContract.status === 'draft' ? 'Nháp' :
+                                  invoice.salesContract.status === 'active' ? 'Đang hoạt động' :
+                                    invoice.salesContract.status === 'completed' ? 'Hoàn thành' :
+                                      invoice.salesContract.status}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between">
+                              <strong>Ngày hợp đồng:</strong>
+                              <span>{dateFormat(invoice.salesContract.contractDate)}</span>
+                            </div>
+
+                            <div className="flex justify-between">
+                              <strong>Ngày giao hàng:</strong>
+                              <span className="font-medium text-orange-600">
+                                {dateFormat(invoice.salesContract.deliveryDate)}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between border-t pt-2">
+                              <strong>Tổng giá trị:</strong>
+                              <span className="font-bold text-primary">
+                                {moneyFormat(invoice.salesContract.totalAmount)}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between">
+                              <strong>Đã thanh toán:</strong>
+                              <span className="font-medium text-green-600">
+                                {moneyFormat(invoice.salesContract.paidAmount || 0)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Contract Items Table */}
+                          {invoice.salesContract.items && invoice.salesContract.items.length > 0 && (
+                            <div className="overflow-x-auto rounded-lg border">
+                              <Table className="min-w-full">
+                                <TableHeader>
+                                  <TableRow className="bg-secondary text-xs">
+                                    <TableHead className="w-8">TT</TableHead>
+                                    <TableHead className="min-w-40">Sản phẩm</TableHead>
+                                    <TableHead className="min-w-20 text-right">Số lượng</TableHead>
+                                    <TableHead className="min-w-28 text-right">Đơn giá</TableHead>
+                                    <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {invoice.salesContract.items.map((item, index) => (
+                                    <TableRow key={item.id || index}>
+                                      <TableCell>{index + 1}</TableCell>
+                                      <TableCell className="font-medium">{item.productName}</TableCell>
+                                      <TableCell className="text-right">{parseInt(item.quantity)}</TableCell>
+                                      <TableCell className="text-right">{moneyFormat(item.unitPrice)}</TableCell>
+                                      <TableCell className="text-right font-medium">{moneyFormat(item.totalAmount)}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
 
                     <Separator className="my-4" />
 
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className={cn(
+                      "grid gap-4",
+                      isDesktop ? "md:grid-cols-2" : "grid-cols-1"
+                    )}>
                       {/* Cột trái: Lịch sử */}
                       <div>
-                        <h3 className="mb-2 font-semibold">Lịch sử</h3>
+                        <h3 className={cn(
+                          "mb-2 font-semibold",
+                          isDesktop ? "text-base" : "text-sm"
+                        )}>Lịch sử</h3>
                         <ol className="relative border-s border-primary dark:border-primary">
                           {invoice?.invoiceHistories?.length ? (
                             invoice?.invoiceHistories.map((history) => (
@@ -393,7 +560,10 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                       {/* Cột phải: Hóa đơn âm (Credit notes) */}
                       <div>
                         <div className="mb-2 flex items-center justify-between">
-                          <h3 className="font-semibold">Hóa đơn điều chỉnh</h3>
+                          <h3 className={cn(
+                            "font-semibold",
+                            isDesktop ? "text-base" : "text-sm"
+                          )}>Hóa đơn điều chỉnh</h3>
                         </div>
 
                         <div className="overflow-x-auto rounded-lg border">
@@ -572,12 +742,18 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                   </div>
                 </div>
 
-                <div className="w-full rounded-lg border p-4 lg:w-72">
+                <div className={cn(
+                  "rounded-lg border p-4",
+                  isDesktop ? "w-72" : "w-full"
+                )}>
                   <div className="flex items-center justify-between">
-                    <h2 className="py-2 text-lg font-semibold">Khách hàng</h2>
+                    <h2 className={cn(
+                      "py-2 font-semibold",
+                      isDesktop ? "text-lg" : "text-base"
+                    )}>Khách hàng</h2>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className={cn(isDesktop ? "space-y-6" : "space-y-4")}>
                     <div className="flex items-center gap-4">
                       <Avatar className="h-8 w-8">
                         <AvatarImage
@@ -627,98 +803,6 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                     </div>
                   </div>
 
-                  <Separator className="my-4" />
-                  {school && (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <h2 className="py-2 text-lg font-semibold">
-                          Trường học
-                        </h2>
-                      </div>
-
-                      <div className="space-y-6">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage
-                              src={`https://ui-avatars.com/api/?bold=true&background=random&name=${school?.name}`}
-                              alt={school?.name}
-                            />
-                            <AvatarFallback>AD</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{school.name}</div>
-                            {(() => {
-                              const lastPlan =
-                                school?.licenses?.[school?.licenses?.length - 1]
-                                  ?.content?.plan
-
-                              const isPaid = lastPlan === 'paid'
-                              const planLabel = isPaid ? 'Trả phí' : 'Miễn phí'
-                              const colorClass = isPaid
-                                ? 'text-green-600'
-                                : 'text-red-600'
-
-                              return (
-                                <div
-                                  className={`cursor-pointer text-sm font-medium hover:opacity-80 ${colorClass}`}
-                                >
-                                  {planLabel} ({school?.countPlan || 0})
-                                </div>
-                              )
-                            })()}
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="mb-2">
-                            <div className="font-medium">
-                              Thông tin trường học
-                            </div>
-                          </div>
-
-                          <div className="mt-4 space-y-2 text-sm">
-                            <div className="flex items-center">
-                              <div className="mr-2 h-4 w-4 ">
-                                <Clock className="h-4 w-4 font-bold" />
-                              </div>
-                              <div>
-                                <strong className="mr-1">
-                                  Ngày hết hạn hiện tại:
-                                </strong>
-                                {dateFormat(school.expirationTime)}
-                              </div>
-                            </div>
-
-                            <div className="font-semibold">
-                              Chủ trường: {school.author}
-                            </div>
-                            <div className="flex cursor-pointer items-center text-primary hover:text-secondary-foreground">
-                              <div className="mr-2 h-4 w-4 ">
-                                <MobileIcon className="h-4 w-4" />
-                              </div>
-                              <a href={`tel:${school.phone}`}>
-                                {school.phone || 'Chưa cập nhật'}
-                              </a>
-                            </div>
-                            <div className="flex items-center text-muted-foreground">
-                              <div className="mr-2 h-4 w-4 ">
-                                <Mail className="h-4 w-4" />
-                              </div>
-                              <a href={`mailto:${school.email}`}>
-                                {school.email || 'Chưa cập nhật'}
-                              </a>
-                            </div>
-                            <div className="flex items-center text-primary hover:text-secondary-foreground">
-                              <div className="mr-2 h-4 w-4 ">
-                                <MapPin className="h-4 w-4" />
-                              </div>
-                              {school.address || 'Chưa cập nhật'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
                   <Separator className="my-4" />
 
                   <div className="flex items-center justify-between">
@@ -841,6 +925,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                       </div>
                     </>
                   )}
+
                 </div>
               </div>
             </>

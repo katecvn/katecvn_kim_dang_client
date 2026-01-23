@@ -126,6 +126,8 @@ const UpdateInvoiceDialog = ({
   // ====== CONTRACT PRODUCT SELECTION ======
   const [selectedContractProducts, setSelectedContractProducts] = useState({})
   const [isPrintContract, setIsPrintContract] = useState(false)
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(null)
+  const [customerEditData, setCustomerEditData] = useState(null)
 
   const handleStartDateChange = (productId, date) => {
     setProductStartDate((prev) => ({ ...prev, [productId]: date }))
@@ -191,6 +193,8 @@ const UpdateInvoiceDialog = ({
     setHasPrintInvoice(false)
     setSelectedContractProducts({})
     setIsPrintContract(false)
+    setExpectedDeliveryDate(null)
+    setCustomerEditData(null)
     setLocalInvoiceData(null)
   }, [open])
 
@@ -213,12 +217,25 @@ const UpdateInvoiceDialog = ({
           revenueSharing: data.revenueSharing || null,
           paymentMethod: data.paymentMethod || paymentMethods[0].value,
           paymentNote: data.paymentNote || '',
-          orderDate: data.orderDate || null,
+          orderDate: data.date || data.orderDate || null,  // ← FIX: Backend trả về "date"
         })
 
         // Set customer
         const customer = customers.find((c) => c.id === data.customerId)
         setSelectedCustomer(customer || null)
+
+        // ========== FIX: Load customer data into edit form ==========
+        if (customer) {
+          setCustomerEditData({
+            name: customer.name || '',
+            phone: customer.phone || '',
+            email: customer.email || '',
+            address: customer.address || '',
+            identityCard: customer.identityCard || '',
+            identityDate: customer.identityDate || null,
+            identityPlace: customer.identityPlace || '',
+          })
+        }
 
         // Initialize state objects
         const qty = {}
@@ -296,6 +313,21 @@ const UpdateInvoiceDialog = ({
         setPriceOverrides(overrides)
 
         setOtherExpenses(data.otherExpenses || { price: 0, description: 'Phí vận chuyển' })
+
+        // ========== FIX: Load contract data ==========
+        if (data.salesContractId && data.salesContract) {
+          setIsPrintContract(true)
+          setExpectedDeliveryDate(data.salesContract.deliveryDate || null)
+
+          // Load which products are in contract
+          const contractProductIds = {}
+          if (data.salesContract.items && Array.isArray(data.salesContract.items)) {
+            data.salesContract.items.forEach(item => {
+              contractProductIds[item.productId] = true
+            })
+          }
+          setSelectedContractProducts(contractProductIds)
+        }
       } catch (err) {
         toast.error(err?.response?.data?.message || 'Không tải được hóa đơn')
       }
@@ -673,15 +705,18 @@ const UpdateInvoiceDialog = ({
             ? product?.warrantyPolicy?.warrantyCost
             : 0,
         applyWarranty: !!applyWarrantyItems[product.id],
+
+        // ========== IN HỢP ĐỒNG ==========
+        isContractItem: !!selectedContractProducts[product.id],
       }
     })
 
     const dataToSend = {
+      invoiceId: invoiceUpdateId,
       userId: authUserWithRoleHasPermissions.id,
-      customerId: data.customerId,
-      date: new Date().toISOString(),
+      customerId: data.customerId || null,
+      orderDate: data.orderDate || new Date().toISOString(),
       note: data.note,
-      type,
       taxAmount: calculateTotalTax(),
       amount: calculateTotalAmount(),
       discount: calculateTotalDiscount(),
@@ -695,6 +730,32 @@ const UpdateInvoiceDialog = ({
       bankAccount: data.paymentMethod === 'transfer' ? data.bankAccount : null,
       dueDate: data.dueDate || null,
       ...(otherExpenses?.price > 0 && { otherExpenses: [otherExpenses] }),
+
+      // ========== KHÁCH HÀNG (luôn gửi newCustomer khi có customerEditData) ==========
+      ...(customerEditData && {
+        newCustomer: {
+          name: customerEditData.name || '',
+          phone: customerEditData.phone || '',
+          email: customerEditData.email || '',
+          address: customerEditData.address || '',
+          identityCard: customerEditData.identityCard || '',
+          identityDate: customerEditData.identityDate || null,
+          identityPlace: customerEditData.identityPlace || '',
+        }
+      }),
+
+      // ========== CẬP NHẬT KHÁCH HÀNG (khi đã chọn customerId) ==========
+      ...((data.customerId && customerEditData) && {
+        customerUpdateData: customerEditData
+      }),
+
+      // ========== OPTIONS IN ẤN ==========
+      isPrintContract: isPrintContract || false,
+      hasPrintInvoice: hasPrintInvoice || false,
+      hasPrintQuotation: hasPrintQuotation || false,
+      ...(isPrintContract && {
+        expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate).toISOString() : null
+      }),
     }
 
     if (data.revenueSharing) {
@@ -711,7 +772,7 @@ const UpdateInvoiceDialog = ({
     }
 
     try {
-      const invoice = await dispatch(createInvoice(dataToSend)).unwrap()
+      const invoice = await dispatch(updateInvoice(dataToSend)).unwrap()
 
       const getAdminInvoice = JSON.parse(
         localStorage.getItem('permissionCodes'),
@@ -1338,6 +1399,8 @@ const UpdateInvoiceDialog = ({
                         form={form}
                         customers={customers}
                         selectedCustomer={selectedCustomer}
+                        customerEditData={customerEditData}
+                        onCustomerEditDataChange={setCustomerEditData}
                         onSelectCustomer={(customer) => {
                           setSelectedCustomer(customer)
                           if (customer) {
@@ -1345,6 +1408,7 @@ const UpdateInvoiceDialog = ({
                             handleSelectCustomer(customer)
                           } else {
                             form.setValue('customerId', '')
+                            setCustomerEditData(null)
                           }
                         }}
                         paymentMethods={paymentMethods}
@@ -1362,6 +1426,9 @@ const UpdateInvoiceDialog = ({
                         isPrintContract={isPrintContract}
                         setIsPrintContract={setIsPrintContract}
                         selectedContractProducts={selectedContractProducts}
+                        expectedDeliveryDate={expectedDeliveryDate}
+                        onExpectedDeliveryDateChange={setExpectedDeliveryDate}
+                        isUpdate={true}
                       />
                     </div>
 
@@ -1423,10 +1490,10 @@ const UpdateInvoiceDialog = ({
         <DialogContent className="max-w-screen w-screen p-0 m-0 h-[calc(100vh-64px)] md:max-h-screen md:h-screen">
           <DialogHeader className="px-6 pt-4">
             <DialogTitle>
-              Tạo hóa đơn mới
+              Cập nhật hóa đơn
             </DialogTitle>
             <DialogDescription>
-              Chọn sản phẩm và điền thông tin để tạo hóa đơn
+              Chỉnh sửa thông tin hóa đơn
             </DialogDescription>
           </DialogHeader>
 
@@ -1503,6 +1570,8 @@ const UpdateInvoiceDialog = ({
                   form={form}
                   customers={customers}
                   selectedCustomer={selectedCustomer}
+                  customerEditData={customerEditData}
+                  onCustomerEditDataChange={setCustomerEditData}
                   onSelectCustomer={(customer) => {
                     setSelectedCustomer(customer)
                     if (customer) {
@@ -1510,6 +1579,7 @@ const UpdateInvoiceDialog = ({
                       handleSelectCustomer(customer)
                     } else {
                       form.setValue('customerId', '')
+                      setCustomerEditData(null)
                     }
                   }}
                   paymentMethods={paymentMethods}
@@ -1527,6 +1597,9 @@ const UpdateInvoiceDialog = ({
                   isPrintContract={isPrintContract}
                   setIsPrintContract={setIsPrintContract}
                   selectedContractProducts={selectedContractProducts}
+                  expectedDeliveryDate={expectedDeliveryDate}
+                  onExpectedDeliveryDateChange={setExpectedDeliveryDate}
+                  isUpdate={true}
                 />
               </div>
             </form>

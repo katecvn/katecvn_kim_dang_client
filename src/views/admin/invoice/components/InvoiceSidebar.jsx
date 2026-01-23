@@ -69,6 +69,7 @@ const InvoiceSidebar = ({
   selectedContractProducts = {},
   expectedDeliveryDate,
   onExpectedDeliveryDateChange,
+  isUpdate = false,  // ← NEW: Prop to determine if this is update mode
 }) => {
   const dispatch = useDispatch()
   const [newCustomerData, setNewCustomerData] = useState({
@@ -451,8 +452,11 @@ const InvoiceSidebar = ({
                     <FormControl>
                       <Input
                         placeholder="Nhập tên"
-                        value={newCustomerData.name}
-                        onChange={(e) => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                        value={customerEditData?.name || ''}
+                        onChange={(e) => onCustomerEditDataChange({
+                          ...customerEditData,
+                          name: e.target.value
+                        })}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -463,8 +467,11 @@ const InvoiceSidebar = ({
                     <FormControl>
                       <Input
                         placeholder="Nhập SĐT"
-                        value={newCustomerData.phone}
-                        onChange={(e) => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                        value={customerEditData?.phone || ''}
+                        onChange={(e) => onCustomerEditDataChange({
+                          ...customerEditData,
+                          phone: e.target.value
+                        })}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -475,8 +482,11 @@ const InvoiceSidebar = ({
                     <FormControl>
                       <Input
                         placeholder="Nhập email"
-                        value={newCustomerData.email}
-                        onChange={(e) => setNewCustomerData({ ...newCustomerData, email: e.target.value })}
+                        value={customerEditData?.email || ''}
+                        onChange={(e) => onCustomerEditDataChange({
+                          ...customerEditData,
+                          email: e.target.value
+                        })}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -487,8 +497,11 @@ const InvoiceSidebar = ({
                     <FormControl>
                       <Input
                         placeholder="Nhập địa chỉ"
-                        value={newCustomerData.address}
-                        onChange={(e) => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
+                        value={customerEditData?.address || ''}
+                        onChange={(e) => onCustomerEditDataChange({
+                          ...customerEditData,
+                          address: e.target.value
+                        })}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -499,8 +512,11 @@ const InvoiceSidebar = ({
                     <FormControl>
                       <Input
                         placeholder="Nhập số CMND/CCCD"
-                        value={newCustomerData.identityCard}
-                        onChange={(e) => setNewCustomerData({ ...newCustomerData, identityCard: e.target.value })}
+                        value={customerEditData?.identityCard || ''}
+                        onChange={(e) => onCustomerEditDataChange({
+                          ...customerEditData,
+                          identityCard: e.target.value
+                        })}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -515,12 +531,12 @@ const InvoiceSidebar = ({
                             variant="outline"
                             className={cn(
                               'h-8 w-full justify-start text-left font-normal text-xs',
-                              !newCustomerData.identityDate && 'text-muted-foreground'
+                              !customerEditData?.identityDate && 'text-muted-foreground'
                             )}
                           >
                             <Calendar className="mr-2 h-3 w-3" />
-                            {newCustomerData.identityDate
-                              ? new Date(newCustomerData.identityDate).toLocaleDateString('vi-VN')
+                            {customerEditData?.identityDate
+                              ? new Date(customerEditData.identityDate).toLocaleDateString('vi-VN')
                               : 'Chọn ngày cấp'}
                           </Button>
                         </FormControl>
@@ -528,9 +544,12 @@ const InvoiceSidebar = ({
                       <PopoverContent className="w-auto p-0" align="start">
                         <DatePicker
                           mode="single"
-                          selected={newCustomerData.identityDate ? new Date(newCustomerData.identityDate) : undefined}
+                          selected={customerEditData?.identityDate ? new Date(customerEditData.identityDate) : undefined}
                           onSelect={(date) => {
-                            setNewCustomerData({ ...newCustomerData, identityDate: date ? date.toISOString() : null })
+                            onCustomerEditDataChange({
+                              ...customerEditData,
+                              identityDate: date ? date.toISOString() : null
+                            })
                             setOpenIdentityDatePicker(false)
                           }}
                         />
@@ -543,8 +562,11 @@ const InvoiceSidebar = ({
                     <FormControl>
                       <Input
                         placeholder="Nhập nơi cấp"
-                        value={newCustomerData.identityPlace}
-                        onChange={(e) => setNewCustomerData({ ...newCustomerData, identityPlace: e.target.value })}
+                        value={customerEditData?.identityPlace || ''}
+                        onChange={(e) => onCustomerEditDataChange({
+                          ...customerEditData,
+                          identityPlace: e.target.value
+                        })}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -741,7 +763,7 @@ const InvoiceSidebar = ({
           </div>
         )}
 
-        {/* Main Create Button */}
+        {/* Main Button */}
         <Button
           className="w-full"
           onClick={form.handleSubmit(onSubmit)}
@@ -749,10 +771,10 @@ const InvoiceSidebar = ({
           loading={loading}
         >
           <IconDatabasePlus className="h-4 w-4 mr-2" />
-          Tạo hóa đơn
+          {isUpdate ? 'Cập nhật hóa đơn' : 'Tạo hóa đơn'}
         </Button>
 
-        {/* Create and Print Buttons */}
+        {/* Print Buttons */}
         <div className="space-y-2 flex flex-col">
           <Button
             type="button"
@@ -764,7 +786,7 @@ const InvoiceSidebar = ({
             disabled={loading}
           >
             <IconFileTypePdf className="h-4 w-4 mr-2" />
-            Tạo Và In Hóa Đơn
+            {isUpdate ? 'Cập nhật Và In Hóa Đơn' : 'Tạo Và In Hóa Đơn'}
           </Button>
           <Button
             type="button"
@@ -776,7 +798,7 @@ const InvoiceSidebar = ({
             disabled={loading}
           >
             <IconFileTypePdf className="h-4 w-4 mr-2" />
-            Tạo Và In Thỏa Thuận
+            {isUpdate ? 'Cập nhật Và In Thỏa Thuận' : 'Tạo Và In Thỏa Thuận'}
           </Button>
         </div>
       </div>

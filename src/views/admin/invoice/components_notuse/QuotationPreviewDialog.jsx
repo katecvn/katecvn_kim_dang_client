@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/custom/Button'
 import ExportQuotation from './ExportQuotation'
-import WarrantyRichTextEditor from './WarrantyRichTextEditor'
+import WarrantyRichTextEditor from '../components/WarrantyRichTextEditor'
 
 const safe = (v, fallback = '') => (v === 0 || v ? String(v) : fallback)
 

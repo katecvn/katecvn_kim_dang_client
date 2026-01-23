@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
-import ExportQuotation from '../components/ExportQuotation'
+import ExportQuotation from '../components_notuse/ExportQuotation'
 
 export async function exportQuotationPdf(
   data,

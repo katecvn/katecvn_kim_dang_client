@@ -25,7 +25,7 @@ const InvoicePage = () => {
   })
 
   useEffect(() => {
-    document.title = 'Danh sách hóa đơn'
+    document.title = 'Danh sách đơn bán'
     dispatch(getInvoices(filters))
   }, [dispatch, filters])
 
@@ -35,7 +35,7 @@ const InvoicePage = () => {
         <div className="mb-2 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Danh sách hóa đơn
+              Danh sách đơn bán
             </h2>
           </div>
           <div>

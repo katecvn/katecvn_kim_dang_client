@@ -4,9 +4,11 @@ import {
   IconFileInvoiceFilled,
   IconFilesOff,
   IconRefreshDot,
+  IconX,
 } from '@tabler/icons-react'
-import { CheckCircleIcon, HandCoinsIcon, TruckIcon } from 'lucide-react'
+import { CheckCircleIcon, TruckIcon } from 'lucide-react'
 
+// Invoice Status (Trạng thái đơn hàng)
 const statuses = [
   {
     value: 'pending',
@@ -16,28 +18,44 @@ const statuses = [
   },
   {
     value: 'accepted',
-    label: 'Đã duyệt',
-    icon: CheckCircleIcon,
-    color: 'text-green-500',
-  },
-  {
-    value: 'delivered',
-    label: 'Đi đơn',
+    label: 'Đã duyệt (Đang giao)',
     icon: TruckIcon,
     color: 'text-blue-500',
   },
   {
+    value: 'delivered',
+    label: 'Đã giao',
+    icon: CheckCircleIcon,
+    color: 'text-green-500',
+  },
+  {
+    value: 'rejected',
+    label: 'Từ chối',
+    icon: IconX,
+    color: 'text-red-500',
+  },
+]
+
+// Payment Status (Trạng thái thanh toán - tách riêng)
+const paymentStatuses = [
+  {
+    value: 'unpaid',
+    label: 'Chưa thanh toán',
+    icon: IconRefreshDot,
+    color: 'text-red-500',
+  },
+  {
+    value: 'partially_paid',
+    label: 'Thanh toán một phần',
+    icon: IconAlertTriangleFilled,
+    color: 'text-yellow-500',
+  },
+  {
     value: 'paid',
     label: 'Đã thanh toán',
-    icon: HandCoinsIcon,
-    color: 'text-emerald-500',
+    icon: CheckCircleIcon,
+    color: 'text-green-500',
   },
-  // {
-  //   value: 'rejected',
-  //   label: 'Đã hủy',
-  //   icon: XCircleIcon,
-  //   color: 'text-red-500',
-  // },
 ]
 
 const attributes = {
@@ -85,4 +103,4 @@ const productTypeMap = {
   service: 'dịch vụ',
 }
 
-export { statuses, attributes, eInvoiceStatuses, productTypeMap }
+export { statuses, paymentStatuses, attributes, eInvoiceStatuses, productTypeMap }

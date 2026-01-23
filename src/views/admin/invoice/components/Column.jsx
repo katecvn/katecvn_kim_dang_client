@@ -4,7 +4,7 @@ import { normalizeText } from '@/utils/normalize-text'
 import { Checkbox } from '@/components/ui/checkbox'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
-import { statuses } from '../data'
+import { statuses, paymentStatuses } from '../data'
 import { useState } from 'react'
 import Can from '@/utils/can'
 import ViewInvoiceDialog from './ViewInvoiceDialog'
@@ -86,7 +86,6 @@ export const columns = [
     cell: function Cell({ row, table }) {
       const { customer, createdAt, id } = row.original
       const rows = table.getPrePaginationRowModel().rows.map((r) => r.original)
-
       const isDuplicate = rows.some(
         (r) =>
           r.customer.phone === customer.phone &&
@@ -99,8 +98,8 @@ export const columns = [
       return (
         <div
           className={`${isDuplicate
-              ? 'flex w-40 flex-col break-words bg-yellow-200 p-2'
-              : 'flex w-40 flex-col break-words'
+            ? 'flex w-40 flex-col break-words bg-yellow-200 p-2'
+            : 'flex w-40 flex-col break-words'
             }`}
           title={customer.name}
         >
@@ -116,16 +115,9 @@ export const columns = [
             <a href={`tel:${customer.phone}`}>{customer.phone}</a>
           </span>
 
-          {row.original.note && (
+          {row.original.customerEmail && (
             <span className="text-muted-foreground">
-              <a
-                target="_blank"
-                className="text-primary underline hover:text-secondary-foreground"
-                href={row.original.note}
-                rel="noreferrer"
-              >
-                {row.original.note}
-              </a>
+              {row.original.customerEmail}
             </span>
           )}
         </div>
@@ -176,35 +168,35 @@ export const columns = [
     enableSorting: true,
     enableHiding: true,
   },
-  {
-    accessorKey: 'sharingRatio',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Chia DS" />
-    ),
-    cell: ({ row }) => (
-      <div className="flex flex-col">
-        <span className="break-words font-semibold">
-          {row.original?.invoiceRevenueShare?.user?.fullName}
-        </span>
+  // {
+  //   accessorKey: 'sharingRatio',
+  //   header: ({ column }) => (
+  //     <DataTableColumnHeader column={column} title="Chia DS" />
+  //   ),
+  //   cell: ({ row }) => (
+  //     <div className="flex flex-col">
+  //       <span className="break-words font-semibold">
+  //         {row.original?.invoiceRevenueShare?.user?.fullName}
+  //       </span>
 
-        <span className="break-words font-semibold text-green-500">
-          {moneyFormat(row.original?.invoiceRevenueShare?.amount || 0)}
-        </span>
-      </div>
-    ),
-    accessorFn: (row) => row.invoiceRevenueShare?.user?.id || null,
-    filterFn: (row, id, value) => {
-      const userId = row?.original?.invoiceRevenueShare?.user?.id
-      return userId ? value.map(String).includes(String(userId)) : false
-    },
-    sortingFn: (rowA, rowB) => {
-      const idA = rowA.original?.invoiceRevenueShare?.user?.id || 0
-      const idB = rowB.original?.invoiceRevenueShare?.user?.id || 0
-      return idA - idB
-    },
-    enableSorting: true,
-    enableHiding: true,
-  },
+  //       <span className="break-words font-semibold text-green-500">
+  //         {moneyFormat(row.original?.invoiceRevenueShare?.amount || 0)}
+  //       </span>
+  //     </div>
+  //   ),
+  //   accessorFn: (row) => row.invoiceRevenueShare?.user?.id || null,
+  //   filterFn: (row, id, value) => {
+  //     const userId = row?.original?.invoiceRevenueShare?.user?.id
+  //     return userId ? value.map(String).includes(String(userId)) : false
+  //   },
+  //   sortingFn: (rowA, rowB) => {
+  //     const idA = rowA.original?.invoiceRevenueShare?.user?.id || 0
+  //     const idB = rowB.original?.invoiceRevenueShare?.user?.id || 0
+  //     return idA - idB
+  //   },
+  //   enableSorting: true,
+  //   enableHiding: true,
+  // },
   {
     accessorKey: 'debt',
     header: ({ column }) => (
@@ -238,7 +230,8 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'status',
+    id: 'status',
+    accessorFn: (row) => row.status,
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Trạng thái" />
     ),
@@ -247,6 +240,10 @@ export const columns = [
       const [openUpdateStatus, setOpenUpdateStatus] = useState(false)
       const currentStatus = row.original.status
       const statusObj = statuses.find((s) => s.value === currentStatus)
+      const paymentStatus = row.original.paymentStatus || 'unpaid'
+      const paymentStatusObj = paymentStatuses.find(
+        (s) => s.value === paymentStatus
+      )
 
       const handleSubmit = async (nextStatus) => {
         try {
@@ -274,17 +271,31 @@ export const columns = [
             />
           )}
 
-          <Badge
-            variant="outline"
-            className={`cursor-pointer select-none ${statusObj?.color || ''}`}
-            onClick={() => setOpenUpdateStatus(true)}
-            title="Bấm để cập nhật trạng thái"
-          >
-            <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
-              {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
-            </span>
-            {statusObj?.label || 'Không xác định'}
-          </Badge>
+          <div className="flex flex-col gap-2">
+            <Badge
+              variant="outline"
+              className={`cursor-pointer select-none ${statusObj?.color || ''}`}
+              onClick={() => setOpenUpdateStatus(true)}
+              title="Bấm để cập nhật trạng thái"
+            >
+              <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
+                {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
+              </span>
+              {statusObj?.label || 'Không xác định'}
+            </Badge>
+            <Badge
+              variant="outline"
+              className={`cursor-default select-none ${paymentStatusObj?.color || 'text-gray-500'
+                }`}
+            >
+              <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
+                {paymentStatusObj?.icon ? (
+                  <paymentStatusObj.icon className="h-4 w-4" />
+                ) : null}
+              </span>
+              {paymentStatusObj?.label || 'Không xác định'}
+            </Badge>
+          </div>
         </>
       )
     },
@@ -297,19 +308,19 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Ngày dự kiến giao" />
     ),
     cell: ({ row }) => {
-      const deliveryDate = row.original.expectedDeliveryDate
+      const deliveryDate = row.original.salesContract?.deliveryDate
       const status = row.original.status
 
       if (!deliveryDate) {
-        return <span className="text-muted-foreground italic">—</span>
+        return <span className="text-muted-foreground italic">Đơn hàng không <br /> có Hợp Đồng</span>
       }
 
       const date = new Date(deliveryDate)
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
-      // Check if overdue: date < today AND status is not delivered/paid
-      const isOverdue = date < today && status !== 'delivered' && status !== 'paid'
+      // Check if overdue: date < today AND status is not delivered
+      const isOverdue = date < today && status !== 'delivered'
 
       return (
         <span

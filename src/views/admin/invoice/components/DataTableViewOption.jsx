@@ -22,6 +22,7 @@ const DataTableViewOptions = ({ table }) => {
     customer: 'Khách hàng',
     user: 'Người tạo',
     debt: 'Công nợ',
+    expectedDeliveryDate: 'Ngày giao hàng',
     sharingRatio: 'Chia DS',
   }
 

@@ -12,12 +12,14 @@ import {
   IconPencil,
   IconPlus,
   IconTrash,
+  IconEye,
 } from '@tabler/icons-react'
 import Can from '@/utils/can'
 import { useState } from 'react'
 import DeleteInvoiceDialog from './DeleteInvoiceDialog'
 import UpdateInvoiceDialog from '@/views/admin/invoice/components/UpdateInvoiceDialog.jsx'
 import CreateCreditNoteDialog from './CreateCreditNoteDialog'
+import ViewInvoiceDialog from './ViewInvoiceDialog'
 import EInvoicePublishDialog from './EInvoicePublishDialog'
 import {
   downloadPreviewDraftInvoice,
@@ -41,6 +43,7 @@ const DataTableRowActions = ({ row }) => {
     useState(false)
   const [showCreateCreditNoteDialog, setShowCreateCreditNoteDialog] =
     useState(false)
+  const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false)
   const [showEInvoiceDialog, setShowEInvoiceDialog] = useState(false)
   const [eInvoicePreviewData, setEInvoicePreviewData] = useState(null)
   const [eInvoiceLoading, setEInvoiceLoading] = useState(false)
@@ -97,6 +100,14 @@ const DataTableRowActions = ({ row }) => {
           showTrigger={false}
         />
       )}
+      {showViewInvoiceDialog && (
+        <ViewInvoiceDialog
+          open={showViewInvoiceDialog}
+          onOpenChange={setShowViewInvoiceDialog}
+          invoiceId={row.original.id}
+          showTrigger={false}
+        />
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -108,10 +119,20 @@ const DataTableRowActions = ({ row }) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
-          {row?.original?.status !== 'accepted' && (
+          <DropdownMenuItem
+            onClick={() => setShowViewInvoiceDialog(true)}
+          >
+            Xem
+            <DropdownMenuShortcut>
+              <IconEye className="h-4 w-4" />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+
+          {row?.original?.status === 'pending' && (
             <Can permission="GET_INVOICE">
               <DropdownMenuItem
                 onClick={() => setShowUpdatePendingInvoiceDialog(true)}
+                className="text-blue-600"
               >
                 Sửa
                 <DropdownMenuShortcut>
@@ -168,14 +189,19 @@ const DataTableRowActions = ({ row }) => {
             </Can>
           )}
 
-          <Can permission="DELETE_INVOICE">
-            <DropdownMenuItem onSelect={() => setShowDeleteInvoiceDialog(true)}>
-              Xóa
-              <DropdownMenuShortcut>
-                <IconTrash className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </Can>
+          {row?.original?.status === 'pending' && (
+            <Can permission="DELETE_INVOICE">
+              <DropdownMenuItem
+                onSelect={() => setShowDeleteInvoiceDialog(true)}
+                className="text-red-600"
+              >
+                Xóa
+                <DropdownMenuShortcut>
+                  <IconTrash className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
       {showUpdatePendingInvoiceDialog && (

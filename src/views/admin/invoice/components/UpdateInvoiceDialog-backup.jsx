@@ -77,7 +77,7 @@ import UpdateCustomerDialog from '../../customer/components/UpdateCustomerDialog
 import CreateCustomerDialog from '../../customer/components/CreateCustomerDialog'
 import CreateOtherExpenses from './CreateOtherExpenses'
 import PrintInvoiceView from './PrintInvoiceView'
-import QuotationPreviewDialog from './QuotationPreviewDialog'
+import QuotationPreviewDialog from '../components_notuse/QuotationPreviewDialog'
 import CreateProductDialog from '../../product/components/CreateProductDialog'
 
 import { updateInvoiceSchema } from '../schema'
@@ -497,10 +497,10 @@ const UpdateInvoiceDialog = ({
 
           product.__invoiceUnit = unitId
             ? {
-                unitId,
-                unitName: item.unitName || item?.unit?.name || '—',
-                factor: factor > 0 ? factor : 1,
-              }
+              unitId,
+              unitName: item.unitName || item?.unit?.name || '—',
+              factor: factor > 0 ? factor : 1,
+            }
             : null
 
           return product
@@ -1173,8 +1173,8 @@ const UpdateInvoiceDialog = ({
                                                     [product.id]: checked
                                                       ? [...list, tax.id]
                                                       : list.filter(
-                                                          (i) => i !== tax.id,
-                                                        ),
+                                                        (i) => i !== tax.id,
+                                                      ),
                                                   }
                                                 })
                                               }
@@ -1299,10 +1299,10 @@ const UpdateInvoiceDialog = ({
                                             >
                                               {productStartDate[product.id]
                                                 ? dateFormat(
-                                                    productStartDate[
-                                                      product.id
-                                                    ],
-                                                  )
+                                                  productStartDate[
+                                                  product.id
+                                                  ],
+                                                )
                                                 : 'Ngày bắt đầu'}
                                             </Button>
                                           </PopoverTrigger>
@@ -1585,9 +1585,9 @@ const UpdateInvoiceDialog = ({
                                     >
                                       {field.value
                                         ? customers.find(
-                                            (c) =>
-                                              c.id.toString() === field.value,
-                                          )?.name
+                                          (c) =>
+                                            c.id.toString() === field.value,
+                                        )?.name
                                         : 'Chọn khách hàng'}
                                       <CaretSortIcon className="ml-2 h-4 w-4 opacity-50" />
                                     </Button>
@@ -1716,55 +1716,55 @@ const UpdateInvoiceDialog = ({
                         {/* bankAccount chỉ phụ thuộc transfer (align CreateInvoiceDialog) */}
                         {normalizePaymentMethod(form.watch('paymentMethod')) ===
                           'transfer' && (
-                          <FormField
-                            control={form.control}
-                            name="bankAccount"
-                            render={({ field }) => (
-                              <FormItem className="space-y-1">
-                                <FormLabel required>
-                                  Tài khoản nhận tiền
-                                </FormLabel>
+                            <FormField
+                              control={form.control}
+                              name="bankAccount"
+                              render={({ field }) => (
+                                <FormItem className="space-y-1">
+                                  <FormLabel required>
+                                    Tài khoản nhận tiền
+                                  </FormLabel>
 
-                                <Select
-                                  onValueChange={(value) => {
-                                    const selectedBank = banks.find(
-                                      (b) => b.accountNumber === value,
-                                    )
-                                    field.onChange(selectedBank || null)
-                                  }}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Chọn tài khoản ngân hàng" />
-                                    </SelectTrigger>
-                                  </FormControl>
+                                  <Select
+                                    onValueChange={(value) => {
+                                      const selectedBank = banks.find(
+                                        (b) => b.accountNumber === value,
+                                      )
+                                      field.onChange(selectedBank || null)
+                                    }}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Chọn tài khoản ngân hàng" />
+                                      </SelectTrigger>
+                                    </FormControl>
 
-                                  <SelectContent>
-                                    {banks.map((bank, index) => (
-                                      <SelectItem
-                                        key={index}
-                                        value={bank.accountNumber}
-                                      >
-                                        <div className="flex flex-col">
-                                          <span className="font-medium">
-                                            {bank.bankName} –{' '}
-                                            {bank.accountNumber}
-                                          </span>
-                                          <span className="text-xs text-muted-foreground">
-                                            {bank.accountName} ·{' '}
-                                            {bank.bankBranch}
-                                          </span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                    <SelectContent>
+                                      {banks.map((bank, index) => (
+                                        <SelectItem
+                                          key={index}
+                                          value={bank.accountNumber}
+                                        >
+                                          <div className="flex flex-col">
+                                            <span className="font-medium">
+                                              {bank.bankName} –{' '}
+                                              {bank.accountNumber}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                              {bank.accountName} ·{' '}
+                                              {bank.bankBranch}
+                                            </span>
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
 
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )}
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
 
                         {/* dueDate KHÔNG phụ thuộc transfer - chỉ hiển thị khi createReceipt */}
                         <FormItem>

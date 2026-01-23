@@ -442,15 +442,24 @@ const CreateInvoiceDialog = ({
   }
 
   const onSubmit = async (data) => {
+    console.log('=== 🔍 INVOICE SUBMIT DEBUG ===')
+    console.log('1. Form data:', data)
+    console.log('2. Selected products:', selectedProducts)
+    console.log('3. Customer edit data:', customerEditData)
+    console.log('4. Is print contract:', isPrintContract)
+    console.log('5. Expected delivery date:', expectedDeliveryDate)
+
     // Validate: must have at least one product
     if (!selectedProducts || selectedProducts.length === 0) {
+      console.log('❌ FAIL: No products selected')
       toast.error('Vui lòng chọn ít nhất 1 sản phẩm')
       return
     }
+    console.log('✅ PASS: Has products')
 
     // Validate: customer either selected or filled manually with all required fields
     const hasSelectedCustomer = !!data.customerId
-    const hasNewCustomerData = customerEditData && 
+    const hasNewCustomerData = customerEditData &&
       customerEditData.name?.trim() &&
       customerEditData.phone?.trim() &&
       customerEditData.address?.trim() &&
@@ -458,16 +467,32 @@ const CreateInvoiceDialog = ({
       customerEditData.identityDate &&
       customerEditData.identityPlace?.trim()
 
+    console.log('6. Has selected customer:', hasSelectedCustomer)
+    console.log('7. Has new customer data:', hasNewCustomerData)
+    console.log('   - name:', customerEditData?.name)
+    console.log('   - phone:', customerEditData?.phone)
+    console.log('   - address:', customerEditData?.address)
+    console.log('   - identityCard:', customerEditData?.identityCard)
+    console.log('   - identityDate:', customerEditData?.identityDate)
+    console.log('   - identityPlace:', customerEditData?.identityPlace)
+
     if (!hasSelectedCustomer && !hasNewCustomerData) {
+      console.log('❌ FAIL: No customer selected and no new customer data')
       toast.error('Vui lòng chọn khách hàng hoặc nhập đầy đủ thông tin khách hàng mới (Tên, SĐT, Địa chỉ, CCCD, Ngày cấp, Nơi cấp)')
       return
     }
+    console.log('✅ PASS: Has customer')
 
     // Validate: if printing contract, must have expected delivery date
     if (isPrintContract && !expectedDeliveryDate) {
+      console.log('❌ FAIL: Print contract but no delivery date')
       toast.error('Vui lòng chọn ngày dự kiến giao hàng khi in hợp đồng')
       return
     }
+    console.log('✅ PASS: Contract validation OK')
+    console.log('=== ✅ ALL VALIDATIONS PASSED ===')
+    console.log('Proceeding to submit...')
+
 
     // validations liên quan expiry/account giữ nguyên
     for (const product of selectedProducts) {
@@ -589,13 +614,16 @@ const CreateInvoiceDialog = ({
             ? product?.warrantyPolicy?.warrantyCost
             : 0,
         applyWarranty: !!applyWarrantyItems[product.id],
+
+        // ========== IN HỢP ĐỒNG ==========
+        isContractItem: !!selectedContractProducts[product.id],
       }
     })
 
     const dataToSend = {
       userId: authUserWithRoleHasPermissions.id,
-      customerId: data.customerId,
-      date: new Date().toISOString(),
+      customerId: data.customerId || null,
+      orderDate: data.orderDate || new Date().toISOString(),
       note: data.note,
       taxAmount: calculateTotalTax(),
       amount: calculateTotalAmount(),
@@ -610,10 +638,30 @@ const CreateInvoiceDialog = ({
       bankAccount: data.paymentMethod === 'transfer' ? data.bankAccount : null,
       dueDate: data.dueDate || null,
       ...(otherExpenses?.price > 0 && { otherExpenses: [otherExpenses] }),
-      ...(customerEditData && { customerUpdateData: customerEditData }),
-      ...(isPrintContract && { 
-        printContract: true, 
-        selectedContractProductIds: Object.keys(selectedContractProducts).filter(id => selectedContractProducts[id]).map(Number),
+
+      // ========== KHÁCH HÀNG MỚI (khi không chọn customerId) ==========
+      ...((!data.customerId && customerEditData) && {
+        newCustomer: {
+          name: customerEditData.name || '',
+          phone: customerEditData.phone || '',
+          email: customerEditData.email || '',
+          address: customerEditData.address || '',
+          identityCard: customerEditData.identityCard || '',
+          identityDate: customerEditData.identityDate || null,
+          identityPlace: customerEditData.identityPlace || '',
+        }
+      }),
+
+      // ========== CẬP NHẬT KHÁCH HÀNG (khi đã chọn customerId) ==========
+      ...((data.customerId && customerEditData) && {
+        customerUpdateData: customerEditData
+      }),
+
+      // ========== OPTIONS IN ẤN ==========
+      isPrintContract: isPrintContract || false,
+      hasPrintInvoice: hasPrintInvoice || false,
+      hasPrintQuotation: hasPrintQuotation || false,
+      ...(isPrintContract && {
         expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate).toISOString() : null
       }),
     }
@@ -923,7 +971,7 @@ const CreateInvoiceDialog = ({
   const handleSelectCustomer = async (customer) => {
     setSelectedCustomer(customer)
     form.setValue('customerId', customer?.id.toString())
-    
+
     // Initialize customerEditData with customer info
     setCustomerEditData({
       name: customer?.name || '',
@@ -1356,7 +1404,7 @@ const CreateInvoiceDialog = ({
           <DialogTrigger asChild>
             <Button className="mx-2" variant="outline" size="sm">
               <PlusIcon className="mr-2 size-4" aria-hidden="true" />
-              Tạo hóa đơn
+              Tạo đơn bán
             </Button>
           </DialogTrigger>
         )}
@@ -1364,10 +1412,10 @@ const CreateInvoiceDialog = ({
         <DialogContent className="max-w-screen w-screen p-0 m-0 h-[calc(100vh-64px)] md:max-h-screen md:h-screen">
           <DialogHeader className="px-6 pt-4">
             <DialogTitle>
-              Tạo hóa đơn mới
+              Tạo đơn bán mới
             </DialogTitle>
             <DialogDescription>
-              Chọn sản phẩm và điền thông tin để tạo hóa đơn
+              Chọn sản phẩm và điền thông tin để tạo đơn bán
             </DialogDescription>
           </DialogHeader>
 

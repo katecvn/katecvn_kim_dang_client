@@ -12,8 +12,8 @@ const statuses = [
     color: 'text-gray-500',
   },
   {
-    value: 'active',
-    label: 'Đang hiệu lực',
+    value: 'confirmed',
+    label: 'Đã xác nhận',
     icon: IconFileInvoiceFilled,
     color: 'text-blue-500',
   },

@@ -72,6 +72,7 @@ export default function ExportSaleAgreement({ data = {} }) {
   const items = data?.items ?? defaultItems
   const total = { ...defaultTotal, ...(data?.total || {}) }
   const notes = data?.notes ?? defaultNotes
+  const noteContent = data?.note || `Ngày ${agreementDate.day}/${agreementDate.month}/${agreementDate.year} .......... thỏ thanh trái ........... ............................... Hẹn ${agreementDate.day}/${agreementDate.month}/80 ng.ay`
 
   return (
     <div style={{
@@ -79,7 +80,7 @@ export default function ExportSaleAgreement({ data = {} }) {
       width: '100%',
       justifyContent: 'center',
       backgroundColor: '#f3f4f6',
-      padding: '16px'
+      padding: '16px',
     }}>
       <div
         style={{
@@ -90,6 +91,7 @@ export default function ExportSaleAgreement({ data = {} }) {
           width: '210mm',
           height: '148mm',
           fontFamily: 'Times New Roman, Times, serif',
+          overflow: 'hidden',
         }}
       >
         {/* HEADER - Nền đen */}
@@ -154,271 +156,288 @@ export default function ExportSaleAgreement({ data = {} }) {
           flex: '1',
           flexDirection: 'column',
           backgroundColor: '#f3ecec',
-          padding: '12px 24px'
+          padding: '0px 24px 12px 24px'
         }}>
-          {/* Tên khách hàng */}
-          <div style={{ marginBottom: '12px' }}>
-            <span style={{ fontWeight: '600' }}>Tên khách hàng:</span>{' '}
-            <span style={{
-              fontFamily: 'Segoe Script, Comic Sans MS, cursive',
-              fontSize: '18px',
-              color: '#1d4ed8'
-            }}>
-              {safe(customer.name)}
-            </span>
-            {customer.phone && (
-              <>
-                {' - '}
-                <span style={{
-                  fontFamily: 'Segoe Script, Comic Sans MS, cursive',
-                  fontSize: '18px',
-                  color: '#1d4ed8'
-                }}>
-                  {safe(customer.phone)}
-                </span>
-              </>
-            )}
-          </div>
+          <div className='paper'>
+            {/* Tên khách hàng */}
+            <div style={{ marginBottom: '12px' }}>
+              <span style={{ fontWeight: '600' }}>Tên khách hàng:</span>{' '}
+              <span style={{
+                fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                fontSize: '18px',
+                color: '#1d4ed8'
+              }}>
+                {safe(customer.name)}
+              </span>
+              {customer.phone && (
+                <>
+                  {' - '}
+                  <span style={{
+                    fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                    fontSize: '18px',
+                    color: '#1d4ed8'
+                  }}>
+                    {safe(customer.phone)}
+                  </span>
+                </>
+              )}
+            </div>
 
-          {/* BẢNG SẢN PHẨM - Chiều cao cố định cao hơn */}
-          <div style={{
-            marginBottom: '12px',
-            height: '180px'
-          }}>
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                border: '1px solid black',
-                fontSize: '14px',
-                height: '100%'
-              }}
-            >
-              <thead>
-                <tr style={{ backgroundColor: 'white' }}>
-                  <th style={{
-                    border: '1px solid black',
-                    padding: '6px 8px',
-                    textAlign: 'center',
-                    fontWeight: 'bold'
-                  }}>
-                    MÓN HÀNG
-                  </th>
-                  <th style={{
-                    border: '1px solid black',
-                    padding: '6px 8px',
-                    textAlign: 'center',
-                    fontWeight: 'bold'
-                  }}>
-                    CÂN NẶNG
-                  </th>
-                  <th style={{
-                    border: '1px solid black',
-                    padding: '6px 8px',
-                    textAlign: 'center',
-                    fontWeight: 'bold'
-                  }}>
-                    THÀNH TIỀN
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, index) => (
-                  <tr key={index} style={{ backgroundColor: 'white' }}>
-                    <td style={{
+            {/* BẢNG SẢN PHẨM - Chiều cao cố định cao hơn */}
+            <div style={{
+              marginBottom: '12px',
+              height: '180px'
+            }}>
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  border: '1px solid black',
+                  fontSize: '14px',
+                  height: '100%'
+                }}
+              >
+                <thead>
+                  <tr style={{ backgroundColor: 'white' }}>
+                    <th style={{
                       border: '1px solid black',
-                      padding: '8px'
+                      padding: '6px 8px',
+                      textAlign: 'center',
+                      fontWeight: 'bold'
                     }}>
-                      <div style={{
+                      MÓN HÀNG
+                    </th>
+                    <th style={{
+                      border: '1px solid black',
+                      padding: '6px 8px',
+                      textAlign: 'center',
+                      fontWeight: 'bold'
+                    }}>
+                      CÂN NẶNG
+                    </th>
+                    <th style={{
+                      border: '1px solid black',
+                      padding: '6px 8px',
+                      textAlign: 'center',
+                      fontWeight: 'bold'
+                    }}>
+                      THÀNH TIỀN
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, index) => (
+                    <tr key={index} style={{ backgroundColor: 'white' }}>
+                      <td style={{
+                        border: '1px solid black',
+                        padding: '8px'
+                      }}>
+                        <div style={{
+                          fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                          color: '#1d4ed8'
+                        }}>
+                          {safe(item.name)}
+                        </div>
+                        {item.purity && (
+                          <div style={{
+                            fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                            color: '#1d4ed8'
+                          }}>
+                            {item.purity}
+                            {item.weight && <> - {item.weight}</>}
+                          </div>
+                        )}
+                        {item.description && (
+                          <div style={{
+                            fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                            color: '#1d4ed8'
+                          }}>
+                            {safe(item.description)}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{
                         fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                        border: '1px solid black',
+                        padding: '8px',
+                        textAlign: 'center',
                         color: '#1d4ed8'
                       }}>
-                        {safe(item.name)}
-                      </div>
-                      {item.purity && (
-                        <div style={{
-                          fontFamily: 'Segoe Script, Comic Sans MS, cursive',
-                          color: '#1d4ed8'
-                        }}>
-                          {item.purity}
-                          {item.weight && <> - {item.weight}</>}
-                        </div>
-                      )}
-                      {item.description && (
-                        <div style={{
-                          fontFamily: 'Segoe Script, Comic Sans MS, cursive',
-                          color: '#1d4ed8'
-                        }}>
-                          {safe(item.description)}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{
-                      fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                        {safe(item.weightDetail)}
+                      </td>
+                      <td style={{
+                        fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                        border: '1px solid black',
+                        padding: '8px',
+                        textAlign: 'right',
+                        color: '#1d4ed8'
+                      }}>
+                        {vnd(item.total || 0)}
+                      </td>
+                    </tr>
+                  ))}
+
+                  {/* Total row */}
+                  <tr style={{ backgroundColor: 'white' }}>
+                    <td colSpan={2} style={{
                       border: '1px solid black',
                       padding: '8px',
-                      textAlign: 'center',
-                      color: '#1d4ed8'
+                      textAlign: 'right',
+                      fontWeight: 'bold'
                     }}>
-                      {safe(item.weightDetail)}
+                      TỔNG CỘNG:
                     </td>
                     <td style={{
                       fontFamily: 'Segoe Script, Comic Sans MS, cursive',
                       border: '1px solid black',
                       padding: '8px',
                       textAlign: 'right',
+                      fontWeight: 'bold',
                       color: '#1d4ed8'
                     }}>
-                      {vnd(100000)}
+                      {vnd(items.reduce((sum, item) => sum + (item.total || 0), 0))}
                     </td>
                   </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* CHỮ KÝ */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ width: '50%' }}>
+                <div style={{
+                  marginBottom: '4px',
+                  fontWeight: 'bold'
+                }}>
+                  GHI CHÚ
+                </div>
+                {noteContent.split('\n').map((line, idx) => (
+                  <div key={idx} style={{
+                    fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                    borderBottom: '1px dotted #9ca3af',
+                    paddingBottom: '4px',
+                    fontSize: '14px',
+                    color: '#1d4ed8',
+                    minHeight: '20px'
+                  }}>
+                    {safe(line)}
+                  </div>
                 ))}
-
-                {/* Empty rows */}
-                {Array.from({ length: Math.max(0, 3 - items.length) }).map(
-                  (_, i) => (
-                    <tr key={`empty-${i}`} style={{ backgroundColor: 'white' }}>
-                      <td style={{
-                        border: '1px solid black',
-                        padding: '8px'
-                      }}>&nbsp;</td>
-                      <td style={{
-                        border: '1px solid black',
-                        padding: '8px'
-                      }}>&nbsp;</td>
-                      <td style={{
-                        border: '1px solid black',
-                        padding: '8px'
-                      }}>&nbsp;</td>
-                    </tr>
-                  ),
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* CHỮ KÝ */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between'
-          }}>
-            <div style={{ width: '50%' }}>
-              <div style={{
-                marginBottom: '4px',
-                fontWeight: 'bold'
-              }}>
-                GHI CHÚ
               </div>
+
               <div style={{
-                fontFamily: 'Segoe Script, Comic Sans MS, cursive',
-                borderBottom: '1px dotted #9ca3af',
-                paddingBottom: '4px',
-                fontSize: '14px',
-                color: '#1d4ed8'
+                width: '50%',
+                textAlign: 'center'
               }}>
-                Ngày {agreementDate.day}/{agreementDate.month}/
-                {agreementDate.year} .......... thỏ thanh trái ...........
-              </div>
-              <div style={{
-                fontFamily: 'Segoe Script, Comic Sans MS, cursive',
-                borderBottom: '1px dotted #9ca3af',
-                paddingBottom: '4px',
-                fontSize: '14px',
-                color: '#1d4ed8'
-              }}>
-                ............................... Hẹn {agreementDate.day}/
-                {agreementDate.month}/80 ng.ay
+                <div style={{
+                  marginBottom: '4px',
+                  fontWeight: 'bold'
+                }}>
+                  KHÁCH HÀNG
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  fontStyle: 'italic'
+                }}>
+                  Ký xác nhận
+                </div>
+
+                {/* Khoảng trống cho chữ ký */}
+                <div style={{ marginTop: '50px' }}></div>
+
+                {/* Tên khách hàng */}
+                <div style={{
+                  fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                  color: '#1d4ed8'
+                }}>
+                  {safe(customer.name)}
+                </div>
               </div>
             </div>
+
+            {/* GHI CHÚ CUỐI */}
+            <div style={{
+              marginTop: '12px',
+              fontSize: '10px',
+              lineHeight: '1.625'
+            }}>
+              {notes.map((note, index) => (
+                <div key={index} style={index === 0 ? { fontWeight: '600' } : {}}>
+                  {note}
+                </div>
+              ))}
+            </div>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              position: 'absolute',
+              left: '-30px',
+              bottom: '-30px',
+              transform: 'rotate(45deg)',
+              backgroundColor: '#f3ecec',
+              borderTop: '1px solid black',
+            }}></div>
 
             <div style={{
-              width: '50%',
-              textAlign: 'center'
+              width: '60px',
+              height: '60px',
+              position: 'absolute',
+              right: '-30px',
+              bottom: '-30px',
+              transform: 'rotate(-45deg)',
+              backgroundColor: '#f3ecec',
+              borderTop: '1px solid black',
+            }}></div>
+          </div>
+
+          {/* FOOTER - Cùng màu với body (amber-50) - Sát dưới */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: '#f3ecec',
+            padding: '8px 176px',
+            fontSize: '12px',
+            color: '#1f2937'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
             }}>
-              <div style={{
-                marginBottom: '4px',
-                fontWeight: 'bold'
-              }}>
-                KHÁCH HÀNG
-              </div>
-              <div style={{
-                fontSize: '12px',
-                fontStyle: 'italic'
-              }}>
-                Ký xác nhận
-              </div>
-
-              {/* Khoảng trống cho chữ ký */}
-              <div style={{ marginTop: '32px' }}></div>
-
-              {/* Tên khách hàng */}
-              <div style={{
-                fontFamily: 'Segoe Script, Comic Sans MS, cursive',
-                color: '#1d4ed8'
-              }}>
-                {safe(customer.name)}
-              </div>
+              <svg
+                style={{
+                  height: '14px',
+                  width: '14px'
+                }}
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+              </svg>
+              <span>{safe(company.address)}</span>
             </div>
-          </div>
-
-          {/* GHI CHÚ CUỐI */}
-          <div style={{
-            marginTop: '12px',
-            fontSize: '10px',
-            lineHeight: '1.625'
-          }}>
-            {notes.map((note, index) => (
-              <div key={index} style={index === 0 ? { fontWeight: '600' } : {}}>
-                {note}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* FOOTER - Cùng màu với body (amber-50) - Sát dưới */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: '#f3ecec',
-          padding: '8px 176px',
-          fontSize: '12px',
-          color: '#1f2937'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}>
-            <svg
-              style={{
-                height: '14px',
-                width: '14px'
-              }}
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-            </svg>
-            <span>{safe(company.address)}</span>
-          </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}>
-            <svg
-              style={{
-                height: '14px',
-                width: '14px'
-              }}
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
-            </svg>
-            <span>{safe(company.phone)}</span>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <svg
+                style={{
+                  height: '14px',
+                  width: '14px'
+                }}
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+              </svg>
+              <span>{safe(company.phone)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -434,7 +453,13 @@ export default function ExportSaleAgreement({ data = {} }) {
             print-color-adjust: exact;
           }
         }
+        .paper {
+          position: relative;
+          padding: 12px 35px 5px 35px;
+          border: 1px solid black;
+          border-top: none;
+        }
       `}</style>
-    </div>
+    </div >
   )
 }

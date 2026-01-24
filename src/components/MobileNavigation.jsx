@@ -20,6 +20,7 @@ const MobileNavigation = ({ onCategoryClick }) => {
 
   const navItems = [
     {
+      id: 'category',
       label: 'Danh mục',
       icon: Home,
       path: '/category',
@@ -27,24 +28,28 @@ const MobileNavigation = ({ onCategoryClick }) => {
       isToggleSidebar: true
     },
     {
+      id: 'orders',
       label: 'Đơn hàng',
       icon: Package,
       path: '/invoice',
       isCenter: false
     },
     {
+      id: 'cart',
       label: 'Giỏ hàng',
       icon: ShoppingCart,
       path: '/invoice',
       isCenter: true
     },
     {
+      id: 'purchase',
       label: 'Đơn mua',
       icon: Receipt,
       path: '/purchase-order',
       isCenter: false
     },
     {
+      id: 'revenue',
       label: 'Báo cáo',
       icon: TrendingUp,
       path: '/revenue',
@@ -90,7 +95,7 @@ const MobileNavigation = ({ onCategoryClick }) => {
           const active = isActive(item.path)
 
           return (
-            <div key={item.path} className="flex-1 flex justify-center">
+            <div key={item.id} className="flex-1 flex justify-center">
               {item.isCenter ? (
                 // Center floating action button with badge
                 <button

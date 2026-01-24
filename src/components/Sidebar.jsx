@@ -58,13 +58,13 @@ const Sidebar = ({ className, isCollapsed, setIsCollapsed }) => {
                   strokeLinejoin="round"
                   strokeWidth="16"
                 ></line>
-                <span className="sr-only">CRM</span>
+                <span className="sr-only">KIM ĐẶNG</span>
               </svg>
               <div
                 className={`flex flex-col justify-end truncate ${isCollapsed ? 'invisible w-0' : 'visible w-auto'}`}
               >
                 <span className="mx-2 text-2xl font-bold uppercase text-secondary dark:text-primary">
-                  CRM
+                  KIM ĐẶNG
                 </span>
               </div>
             </div>
@@ -90,11 +90,10 @@ const Sidebar = ({ className, isCollapsed, setIsCollapsed }) => {
         {/* Navigation links */}
         <Nav
           id="sidebar-menu"
-          className={`h-full flex-1 overflow-y-auto overflow-x-hidden transition-all ${
-            navOpened
+          className={`h-full flex-1 overflow-y-auto overflow-x-hidden transition-all ${navOpened
               ? 'max-h-[80vh] py-2 md:max-h-screen'
               : 'max-h-0 py-0 md:max-h-screen md:py-2'
-          }`}
+            }`}
           closeNav={() => setNavOpened(false)}
           isCollapsed={isCollapsed}
           links={sideLinks}

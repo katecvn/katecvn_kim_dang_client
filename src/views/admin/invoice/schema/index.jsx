@@ -17,13 +17,8 @@ const createInvoiceSchema = z
       .optional(),
     paymentMethod: z.string().nonempty('Bắt buộc'),
     paymentNote: z.string().max(190, 'Tối đa 190 ký tự'),
-    bankAccount: z.any().nullable(),
     dueDate: z.string().nullable().optional(),
     orderDate: z.string().nullable().optional(),
-  })
-  .refine((data) => data.paymentMethod !== 'transfer' || !!data.bankAccount, {
-    path: ['bankAccount'],
-    message: 'Vui lòng chọn tài khoản nhận tiền',
   })
 
 const updateInvoiceSchema = z.object({
@@ -41,7 +36,6 @@ const updateInvoiceSchema = z.object({
     .optional(),
   paymentMethod: z.string().nonempty('Bắt buộc'),
   paymentNote: z.string().max(190, 'Tối đa 190 ký tự'),
-  bankAccount: z.any().nullable(),
   dueDate: z.string().nullable().optional(),
   orderDate: z.string().nullable().optional(),
 })

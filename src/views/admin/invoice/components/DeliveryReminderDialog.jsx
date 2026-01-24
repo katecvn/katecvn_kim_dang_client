@@ -16,6 +16,7 @@ import RichTextEditor from '@/components/custom/RichTextEditor'
 import { Checkbox } from '@/components/ui/checkbox'
 
 const DeliveryReminderDialog = ({ open, onOpenChange, selectedInvoices = [] }) => {
+  console.log(selectedInvoices);
   const [subject, setSubject] = useState('')
   const [content, setContent] = useState('')
   const [selectedIds, setSelectedIds] = useState([])
@@ -42,8 +43,8 @@ const DeliveryReminderDialog = ({ open, onOpenChange, selectedInvoices = [] }) =
 
     const customerName = firstInvoice.customer?.name || 'Quý khách'
     const invoiceCode = firstInvoice.code || ''
-    const deliveryDate = firstInvoice.expectedDeliveryDate
-      ? dateFormat(firstInvoice.expectedDeliveryDate)
+    const deliveryDate = firstInvoice.salesContract?.deliveryDate
+      ? dateFormat(firstInvoice.salesContract.deliveryDate)
       : 'sớm nhất'
 
     setSubject(`Thông báo giao hàng - ${invoiceCode}`)
@@ -121,7 +122,7 @@ const DeliveryReminderDialog = ({ open, onOpenChange, selectedInvoices = [] }) =
               <div className="max-h-60 space-y-2 overflow-y-auto rounded border p-3">
                 {undeliveredInvoices.map((invoice) => {
                   const isSelected = selectedIds.includes(invoice.id)
-                  const deliveryDate = invoice.expectedDeliveryDate
+                  const deliveryDate = invoice.salesContract?.deliveryDate
                   const isOverdue =
                     deliveryDate && new Date(deliveryDate) < new Date()
 
@@ -155,7 +156,7 @@ const DeliveryReminderDialog = ({ open, onOpenChange, selectedInvoices = [] }) =
                             }
                           >
                             Giao:{' '}
-                            {deliveryDate ? dateFormat(deliveryDate) : 'Chưa có'}
+                            {deliveryDate ? dateFormat(deliveryDate) : 'Chưa có hợp đồng'}
                           </span>
                           {isOverdue && (
                             <>

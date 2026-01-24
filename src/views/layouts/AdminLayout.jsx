@@ -7,11 +7,9 @@ import useIsCollapsed from '@/hooks/UseIsCollapsed'
 import Notification from '@/components/custom/Notification'
 import NotificationBell from '@/components/NotificationBell'
 import MobileNavigation from '@/components/MobileNavigation'
-import { useRef } from 'react'
 
 const AdminLayout = () => {
   const [isCollapsed, setIsCollapsed] = useIsCollapsed()
-  const sidebarToggleRef = useRef()
 
   const handleCategoryClick = () => {
     // Trigger sidebar toggle by clicking the menu button in sidebar header
@@ -27,7 +25,6 @@ const AdminLayout = () => {
       <Sidebar 
         isCollapsed={isCollapsed} 
         setIsCollapsed={setIsCollapsed}
-        ref={sidebarToggleRef}
       />
       <main
         id="content"

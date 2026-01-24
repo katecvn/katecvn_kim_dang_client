@@ -9,27 +9,20 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/custom/Button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import ExportAgreement from './ExportAgreement'
-import WarrantyRichTextEditor from './WarrantyRichTextEditor'
 
 const safe = (v, fallback = '') => (v === 0 || v ? String(v) : fallback)
 
-const defaultTerms = {
-  vatIncludedText: 'Giá trên đã bao gồm VAT',
-  deliveryTimeText: '1-2 ngày',
-  validityDaysText: '07 ngày',
-  paymentMethodText: 'Hình thức thanh toán: Chuyển khoản',
-  paymentDeadlineText:
-    'Thanh toán 100% trong vòng 03 ngày sau khi xác nhận bàn giao & hóa đơn VAT',
-}
-
-const defaultWarranty = {
-  html: `<p><strong><span style="color:#ef4444">*** Thời gian Bảo hành: ...</span></strong></p>
-<p><strong>*** Điều kiện Bảo hành:</strong></p>
-<p>*** Sản phẩm được bảo hành nếu còn trong thời hạn và có hóa đơn chứng từ hợp lệ. Bảo hành chỉ áp dụng cho lỗi kỹ thuật của nhà sản xuất. Không áp dụng bảo hành với hao mòn tự nhiên, hư hỏng do sử dụng sai cách.</p>
-<p>*** Nhà xưởng Cần Thơ: Cạnh 079, KV Yên Thạnh, P.Cái Răng, TP. Cần Thơ</p>
-<p><strong>*** Hotline: 0796.99.65.65</strong></p>`,
-}
+const defaultNotes = [
+  'Chúng tôi giao sản phẩm cho quý khách kèm đầy đủ giấy tờ bao gồm:',
+  '+ Giấy giám định (đối với sản phẩm có kiểm định)',
+  '+ Giấy đảm bảo (đối với tất cả sản phẩm)',
+  'Quý khách vui lòng kiểm tra kỹ sản phẩm và các giấy tờ thỏa thuận trước khi rời khỏi cửa hàng.',
+  'Chúng tôi sẽ không giải quyết bất kì trường hợp ngoại lệ nào xảy ra không được nêu trong điều kiện đảm bảo.',
+  'Trang sức chúng tôi đã cân trọng lượng trước khi giao, chúng tôi không chịu trách nhiệm thu lại nếu quý khách chỉnh sửa nỉ chỗ khác.',
+]
 
 export default function AgreementPreviewDialog({
   open,
@@ -38,6 +31,7 @@ export default function AgreementPreviewDialog({
   onConfirm,
 }) {
   const [formData, setFormData] = useState(initialData || {})
+  const isMobile = useMediaQuery('(max-width: 768px)')
 
   useEffect(() => {
     if (!initialData) {
@@ -47,14 +41,11 @@ export default function AgreementPreviewDialog({
 
     const merged = {
       ...initialData,
-      terms: {
-        ...defaultTerms,
-        ...(initialData.terms || {}),
+      agreement: {
+        ...initialData.agreement,
+        code: initialData.agreement?.code || '1801755621',
       },
-      warranty: {
-        ...defaultWarranty,
-        ...(initialData.warranty || {}),
-      },
+      notes: initialData.notes || defaultNotes,
     }
 
     setFormData(merged)
@@ -90,254 +81,297 @@ export default function AgreementPreviewDialog({
     })
   }
 
-  const terms = formData.terms ?? {}
-  const warranty = formData.warranty ?? {}
+  const handleNoteChange = (index, value) => {
+    setFormData((prev) => {
+      const clone = structuredClone(prev ?? {})
+      const notes = Array.isArray(clone.notes) ? clone.notes : []
+      notes[index] = value
+      clone.notes = notes
+      return clone
+    })
+  }
+
   const agreement = formData.agreement ?? {}
   const customer = formData.customer ?? {}
+  const items = formData.items ?? []
+  const notes = formData.notes ?? []
+
+  // Form fields JSX (not a function component to avoid re-creation on render)
+  const formFieldsContent = (
+    <div className="space-y-4">
+      <div>
+        <h3 className="mb-2 text-sm font-semibold">Thông tin thỏa thuận</h3>
+        <div className="space-y-2">
+          <label className="block text-xs font-medium">
+            Tiêu đề
+            <Input
+              className="mt-1 h-8 text-xs"
+              value={safe(agreement.title)}
+              onChange={(e) =>
+                handleChange('agreement.title', e.target.value)
+              }
+            />
+          </label>
+
+          <label className="block text-xs font-medium">
+            Mã số (MST)
+            <Input
+              className="mt-1 h-8 text-xs"
+              value={safe(agreement.code)}
+              onChange={(e) => handleChange('agreement.code', e.target.value)}
+            />
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-sm font-semibold">
+          Thông tin khách hàng
+        </h3>
+        <div className="space-y-2">
+          <label className="block text-xs font-medium">
+            Tên khách hàng
+            <Input
+              className="mt-1 h-8 text-xs"
+              value={safe(customer.name)}
+              onChange={(e) =>
+                handleChange('customer.name', e.target.value)
+              }
+            />
+          </label>
+          <label className="block text-xs font-medium">
+            Số điện thoại
+            <Input
+              className="mt-1 h-8 text-xs"
+              value={safe(customer.phone)}
+              onChange={(e) =>
+                handleChange('customer.phone', e.target.value)
+              }
+            />
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-sm font-semibold">
+          Chi tiết sản phẩm
+        </h3>
+        <div className="space-y-3">
+          {items.map((item, idx) => (
+            <div key={idx} className="rounded border bg-white p-2">
+              <div className="text-xs font-semibold mb-2">
+                Sản phẩm {idx + 1}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-medium">
+                  Tên món hàng
+                  <Input
+                    className="mt-1 h-8 text-xs"
+                    value={safe(item.name, '')}
+                    onChange={(e) =>
+                      handleItemChange(idx, 'name', e.target.value)
+                    }
+                  />
+                </label>
+
+                <label className="block text-xs font-medium">
+                  Cân nặng (hiển thị trong bảng)
+                  <Input
+                    className="mt-1 h-8 text-xs"
+                    value={safe(item.weightDetail, '')}
+                    onChange={(e) =>
+                      handleItemChange(idx, 'weightDetail', e.target.value)
+                    }
+                    placeholder="Ví dụ: 1 Lượng (Cây) x 76,000,000"
+                  />
+                </label>
+
+                <label className="block text-xs font-medium">
+                  Thành tiền
+                  <Input
+                    className="mt-1 h-8 text-xs"
+                    type="number"
+                    value={safe(item.total, '')}
+                    onChange={(e) =>
+                      handleItemChange(idx, 'total', Number(e.target.value))
+                    }
+                    placeholder="Ví dụ: 76000000"
+                  />
+                </label>
+              </div>
+            </div>
+          ))}
+
+          {items.length === 0 && (
+            <div className="text-xs text-muted-foreground">
+              Không có sản phẩm
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-sm font-semibold">Ghi chú (Phần chữ ký)</h3>
+        <div className="space-y-2">
+          <label className="block text-xs font-medium">
+            Nội dung ghi chú
+            <Textarea
+              className="mt-1 h-20 text-xs"
+              value={safe(formData.note, '')}
+              onChange={(e) =>
+                handleChange('note', e.target.value)
+              }
+              placeholder="Ngày 24/01/2026 .......... thỏ thanh trái ...&#10;............................... Hẹn 24/01/80 ng.ay"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-2 text-sm font-semibold">Ghi chú (Điều khoản cuối)</h3>
+        <div className="space-y-2">
+          {notes.map((note, idx) => (
+            <label key={idx} className="block text-xs font-medium">
+              Dòng {idx + 1}
+              <Textarea
+                className="mt-1 h-12 text-xs"
+                value={safe(note, '')}
+                onChange={(e) =>
+                  handleNoteChange(idx, e.target.value)
+                }
+              />
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // Preview content JSX (not a function component to avoid re-creation on render)
+  const previewContent = (
+    <div className="flex-1 overflow-auto rounded border bg-muted/40 p-2">
+      <div className="flex items-center justify-between pb-2 text-xs text-muted-foreground">
+        <span>Xem trước</span>
+        <span className="hidden md:inline">(Nội dung như khi in/export PDF)</span>
+      </div>
+      <div className={isMobile
+        ? "overflow-x-auto overflow-y-auto border bg-white max-w-full"
+        : "overflow-auto border bg-white"
+      }>
+        <div style={isMobile ? {
+          transform: 'scale(0.45)',
+          transformOrigin: 'top left',
+          minWidth: '210mm',
+        } : {}}>
+          <ExportAgreement data={formData} />
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[80vw] gap-4">
-        <DialogHeader>
-          <DialogTitle>Xem trước & chỉnh sửa thỏa thuận mua bán</DialogTitle>
-        </DialogHeader>
+      <DialogContent
+        className={isMobile
+          ? "max-w-full w-full h-full p-0 gap-0 flex flex-col"
+          : "max-w-[80vw] gap-4"
+        }
+      >
+        {/* Mobile: Complete custom layout */}
+        {isMobile ? (
+          <>
+            <DialogHeader className="px-4 pt-4 pb-2 shrink-0 border-b">
+              <DialogTitle className="text-base">
+                Xem trước & chỉnh sửa thỏa thuận mua bán
+              </DialogTitle>
+            </DialogHeader>
 
-        <div className="flex h-[80vh] gap-4 overflow-hidden">
-          <div className="w-[30%] overflow-y-auto pr-2">
-            <h3 className="mb-2 text-sm font-semibold">Thông tin chung</h3>
-            <div className="space-y-2">
-              <label className="block text-xs font-medium">
-                Tiêu đề
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(agreement.title)}
-                  onChange={(e) =>
-                    handleChange('agreement.title', e.target.value)
-                  }
-                />
-              </label>
+            <Tabs defaultValue="preview" className="flex flex-col flex-1 overflow-hidden">
+              <div className="px-4 py-2 shrink-0">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="edit">Chỉnh sửa</TabsTrigger>
+                  <TabsTrigger value="preview">Xem trước</TabsTrigger>
+                </TabsList>
+              </div>
 
-              <label className="block text-xs font-medium">
-                Tiêu đề phụ
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(agreement.subtitle)}
-                  onChange={(e) =>
-                    handleChange('agreement.subtitle', e.target.value)
-                  }
-                />
-              </label>
+              <TabsContent value="edit" className="flex-1 overflow-y-auto px-4 mt-0 data-[state=inactive]:hidden">
+                {formFieldsContent}
+              </TabsContent>
 
-              <label className="block text-xs font-medium">
-                Số thỏa thuận
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(agreement.no)}
-                  onChange={(e) => handleChange('agreement.no', e.target.value)}
-                />
-              </label>
-            </div>
-
-            <h3 className="mb-2 mt-4 text-sm font-semibold">
-              Thông tin khách hàng
-            </h3>
-            <div className="space-y-2">
-              <label className="block text-xs font-medium">
-                Kính gửi
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(customer.name)}
-                  onChange={(e) =>
-                    handleChange('customer.name', e.target.value)
-                  }
-                />
-              </label>
-              <label className="block text-xs font-medium">
-                Đơn vị
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(customer.unit)}
-                  onChange={(e) =>
-                    handleChange('customer.unit', e.target.value)
-                  }
-                />
-              </label>
-              <label className="block text-xs font-medium">
-                Địa chỉ
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(customer.address)}
-                  onChange={(e) =>
-                    handleChange('customer.address', e.target.value)
-                  }
-                />
-              </label>
-              <label className="block text-xs font-medium">
-                SĐT liên hệ
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(customer.tel)}
-                  onChange={(e) => handleChange('customer.tel', e.target.value)}
-                />
-              </label>
-              <label className="block text-xs font-medium">
-                Mã số thuế
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(customer.taxCode)}
-                  onChange={(e) => handleChange('customer.taxCode', e.target.value)}
-                />
-              </label>
-            </div>
-
-            <h3 className="mb-2 mt-4 text-sm font-semibold">
-              Chi tiết từng dòng hàng hóa
-            </h3>
-
-            <div className="space-y-3">
-              {(formData.items ?? []).map((it, idx) => (
-                <div key={idx} className="rounded border bg-white p-2">
-                  <div className="text-xs font-semibold">
-                    {idx + 1}. {safe(it.description, '(Chưa có tên hàng)')}
+              <TabsContent value="preview" className="flex-1 overflow-hidden mt-0 data-[state=inactive]:hidden">
+                <div className="h-full overflow-auto">
+                  <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground">
+                    <span>Xem trước</span>
                   </div>
-
-                  <div className="mt-2">
-                    <label className="block text-xs font-medium">
-                      Thông tin chi tiết
-                      <Textarea
-                        className="mt-1 h-10 text-xs"
-                        value={safe(it.details, '')}
-                        onChange={(e) =>
-                          handleItemChange(idx, 'details', e.target.value)
-                        }
-                        placeholder="Nhập thông tin chi tiết cho dòng này..."
-                      />
-                    </label>
+                  <div className="overflow-x-auto overflow-y-auto border-t bg-white">
+                    <div style={{
+                      transform: 'scale(0.45)',
+                      transformOrigin: 'top left',
+                      minWidth: '210mm',
+                    }}>
+                      <ExportAgreement data={formData} />
+                    </div>
                   </div>
                 </div>
-              ))}
+              </TabsContent>
+            </Tabs>
 
-              {!Array.isArray(formData.items) || formData.items.length === 0 ? (
-                <div className="text-xs text-muted-foreground">
-                  Không có dòng hàng hóa để chỉnh.
-                </div>
-              ) : null}
+            <DialogFooter className="px-4 py-3 shrink-0 flex-row gap-2 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="flex-1"
+              >
+                Hủy
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  onConfirm?.(formData)
+                }}
+                className="flex-1"
+              >
+                Xác nhận & Xuất PDF
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          /* Desktop: Side-by-side layout */
+          <>
+            <DialogHeader>
+              <DialogTitle>
+                Xem trước & chỉnh sửa thỏa thuận mua bán
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="flex h-[80vh] gap-4 overflow-hidden">
+              <div className="w-[30%] overflow-y-auto pr-2">
+                {formFieldsContent}
+              </div>
+              {previewContent}
             </div>
 
-            <h3 className="mb-2 mt-4 text-sm font-semibold">
-              Điều khoản & ghi chú
-            </h3>
-            <div className="space-y-2">
-              <div>
-                <label className="block text-xs font-bold text-blue-600">
-                  Giá đã bao gồm VAT (màu đỏ)
-                </label>
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(terms.vatIncludedText)}
-                  onChange={(e) =>
-                    handleChange('terms.vatIncludedText', e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-blue-600">
-                  Thời gian giao hàng/thực hiện (màu đỏ)
-                </label>
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(terms.deliveryTimeText)}
-                  onChange={(e) =>
-                    handleChange('terms.deliveryTimeText', e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-blue-600">
-                  Hiệu lực thỏa thuận (ví dụ: 07 ngày) (màu đỏ)
-                </label>
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(terms.validityDaysText)}
-                  onChange={(e) =>
-                    handleChange('terms.validityDaysText', e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-blue-600">
-                  Hình thức thanh toán
-                </label>
-                <Input
-                  className="mt-1 h-8 text-xs"
-                  value={safe(terms.paymentMethodText)}
-                  onChange={(e) =>
-                    handleChange('terms.paymentMethodText', e.target.value)
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-blue-600">
-                  Hạn thanh toán (màu đỏ)
-                </label>
-                <Textarea
-                  className="mt-1 h-16 text-xs"
-                  value={safe(terms.paymentDeadlineText)}
-                  onChange={(e) =>
-                    handleChange('terms.paymentDeadlineText', e.target.value)
-                  }
-                />
-              </div>
-            </div>
-
-            <h3 className="mb-2 mt-4 text-sm font-semibold">
-              Thông tin Bảo hành và CSKH
-            </h3>
-
-            <div className="space-y-2">
-              <div>
-                <div className="mt-1">
-                  <WarrantyRichTextEditor
-                    value={safe(warranty.html)}
-                    onChange={(html) => handleChange('warranty.html', html)}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-auto rounded border bg-muted/40 p-2">
-            <div className="flex items-center justify-between pb-2 text-xs text-muted-foreground">
-              <span>Xem trước</span>
-              <span>(Nội dung như khi in/export PDF)</span>
-            </div>
-            <div className="overflow-auto border bg-white">
-              <ExportAgreement data={formData} />
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-          >
-            Hủy
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              onConfirm?.(formData)
-            }}
-          >
-            Xác nhận & Xuất PDF
-          </Button>
-        </DialogFooter>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+              >
+                Hủy
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  onConfirm?.(formData)
+                }}
+              >
+                Xác nhận & Xuất PDF
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

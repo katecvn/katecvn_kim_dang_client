@@ -38,24 +38,30 @@ const DataTableRowActions = ({ row }) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
-          <Can permission={'VIEW_SALES_CONTRACT'}>
+          <Can permission={'GET_SALES_CONTRACT'}>
             <DropdownMenuItem onClick={() => setShowViewDialog(true)}>
-              <IconEye className="mr-2 h-4 w-4" />
-              Xem chi tiết
+              Xem
+              <DropdownMenuShortcut>
+                <IconEye className="h-4 w-4" />
+              </DropdownMenuShortcut>
             </DropdownMenuItem>
           </Can>
 
           <Can permission={'UPDATE_SALES_CONTRACT'}>
-            <DropdownMenuItem onClick={() => setShowUpdateDialog(true)}>
-              <IconPencil className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={() => setShowUpdateDialog(true)} className="text-blue-600">
               Sửa
+              <DropdownMenuShortcut>
+                <IconPencil className="h-4 w-4" />
+              </DropdownMenuShortcut>
             </DropdownMenuItem>
           </Can>
 
           <Can permission={'DELETE_SALES_CONTRACT'}>
-            <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
-              <IconTrash className="mr-2 h-4 w-4 text-red-500" />
-              <span className="text-red-500">Xóa</span>
+            <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
+              Xóa
+              <DropdownMenuShortcut>
+                <IconTrash className="h-4 w-4" />
+              </DropdownMenuShortcut>
             </DropdownMenuItem>
           </Can>
         </DropdownMenuContent>

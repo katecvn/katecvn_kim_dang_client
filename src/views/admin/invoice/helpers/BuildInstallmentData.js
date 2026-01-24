@@ -1,6 +1,7 @@
 import { toVietnamese } from '@/utils/money-format'
+import QRCode from 'qrcode'
 
-export function buildInstallmentData(invoice) {
+export async function buildInstallmentData(invoice) {
   const customer = invoice?.customer || {}
   const rawItems = Array.isArray(invoice?.invoiceItems)
     ? invoice.invoiceItems
@@ -27,11 +28,26 @@ export function buildInstallmentData(invoice) {
     total: Number(item?.total || 0),
   }))
 
+  // Generate QR code from salesContract.code
+  let qrCodeDataUrl = null
+  const contractCode = invoice?.salesContract?.code
+  if (contractCode) {
+    try {
+      qrCodeDataUrl = await QRCode.toDataURL(contractCode, {
+        width: 200,
+        margin: 1,
+        errorCorrectionLevel: 'M'
+      })
+    } catch (error) {
+      console.error('QR code generation error:', error)
+    }
+  }
+
   return {
     company: invoice?.company || undefined,
 
     contract: {
-      no: invoice?.code || 'HĐTC-2025-001',
+      no: invoice?.salesContract?.code || invoice?.code || 'HĐTC-2025-001',
       date: invoice?.date || invoice?.createdAt || new Date().toISOString(),
       title: 'HỢP ĐỒNG BÁN HÀNG TRẢ CHẬM',
       subtitle: 'KIÊM XÁC NHẬN THU TIỀN',
@@ -41,9 +57,9 @@ export function buildInstallmentData(invoice) {
       name: invoice?.customerName || customer?.name || '',
       phone: invoice?.customerPhone || customer?.phone || '',
       address: invoice?.customerAddress || customer?.address || '',
-      idCard: customer?.idCard || '', // CMND/CCCD
-      idIssueDate: customer?.idIssueDate || '',
-      idIssuePlace: customer?.idIssuePlace || '',
+      identityCard: customer?.identityCard || '', // CMND/CCCD
+      identityDate: customer?.identityDate || '',
+      identityPlace: customer?.identityPlace || '',
     },
 
     items,
@@ -60,10 +76,13 @@ export function buildInstallmentData(invoice) {
     // Payment info
     payment: {
       method: 'Chuyển khoản 100%',
-      deliveryDate: '', // Will be filled in preview dialog
+      deliveryDate: invoice?.salesContract?.deliveryDate || '', // From sales contract
     },
 
     terms: undefined,
     warranty: undefined,
+
+    // QR code for contract code
+    qrCode: qrCodeDataUrl,
   }
 }

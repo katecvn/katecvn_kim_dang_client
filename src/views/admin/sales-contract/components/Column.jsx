@@ -36,8 +36,8 @@ export const columns = [
     enableHiding: false,
   },
   {
-    id: 'contractNumber',
-    accessorFn: (row) => normalizeText(row.contractNumber || ''),
+    id: 'code',
+    accessorFn: (row) => normalizeText(row.code || ''),
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Số HĐ" />
     ),
@@ -61,32 +61,30 @@ export const columns = [
             className="cursor-pointer hover:text-primary"
             onClick={() => setShowViewDialog(true)}
           >
-            {row.original.contractNumber}
+            {row.original.code}
           </span>
         </>
       )
     },
   },
   {
-    accessorKey: 'customer',
+    accessorKey: 'buyerName',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Khách hàng" />
     ),
     cell: function Cell({ row }) {
-      const { customer } = row.original
-
       return (
-        <div className="flex w-40 flex-col break-words" title={customer?.name}>
-          <span className="font-semibold">{customer?.name}</span>
+        <div className="flex w-40 flex-col break-words" title={row.original.buyerName}>
+          <span className="font-semibold">{row.original.buyerName}</span>
 
-          {customer?.idCard && (
+          {row.original.buyerIdentityNo && (
             <span className="text-xs text-muted-foreground">
-              CCCD: {customer.idCard}
+              CCCD: {row.original.buyerIdentityNo}
             </span>
           )}
 
           <span className="text-primary underline hover:text-secondary-foreground">
-            <a href={`tel:${customer?.phone}`}>{customer?.phone}</a>
+            <a href={`tel:${row.original.buyerPhone}`}>{row.original.buyerPhone}</a>
           </span>
         </div>
       )
@@ -94,9 +92,8 @@ export const columns = [
     enableSorting: true,
     enableHiding: true,
     filterFn: (row, id, value) => {
-      const customer = row.original.customer
       const searchableText = normalizeText(
-        `${customer?.name || ''} ${customer?.phone || ''}`,
+        `${row.original.buyerName || ''} ${row.original.buyerPhone || ''}`,
       )
       const searchValue = normalizeText(value)
       return searchableText.includes(searchValue)
@@ -170,34 +167,48 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'paymentStatus',
+    accessorKey: 'invoices',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Thanh toán" />
     ),
     cell: ({ row }) => {
+      // Get paymentStatus from first invoice
+      const firstInvoice = row.original.invoices?.[0]
+      if (!firstInvoice) {
+        return <span className="text-muted-foreground text-sm">—</span>
+      }
+      
       const paymentStatus = paymentStatuses.find(
-        (s) => s.value === row.original.paymentStatus,
+        (s) => s.value === firstInvoice.paymentStatus,
       )
 
-      if (!paymentStatus) return null
+      if (!paymentStatus) return <span className="text-sm">—</span>
 
       const Icon = paymentStatus.icon
 
       return (
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${paymentStatus.color}`} />
-          <span>{paymentStatus.label}</span>
+          <span className="text-sm">{paymentStatus.label}</span>
         </div>
       )
     },
     filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
+      // Filter by invoice paymentStatus
+      const firstInvoice = row.original.invoices?.[0]
+      if (!firstInvoice) return false
+      return value.includes(firstInvoice.paymentStatus)
     },
-    enableSorting: true,
+    enableSorting: false,
     enableHiding: true,
   },
   {
     id: 'actions',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Thao tác" />
+    ),
     cell: ({ row }) => <DataTableRowActions row={row} />,
+    enableSorting: false,
+    enableHiding: false,
   },
 ]

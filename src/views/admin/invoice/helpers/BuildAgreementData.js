@@ -17,15 +17,25 @@ export function buildAgreementData(invoice) {
     vatRate = 0
   }
 
-  const items = rawItems.map((item, index) => ({
-    stt: index + 1,
-    description: item?.productName || '',
-    details: item?.note || '',
-    unit: item?.unitName || 'Cái',
-    qty: Number(item?.quantity || 0),
-    price: Number(item?.price || 0),
-    total: Number(item?.total || 0),
-  }))
+  const items = rawItems.map((item) => {
+    const qty = Number(item?.quantity || 0)
+    const price = Number(item?.price || 0)
+    const total = Number(item?.total || 0)
+    const unitName = item?.unitName || 'Cái'
+    
+    // Format: "1 Lượng (Cây) x 76,000,000"
+    const priceFormatted = price.toLocaleString('vi-VN')
+    const weightDetail = `${qty} ${unitName} x ${priceFormatted}`
+    
+    return {
+      name: item?.productName || '',
+      purity: '', // Can be filled from product details if available
+      weight: '', // Can be filled from product details if available
+      description: item?.note || '',
+      weightDetail: weightDetail,
+      total: total, // For THÀNH TIỀN column
+    }
+  })
 
   return {
     company: invoice?.company || undefined,
@@ -33,16 +43,13 @@ export function buildAgreementData(invoice) {
     agreement: {
       no: invoice?.code || 'THMB-2025-001',
       date: invoice?.date || invoice?.createdAt || new Date().toISOString(),
-      title: 'THỎA THUẬN MUA BÁN HÀNG HÓA',
-      subtitle: 'Bảo dưỡng xe nâng/Sửa chữa xe nâng/Phụ tùng xe nâng',
+      title: 'THỎA THUẬN MUA BÁN',
+      code: 'MST: 1801755621',
     },
 
     customer: {
-      name: 'Ban Giám đốc',
-      unit: invoice?.customerName || customer?.name || 'Công ty ABC',
-      address: invoice?.customerAddress || customer?.address || '...',
-      tel: invoice?.customerPhone || customer?.phone || '...',
-      taxCode: invoice?.customerTax || customer?.taxCode || '',
+      name: invoice?.customerName || customer?.name || '',
+      phone: invoice?.customerPhone || customer?.phone || '',
     },
 
     items,
@@ -55,6 +62,8 @@ export function buildAgreementData(invoice) {
     },
 
     amountText: toVietnamese(grandTotal),
+
+    note: invoice?.note || '',
 
     terms: undefined,
     warranty: undefined,

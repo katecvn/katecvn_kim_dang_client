@@ -20,7 +20,7 @@ import ExportInvoiceDialog from './ExportInvoiceDialog'
 import { getCustomers } from '@/stores/CustomerSlice'
 import { exportQuotationPdf } from '../helpers/ExportQuotationPdf'
 import { buildQuotationData } from '../helpers/BuildQuotationData'
-import { exportAgreementPdf } from '../helpers/ExportAgreementPdf'
+import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 import { buildAgreementData } from '../helpers/BuildAgreementData'
 import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
 import { buildInstallmentData } from '../helpers/BuildInstallmentData'
@@ -106,6 +106,12 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
 
     if (selectedRows.length !== 1) {
       toast.warning('Vui lòng chọn 1 (Một) hóa đơn')
+      return
+    }
+
+    // Check if invoice already has a sales contract
+    if (selectedRows[0].original.salesContract) {
+      toast.warning('Đơn hàng này đã lập hợp đồng')
       return
     }
 
@@ -254,7 +260,7 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
                     const data = getAdminInvoice
                       ? await getInvoiceDetail(invoiceId)
                       : await getInvoiceDetailByUser(invoiceId)
-                    const baseInstallmentData = buildInstallmentData(data)
+                    const baseInstallmentData = await buildInstallmentData(data)
                     setInstallmentData(baseInstallmentData)
                     setInstallmentFileName(`hop-dong-tra-cham-${data.code || 'contract'}.docx`)
                     setShowInstallmentPreview(true)
@@ -692,7 +698,7 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
                   return
                 }
 
-                const baseInstallmentData = buildInstallmentData(data)
+                const baseInstallmentData = await buildInstallmentData(data)
 
                 setInstallmentData(baseInstallmentData)
                 setInstallmentFileName(`hop-dong-tra-cham-${data.code || 'contract'}.docx`)
@@ -771,6 +777,14 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
                 toast.warning('Vui lòng chọn ít nhất 1 đơn hàng')
                 return
               }
+
+              // Check if all selected invoices have salesContract
+              const invoicesWithoutContract = selectedRows.filter(row => !row.original.salesContract)
+              if (invoicesWithoutContract.length > 0) {
+                toast.warning('Đơn hàng này không có sản phẩm cần giao')
+                return
+              }
+
               setShowDeliveryReminderDialog(true)
             }}
           >

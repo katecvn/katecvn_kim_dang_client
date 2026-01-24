@@ -635,7 +635,6 @@ const CreateInvoiceDialog = ({
       paymentMethod: data.paymentMethod,
       paymentNote: data.paymentNote,
       totalAmount: calculateTotalAmount(),
-      bankAccount: data.paymentMethod === 'transfer' ? data.bankAccount : null,
       dueDate: data.dueDate || null,
       ...(otherExpenses?.price > 0 && { otherExpenses: [otherExpenses] }),
 

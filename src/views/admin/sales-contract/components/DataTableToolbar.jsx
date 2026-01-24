@@ -3,15 +3,26 @@ import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
 import { DataTableViewOptions } from './DataTableViewOption'
 import Can from '@/utils/can'
-import { PlusIcon } from 'lucide-react'
+import { TruckIcon } from 'lucide-react'
 import { useState } from 'react'
-import CreateSalesContractDialog from './CreateSalesContractDialog'
+import DeliveryReminderDialog from '../../invoice/components/DeliveryReminderDialog'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { statuses, paymentStatuses } from '../data'
+import { toast } from 'sonner'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
-  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [showDeliveryReminderDialog, setShowDeliveryReminderDialog] = useState(false)
+
+  const handleShowDeliveryReminderDialog = () => {
+    const selectedRows = table.getSelectedRowModel().rows
+    if (selectedRows.length === 0) {
+      toast.warning('Vui lòng chọn ít nhất 1 hợp đồng')
+      return
+    }
+
+    setShowDeliveryReminderDialog(true)
+  }
 
   return (
     <div className="flex items-center justify-between">
@@ -31,9 +42,9 @@ const DataTableToolbar = ({ table }) => {
           />
         )}
 
-        {table.getColumn('paymentStatus') && (
+        {table.getColumn('invoices') && (
           <DataTableFacetedFilter
-            column={table.getColumn('paymentStatus')}
+            column={table.getColumn('invoices')}
             title="Thanh toán"
             options={paymentStatuses}
           />
@@ -52,24 +63,31 @@ const DataTableToolbar = ({ table }) => {
       </div>
 
       <div className="flex items-center gap-2">
-        <Can permission={'CREATE_SALES_CONTRACT'}>
-          <Button
-            variant="default"
-            size="sm"
-            className="h-8"
-            onClick={() => setShowCreateDialog(true)}
-          >
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Tạo hợp đồng
-          </Button>
+        {/* Gửi nhắc giao hàng */}
+        <Button
+          className=""
+          variant="outline"
+          size="sm"
+          onClick={handleShowDeliveryReminderDialog}
+        >
+          <TruckIcon className="mr-2 size-4" aria-hidden="true" />
+          Gửi nhắc giao hàng
+        </Button>
 
-          {showCreateDialog && (
-            <CreateSalesContractDialog
-              open={showCreateDialog}
-              onOpenChange={setShowCreateDialog}
-            />
-          )}
-        </Can>
+        {showDeliveryReminderDialog && (
+          <DeliveryReminderDialog
+            open={showDeliveryReminderDialog}
+            onOpenChange={setShowDeliveryReminderDialog}
+            selectedInvoices={table.getSelectedRowModel().rows.flatMap(row => 
+              row.original.invoices.map(inv => ({
+                ...inv,
+                customer: row.original.customer,
+                amount: inv.totalAmount,
+                salesContract: row.original
+              }))
+            )}
+          />
+        )}
 
         <DataTableViewOptions table={table} />
       </div>

@@ -2,8 +2,10 @@ import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { getInvoices } from '@/stores/InvoiceSlice'
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useSearchParams } from 'react-router-dom'
 import { columns } from './components/Column'
 import InvoiceDataTable from './components/InvoiceDataTable'
+import ViewInvoiceDialog from './components/ViewInvoiceDialog'
 import {
   addHours,
   endOfDay,
@@ -19,6 +21,9 @@ const InvoicePage = () => {
   const loading = useSelector((state) => state.invoice.loading)
   const current = new Date()
 
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [viewInvoiceId, setViewInvoiceId] = useState(null)
+
   const [filters, setFilters] = useState({
     fromDate: addHours(startOfDay(startOfMonth(current)), 12),
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
@@ -28,6 +33,17 @@ const InvoicePage = () => {
     document.title = 'Danh sách đơn bán'
     dispatch(getInvoices(filters))
   }, [dispatch, filters])
+
+  // Handle ?view=invoiceId query parameter
+  useEffect(() => {
+    const viewParam = searchParams.get('view')
+    if (viewParam) {
+      const invoiceId = parseInt(viewParam, 10)
+      if (!isNaN(invoiceId)) {
+        setViewInvoiceId(invoiceId)
+      }
+    }
+  }, [searchParams])
 
   return (
     <Layout>
@@ -67,6 +83,23 @@ const InvoicePage = () => {
             />
           )}
         </div>
+
+        {/* Auto-open ViewInvoiceDialog from QR code scan */}
+        {viewInvoiceId && (
+          <ViewInvoiceDialog
+            open={!!viewInvoiceId}
+            onOpenChange={(open) => {
+              if (!open) {
+                setViewInvoiceId(null)
+                // Remove ?view param from URL
+                searchParams.delete('view')
+                setSearchParams(searchParams)
+              }
+            }}
+            invoiceId={viewInvoiceId}
+            showTrigger={false}
+          />
+        )}
       </LayoutBody>
     </Layout>
   )

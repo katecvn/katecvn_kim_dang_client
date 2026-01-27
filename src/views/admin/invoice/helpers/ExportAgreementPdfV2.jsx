@@ -32,7 +32,74 @@ export async function exportAgreementPdf(
     margin: 0,
     filename: filename,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      onclone: (clonedDoc) => {
+        // Step 1: Disable all external stylesheets to prevent oklch from CSS variables
+        const styleSheets = clonedDoc.querySelectorAll('link[rel="stylesheet"], style')
+        styleSheets.forEach(sheet => {
+          if (sheet.parentNode) {
+            sheet.parentNode.removeChild(sheet)
+          }
+        })
+
+        // Step 2: Remove all Tailwind classes and force inline styles only
+        const allElements = clonedDoc.querySelectorAll('*')
+
+        allElements.forEach((el) => {
+          // Get computed style BEFORE removing classes
+          const computedStyle = window.getComputedStyle(el)
+
+          // Helper to check if color is safe (not oklch)
+          const isSafeColor = (colorValue) => {
+            if (!colorValue || colorValue === 'transparent' || colorValue === 'none') {
+              return false
+            }
+            // Only allow rgb, rgba, hex colors
+            return colorValue.startsWith('rgb') || colorValue.startsWith('#')
+          }
+
+          // Store safe colors before removing classes
+          const safeColors = {}
+          const colorProps = [
+            'color',
+            'backgroundColor',
+            'borderTopColor',
+            'borderRightColor',
+            'borderBottomColor',
+            'borderLeftColor'
+          ]
+
+          colorProps.forEach(prop => {
+            const value = computedStyle[prop]
+            if (isSafeColor(value)) {
+              safeColors[prop] = value
+            }
+          })
+
+          // Remove all classes (this removes Tailwind oklch colors)
+          // Use try-catch as className is read-only for SVG elements
+          try {
+            if (el.className && typeof el.className === 'string') {
+              el.className = ''
+            } else if (el.className && el.className.baseVal !== undefined) {
+              // SVG element - use setAttribute instead
+              el.setAttribute('class', '')
+            }
+          } catch (e) {
+            // Ignore read-only errors
+          }
+
+          // Apply only safe colors as inline styles
+          Object.keys(safeColors).forEach(prop => {
+            el.style[prop] = safeColors[prop]
+          })
+        })
+      }
+    },
     jsPDF: {
       format: 'a5',
       orientation: 'landscape',
@@ -44,7 +111,7 @@ export async function exportAgreementPdf(
 
   // Tìm element chính (innermost div với width 210mm)
   const pageElement = container.querySelector('div[style*="210mm"]')
-  
+
   if (pageElement) {
     try {
       await html2pdf().set(options).from(pageElement).save()

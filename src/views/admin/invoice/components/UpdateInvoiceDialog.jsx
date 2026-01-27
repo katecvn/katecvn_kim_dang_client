@@ -746,7 +746,7 @@ const UpdateInvoiceDialog = ({
 
       // ========== CẬP NHẬT KHÁCH HÀNG (khi đã chọn customerId) ==========
       ...((data.customerId && customerEditData) && {
-        customerUpdateData: customerEditData
+        newCustomer: customerEditData
       }),
 
       // ========== OPTIONS IN ẤN ==========

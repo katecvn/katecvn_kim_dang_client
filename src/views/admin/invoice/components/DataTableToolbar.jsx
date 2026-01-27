@@ -6,14 +6,16 @@ import Can from '@/utils/can'
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CreateInvoiceDialog from './CreateInvoiceDialog'
-import { IconFileTypePdf, IconFileTypeXls } from '@tabler/icons-react'
+import { IconFileTypePdf, IconFileTypeXls, IconPackageExport, IconCheck } from '@tabler/icons-react'
 import { toast } from 'sonner'
 import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
 import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
 import PrintInvoiceView from './PrintInvoiceView'
 import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
 import { useDispatch, useSelector } from 'react-redux'
+import { getInvoices, recordPrintAttempt, recordPrintSuccess } from '@/stores/InvoiceSlice'
 import { getSetting } from '@/stores/SettingSlice'
+import { generateWarehouseReceiptFromInvoice, postWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { getUsers } from '@/stores/UserSlice'
 import ExportInvoiceDialog from './ExportInvoiceDialog'
@@ -65,6 +67,16 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
   const [installmentExporting, setInstallmentExporting] = useState(false)
 
   const [showDeliveryReminderDialog, setShowDeliveryReminderDialog] = useState(false)
+  const [warehouseLoading, setWarehouseLoading] = useState(false)
+
+  // Auto-open invoice dialog when triggered from mobile cart button
+  useEffect(() => {
+    const shouldAutoOpen = localStorage.getItem('autoOpenInvoiceDialog')
+    if (shouldAutoOpen === 'true') {
+      setShowCreateInvoiceDialog(true)
+      localStorage.removeItem('autoOpenInvoiceDialog')
+    }
+  }, [])
 
   const handleShowCreateReceiptDialog = () => {
     const selectedRows = table.getSelectedRowModel().rows
@@ -159,6 +171,122 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
     dispatch(getUsers())
     dispatch(getCustomers())
   }, [dispatch])
+
+  // ===== WAREHOUSE RECEIPT HANDLERS =====
+  const handleBatchCreateWarehouseReceipts = async () => {
+    const selectedRows = table.getSelectedRowModel().rows
+
+    if (selectedRows.length === 0) {
+      toast.warning('Vui lòng chọn ít nhất 1 đơn hàng')
+      return
+    }
+
+    // Filter only accepted/delivered invoices without warehouse receipt
+    const validInvoices = selectedRows.filter(
+      row => (row.original.status === 'accepted' || row.original.status === 'delivered') && !row.original.warehouseReceiptId
+    )
+
+    if (validInvoices.length === 0) {
+      toast.warning('Không có đơn hàng nào đủ điều kiện tạo phiếu xuất kho')
+      return
+    }
+
+    if (validInvoices.length !== selectedRows.length) {
+      toast.info(`Chỉ ${validInvoices.length}/${selectedRows.length} đơn đủ điều kiện`)
+    }
+
+    try {
+      setWarehouseLoading(true)
+      let successCount = 0
+      let failCount = 0
+
+      for (const row of validInvoices) {
+        try {
+          await dispatch(generateWarehouseReceiptFromInvoice(row.original.id)).unwrap()
+          successCount++
+        } catch (error) {
+          console.error(`Failed to create warehouse receipt for invoice ${row.original.code}:`, error)
+          failCount++
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Đã tạo ${successCount} phiếu xuất kho thành công`)
+        await dispatch(getInvoices({
+          fromDate: null,
+          toDate: null,
+        })).unwrap()
+        table.resetRowSelection()
+      }
+
+      if (failCount > 0) {
+        toast.error(`${failCount} phiếu tạo thất bại`)
+      }
+    } catch (error) {
+      console.error('Batch create warehouse receipts error:', error)
+      toast.error('Có lỗi xảy ra khi tạo phiếu xuất kho')
+    } finally {
+      setWarehouseLoading(false)
+    }
+  }
+
+  const handleBatchPostWarehouseReceipts = async () => {
+    const selectedRows = table.getSelectedRowModel().rows
+
+    if (selectedRows.length === 0) {
+      toast.warning('Vui lòng chọn ít nhất 1 đơn hàng')
+      return
+    }
+
+    // Filter only invoices with DRAFT warehouse receipts
+    const validInvoices = selectedRows.filter(
+      row => row.original.warehouseReceipt?.status === 'DRAFT'
+    )
+
+    if (validInvoices.length === 0) {
+      toast.warning('Không có phiếu kho nháp nào để ghi sổ')
+      return
+    }
+
+    if (validInvoices.length !== selectedRows.length) {
+      toast.info(`Chỉ ${validInvoices.length}/${selectedRows.length} phiếu kho ở trạng thái nháp`)
+    }
+
+    try {
+      setWarehouseLoading(true)
+      let successCount = 0
+      let failCount = 0
+
+      for (const row of validInvoices) {
+        try {
+          await dispatch(postWarehouseReceipt(row.original.warehouseReceiptId)).unwrap()
+          successCount++
+        } catch (error) {
+          console.error(`Failed to post warehouse receipt for invoice ${row.original.code}:`, error)
+          failCount++
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Đã ghi sổ ${successCount} phiếu kho thành công`)
+        await dispatch(getInvoices({
+          fromDate: null,
+          toDate: null,
+        })).unwrap()
+        table.resetRowSelection()
+      }
+
+      if (failCount > 0) {
+        toast.error(`${failCount} phiếu ghi sổ thất bại`)
+      }
+    } catch (error) {
+      console.error('Batch post warehouse receipts error:', error)
+      toast.error('Có lỗi xảy ra khi ghi sổ kho')
+    } finally {
+      setWarehouseLoading(false)
+    }
+  }
+
 
   const isMobile = useMediaQuery('(max-width: 768px)')
 
@@ -698,6 +826,11 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
                   return
                 }
 
+                // Record print attempt
+                if (data.salesContract.id) {
+                  dispatch(recordPrintAttempt(data.salesContract.id))
+                }
+
                 const baseInstallmentData = await buildInstallmentData(data)
 
                 setInstallmentData(baseInstallmentData)
@@ -727,6 +860,22 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
                 try {
                   setInstallmentExporting(true)
                   await exportInstallmentWord(finalData, installmentFileName)
+
+                  // Record print success
+                  const selectedRows = table.getSelectedRowModel().rows
+                  if (selectedRows.length === 1) {
+                    const invoiceId = selectedRows[0].original.id
+                    const getAdminInvoice = JSON.parse(
+                      localStorage.getItem('permissionCodes'),
+                    ).includes('GET_INVOICE')
+                    const data = getAdminInvoice
+                      ? await getInvoiceDetail(invoiceId)
+                      : await getInvoiceDetailByUser(invoiceId)
+                    if (data.salesContract?.id) {
+                      dispatch(recordPrintSuccess(data.salesContract.id))
+                    }
+                  }
+
                   toast.success('Đã xuất hợp đồng trả chậm thành công')
                   setShowInstallmentPreview(false)
                   table.resetRowSelection()
@@ -766,6 +915,35 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
             </Button>
           </Can>
 
+          {/* ===== WAREHOUSE RECEIPT BUTTONS ===== */}
+          {/* Tạo Phiếu Xuất Kho Hàng Loạt */}
+          <Can permission={['CREATE_INVOICE']}>
+            <Button
+              className=""
+              variant="outline"
+              size="sm"
+              onClick={handleBatchCreateWarehouseReceipts}
+              loading={warehouseLoading}
+            >
+              <IconPackageExport className="mr-2 size-4" aria-hidden="true" />
+              Tạo Phiếu Xuất Kho
+            </Button>
+          </Can>
+
+          {/* Ghi Sổ Kho Hàng Loạt */}
+          <Can permission={['CREATE_INVOICE']}>
+            <Button
+              className=""
+              variant="outline"
+              size="sm"
+              onClick={handleBatchPostWarehouseReceipts}
+              loading={warehouseLoading}
+            >
+              <IconCheck className="mr-2 size-4" aria-hidden="true" />
+              Ghi Sổ Kho
+            </Button>
+          </Can>
+
           {/* Gửi nhắc giao hàng */}
           <Button
             className=""
@@ -796,7 +974,6 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
           <Can permission={['CREATE_INVOICE']}>
             <Button
               className=""
-              variant="outline"
               size="sm"
               onClick={() => setShowCreateInvoiceDialog(true)}
             >

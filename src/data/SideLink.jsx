@@ -35,6 +35,25 @@ export const sideLinks = [
     permission: 'GET_REPORT',
   },
   {
+    title: 'Sau bán hàng',
+    icon: <IconShield size={18} />,
+    permission: ['GET_WARRANTY', 'GET_EXPIRY_USER'],
+    sub: [
+      {
+        title: 'Bảo hành',
+        href: '/warranty',
+        icon: <IconShield size={18} />,
+        permission: 'GET_WARRANTY',
+      },
+      {
+        title: 'Hạn sử dụng',
+        href: '/expiry',
+        icon: <IconCalendar size={18} />,
+        permission: 'GET_EXPIRY_USER',
+      },
+    ],
+  },
+  {
     title: 'Khách hàng & CSKH',
     icon: <IconUsers size={18} />,
     permission: ['GET_CUSTOMER', 'GET_CUSTOMER_USER', 'GET_CUSTOMER_CARE', 'GET_TASK'],
@@ -61,7 +80,7 @@ export const sideLinks = [
   },
 
   {
-    title: 'Sản phẩm & Kho',
+    title: 'Sản phẩm',
     icon: <IconBox size={18} />,
     permission: [
       'GET_PRODUCT',
@@ -112,18 +131,40 @@ export const sideLinks = [
   },
 
   {
-    title: 'Hóa đơn & Thu chi',
+    title: 'Kho',
+    icon: <IconBox size={18} />,
+    permission: [
+      'GET_STOCK',
+    ],
+    sub: [
+      {
+        title: 'Nhập kho',
+        href: '/warehouse-in',
+        icon: <IconBox size={18} />,
+        permission: 'GET_WAREHOUSE_RECEIPT',
+      },
+      {
+        title: 'Xuất kho',
+        href: '/warehouse-out',
+        icon: <IconBox size={18} />,
+        permission: 'GET_WAREHOUSE_RECEIPT',
+      },
+    ],
+  },
+
+  {
+    title: 'Đơn bán & Thu',
     icon: <IconReceiptDollar size={18} />,
     permission: ['GET_INVOICE', 'GET_RECEIPT', 'GET_TAX', 'GET_SALES_CONTRACT'],
     sub: [
       {
-        title: 'Hóa đơn bán',
+        title: 'Đơn bán',
         href: '/invoice',
         icon: <IconReceiptDollar size={18} />,
         permission: 'GET_INVOICE',
       },
       {
-        title: 'Hóa đơn của tôi',
+        title: 'Đơn bán của tôi',
         href: '/invoice-user',
         icon: <IconReceiptPound size={18} />,
         permission: ['GET_INVOICE_USER', 'GET_INVOICE'],
@@ -153,18 +194,6 @@ export const sideLinks = [
         permission: 'GET_RECEIPT_USER',
       },
       {
-        title: 'Hóa đơn mua',
-        href: '/purchase-order',
-        icon: <IconReceiptDollar size={18} />,
-        permission: 'GET_PURCHASE_ORDER',
-      },
-      {
-        title: 'Hóa đơn mua của tôi',
-        href: '/purchase-order-user',
-        icon: <IconReceiptPound size={18} />,
-        permission: ['GET_PURCHASE_ORDER_USER', 'GET_PURCHASE_ORDER'],
-      },
-      {
         title: 'Thuế',
         href: '/tax',
         icon: <IconReceiptTax size={18} />,
@@ -174,27 +203,27 @@ export const sideLinks = [
   },
 
   {
-    title: 'Sau bán hàng',
-    icon: <IconShield size={18} />,
-    permission: ['GET_WARRANTY', 'GET_EXPIRY_USER'],
+    title: 'Đơn mua & Chi',
+    icon: <IconReceiptDollar size={18} />,
+    permission: ['GET_PURCHASE_ORDER', 'GET_PURCHASE_ORDER_USER'],
     sub: [
       {
-        title: 'Bảo hành',
-        href: '/warranty',
-        icon: <IconShield size={18} />,
-        permission: 'GET_WARRANTY',
+        title: 'Đơn mua',
+        href: '/purchase-order',
+        icon: <IconReceiptDollar size={18} />,
+        permission: 'GET_PURCHASE_ORDER',
       },
       {
-        title: 'Hạn sử dụng',
-        href: '/expiry',
-        icon: <IconCalendar size={18} />,
-        permission: 'GET_EXPIRY_USER',
+        title: 'Đơn mua của tôi',
+        href: '/purchase-order-user',
+        icon: <IconReceiptPound size={18} />,
+        permission: ['GET_PURCHASE_ORDER_USER', 'GET_PURCHASE_ORDER'],
       },
     ],
   },
 
   {
-    title: 'Người dùng & Phân quyền',
+    title: 'Cài đặt',
     icon: <IconUserCog size={18} />,
     permission: ['GET_USER', 'GET_ROLE', 'SESSION_SETTING'],
     sub: [
@@ -211,7 +240,7 @@ export const sideLinks = [
         permission: 'GET_ROLE',
       },
       {
-        title: 'Cài đặt hệ thống',
+        title: 'Hệ thống',
         href: '/setting',
         icon: <IconSettings size={18} />,
         permission: 'SESSION_SETTING',

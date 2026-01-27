@@ -25,6 +25,13 @@ const DataTableRowActions = ({ row }) => {
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
   const [showViewDialog, setShowViewDialog] = useState(false)
 
+  // Kiểm tra xem có thể sửa không dựa vào status
+  // Chỉ có thể sửa khi status = 'draft' (Đang chờ)
+  const canEdit = contract.status === 'draft'
+  
+  // Chỉ có thể xóa khi status = 'draft' (Đang chờ)
+  const canDelete = contract.status === 'draft'
+
   return (
     <>
       <DropdownMenu>
@@ -48,7 +55,11 @@ const DataTableRowActions = ({ row }) => {
           </Can>
 
           <Can permission={'UPDATE_SALES_CONTRACT'}>
-            <DropdownMenuItem onClick={() => setShowUpdateDialog(true)} className="text-blue-600">
+            <DropdownMenuItem 
+              onClick={() => setShowUpdateDialog(true)} 
+              className={`text-blue-600 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!canEdit}
+            >
               Sửa
               <DropdownMenuShortcut>
                 <IconPencil className="h-4 w-4" />
@@ -57,7 +68,11 @@ const DataTableRowActions = ({ row }) => {
           </Can>
 
           <Can permission={'DELETE_SALES_CONTRACT'}>
-            <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
+            <DropdownMenuItem 
+              onClick={() => setShowDeleteDialog(true)} 
+              className={`text-red-600 ${!canDelete ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!canDelete}
+            >
               Xóa
               <DropdownMenuShortcut>
                 <IconTrash className="h-4 w-4" />
@@ -75,7 +90,7 @@ const DataTableRowActions = ({ row }) => {
         />
       )}
 
-      {showUpdateDialog && (
+      {showUpdateDialog && canEdit && (
         <UpdateSalesContractDialog
           open={showUpdateDialog}
           onOpenChange={setShowUpdateDialog}
@@ -83,7 +98,7 @@ const DataTableRowActions = ({ row }) => {
         />
       )}
 
-      {showDeleteDialog && (
+      {showDeleteDialog && canDelete && (
         <DeleteSalesContractDialog
           open={showDeleteDialog}
           onOpenChange={setShowDeleteDialog}

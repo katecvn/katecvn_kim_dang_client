@@ -7,8 +7,10 @@ export const createReceipt = createAsyncThunk(
   'receipt/create=-receipt',
   async (data, { rejectWithValue }) => {
     try {
-      await api.post('/receipt/create', data)
+      const response = await api.post('/payment-vouchers', data)
       toast.success('Thêm mới thành công')
+      // Return the created receipt data (including id)
+      return response.data.data || response.data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -20,9 +22,10 @@ export const getReceipts = createAsyncThunk(
   'receipt/get-receipts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/receipt')
-      const { data } = response.data
-      return data
+      const response = await api.get('/payment-vouchers')
+      // API returns: { data: { data: [...], pagination: {...} } }
+      // We need to extract the data array
+      return response.data.data || response.data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -34,9 +37,24 @@ export const getMyReceipts = createAsyncThunk(
   'receipt/get-my-receipts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/receipt/my-receipt')
-      const { data } = response.data
-      return data
+      const response = await api.get('/payment-vouchers/my-receipt')
+      // API returns: { data: { data: [...], pagination: {...} } }
+      // We need to extract the data array
+      return response.data.data || response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const getReceiptById = createAsyncThunk(
+  'receipt/get-receipt-by-id',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/payment-vouchers/${id}`)
+      // API returns: { data: {...} }
+      return response.data.data || response.data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -53,8 +71,8 @@ export const deleteReceipt = createAsyncThunk(
       ).includes('DELETE_RECEIPT')
 
       deleteAdminInvoices
-        ? await api.delete(`/receipt/${id}/delete`)
-        : await api.delete(`/receipt/${id}/delete-my-receipt`)
+        ? await api.delete(`/payment-vouchers/${id}`)
+        : await api.delete(`/payment-vouchers/${id}/delete-my-receipt`)
       deleteAdminInvoices
         ? await dispatch(getReceipts()).unwrap()
         : await dispatch(getMyReceipts()).unwrap()
@@ -66,9 +84,24 @@ export const deleteReceipt = createAsyncThunk(
   },
 )
 
+export const getReceiptQRCode = createAsyncThunk(
+  'receipt/get-qr-code',
+  async (receiptId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/payment-vouchers/${receiptId}/qr-code`)
+      // API returns: { status: 200, data: { qrLink, amount, voucherCode, description } }
+      return response.data.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 const initialState = {
   receipt: {},
   receipts: [],
+  qrCodeData: null,
   loading: false,
   error: null,
 }
@@ -125,6 +158,19 @@ export const receiptSlice = createSlice({
       .addCase(deleteReceipt.pending, (state) => {
         state.loading = true
         state.error = null
+      })
+      .addCase(getReceiptQRCode.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getReceiptQRCode.fulfilled, (state, action) => {
+        state.loading = false
+        state.qrCodeData = action.payload
+      })
+      .addCase(getReceiptQRCode.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload.message || 'Không lấy được mã QR'
+        state.qrCodeData = null
       })
   },
 })

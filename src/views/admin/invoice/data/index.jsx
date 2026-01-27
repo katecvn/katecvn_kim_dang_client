@@ -45,7 +45,7 @@ const paymentStatuses = [
     color: 'text-red-500',
   },
   {
-    value: 'partially_paid',
+    value: 'partial',
     label: 'Thanh toán một phần',
     icon: IconAlertTriangleFilled,
     color: 'text-yellow-500',

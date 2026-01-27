@@ -4,7 +4,8 @@ import { Button } from '@/components/custom/Button'
 import { moneyFormat } from '@/utils/money-format'
 import { dateFormat } from '@/utils/date-format'
 import { cn } from '@/lib/utils'
-import { ChevronDown, MoreVertical, Eye, Pencil, Trash2 } from 'lucide-react'
+import { ChevronDown, MoreVertical, Eye, Pencil, Trash2, Phone, CreditCard } from 'lucide-react'
+import { IconFileTypePdf } from '@tabler/icons-react'
 import { useState } from 'react'
 import {
   DropdownMenu,
@@ -19,9 +20,17 @@ import DeleteInvoiceDialog from './DeleteInvoiceDialog'
 import UpdateInvoiceDialog from './UpdateInvoiceDialog'
 import ViewInvoiceDialog from './ViewInvoiceDialog'
 import UpdateInvoiceStatusDialog from './UpdateInvoiceStatusDialog'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { updateInvoiceStatus } from '@/stores/InvoiceSlice'
 import { toast } from 'sonner'
+import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
+import PrintInvoiceView from './PrintInvoiceView'
+import AgreementPreviewDialog from './AgreementPreviewDialog'
+import InstallmentPreviewDialog from './InstallmentPreviewDialog'
+import { buildAgreementData } from '../helpers/BuildAgreementData'
+import { buildInstallmentData } from '../helpers/BuildInstallmentData'
+import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
+import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
 
 const MobileInvoiceCard = ({
   invoice,
@@ -30,19 +39,31 @@ const MobileInvoiceCard = ({
   onRowAction,
 }) => {
   const dispatch = useDispatch()
+  const setting = useSelector((state) => state.setting.setting)
   const [expanded, setExpanded] = useState(false)
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+  
+  // Print states
+  const [printInvoice, setPrintInvoice] = useState(null)
+  const [showAgreementPreview, setShowAgreementPreview] = useState(false)
+  const [agreementData, setAgreementData] = useState(null)
+  const [agreementFileName, setAgreementFileName] = useState('thoa-thuan-mua-ban.pdf')
+  const [agreementExporting, setAgreementExporting] = useState(false)
+  const [showInstallmentPreview, setShowInstallmentPreview] = useState(false)
+  const [installmentData, setInstallmentData] = useState(null)
+  const [installmentFileName, setInstallmentFileName] = useState('hop-dong-tra-cham.docx')
+  const [installmentExporting, setInstallmentExporting] = useState(false)
 
   const { customer, amount, discount, taxAmount, status, paymentStatus, code, createdAt } = invoice
 
   const getStatusBadge = (statusValue) => {
     const statusObj = statuses.find((s) => s.value === statusValue)
     return (
-      <Badge 
-        variant="outline" 
+      <Badge
+        variant="outline"
         className={`cursor-pointer ${statusObj?.color}`}
         onClick={() => setShowUpdateStatusDialog(true)}
       >
@@ -103,6 +124,73 @@ const MobileInvoiceCard = ({
     } catch (error) {
       console.log('Submit error: ', error)
       toast.error('Cập nhật trạng thái thất bại')
+    }
+  }
+
+  // ===== PRINT HANDLERS =====
+  const handlePrintInvoice = async () => {
+    const invoiceId = invoice?.id
+    const getAdminInvoice = JSON.parse(
+      localStorage.getItem('permissionCodes'),
+    ).includes('GET_INVOICE')
+
+    try {
+      const data = getAdminInvoice
+        ? await getInvoiceDetail(invoiceId)
+        : await getInvoiceDetailByUser(invoiceId)
+      setPrintInvoice(data)
+      setTimeout(() => setPrintInvoice(null), 0)
+    } catch (error) {
+      console.log('Print invoice error: ', error)
+      toast.error('Lỗi in hóa đơn')
+    }
+  }
+
+  const handlePrintAgreement = async () => {
+    const invoiceId = invoice?.id
+    const getAdminInvoice = JSON.parse(
+      localStorage.getItem('permissionCodes'),
+    ).includes('GET_INVOICE')
+
+    try {
+      const data = getAdminInvoice
+        ? await getInvoiceDetail(invoiceId)
+        : await getInvoiceDetailByUser(invoiceId)
+
+      const baseAgreementData = buildAgreementData(data)
+      setAgreementData(baseAgreementData)
+      setAgreementFileName(`thoa-thuan-mua-ban-${data.code || 'agreement'}.pdf`)
+      setShowAgreementPreview(true)
+    } catch (error) {
+      console.error('Load agreement data error:', error)
+      toast.error('Không lấy được dữ liệu thỏa thuận mua bán')
+    }
+  }
+
+  const handlePrintInstallment = async () => {
+    const invoiceId = invoice?.id
+    const getAdminInvoice = JSON.parse(
+      localStorage.getItem('permissionCodes'),
+    ).includes('GET_INVOICE')
+
+    try {
+      const data = getAdminInvoice
+        ? await getInvoiceDetail(invoiceId)
+        : await getInvoiceDetailByUser(invoiceId)
+
+      // Check if salesContract exists
+      if (!data.salesContract || Object.keys(data.salesContract).length === 0) {
+        toast.warning('Đơn bán này không lập hợp đồng')
+        return
+      }
+
+      const baseInstallmentData = await buildInstallmentData(data)
+      setInstallmentData(baseInstallmentData)
+      setInstallmentFileName(`hop-dong-tra-cham-${data.code || 'contract'}.docx`)
+      setShowInstallmentPreview(true)
+    } catch (error) {
+      console.error('Load installment data error:', error)
+      toast.error('Không lấy được dữ liệu hợp đồng trả chậm')
     }
   }
 
@@ -174,8 +262,29 @@ const MobileInvoiceCard = ({
                 </Can>
               )}
 
+              <DropdownMenuSeparator />
+
+              {/* In Hóa Đơn */}
+              <DropdownMenuItem onClick={handlePrintInvoice}>
+                <IconFileTypePdf className="mr-2 h-4 w-4" />
+                In HĐ
+              </DropdownMenuItem>
+
+              {/* In Thỏa Thuận Mua Bán */}
+              <DropdownMenuItem onClick={handlePrintAgreement}>
+                <IconFileTypePdf className="mr-2 h-4 w-4" />
+                In Thỏa Thuận
+              </DropdownMenuItem>
+
+              {/* In Hợp Đồng Bán Hàng */}
+              <DropdownMenuItem onClick={handlePrintInstallment}>
+                <IconFileTypePdf className="mr-2 h-4 w-4" />
+                In Hợp Đồng
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
               <Can permission="DELETE_INVOICE">
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => setShowDeleteDialog(true)}
                   className="text-destructive focus:text-destructive"
@@ -202,9 +311,18 @@ const MobileInvoiceCard = ({
         <div className="p-3 border-b bg-background/30 space-y-1.5">
           <div className={cn(isDuplicate && 'bg-yellow-100 dark:bg-yellow-900/20 p-2 rounded')}>
             <div className="text-sm font-medium truncate">{customer?.name}</div>
-            <div className="text-xs text-muted-foreground">{customer?.phone}</div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Phone className="h-3 w-3" />
+              {customer?.phone}
+            </div>
             {customer?.taxCode && (
               <div className="text-xs text-muted-foreground">MST: {customer?.taxCode}</div>
+            )}
+            {customer?.identityCard && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <CreditCard className="h-3 w-3" />
+                {customer?.identityCard}
+              </div>
             )}
             {isDuplicate && (
               <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">
@@ -318,6 +436,59 @@ const MobileInvoiceCard = ({
             currentStatus={status}
             statuses={statuses}
             onSubmit={handleStatusUpdate}
+          />
+        )}
+
+        {/* Print Invoice Dialog */}
+        {printInvoice && setting && (
+          <PrintInvoiceView invoice={printInvoice} setting={setting} />
+        )}
+
+        {/* Print Agreement Dialog */}
+        {agreementData && (
+          <AgreementPreviewDialog
+            open={showAgreementPreview}
+            onOpenChange={(open) => {
+              if (!open) setShowAgreementPreview(false)
+            }}
+            initialData={agreementData}
+            onConfirm={async (finalData) => {
+              try {
+                setAgreementExporting(true)
+                await exportAgreementPdf(finalData, agreementFileName)
+                toast.success('Đã in thỏa thuận mua bán thành công')
+                setShowAgreementPreview(false)
+              } catch (error) {
+                console.error('Export agreement error:', error)
+                toast.error('In thỏa thuận mua bán thất bại')
+              } finally {
+                setAgreementExporting(false)
+              }
+            }}
+          />
+        )}
+
+        {/* Print Installment Dialog */}
+        {installmentData && (
+          <InstallmentPreviewDialog
+            open={showInstallmentPreview}
+            onOpenChange={(open) => {
+              if (!open) setShowInstallmentPreview(false)
+            }}
+            initialData={installmentData}
+            onConfirm={async (finalData) => {
+              try {
+                setInstallmentExporting(true)
+                await exportInstallmentWord(finalData, installmentFileName)
+                toast.success('Đã xuất hợp đồng trả chậm thành công')
+                setShowInstallmentPreview(false)
+              } catch (error) {
+                console.error('Export installment error:', error)
+                toast.error('Xuất hợp đồng trả chậm thất bại')
+              } finally {
+                setInstallmentExporting(false)
+              }
+            }}
           />
         )}
       </div>

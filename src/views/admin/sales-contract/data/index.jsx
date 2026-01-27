@@ -7,7 +7,7 @@ import { CheckCircleIcon, HandCoinsIcon, TruckIcon, XCircleIcon } from 'lucide-r
 const statuses = [
   {
     value: 'draft',
-    label: 'Nháp',
+    label: 'Đang chờ',
     icon: IconRefreshDot,
     color: 'text-gray-500',
   },

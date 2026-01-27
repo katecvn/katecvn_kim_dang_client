@@ -61,6 +61,8 @@ import { formatDateToYYYYMMDD } from '@/utils/date-format'
 import CreateSupplierDialog from '../../supplier/components/CreateSupplierDialog'
 import CreateCategoryDialog from '../../category/components/CreateCategoryDialog'
 import CreateUnitDialog from '../../unit/components/CreateUnitDialog'
+import { getCatalogBySupplier, getSupplierDetails } from '@/api/price-sync'
+import { Loader2 } from 'lucide-react'
 
 const CreateProductDialog = ({
   open,
@@ -81,6 +83,13 @@ const CreateProductDialog = ({
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
     useState(false)
   const [showCreateUnitDialog, setShowCreateUnitDialog] = useState(false)
+
+  // Price Sync State
+  const [supplierSupportsSync, setSupplierSupportsSync] = useState(false)
+  const [loadingSupplierSync, setLoadingSupplierSync] = useState(false)
+  const [externalCatalog, setExternalCatalog] = useState([])
+  const [loadingCatalog, setLoadingCatalog] = useState(false)
+  const [syncEnabled, setSyncEnabled] = useState(false)
 
   const handleFileChange = (e) => {
     setSelectedFile(e.target.files?.[0] || null)
@@ -130,11 +139,15 @@ const CreateProductDialog = ({
         warrantyCost: '0',
         status: 'active',
       },
+      // Price Sync fields
+      syncEnabled: false,
+      syncExternalCode: '',
     },
   })
 
   const selectedProductType = form.watch('type')
   const selectedBaseUnitId = form.watch('unitId')
+  const selectedSupplierId = form.watch('supplierId')
 
   useEffect(() => {
     dispatch(getTaxes())
@@ -143,6 +156,63 @@ const CreateProductDialog = ({
     dispatch(getAttributes())
     dispatch(getSuppliers())
   }, [dispatch])
+
+  // Check if supplier supports price sync
+  useEffect(() => {
+    const checkSupplierSync = async () => {
+      if (!selectedSupplierId) {
+        setSupplierSupportsSync(false)
+        setSyncEnabled(false)
+        setExternalCatalog([])
+        return
+      }
+
+      setLoadingSupplierSync(true)
+      try {
+        const supplierData = await getSupplierDetails(selectedSupplierId)
+        const supportsSync = supplierData?.priceSyncType !== null && supplierData?.priceSyncType !== undefined
+        setSupplierSupportsSync(supportsSync)
+
+        if (!supportsSync) {
+          setSyncEnabled(false)
+          setExternalCatalog([])
+          form.setValue('syncEnabled', false)
+          form.setValue('syncExternalCode', '')
+        }
+      } catch (error) {
+        console.error('Error checking supplier sync:', error)
+        setSupplierSupportsSync(false)
+      } finally {
+        setLoadingSupplierSync(false)
+      }
+    }
+
+    checkSupplierSync()
+  }, [selectedSupplierId, form])
+
+  // Load external catalog when sync is enabled
+  useEffect(() => {
+    const loadCatalog = async () => {
+      if (!syncEnabled || !selectedSupplierId) {
+        setExternalCatalog([])
+        return
+      }
+
+      setLoadingCatalog(true)
+      try {
+        const catalog = await getCatalogBySupplier(selectedSupplierId)
+        console.log('catalog', catalog)
+        setExternalCatalog(Array.isArray(catalog) ? catalog : [])
+      } catch (error) {
+        console.error('Error loading catalog:', error)
+        setExternalCatalog([])
+      } finally {
+        setLoadingCatalog(false)
+      }
+    }
+
+    loadCatalog()
+  }, [syncEnabled, selectedSupplierId])
 
   // Attributes field array
   const {
@@ -233,15 +303,19 @@ const CreateProductDialog = ({
         applyWarranty: data.applyWarranty,
         warrantyPolicy: data.applyWarranty
           ? {
-              periodMonths: data.warrantyPolicy.periodMonths,
-              conditions: data.warrantyPolicy.conditions || null,
-              warrantyCost: data.warrantyPolicy.warrantyCost || 0,
-              status: data.warrantyPolicy.status || 'active',
-            }
+            periodMonths: data.warrantyPolicy.periodMonths,
+            conditions: data.warrantyPolicy.conditions || null,
+            warrantyCost: data.warrantyPolicy.warrantyCost || 0,
+            status: data.warrantyPolicy.status || 'active',
+          }
           : null,
 
         // NEW
         unitConversions: dedupUnitConversions,
+
+        // Price Sync fields
+        syncEnabled: data.syncEnabled || false,
+        syncExternalCode: data.syncEnabled ? data.syncExternalCode : null,
       }
 
       await dispatch(createProduct(dataToSend)).unwrap()
@@ -466,6 +540,105 @@ const CreateProductDialog = ({
                     </FormItem>
                   )}
                 />
+
+                {/* ========== PRICE SYNC CONFIGURATION ========== */}
+                {selectedSupplierId && (
+                  <div className="md:col-span-3 rounded-md border p-4 bg-muted/30">
+                    <div className="mb-3">
+                      <h3 className="text-sm font-semibold mb-1">Cấu hình đồng bộ giá</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Tự động cập nhật giá từ nhà cung cấp
+                      </p>
+                    </div>
+
+                    {loadingSupplierSync ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Đang kiểm tra hỗ trợ đồng bộ...
+                      </div>
+                    ) : supplierSupportsSync ? (
+                      <div className="space-y-4">
+                        {/* Sync Checkbox */}
+                        <FormField
+                          control={form.control}
+                          name="syncEnabled"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center gap-2 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={(checked) => {
+                                    setSyncEnabled(checked)
+                                    field.onChange(checked)
+                                    if (!checked) {
+                                      form.setValue('syncExternalCode', '')
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="cursor-pointer font-normal">
+                                Tự động đồng bộ giá
+                              </FormLabel>
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* External Product Catalog */}
+                        {syncEnabled && (
+                          <FormField
+                            control={form.control}
+                            name="syncExternalCode"
+                            render={({ field }) => (
+                              <FormItem className="space-y-1">
+                                <FormLabel required={true}>
+                                  Mã sản phẩm tham chiếu
+                                </FormLabel>
+                                {loadingCatalog ? (
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Đang tải danh sách sản phẩm...
+                                  </div>
+                                ) : externalCatalog.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground py-2">
+                                    Không có sản phẩm nào từ nhà cung cấp này
+                                  </p>
+                                ) : (
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    value={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Chọn sản phẩm tham chiếu" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectGroup>
+                                        {externalCatalog.map((product) => (
+                                          <SelectItem
+                                            key={`${product.code}-${product.name}`}
+                                            value={product.code}
+                                          >
+                                            {product.name} - [{product.code}]
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Nhà cung cấp này không hỗ trợ đồng bộ giá tự động
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <FormField
                   control={form.control}
@@ -828,8 +1001,8 @@ const CreateProductDialog = ({
                                   const newValue = checked
                                     ? [...(field.value || []), tax.id]
                                     : field.value?.filter(
-                                        (value) => value !== tax.id,
-                                      ) || []
+                                      (value) => value !== tax.id,
+                                    ) || []
                                   field.onChange(newValue)
                                 }}
                               />

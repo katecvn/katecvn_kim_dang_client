@@ -22,8 +22,9 @@ import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 import React, { useCallback, useEffect, useState } from 'react'
 import { statuses } from '../data'
+import { statuses as contractStatuses } from '../../sales-contract/data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Clock, Mail, MapPin, Pencil, Trash2 } from 'lucide-react'
+import { Mail, MapPin, Pencil, Trash2 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { IconInfoCircle } from '@tabler/icons-react'
 import {
@@ -45,6 +46,9 @@ import ConfirmActionButton from '@/components/custom/ConfirmActionButton'
 import UpdateCreditNoteDialog from './UpdateCreditNoteDialog'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
+import InstallmentPreviewDialog from './InstallmentPreviewDialog'
+import { buildInstallmentData } from '../helpers/BuildInstallmentData'
+import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
 
 const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -56,6 +60,12 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
   const dispatch = useDispatch()
   const [openUpdateCN, setOpenUpdateCN] = useState(false)
   const [editingCN, setEditingCN] = useState(null)
+
+  // State cho In Hợp Đồng
+  const [showInstallmentPreview, setShowInstallmentPreview] = useState(false)
+  const [installmentData, setInstallmentData] = useState(null)
+  const [installmentFileName, setInstallmentFileName] = useState('hop-dong-tra-cham.docx')
+  const [installmentExporting, setInstallmentExporting] = useState(false)
   const fetchData = useCallback(async () => {
     setLoading(true)
 
@@ -117,6 +127,23 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
     }
   }
 
+  const handlePrintContract = async () => {
+    if (!invoice?.salesContract || Object.keys(invoice.salesContract).length === 0) {
+      toast.warning('Đơn bán này không lập hợp đồng')
+      return
+    }
+
+    try {
+      const baseInstallmentData = await buildInstallmentData(invoice)
+      setInstallmentData(baseInstallmentData)
+      setInstallmentFileName(`hop-dong-tra-cham-${invoice.code || 'contract'}.docx`)
+      setShowInstallmentPreview(true)
+    } catch (error) {
+      console.error('Load installment data error:', error)
+      toast.error('Không lấy được dữ liệu hợp đồng trả chậm')
+    }
+  }
+
   return (
     <Dialog {...props}>
       {showTrigger ? (
@@ -128,8 +155,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
       ) : null}
 
       <DialogContent className={cn(
-        "md:h-auto md:max-w-full",
-        !isDesktop && "h-screen max-h-screen w-screen max-w-none m-0 p-0 rounded-none"
+        "md:h-auto md:max-w-full md:z-50",
+        !isDesktop && "h-screen max-h-screen w-screen max-w-none m-0 p-0 rounded-none z-[9998]"
       )}>
         <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
           <DialogTitle className={cn(!isDesktop && "text-base")}>
@@ -377,6 +404,71 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                             </span>
                           )}
                         </div>
+
+                        <Separator className="my-3" />
+
+                        {/* Payment Status & Info */}
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <strong>Trạng thái thanh toán:</strong>
+                            {invoice?.paymentStatus && (
+                              <span
+                                className={`font-medium ${invoice.paymentStatus === 'paid'
+                                  ? 'text-green-600'
+                                  : invoice.paymentStatus === 'partial'
+                                    ? 'text-orange-600'
+                                    : 'text-red-600'
+                                  }`}
+                              >
+                                {invoice.paymentStatus === 'paid'
+                                  ? 'Đã thanh toán'
+                                  : invoice.paymentStatus === 'partial'
+                                    ? 'Thanh toán một phần'
+                                    : 'Chưa thanh toán'}
+                              </span>
+                            )}
+                          </div>
+
+                          {invoice?.paidAmount > 0 && (
+                            <div className="flex justify-between">
+                              <strong>Đã thanh toán:</strong>
+                              <span className="font-medium text-green-600">
+                                {moneyFormat(invoice.paidAmount)}
+                              </span>
+                            </div>
+                          )}
+
+                          {invoice?.paidAmount < invoice?.amount && (
+                            <div className="flex justify-between">
+                              <strong>Còn lại:</strong>
+                              <span className="font-medium text-red-600">
+                                {moneyFormat(invoice.amount - (invoice.paidAmount || 0))}
+                              </span>
+                            </div>
+                          )}
+
+                          {invoice?.paymentMethod && (
+                            <div className="flex justify-between">
+                              <strong>Phương thức thanh toán:</strong>
+                              <span>
+                                {invoice.paymentMethod === 'cash'
+                                  ? 'Tiền mặt'
+                                  : invoice.paymentMethod === 'transfer'
+                                    ? 'Chuyển khoản'
+                                    : invoice.paymentMethod}
+                              </span>
+                            </div>
+                          )}
+
+                          {invoice?.expectedDeliveryDate && (
+                            <div className="flex justify-between">
+                              <strong>Ngày giao hàng dự kiến:</strong>
+                              <span className="font-medium text-orange-600">
+                                {dateFormat(invoice.expectedDeliveryDate)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Notes Section - Order 2 on mobile, Order 1 on desktop */}
@@ -437,9 +529,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                window.print()
-                              }}
+                              onClick={handlePrintContract}
+                              loading={installmentExporting}
                             >
                               <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -456,16 +547,21 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
 
                             <div className="flex justify-between">
                               <strong>Trạng thái:</strong>
-                              <span className={`font-medium ${invoice.salesContract.status === 'draft' ? 'text-yellow-600' :
-                                invoice.salesContract.status === 'active' ? 'text-green-600' :
-                                  invoice.salesContract.status === 'completed' ? 'text-blue-600' :
-                                    'text-gray-600'
-                                }`}>
-                                {invoice.salesContract.status === 'draft' ? 'Nháp' :
-                                  invoice.salesContract.status === 'active' ? 'Đang hoạt động' :
-                                    invoice.salesContract.status === 'completed' ? 'Hoàn thành' :
-                                      invoice.salesContract.status}
-                              </span>
+                              {(() => {
+                                const statusInfo = contractStatuses.find(
+                                  (s) => s.value === invoice.salesContract.status
+                                )
+                                return statusInfo ? (
+                                  <span className={`font-medium flex items-center ${statusInfo.color}`}>
+                                    {React.createElement(statusInfo.icon, { className: 'mr-1 h-4 w-4' })}
+                                    {statusInfo.label}
+                                  </span>
+                                ) : (
+                                  <span className="font-medium text-gray-600">
+                                    {invoice.salesContract.status}
+                                  </span>
+                                )
+                              })()}
                             </div>
 
                             <div className="flex justify-between">
@@ -522,6 +618,139 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                               </Table>
                             </div>
                           )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* ========== PHIẾU XUẤT KHO ========== */}
+                    {invoice?.warehouseReceipt && (
+                      <>
+                        <Separator className="my-4" />
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">Phiếu xuất kho</h3>
+                          </div>
+
+                          <div className="space-y-3 rounded-lg border p-4 text-sm">
+                            <div className="flex justify-between">
+                              <strong>Mã phiếu kho:</strong>
+                              <span className="font-medium text-primary">
+                                {invoice.warehouseReceipt.code}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between">
+                              <strong>Loại phiếu:</strong>
+                              <span className="font-medium">
+                                {invoice.warehouseReceipt.type === 'EXPORT'
+                                  ? 'Xuất kho'
+                                  : invoice.warehouseReceipt.type === 'IMPORT_RETURN'
+                                    ? 'Nhập trả hàng'
+                                    : invoice.warehouseReceipt.type}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between">
+                              <strong>Trạng thái:</strong>
+                              <span
+                                className={`font-medium ${invoice.warehouseReceipt.status === 'DRAFT'
+                                  ? 'text-yellow-600'
+                                  : invoice.warehouseReceipt.status === 'POSTED'
+                                    ? 'text-green-600'
+                                    : 'text-gray-600'
+                                  }`}
+                              >
+                                {invoice.warehouseReceipt.status === 'DRAFT'
+                                  ? 'Nháp'
+                                  : invoice.warehouseReceipt.status === 'POSTED'
+                                    ? 'Đã ghi sổ'
+                                    : invoice.warehouseReceipt.status}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between border-t pt-2">
+                              <strong>Ngày tạo:</strong>
+                              <span>{dateFormat(invoice.warehouseReceipt.createdAt)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ========== PHIẾU THU/CHI ========== */}
+                    {invoice?.paymentVouchers && invoice.paymentVouchers.length > 0 && (
+                      <>
+                        <Separator className="my-4" />
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">Phiếu thu/chi</h3>
+                          </div>
+
+                          <div className="overflow-x-auto rounded-lg border">
+                            <Table className="min-w-full">
+                              <TableHeader>
+                                <TableRow className="bg-secondary text-xs">
+                                  <TableHead className="min-w-32">Mã phiếu</TableHead>
+                                  <TableHead className="min-w-28 text-right">Số tiền</TableHead>
+                                  <TableHead className="min-w-24">PT thanh toán</TableHead>
+                                  <TableHead className="min-w-20">Trạng thái</TableHead>
+                                  <TableHead className="min-w-20">Loại GD</TableHead>
+                                  <TableHead className="min-w-32">Người tạo</TableHead>
+                                  <TableHead className="min-w-32">Ngày tạo</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {invoice.paymentVouchers.map((voucher) => (
+                                  <TableRow key={voucher.id}>
+                                    <TableCell className="font-medium text-primary">
+                                      {voucher.code}
+                                    </TableCell>
+                                    <TableCell className="text-right font-semibold">
+                                      {moneyFormat(voucher.amount)}
+                                    </TableCell>
+                                    <TableCell>
+                                      {voucher.paymentMethod === 'cash'
+                                        ? 'Tiền mặt'
+                                        : voucher.paymentMethod === 'transfer'
+                                          ? 'Chuyển khoản'
+                                          : voucher.paymentMethod}
+                                    </TableCell>
+                                    <TableCell>
+                                      <span
+                                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${voucher.status === 'completed'
+                                          ? 'bg-green-100 text-green-700'
+                                          : voucher.status === 'draft'
+                                            ? 'bg-gray-100 text-gray-700'
+                                            : 'bg-yellow-100 text-yellow-700'
+                                          }`}
+                                      >
+                                        {voucher.status === 'completed'
+                                          ? 'Hoàn thành'
+                                          : voucher.status === 'draft'
+                                            ? 'Nháp'
+                                            : voucher.status}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell>
+                                      {voucher.transactionType === 'payment'
+                                        ? 'Thanh toán'
+                                        : voucher.transactionType === 'deposit'
+                                          ? 'Đặt cọc'
+                                          : voucher.transactionType === 'refund'
+                                            ? 'Hoàn tiền'
+                                            : voucher.transactionType}
+                                    </TableCell>
+                                    <TableCell>
+                                      {voucher.createdByUser?.fullName || '—'}
+                                    </TableCell>
+                                    <TableCell>{dateFormat(voucher.createdAt)}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
                         </div>
                       </>
                     )}
@@ -931,6 +1160,30 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
             </>
           )}
         </div>
+
+        {/* InstallmentPreviewDialog cho In Hợp Đồng */}
+        {installmentData && (
+          <InstallmentPreviewDialog
+            open={showInstallmentPreview}
+            onOpenChange={(open) => {
+              if (!open) setShowInstallmentPreview(false)
+            }}
+            initialData={installmentData}
+            onConfirm={async (finalData) => {
+              try {
+                setInstallmentExporting(true)
+                await exportInstallmentWord(finalData, installmentFileName)
+                toast.success('Đã xuất hợp đồng trả chậm thành công')
+                setShowInstallmentPreview(false)
+              } catch (error) {
+                console.error('Export installment error:', error)
+                toast.error('Xuất hợp đồng trả chậm thất bại')
+              } finally {
+                setInstallmentExporting(false)
+              }
+            }}
+          />
+        )}
 
         <DialogFooter className="flex gap-2 sm:space-x-0">
           <DialogClose asChild>

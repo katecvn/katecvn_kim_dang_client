@@ -1,9 +1,11 @@
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { ProductDataTable } from './components/ProductDataTable'
 import { useDispatch, useSelector } from 'react-redux'
-import { getProducts } from '@/stores/ProductSlice'
+import { getProducts, updateProductInStore } from '@/stores/ProductSlice'
 import { useEffect } from 'react'
 import { columns } from './components/Column'
+import useSocketEvent from '@/hooks/UseSocketEvent'
+import { toast } from 'sonner'
 
 const ProductPage = () => {
   const dispatch = useDispatch()
@@ -14,6 +16,22 @@ const ProductPage = () => {
     document.title = 'Quản lý sản phẩm'
     dispatch(getProducts())
   }, [dispatch])
+
+  // Listen for real-time price updates
+  useSocketEvent({
+    product_price_updated: (updatedProduct) => {
+      console.log('💰 Product price updated:', updatedProduct)
+
+      // Update product in Redux store
+      dispatch(updateProductInStore(updatedProduct))
+
+      // Show toast notification
+      toast.success(`Giá sản phẩm "${updatedProduct.name}" đã được cập nhật`, {
+        description: `Giá mới: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(updatedProduct.price)}`,
+        duration: 3000,
+      })
+    }
+  })
 
   return (
     <Layout>

@@ -36,6 +36,7 @@ import { buildPaymentReceiptData } from '../helpers/BuildPaymentReceiptData'
 import { exportReceiptPdf } from '../helpers/ExportReceiptPdf'
 import UpdatePaymentDueDateDialog from './UpdatePaymentDueDateDialog'
 import Can from '@/utils/can'
+import { Badge } from '@/components/ui/badge'
 
 const getDueDateInfo = (dueDate) => {
   if (!dueDate) return null
@@ -75,12 +76,12 @@ const ViewReceiptDialog = ({
   ...props
 }) => {
   const [editingDuePayment, setEditingDuePayment] = useState(null)
-  const invoiceItems = Array.isArray(receipt?.invoices)
-    ? receipt.invoices.flatMap((invoice) => invoice?.invoiceItems || [])
-    : []
+  const invoiceItems = receipt?.invoice?.items || []
 
   const dispatch = useDispatch()
   const location = useLocation()
+
+
 
   const refreshList = async () => {
     const getAdminReceipts = JSON.parse(
@@ -149,15 +150,17 @@ const ViewReceiptDialog = ({
             {/* ===== Left: Phiếu + bảng hàng hoá ===== */}
             <div className="flex-1 space-y-6 rounded-lg border p-4">
               <h2 className="text-lg font-semibold">
-                Thông tin phiếu thu bao gồm hóa đơn:{' '}
-                {receipt?.invoices && receipt?.invoices.length > 0
-                  ? receipt.invoices.map((item, index) => (
-                      <span key={item.code}>
-                        {item.code}
-                        {index < receipt.invoices.length - 1 && ', '}
-                      </span>
-                    ))
-                  : 'Không có hóa đơn'}
+                Thông tin phiếu thu
+                {receipt?.invoice && (
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    (Hóa đơn: {receipt.invoice.code})
+                  </span>
+                )}
+                {receipt?.salesContract && (
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    (Hợp đồng: {receipt.salesContract.code})
+                  </span>
+                )}
               </h2>
 
               <div className="space-y-6">
@@ -176,8 +179,6 @@ const ViewReceiptDialog = ({
                           Giảm giá
                         </TableHead>
                         <TableHead className="min-w-28">Tổng cộng</TableHead>
-                        <TableHead className="min-w-28 md:w-20">BH</TableHead>
-                        <TableHead className="min-w-28">Ghi chú</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -217,10 +218,6 @@ const ViewReceiptDialog = ({
                           <TableCell className="text-end">
                             {moneyFormat(product.total)}
                           </TableCell>
-                          <TableCell>
-                            {product.warranty || 'Không có'}
-                          </TableCell>
-                          <TableCell>{product.note || 'Không có'}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -239,264 +236,80 @@ const ViewReceiptDialog = ({
                   <div className="space-y-4 text-sm">
                     <div className="flex justify-between">
                       <strong>Tổng tiền:</strong>
-                      <div>{moneyFormat(receipt?.totalAmount)}</div>
+                      <div>{moneyFormat(receipt?.amount || receipt?.invoice?.totalAmount)}</div>
                     </div>
                     <div className="flex justify-start">
                       <div className="text-sm">
                         Số tiền viết bằng chữ:{' '}
                         <span className="font-medium italic">
-                          {toVietnamese(receipt?.totalAmount || 0)}
+                          {toVietnamese(receipt?.amount || receipt?.invoice?.totalAmount || 0)}
                         </span>
                       </div>
                     </div>
                     <Separator className="my-4" />
                     <div className="flex justify-between">
-                      <strong>Công nợ:</strong>
-                      {(() => {
-                        const debtStatus = debts.find(
-                          (debt) => debt.value === receipt?.debt?.status,
-                        )
-                        return debtStatus ? (
-                          <span className={debtStatus.color}>
-                            {debtStatus.label}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">Không xác định</span>
-                        )
-                      })()}
+                      <strong>Trạng thái:</strong>
+                      <Badge className={receipt?.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'}>
+                        {receipt?.status === 'completed' ? 'Hoàn thành' : receipt?.status === 'draft' ? 'Nháp' : receipt?.status || 'Không xác định'}
+                      </Badge>
                     </div>
                     <div className="flex justify-between">
                       <strong>Đã thanh toán:</strong>
-                      <div>{moneyFormat(receipt?.debt?.paidAmount)}</div>
+                      <div>{moneyFormat(receipt?.invoice?.paidAmount || 0)}</div>
                     </div>
                     <div className="flex justify-between">
                       <strong>Còn lại:</strong>
-                      <div>{moneyFormat(receipt?.debt?.remainingAmount)}</div>
+                      <div>
+                        {(() => {
+                          const total = parseFloat(receipt?.amount || receipt?.invoice?.totalAmount || 0)
+                          const paid = parseFloat(receipt?.invoice?.paidAmount || 0)
+                          const remaining = total - paid
+                          return (
+                            <Badge className={remaining > 0 ? 'bg-destructive' : 'bg-green-500'}>
+                              {remaining > 0 ? moneyFormat(remaining) : 'Đã thanh toán hết'}
+                            </Badge>
+                          )
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Lịch sử thanh toán */}
                 <Separator className="my-4" />
-                <h2 className="text-lg font-semibold">Lịch sử thanh toán</h2>
+                <h2 className="text-lg font-semibold">Thông tin thanh toán</h2>
 
-                <Can permission="CREATE_PAYMENT">
-                  {Number(receipt?.debt?.remainingAmount || 0) !== 0 && (
-                    <Button
-                      onClick={() => {
-                        Number(receipt?.debt?.remainingAmount || 0) === 0
-                          ? toast.warning('Phiếu thu đã được thanh toán hết')
-                          : setShowCreatePaymentDialog(true)
-                      }}
-                    >
-                      <IconCreditCardPay className="mr-2 h-4 w-4" /> Thêm khoản
-                      thanh toán
-                    </Button>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <strong>Phương thức:</strong>
+                    <Badge variant="outline">
+                      {receipt?.paymentMethod === 'cash' ? 'Tiền mặt' : receipt?.paymentMethod === 'transfer' ? 'Chuyển khoản' : receipt?.paymentMethod || 'Không xác định'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <strong>Ngày thanh toán:</strong>
+                    <span>{dateFormat(receipt?.paymentDate)}</span>
+                  </div>
+                  {receipt?.dueDate && (
+                    <div className="flex items-center justify-between">
+                      <strong>Hạn chót:</strong>
+                      <span>{dateFormat(receipt?.dueDate)}</span>
+                    </div>
                   )}
-                </Can>
-
-                {showCreatePaymentDialog && (
-                  <CreatePaymentDialog
-                    open={showCreatePaymentDialog}
-                    onOpenChange={setShowCreatePaymentDialog}
-                    receipt={receipt}
-                    showTrigger={false}
-                  />
-                )}
-
-                <ol
-                  className="relative border-s border-primary dark:border-primary"
-                  aria-label="Lịch sử thanh toán"
-                >
-                  {receipt?.payments?.length ? (
-                    receipt.payments.map((payment) => (
-                      <li className="mb-3 ms-4" key={payment.id}>
-                        <div
-                          className="absolute -start-1.5 mt-1.5 h-3 w-3 rounded-full border border-primary bg-primary dark:border-primary dark:bg-primary"
-                          aria-hidden="true"
-                        />
-                        <time
-                          className="mb-1 text-sm font-normal leading-none"
-                          dateTime={payment.createdAt}
-                        >
-                          {`${dateFormat(payment.createdAt, true)} - Mã thanh toán: ${payment.code}`}
-                        </time>
-
-                        <div className="text-sm">
-                          <div className="mr-2 flex items-center">
-                            <strong>Số tiền thanh toán:</strong>
-                            <p className="mx-2 font-semibold text-primary">
-                              {moneyFormat(payment.paymentAmount)}
-                            </p>
-                          </div>
-
-                          <div className="mr-2 flex items-center">
-                            <strong>Phương thức thanh toán:</strong>
-                            <p className="mx-2 font-semibold text-primary">
-                              {paymentMethods.find(
-                                (method) =>
-                                  method.value === payment.paymentMethod,
-                              )?.label || 'Không xác định'}
-                            </p>
-                          </div>
-
-                          <div>
-                            {payment.paymentMethod === 'transfer' &&
-                              payment.accountNumber && (
-                                <div className="mr-2 mt-1 rounded-md border border-dashed p-2 text-sm">
-                                  <div>
-                                    <strong>Ngân hàng:</strong>{' '}
-                                    <span className="font-medium">
-                                      {payment.bankName}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <strong>Số tài khoản:</strong>{' '}
-                                    <span className="font-medium">
-                                      {payment.accountNumber}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <strong>Chủ tài khoản:</strong>{' '}
-                                    <span className="font-medium">
-                                      {payment.accountName}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <strong>Chi nhánh:</strong>{' '}
-                                    <span className="font-medium">
-                                      {payment.bankBranch}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-                          </div>
-
-                          <div className="mr-2 flex items-center">
-                            <strong>Ghi chú:</strong>
-                            <span className="mx-2">
-                              {payment.note || 'Không có'}
-                            </span>
-                          </div>
-
-                          <div className="mb-2 mr-2 flex items-center">
-                            <strong>Trạng thái thanh toán:</strong>
-                            <span>
-                              {payment.status === 'success' ? (
-                                <span className="mx-2 font-semibold text-green-500">
-                                  Đã thanh toán
-                                </span>
-                              ) : (
-                                <div className="flex items-center space-x-4">
-                                  {paymentStatus.map((status) => (
-                                    <label
-                                      key={status.value}
-                                      className="mx-2 flex items-center space-x-2"
-                                    >
-                                      <input
-                                        type="radio"
-                                        name={`payment-status-${payment.id}`}
-                                        value={status.value}
-                                        checked={
-                                          payment.status === status.value
-                                        }
-                                        onChange={() => {
-                                          const confirm = window.confirm(
-                                            'Bạn có chắc chắn muốn duyệt khoản thu này?',
-                                          )
-                                          if (confirm) {
-                                            handleStatusChange(
-                                              payment.id,
-                                              status.value,
-                                            )
-                                          }
-                                        }}
-                                        className="h-4 w-4"
-                                      />
-                                      <span>{status.label}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                              )}
-                            </span>
-                          </div>
-
-                          <div>
-                            {payment.dueDate && (
-                              <div className="mr-2 flex items-center gap-2">
-                                <strong>Hạn chót:</strong>
-
-                                {(() => {
-                                  const dueInfo = getDueDateInfo(
-                                    payment.dueDate,
-                                  )
-                                  return (
-                                    <span
-                                      className={`mx-2 font-semibold ${dueInfo.color}`}
-                                    >
-                                      {dateFormat(payment.dueDate)} (
-                                      {dueInfo.label})
-                                    </span>
-                                  )
-                                })()}
-
-                                <Can permission="UPDATE_PAYMENT_DUE_DATE">
-                                  <Button
-                                    variant="ghost"
-                                    className="inline-flex w-8 items-center rounded-md p-0"
-                                    title={
-                                      payment.status === 'success'
-                                        ? 'Khoản này đã thanh toán, không thể sửa hạn'
-                                        : 'Sửa hạn chót'
-                                    }
-                                    disabled={payment.status === 'success'}
-                                    onClick={() => {
-                                      if (payment.status === 'success') return
-                                      setEditingDuePayment(payment)
-                                    }}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                </Can>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-4">
-                            <Can permission={'DELETE_PAYMENT'}>
-                              <div
-                                className="flex w-40 cursor-pointer items-center text-destructive"
-                                onClick={() => {
-                                  const confirm = window.confirm(
-                                    'Bạn có chắc chắn muốn xóa khoản thanh toán này không?',
-                                  )
-                                  if (confirm) {
-                                    handleDeletePayment(payment.id)
-                                  }
-                                }}
-                              >
-                                <IconTrash className="mr-2 h-4 w-4" /> Xóa khoản
-                                thu
-                              </div>
-                            </Can>
-
-                            {/* ====== Xuất PDF cho khoản này ====== */}
-                            <Button
-                              variant="outline"
-                              onClick={() => handleExportPayment(payment)}
-                            >
-                              Xuất PDF cho khoản này
-                            </Button>
-                          </div>
-                        </div>
-                      </li>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Không có lịch sử thanh toán
-                    </p>
+                  {receipt?.paymentMethod === 'transfer' && receipt?.bankName && (
+                    <div className="mt-2 rounded border border-dashed p-3">
+                      <div className="text-xs font-semibold text-muted-foreground mb-2">Thông tin chuyển khoản:</div>
+                      <div className="space-y-1">
+                        <div><strong>Ngân hàng:</strong> {receipt.bankName}</div>
+                        {receipt.bankBranch && <div><strong>Chi nhánh:</strong> {receipt.bankBranch}</div>}
+                        {receipt.bankAccountNumber && <div><strong>Số TK:</strong> {receipt.bankAccountNumber}</div>}
+                        {receipt.bankAccountName && <div><strong>Chủ TK:</strong> {receipt.bankAccountName}</div>}
+                      </div>
+                    </div>
                   )}
-                </ol>
+                </div>
+
+
               </div>
             </div>
 
@@ -510,13 +323,16 @@ const ViewReceiptDialog = ({
                 <div className="flex items-center gap-4">
                   <Avatar className="h-8 w-8">
                     <AvatarImage
-                      src={`https://ui-avatars.com/api/?bold=true&background=random&name=${receipt?.customer?.name}`}
-                      alt={receipt?.customer?.name}
+                      src={`https://ui-avatars.com/api/?bold=true&background=random&name=${receipt?.receiver?.name}`}
+                      alt={receipt?.receiver?.name}
                     />
                     <AvatarFallback>AD</AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium">{receipt?.customer?.name}</div>
+                    <div className="font-medium">{receipt?.receiver?.name}</div>
+                    {receipt?.receiver?.code && (
+                      <div className="text-xs text-muted-foreground">{receipt.receiver.code}</div>
+                    )}
                   </div>
                 </div>
 
@@ -530,8 +346,8 @@ const ViewReceiptDialog = ({
                       <div className="mr-2 h-4 w-4 ">
                         <MobileIcon className="h-4 w-4" />
                       </div>
-                      <a href={`tel:${receipt?.customer?.phone}`}>
-                        {receipt?.customer?.phone || 'Chưa cập nhật'}
+                      <a href={`tel:${receipt?.receiver?.phone}`}>
+                        {receipt?.receiver?.phone || 'Chưa cập nhật'}
                       </a>
                     </div>
 
@@ -539,8 +355,8 @@ const ViewReceiptDialog = ({
                       <div className="mr-2 h-4 w-4 ">
                         <Mail className="h-4 w-4" />
                       </div>
-                      <a href={`mailto:${receipt?.customer?.email}`}>
-                        {receipt?.customer?.email || 'Chưa cập nhật'}
+                      <a href={`mailto:${receipt?.receiver?.email}`}>
+                        {receipt?.receiver?.email || 'Chưa cập nhật'}
                       </a>
                     </div>
 
@@ -548,7 +364,7 @@ const ViewReceiptDialog = ({
                       <div className="mr-2 h-4 w-4 ">
                         <MapPin className="h-4 w-4" />
                       </div>
-                      {receipt?.customer?.address || 'Chưa cập nhật'}
+                      {receipt?.receiver?.address || 'Chưa cập nhật'}
                     </div>
                   </div>
                 </div>
@@ -566,14 +382,14 @@ const ViewReceiptDialog = ({
                 <div className="flex items-center gap-4">
                   <Avatar className="h-8 w-8">
                     <AvatarImage
-                      src={`https://ui-avatars.com/api/?bold=true&background=random&name=${receipt?.user?.fullName}`}
-                      alt={receipt?.user?.fullName}
+                      src={`https://ui-avatars.com/api/?bold=true&background=random&name=${receipt?.createdByUser?.fullName}`}
+                      alt={receipt?.createdByUser?.fullName}
                     />
                     <AvatarFallback>AD</AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="font-medium">
-                      {receipt?.user?.fullName} ({receipt?.user?.code})
+                      {receipt?.createdByUser?.fullName}
                     </div>
                   </div>
                 </div>
@@ -588,8 +404,8 @@ const ViewReceiptDialog = ({
                       <div className="mr-2 h-4 w-4 ">
                         <MobileIcon className="h-4 w-4" />
                       </div>
-                      <a href={`tel:${receipt?.user?.phone}`}>
-                        {receipt?.user?.phone || 'Chưa cập nhật'}
+                      <a href={`tel:${receipt?.createdByUser?.phone}`}>
+                        {receipt?.createdByUser?.phone || 'Chưa cập nhật'}
                       </a>
                     </div>
 
@@ -597,8 +413,8 @@ const ViewReceiptDialog = ({
                       <div className="mr-2 h-4 w-4 ">
                         <Mail className="h-4 w-4" />
                       </div>
-                      <a href={`mailto:${receipt?.user?.email}`}>
-                        {receipt?.user?.email || 'Chưa cập nhật'}
+                      <a href={`mailto:${receipt?.createdByUser?.email}`}>
+                        {receipt?.createdByUser?.email || 'Chưa cập nhật'}
                       </a>
                     </div>
                   </div>
@@ -634,3 +450,5 @@ const ViewReceiptDialog = ({
 }
 
 export default ViewReceiptDialog
+
+

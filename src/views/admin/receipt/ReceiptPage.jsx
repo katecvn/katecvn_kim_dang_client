@@ -8,6 +8,7 @@ import { columns } from './components/Column'
 const ReceiptPage = () => {
   const dispatch = useDispatch()
   const receipts = useSelector((state) => state.receipt.receipts)
+  console.log(receipts)
   const loading = useSelector((state) => state.receipt.loading)
 
   useEffect(() => {
@@ -28,7 +29,7 @@ const ReceiptPage = () => {
         <div className="-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
           {receipts && (
             <ReceiptDataTable
-              data={receipts}
+              data={Array.isArray(receipts) ? receipts : receipts.data || []}
               columns={columns}
               loading={loading}
             />

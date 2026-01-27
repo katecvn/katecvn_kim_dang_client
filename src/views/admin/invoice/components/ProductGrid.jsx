@@ -102,6 +102,19 @@ const ProductGrid = ({
                               Tồn: {stock}
                             </span>
                           </div>
+
+                          {/* Price Sync Timestamp */}
+                          {product.syncMapping?.lastSyncAt && (
+                            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                              {product.syncMapping.supplier?.name} - Cập nhật: {new Date(product.syncMapping.lastSyncAt).toLocaleString('vi-VN', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          )}
                         </div>
 
                         {/* Product Description/Note */}

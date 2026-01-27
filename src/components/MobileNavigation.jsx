@@ -8,12 +8,15 @@ const MobileNavigation = ({ onCategoryClick }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activeNav, setActiveNav] = useState(null)
   const [cartCount, setCartCount] = useState(0)
+  const [currentView, setCurrentView] = useState('products')
 
-  // Poll for cart count changes
+  // Poll for cart count and current view changes
   useEffect(() => {
     const interval = setInterval(() => {
       const count = window.__invoiceDialog?.selectedProductsCount || 0
+      const view = window.__invoiceDialog?.currentView || 'products'
       setCartCount(count)
+      setCurrentView(view)
     }, 500)
     return () => clearInterval(interval)
   }, [])
@@ -97,14 +100,17 @@ const MobileNavigation = ({ onCategoryClick }) => {
           return (
             <div key={item.id} className="flex-1 flex justify-center">
               {item.isCenter ? (
-                // Center floating action button with badge
+                // Center floating action button with dynamic icon/label
                 <button
                   onClick={() => {
-                    // If invoice dialog is open, switch to cart view
+                    // If invoice dialog is open, toggle between views
                     if (window.__invoiceDialog) {
-                      window.__invoiceDialog.setMobileView('cart')
+                      const targetView = currentView === 'cart' ? 'products' : 'cart'
+                      window.__invoiceDialog.setMobileView(targetView)
                     } else {
-                      // Otherwise navigate normally
+                      // Set flag to auto-open dialog when invoice page loads
+                      localStorage.setItem('autoOpenInvoiceDialog', 'true')
+                      // Navigate to invoice page
                       handleNavClick(item.path)
                       window.location.href = item.path
                     }
@@ -112,37 +118,33 @@ const MobileNavigation = ({ onCategoryClick }) => {
                   className="absolute -top-6 left-1/2 -translate-x-1/2"
                 >
                   <div className="relative">
-                    {/* Cart Badge */}
-                    {cartCount > 0 && (
+                    {/* Cart Badge - only show when in products view */}
+                    {cartCount > 0 && currentView === 'products' && (
                       <div className="absolute -top-1 -right-1 z-10 flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full border-2 border-background">
                         {cartCount}
                       </div>
                     )}
 
                     {/* Glow effect */}
-                    <div className={cn(
-                      "absolute inset-0 rounded-full blur-xl transition-all duration-300",
-                      active ? "bg-primary/50 scale-110" : "bg-primary/30 scale-100"
-                    )} />
+                    <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-pulse" />
 
-                    {/* Main button */}
-                    <div className={cn(
-                      "relative flex items-center justify-center w-14 h-14 rounded-full transition-all duration-300 shadow-lg",
-                      active
-                        ? "bg-gradient-to-br from-primary to-primary/90 scale-110"
-                        : "bg-gradient-to-br from-primary/90 to-primary/70 hover:scale-105"
-                    )}>
-                      <Icon className="w-6 h-6 text-primary-foreground" strokeWidth={2.5} />
+                    {/* Main button with dynamic icon */}
+                    <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/50 transition-all active:scale-95">
+                      {currentView === 'cart' ? (
+                        <Package className="h-6 w-6 text-primary-foreground" />
+                      ) : (
+                        <Icon className="h-6 w-6 text-primary-foreground" />
+                      )}
                     </div>
-
-                    {/* Label below */}
-                    <span className={cn(
-                      "absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-medium whitespace-nowrap transition-colors duration-200",
-                      active ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      {item.label}
-                    </span>
                   </div>
+
+                  {/* Dynamic Label */}
+                  <span className={cn(
+                    "absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-medium whitespace-nowrap transition-colors duration-200",
+                    active ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {currentView === 'cart' ? 'Sản phẩm' : item.label}
+                  </span>
                 </button>
               ) : item.isToggleSidebar ? (
                 // Category button - toggle sidebar

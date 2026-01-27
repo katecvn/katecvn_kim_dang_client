@@ -17,6 +17,7 @@ const createInvoiceSchema = z
       .optional(),
     paymentMethod: z.string().nonempty('Bắt buộc'),
     paymentNote: z.string().max(190, 'Tối đa 190 ký tự'),
+    transactionType: z.enum(['RETAIL', 'WHOLESALE']).default('RETAIL'),
     dueDate: z.string().nullable().optional(),
     orderDate: z.string().nullable().optional(),
   })

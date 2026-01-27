@@ -129,6 +129,12 @@ const buildFormData = (data) => {
     appendIfPresent('warrantyPolicy[status]', wp.status)
   }
 
+  // Price Sync fields
+  formData.append('syncEnabled', !!data.syncEnabled)
+  if (data.syncEnabled && data.syncExternalCode) {
+    formData.append('syncExternalCode', data.syncExternalCode)
+  }
+
   return formData
 }
 
@@ -221,7 +227,16 @@ const initialState = {
 export const productSlice = createSlice({
   name: 'product',
   initialState,
-  reducers: {},
+  reducers: {
+    // Update single product in store (for real-time updates)
+    updateProductInStore: (state, action) => {
+      const updatedProduct = action.payload
+      const index = state.products.findIndex(p => p.id === updatedProduct.id)
+      if (index !== -1) {
+        state.products[index] = { ...state.products[index], ...updatedProduct }
+      }
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(getProducts.pending, (state) => {
@@ -328,5 +343,7 @@ export const productSlice = createSlice({
       })
   },
 })
+
+export const { updateProductInStore } = productSlice.actions
 
 export default productSlice.reducer

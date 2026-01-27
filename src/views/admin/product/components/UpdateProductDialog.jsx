@@ -63,6 +63,8 @@ import CreateCategoryDialog from '../../category/components/CreateCategoryDialog
 import CreateUnitDialog from '../../unit/components/CreateUnitDialog'
 import { getPublicUrl } from '@/utils/file'
 import { normalizeFloatString } from '@/utils/normalize-text'
+import { getCatalogBySupplier, getSupplierDetails } from '@/api/price-sync'
+import { Loader2 } from 'lucide-react'
 
 const UpdateProductDialog = ({
   product,
@@ -85,6 +87,13 @@ const UpdateProductDialog = ({
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
     useState(false)
   const [showCreateUnitDialog, setShowCreateUnitDialog] = useState(false)
+
+  // Price Sync State
+  const [supplierSupportsSync, setSupplierSupportsSync] = useState(false)
+  const [loadingSupplierSync, setLoadingSupplierSync] = useState(false)
+  const [externalCatalog, setExternalCatalog] = useState([])
+  const [loadingCatalog, setLoadingCatalog] = useState(false)
+  const [syncEnabled, setSyncEnabled] = useState(false)
 
   const handleFileChange = (e) => {
     setSelectedFile(e.target.files?.[0] || null)
@@ -170,11 +179,16 @@ const UpdateProductDialog = ({
 
       // NEW
       unitConversions: initialUnitConversions,
+
+      // Price Sync fields - map from syncMapping
+      syncEnabled: product?.syncMapping?.isActive || false,
+      syncExternalCode: product?.syncMapping?.externalCode || '',
     },
   })
 
   const selectedProductType = form.watch('type')
   const selectedBaseUnitId = form.watch('unitId')
+  const selectedSupplierId = form.watch('supplierId')
 
   // =========================
   // Field arrays
@@ -208,6 +222,62 @@ const UpdateProductDialog = ({
     replaceConversions(cleaned)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBaseUnitId])
+
+  // Check if supplier supports price sync
+  useEffect(() => {
+    const checkSupplierSync = async () => {
+      if (!selectedSupplierId) {
+        setSupplierSupportsSync(false)
+        setSyncEnabled(false)
+        setExternalCatalog([])
+        return
+      }
+
+      setLoadingSupplierSync(true)
+      try {
+        const supplierData = await getSupplierDetails(selectedSupplierId)
+        const supportsSync = supplierData?.priceSyncType !== null && supplierData?.priceSyncType !== undefined
+        setSupplierSupportsSync(supportsSync)
+
+        if (!supportsSync) {
+          setSyncEnabled(false)
+          setExternalCatalog([])
+          form.setValue('syncEnabled', false)
+          form.setValue('syncExternalCode', '')
+        }
+      } catch (error) {
+        console.error('Error checking supplier sync:', error)
+        setSupplierSupportsSync(false)
+      } finally {
+        setLoadingSupplierSync(false)
+      }
+    }
+
+    checkSupplierSync()
+  }, [selectedSupplierId, form])
+
+  // Load external catalog when sync is enabled
+  useEffect(() => {
+    const loadCatalog = async () => {
+      if (!syncEnabled || !selectedSupplierId) {
+        setExternalCatalog([])
+        return
+      }
+
+      setLoadingCatalog(true)
+      try {
+        const catalog = await getCatalogBySupplier(selectedSupplierId)
+        setExternalCatalog(Array.isArray(catalog) ? catalog : [])
+      } catch (error) {
+        console.error('Error loading catalog:', error)
+        setExternalCatalog([])
+      } finally {
+        setLoadingCatalog(false)
+      }
+    }
+
+    loadCatalog()
+  }, [syncEnabled, selectedSupplierId])
 
   // Reset when open/product changes
   useEffect(() => {
@@ -270,9 +340,18 @@ const UpdateProductDialog = ({
           conversionFactor: normalizeFloatString(c?.conversionFactor),
         }))
         : [{ ...defaultUnitConversion }],
+
+      // Price Sync fields - map from syncMapping
+      syncEnabled: product?.syncMapping?.isActive || false,
+      syncExternalCode: product?.syncMapping?.externalCode || '',
     })
 
     setSelectedFile(null)
+
+    // Sync local state with form value for price sync
+    if (product?.syncMapping?.isActive) {
+      setSyncEnabled(true)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product, open])
 
@@ -338,7 +417,18 @@ const UpdateProductDialog = ({
 
         // NEW
         unitConversions: dedupUnitConversions,
+
+        // Price Sync fields
+        syncEnabled: data.syncEnabled || false,
+        syncExternalCode: data.syncEnabled ? data.syncExternalCode : null,
       }
+
+      console.log('🔍 UPDATE PRODUCT - Form data:', data)
+      console.log('🔍 UPDATE PRODUCT - Data to send:', dataToSend)
+      console.log('🔍 UPDATE PRODUCT - Sync fields:', {
+        syncEnabled: dataToSend.syncEnabled,
+        syncExternalCode: dataToSend.syncExternalCode,
+      })
 
       await dispatch(
         updateProduct({ id: product.id, data: dataToSend }),
@@ -581,6 +671,105 @@ const UpdateProductDialog = ({
                     </FormItem>
                   )}
                 />
+
+                {/* ========== PRICE SYNC CONFIGURATION ========== */}
+                {selectedSupplierId && (
+                  <div className="md:col-span-3 rounded-md border p-4 bg-muted/30">
+                    <div className="mb-3">
+                      <h3 className="text-sm font-semibold mb-1">Cấu hình đồng bộ giá</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Tự động cập nhật giá từ nhà cung cấp
+                      </p>
+                    </div>
+
+                    {loadingSupplierSync ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Đang kiểm tra hỗ trợ đồng bộ...
+                      </div>
+                    ) : supplierSupportsSync ? (
+                      <div className="space-y-4">
+                        {/* Sync Checkbox */}
+                        <FormField
+                          control={form.control}
+                          name="syncEnabled"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center gap-2 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={(checked) => {
+                                    setSyncEnabled(checked)
+                                    field.onChange(checked)
+                                    if (!checked) {
+                                      form.setValue('syncExternalCode', '')
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="cursor-pointer font-normal">
+                                Tự động đồng bộ giá
+                              </FormLabel>
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* External Product Catalog */}
+                        {syncEnabled && (
+                          <FormField
+                            control={form.control}
+                            name="syncExternalCode"
+                            render={({ field }) => (
+                              <FormItem className="space-y-1">
+                                <FormLabel required={true}>
+                                  Mã sản phẩm tham chiếu
+                                </FormLabel>
+                                {loadingCatalog ? (
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Đang tải danh sách sản phẩm...
+                                  </div>
+                                ) : externalCatalog.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground py-2">
+                                    Không có sản phẩm nào từ nhà cung cấp này
+                                  </p>
+                                ) : (
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    value={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Chọn sản phẩm tham chiếu" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectGroup>
+                                        {externalCatalog.map((product) => (
+                                          <SelectItem
+                                            key={`${product.code}-${product.name}`}
+                                            value={product.code}
+                                          >
+                                            {product.name} - [{product.code}]
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Nhà cung cấp này không hỗ trợ đồng bộ giá tự động
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <FormField
                   control={form.control}

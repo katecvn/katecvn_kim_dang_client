@@ -33,10 +33,16 @@ import {
   Building2,
   PlusIcon,
   Ruler,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Image as ImageIcon,
 } from 'lucide-react'
 
 import { moneyFormat } from '@/utils/money-format'
 import { dateFormat } from '@/utils/date-format'
+import { getPublicUrl } from '@/utils/file'
+import { Badge } from '@/components/ui/badge'
 
 import ProductSaleHistoryTab from './ProductSaleHistoryTab'
 
@@ -120,7 +126,21 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
   }, [product])
 
   const convertedPrices = useMemo(() => {
-    // Giá hiện tại theo base unit
+    // Use unitPricing from backend if available (more accurate)
+    if (product?.unitPricing?.length) {
+      return product.unitPricing
+        .filter(up => up.source === 'CONVERTED') // Only show converted units
+        .map(up => ({
+          unitId: up.unitId,
+          unitName: up.unitName,
+          unitPrice: up.price,
+          basePrice: up.basePrice,
+          source: up.source,
+          convertedFrom: up.convertedFrom,
+        }))
+    }
+
+    // Fallback: calculate from unitConversions if unitPricing not available
     const basePrice = Number(product?.price || 0)
     if (!Number.isFinite(basePrice) || basePrice <= 0) return []
 
@@ -129,8 +149,6 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
         const factor = Number(c?.conversionFactor || 0)
         if (!Number.isFinite(factor) || factor <= 0) return null
 
-        // Quy ước: 1 baseUnit = factor * unit
-        // => price(unit) = price(baseUnit) / factor
         const unitPrice = basePrice / factor
 
         return {
@@ -138,6 +156,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
           unitName: c?.unit?.name || c?.unitName || '—',
           factor,
           unitPrice,
+          source: 'CONVERTED',
         }
       })
       .filter(Boolean)
@@ -218,6 +237,12 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
 
                       <div className="space-y-2">
                         <div className="flex justify-between">
+                          <span className="text-muted-foreground">Giá gốc</span>
+                          <span className="font-medium">
+                            {moneyFormat(product.basePrice || 0)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
                           <span className="text-muted-foreground">Giá bán</span>
                           <span className="font-semibold text-primary">
                             {moneyFormat(product.price)} / {baseUnitName}
@@ -235,10 +260,64 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
                           </span>
                           <span>{dateFormat(product.updatedAt)}</span>
                         </div>
+                        {product.countSale !== undefined && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Số lần bán</span>
+                            <span className="font-medium">{product.countSale}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* NEW: Unit conversions display */}
+                    {/* Description & Note */}
+                    {(product.description || product.note) && (
+                      <div className="space-y-2">
+                        {product.description && (
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Mô tả</h4>
+                            <p className="text-sm text-muted-foreground">{product.description}</p>
+                          </div>
+                        )}
+                        {product.note && (
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Ghi chú</h4>
+                            <p className="text-sm text-muted-foreground">{product.note}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Attributes */}
+                    {product.attributes?.length > 0 && (
+                      <div className="rounded-lg border p-3">
+                        <h3 className="mb-2 font-semibold text-sm">Thuộc tính</h3>
+                        <div className="grid gap-2">
+                          {product.attributes.map((attr) => (
+                            <div key={attr.id} className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">{attr.name}:</span>
+                              <span className="font-medium">{attr.pivot?.value || '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Product Flags */}
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <h3 className="mb-2 font-semibold text-sm">Cấu hình</h3>
+                      <div className="grid gap-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Quản lý serial</span>
+                          <span>{product.manageSerial ? '✓ Có' : '✗ Không'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Có hạn sử dụng</span>
+                          <span>{product.hasExpiry ? '✓ Có' : '✗ Không'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Unit conversions display */}
                     <div className="rounded-lg border p-3">
                       <h3 className="mb-2 flex items-center gap-2 font-semibold">
                         <Ruler className="h-4 w-4" />
@@ -257,6 +336,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
                               <TableHead className="text-right">
                                 Giá theo đơn vị
                               </TableHead>
+                              <TableHead className="text-center">Nguồn</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -292,6 +372,9 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
                                       </span>
                                     )}
                                   </TableCell>
+                                  <TableCell className="text-center">
+                                    <span className="text-xs text-muted-foreground">CONVERTED</span>
+                                  </TableCell>
                                 </TableRow>
                               )
                             })}
@@ -299,6 +382,29 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
                         </Table>
                       )}
                     </div>
+
+                    {/* Warranty Policy */}
+                    {product.warrantyPolicy && (
+                      <div className="rounded-lg bg-secondary/50 p-3">
+                        <h3 className="mb-2 flex items-center gap-2 font-semibold">
+                          <Tag className="h-4 w-4" />
+                          Chính sách bảo hành
+                        </h3>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <span>Thời hạn</span>
+                          <strong>{product.warrantyPolicy.periodMonths} tháng</strong>
+                          <span>Chi phí</span>
+                          <span>{moneyFormat(product.warrantyPolicy.warrantyCost || 0)}</span>
+                          {product.warrantyPolicy.conditions && (
+                            <>
+                              <span className="col-span-2 mt-1 text-muted-foreground">
+                                Điều kiện: {product.warrantyPolicy.conditions}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {product.coefficient && (
                       <div className="rounded-lg bg-secondary/50 p-3">
@@ -313,6 +419,68 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
                           <span>
                             {dateFormat(product.coefficient.effectiveDate)}
                           </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Price Sync Information */}
+                    {product.syncMapping && (
+                      <div className="rounded-lg border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+                        <h3 className="mb-3 flex items-center gap-2 font-semibold text-blue-900 dark:text-blue-100">
+                          <RefreshCw className="h-4 w-4" />
+                          Đồng bộ giá tự động
+                        </h3>
+
+                        <div className="grid gap-3 text-sm">
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Trạng thái:</span>
+                            {product.syncMapping.syncStatus === 'SUCCESS' ? (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Thành công
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                <XCircle className="h-3 w-3 mr-1" />
+                                Lỗi
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Mã tham chiếu:</span>
+                            <span className="font-mono font-medium">{product.syncMapping.externalCode}</span>
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Giá đồng bộ:</span>
+                            <span className="font-semibold text-blue-600 dark:text-blue-400">
+                              {moneyFormat(product.syncMapping.lastSyncPrice)}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Giá mua:</span>
+                            <span className="font-semibold">
+                              {moneyFormat(product.syncMapping.lastBuyPrice)}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Đồng bộ lần cuối:</span>
+                            <span>{dateFormat(product.syncMapping.lastSyncAt, true)}</span>
+                          </div>
+
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">NCC cập nhật:</span>
+                            <span>{dateFormat(product.syncMapping.providerUpdatedAt, true)}</span>
+                          </div>
+
+                          {product.syncMapping.errorMessage && (
+                            <div className="mt-2 p-2 rounded bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 text-xs">
+                              <strong>Lỗi:</strong> {product.syncMapping.errorMessage}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -339,6 +507,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
                             <TableHeader>
                               <TableRow className="bg-secondary text-xs">
                                 <TableHead>Giá nhập</TableHead>
+                                <TableHead>Giá bán</TableHead>
                                 <TableHead>Đơn vị</TableHead>
                                 <TableHead>Ngày</TableHead>
                               </TableRow>
@@ -348,6 +517,9 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
                                 <TableRow key={p.id}>
                                   <TableCell>
                                     {moneyFormat(p.basePrice || 0)}
+                                  </TableCell>
+                                  <TableCell>
+                                    {moneyFormat(p.price || 0)}
                                   </TableCell>
                                   <TableCell>{p.unitName}</TableCell>
                                   <TableCell>
@@ -363,6 +535,24 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
                   </div>
 
                   <div className="w-full space-y-6 rounded-lg border p-4 lg:w-80">
+                    {/* Product Image */}
+                    {product.image && (
+                      <div className="rounded-lg border p-3">
+                        <h3 className="mb-2 flex items-center gap-2 font-semibold text-sm">
+                          <ImageIcon className="h-4 w-4" />
+                          Hình ảnh
+                        </h3>
+                        <img
+                          src={getPublicUrl(product.image)}
+                          alt={product.name}
+                          className="w-full rounded-md object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                          }}
+                        />
+                      </div>
+                    )}
+
                     {latestStock && (
                       <div className="rounded bg-secondary/50 p-3 text-sm">
                         <div className="mb-2 font-semibold">Tồn kho</div>
@@ -381,26 +571,87 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
 
                     <Separator />
 
-                    <div>
-                      <div className="mb-2 flex items-center gap-2 font-semibold">
-                        <User className="h-4 w-4" />
-                        Người tạo
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage
-                            src={
-                              product.createdByUser?.fullName
-                                ? `https://ui-avatars.com/api/?name=${product.createdByUser.fullName}`
-                                : undefined
-                            }
-                          />
-                          <AvatarFallback>U</AvatarFallback>
-                        </Avatar>
-                        <div className="text-sm">
-                          {product.createdByUser?.fullName || '—'}
+                    {/* Creator & Updater Info */}
+                    <div className="space-y-4">
+                      <div>
+                        <div className="mb-2 flex items-center gap-2 font-semibold">
+                          <User className="h-4 w-4" />
+                          Người tạo
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage
+                              src={
+                                product.createdByUser?.fullName
+                                  ? `https://ui-avatars.com/api/?name=${product.createdByUser.fullName}`
+                                  : undefined
+                              }
+                            />
+                            <AvatarFallback>U</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 text-sm space-y-1">
+                            <div className="font-medium">
+                              {product.createdByUser?.fullName || '—'}
+                            </div>
+                            {product.createdByUser?.code && (
+                              <div className="text-muted-foreground">
+                                Mã: {product.createdByUser.code}
+                              </div>
+                            )}
+                            {product.createdByUser?.email && (
+                              <div className="text-muted-foreground">
+                                📧 {product.createdByUser.email}
+                              </div>
+                            )}
+                            {product.createdByUser?.phone && (
+                              <div className="text-muted-foreground">
+                                📞 {product.createdByUser.phone}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
+
+                      {product.updatedByUser && (
+                        <div>
+                          <div className="mb-2 flex items-center gap-2 font-semibold">
+                            <User className="h-4 w-4" />
+                            Người cập nhật
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage
+                                src={
+                                  product.updatedByUser?.fullName
+                                    ? `https://ui-avatars.com/api/?name=${product.updatedByUser.fullName}`
+                                    : undefined
+                                }
+                              />
+                              <AvatarFallback>U</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 text-sm space-y-1">
+                              <div className="font-medium">
+                                {product.updatedByUser?.fullName || '—'}
+                              </div>
+                              {product.updatedByUser?.code && (
+                                <div className="text-muted-foreground">
+                                  Mã: {product.updatedByUser.code}
+                                </div>
+                              )}
+                              {product.updatedByUser?.email && (
+                                <div className="text-muted-foreground">
+                                  📧 {product.updatedByUser.email}
+                                </div>
+                              )}
+                              {product.updatedByUser?.phone && (
+                                <div className="text-muted-foreground">
+                                  📞 {product.updatedByUser.phone}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

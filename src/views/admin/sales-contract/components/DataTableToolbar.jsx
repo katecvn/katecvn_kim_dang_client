@@ -9,10 +9,18 @@ import DeliveryReminderDialog from '../../invoice/components/DeliveryReminderDia
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { statuses, paymentStatuses } from '../data'
 import { toast } from 'sonner'
+import { IconFileTypePdf } from '@tabler/icons-react'
+import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
+import InstallmentPreviewDialog from '../../invoice/components/InstallmentPreviewDialog'
+import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWord'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showDeliveryReminderDialog, setShowDeliveryReminderDialog] = useState(false)
+  const [installmentData, setInstallmentData] = useState(null)
+  const [installmentFileName, setInstallmentFileName] = useState('hop-dong-ban-hang.docx')
+  const [showInstallmentPreview, setShowInstallmentPreview] = useState(false)
+  const [installmentExporting, setInstallmentExporting] = useState(false)
 
   const handleShowDeliveryReminderDialog = () => {
     const selectedRows = table.getSelectedRowModel().rows
@@ -22,6 +30,45 @@ const DataTableToolbar = ({ table }) => {
     }
 
     setShowDeliveryReminderDialog(true)
+  }
+
+  const handlePrintContract = async () => {
+    const selectedRows = table.getSelectedRowModel().rows
+    if (selectedRows.length !== 1) {
+      toast.warning('Vui lòng chọn 1 (Một) hợp đồng để in')
+      return
+    }
+
+    const contract = selectedRows[0].original
+
+    // Chỉ cho phép in khi status = 'confirmed' (Đã xác nhận)
+    if (contract.status !== 'confirmed') {
+      toast.warning('Chỉ có thể in hợp đồng khi trạng thái là "Đã xác nhận"')
+      return
+    }
+
+    try {
+      // Get first invoice from the selected contract
+      if (!contract.invoices || contract.invoices.length === 0) {
+        toast.warning('Hợp đồng này không có hóa đơn')
+        return
+      }
+
+      // Use the first invoice data to build installment data
+      const invoiceData = {
+        ...contract.invoices[0],
+        salesContract: contract
+      }
+
+      const baseInstallmentData = await buildInstallmentData(invoiceData)
+
+      setInstallmentData(baseInstallmentData)
+      setInstallmentFileName(`hop-dong-ban-hang-${contract.code || 'contract'}.docx`)
+      setShowInstallmentPreview(true)
+    } catch (error) {
+      console.error('Load installment data error:', error)
+      toast.error('Không lấy được dữ liệu hợp đồng bán hàng')
+    }
   }
 
   return (
@@ -63,6 +110,44 @@ const DataTableToolbar = ({ table }) => {
       </div>
 
       <div className="flex items-center gap-2">
+        {/* In Hợp Đồng Bán Hàng */}
+        <Button
+          className=""
+          variant="outline"
+          size="sm"
+          onClick={handlePrintContract}
+          loading={installmentExporting}
+        >
+          <IconFileTypePdf className="mr-2 size-4" aria-hidden="true" />
+          In Hợp Đồng Bán Hàng
+        </Button>
+
+        {installmentData && (
+          <InstallmentPreviewDialog
+            open={showInstallmentPreview}
+            onOpenChange={(open) => {
+              if (!open) {
+                setShowInstallmentPreview(false)
+              }
+            }}
+            initialData={installmentData}
+            onConfirm={async (finalData) => {
+              try {
+                setInstallmentExporting(true)
+                await exportInstallmentWord(finalData, installmentFileName)
+                toast.success('Đã xuất hợp đồng bán hàng thành công')
+                setShowInstallmentPreview(false)
+                table.resetRowSelection()
+              } catch (error) {
+                console.error('Export installment error:', error)
+                toast.error('Xuất hợp đồng bán hàng thất bại')
+              } finally {
+                setInstallmentExporting(false)
+              }
+            }}
+          />
+        )}
+
         {/* Gửi nhắc giao hàng */}
         <Button
           className=""

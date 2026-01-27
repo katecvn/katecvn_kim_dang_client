@@ -39,6 +39,8 @@ import SInvoiceSettingPage from '@/views/admin/setting/s-invoice/SInvoiceSetting
 import AttributePage from '@/views/admin/attribute/AttributePage'
 import TicketPage from '@/views/admin/ticket/TicketPage'
 import TaskPage from '@/views/admin/task/TaskPage'
+import WarehouseInPage from '@/views/admin/warehouse-receipt/WarehouseInPage'
+import WarehouseOutPage from '@/views/admin/warehouse-receipt/WarehouseOutPage'
 
 const routes = [
   {
@@ -164,6 +166,16 @@ const routes = [
   {
     path: '/task',
     element: TaskPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/warehouse-in',
+    element: WarehouseInPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/warehouse-out',
+    element: WarehouseOutPage,
     layout: AdminLayout,
   },
   {

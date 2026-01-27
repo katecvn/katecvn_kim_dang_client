@@ -20,8 +20,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { X, Search } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
-import { getProducts } from '@/stores/ProductSlice'
+import { getProducts, updateProductInStore } from '@/stores/ProductSlice'
 import { Input } from '@/components/ui/input'
+import useSocketEvent from '@/hooks/UseSocketEvent'
 import {
   Popover,
   PopoverContent,
@@ -150,6 +151,25 @@ const CreateInvoiceDialog = ({
     dispatch(getSetting('sharing_ratio'))
     dispatch(getUsers())
   }, [dispatch])
+
+  // Listen for real-time price updates
+  useSocketEvent({
+    product_price_updated: (updatedProduct) => {
+      console.log('💰 [CreateInvoice] Product price updated:', updatedProduct)
+
+      // Update product in Redux store
+      dispatch(updateProductInStore(updatedProduct))
+
+      // If product is in selected products, show notification
+      const isSelected = selectedProducts.some(p => p.id === updatedProduct.id)
+      if (isSelected) {
+        toast.info(`Giá "${updatedProduct.name}" đã cập nhật`, {
+          description: `Giá mới: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(updatedProduct.price)}`,
+          duration: 3000,
+        })
+      }
+    }
+  })
 
   useEffect(() => {
     if (!open) return
@@ -483,11 +503,45 @@ const CreateInvoiceDialog = ({
     }
     console.log('✅ PASS: Has customer')
 
-    // Validate: if printing contract, must have expected delivery date
-    if (isPrintContract && !expectedDeliveryDate) {
-      console.log('❌ FAIL: Print contract but no delivery date')
-      toast.error('Vui lòng chọn ngày dự kiến giao hàng khi in hợp đồng')
-      return
+    // Validate: if printing contract, check all required customer info
+    if (isPrintContract) {
+      const contractCustomerData = hasSelectedCustomer ? selectedCustomer : customerEditData
+
+      console.log('8. Contract customer data check:', contractCustomerData)
+
+      // Check required fields: name, phone, address, identityCard, identityDate
+      // Email is optional
+      const missingFields = []
+
+      if (!contractCustomerData?.name?.trim()) {
+        missingFields.push('Tên khách hàng')
+      }
+      if (!contractCustomerData?.phone?.trim()) {
+        missingFields.push('Số điện thoại')
+      }
+      if (!contractCustomerData?.address?.trim()) {
+        missingFields.push('Địa chỉ')
+      }
+      if (!contractCustomerData?.identityCard?.trim()) {
+        missingFields.push('CMND/CCCD')
+      }
+      if (!contractCustomerData?.identityDate) {
+        missingFields.push('Ngày cấp')
+      }
+      if (!contractCustomerData?.identityPlace?.trim()) {
+        missingFields.push('Nơi cấp')
+      }
+      if (!expectedDeliveryDate) {
+        missingFields.push('Ngày dự kiến giao hàng')
+      }
+
+      if (missingFields.length > 0) {
+        console.log('❌ FAIL: Missing contract fields:', missingFields)
+        toast.error(`Để in hợp đồng, vui lòng điền đầy đủ: ${missingFields.join(', ')}`)
+        return
+      }
+
+      console.log('✅ PASS: All contract customer info validated')
     }
     console.log('✅ PASS: Contract validation OK')
     console.log('=== ✅ ALL VALIDATIONS PASSED ===')
@@ -634,6 +688,7 @@ const CreateInvoiceDialog = ({
       createReceipt: isCreateReceipt,
       paymentMethod: data.paymentMethod,
       paymentNote: data.paymentNote,
+      transactionType: data.transactionType || 'RETAIL',
       totalAmount: calculateTotalAmount(),
       dueDate: data.dueDate || null,
       ...(otherExpenses?.price > 0 && { otherExpenses: [otherExpenses] }),
@@ -653,7 +708,7 @@ const CreateInvoiceDialog = ({
 
       // ========== CẬP NHẬT KHÁCH HÀNG (khi đã chọn customerId) ==========
       ...((data.customerId && customerEditData) && {
-        customerUpdateData: customerEditData
+        newCustomer: customerEditData
       }),
 
       // ========== OPTIONS IN ẤN ==========
@@ -1080,24 +1135,25 @@ const CreateInvoiceDialog = ({
     } ``
   }
 
-  // Expose mobile view control to window for mobile nav
+  // Expose dialog state to window for mobile navigation
   useEffect(() => {
     if (!isDesktop && open) {
       window.__invoiceDialog = {
         setMobileView,
-        selectedProductsCount: selectedProducts.length
+        selectedProductsCount: selectedProducts.length,
+        currentView: mobileView, // Add current view
       }
     }
     return () => {
       delete window.__invoiceDialog
     }
-  }, [isDesktop, open, setMobileView, selectedProducts.length])
+  }, [isDesktop, open, setMobileView, selectedProducts.length, mobileView])
 
   // Mobile: Render as full page
   if (!isDesktop && open) {
     return (
       <>
-        <div className="fixed inset-0 top-0 bottom-16 bg-background z-50 flex flex-col">
+        <div className="fixed inset-0 top-14 bottom-16 bg-background z-40 flex flex-col pt-0">
           {/* Mobile Header */}
           <div className="px-4 py-3 border-b flex items-center justify-between bg-background">
             <div className="flex items-center gap-2">

@@ -80,17 +80,17 @@ export const deleteInvoice = createAsyncThunk(
         : await api.delete(`/invoice/${id}/delete-by-user`)
       deleteAdminInvoices
         ? await dispatch(
-            getInvoices({
-              fromDate: getStartOfCurrentMonth(),
-              toDate: getEndOfCurrentMonth(),
-            }),
-          ).unwrap()
+          getInvoices({
+            fromDate: getStartOfCurrentMonth(),
+            toDate: getEndOfCurrentMonth(),
+          }),
+        ).unwrap()
         : await dispatch(
-            getMyInvoices({
-              fromDate: getStartOfCurrentMonth(),
-              toDate: getEndOfCurrentMonth(),
-            }),
-          ).unwrap()
+          getMyInvoices({
+            fromDate: getStartOfCurrentMonth(),
+            toDate: getEndOfCurrentMonth(),
+          }),
+        ).unwrap()
       toast.success('Xóa thành công')
     } catch (error) {
       const message = handleError(error)
@@ -148,7 +148,7 @@ export const updateInvoiceStatus = createAsyncThunk(
   'invoice/update-invoice-status',
   async (data, { rejectWithValue, dispatch }) => {
     try {
-      await api.put(`/invoice/${data.id}/update`, data)
+      const response = await api.put(`/invoice/${data.id}/update`, data)
       await dispatch(
         getInvoices({
           fromDate: getStartOfCurrentMonth(),
@@ -156,6 +156,35 @@ export const updateInvoiceStatus = createAsyncThunk(
         }),
       ).unwrap()
       toast.success('Cập nhật trạng thái thành công')
+
+      // Return response data including warehouseInfo
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const recordPrintAttempt = createAsyncThunk(
+  'invoice/record-print-attempt',
+  async (salesContractId, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/sales-contracts/${salesContractId}/print-attempt`)
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const recordPrintSuccess = createAsyncThunk(
+  'invoice/record-print-success',
+  async (salesContractId, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/sales-contracts/${salesContractId}/print-success`)
+      return response.data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -256,6 +285,26 @@ export const invoiceSlice = createSlice({
       .addCase(getInvoiceDetail.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
+      })
+      .addCase(recordPrintAttempt.pending, (state) => {
+        // Silent tracking, không set loading
+      })
+      .addCase(recordPrintAttempt.fulfilled, (state) => {
+        // Silent success
+      })
+      .addCase(recordPrintAttempt.rejected, (state, action) => {
+        // Silent fail, chỉ log error
+        console.error('Failed to record print attempt:', action.payload)
+      })
+      .addCase(recordPrintSuccess.pending, (state) => {
+        // Silent tracking
+      })
+      .addCase(recordPrintSuccess.fulfilled, (state) => {
+        // Silent success
+      })
+      .addCase(recordPrintSuccess.rejected, (state, action) => {
+        // Silent fail
+        console.error('Failed to record print success:', action.payload)
       })
   },
 })

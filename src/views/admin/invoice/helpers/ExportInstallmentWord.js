@@ -124,6 +124,7 @@ async function prepareTemplateData(data) {
     })),
     
     // Totals - match template placeholders
+    total: formatMoney(totalAmount), // Tổng cộng thành tiền
     total_words: data?.amountText || '', // Số tiền bằng chữ
     
     // Payment info - match template placeholders
@@ -131,6 +132,9 @@ async function prepareTemplateData(data) {
     
     // QR Code - for {%qr_code} placeholder in template
     qr_code: data?.qrCode || null,
+    
+    // Print tracking - for {print_count} placeholder in template
+    print_count: data?.printCount || 0,
   }
 }
 

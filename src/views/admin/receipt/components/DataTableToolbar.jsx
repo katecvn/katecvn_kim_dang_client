@@ -6,22 +6,59 @@ import { Input } from '@/components/ui/input'
 import { DataTableViewOptions } from './DataTableViewOption'
 import PaymentReminderDialog from './PaymentReminderDialog'
 import { useState } from 'react'
-import { BellIcon } from 'lucide-react'
+import { BellIcon, QrCode } from 'lucide-react'
+import { useDispatch } from 'react-redux'
+import { getReceiptQRCode } from '@/stores/ReceiptSlice'
+import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { moneyFormat } from '@/utils/money-format'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const selectedRows = table.getSelectedRowModel().rows
   const [openReminder, setOpenReminder] = useState(false)
+  const [openQrDialog, setOpenQrDialog] = useState(false)
+  const [qrCodeData, setQrCodeData] = useState(null)
+  const [qrLoading, setQrLoading] = useState(false)
+  const dispatch = useDispatch()
   const canRemind = selectedRows.length === 1
+
+  const handleGenerateQR = async () => {
+    if (selectedRows.length !== 1) {
+      toast.warning('Vui lòng chọn 1 (Một) phiếu thu')
+      return
+    }
+
+    const receipt = selectedRows[0].original
+
+    try {
+      setQrLoading(true)
+      const qrData = await dispatch(getReceiptQRCode(receipt.id)).unwrap()
+      setQrCodeData(qrData)
+      setOpenQrDialog(true)
+    } catch (error) {
+      console.error('Failed to fetch QR code:', error)
+      toast.error('Không lấy được mã QR thanh toán')
+    } finally {
+      setQrLoading(false)
+    }
+  }
 
   return (
     <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-1">
       <div className="flex flex-1 items-center space-x-2">
         <Input
-          placeholder="Tìm kiếm..."
-          value={table.getColumn('customer')?.getFilterValue() || ''}
+          placeholder="Tìm kiếm theo mã phiếu thu..."
+          value={table.getColumn('code')?.getFilterValue() || ''}
           onChange={(event) =>
-            table.getColumn('customer')?.setFilterValue(event.target.value)
+            table.getColumn('code')?.setFilterValue(event.target.value)
           }
           className="h-8 w-[150px] lg:w-[250px]"
         />
@@ -48,6 +85,17 @@ const DataTableToolbar = ({ table }) => {
           <BellIcon className="mr-2 h-4 w-4" />
           Nhắc hạn thanh toán
         </Button>
+
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={selectedRows.length !== 1}
+          onClick={handleGenerateQR}
+          loading={qrLoading}
+        >
+          <QrCode className="mr-2 h-4 w-4" />
+          Tạo QR thanh toán
+        </Button>
       </div>
 
       {canRemind && (
@@ -57,6 +105,47 @@ const DataTableToolbar = ({ table }) => {
           receipt={selectedRows[0].original}
         />
       )}
+
+      <Dialog open={openQrDialog} onOpenChange={setOpenQrDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mã QR Thanh Toán</DialogTitle>
+            <DialogDescription>
+              Quét mã QR để thanh toán {qrCodeData?.voucherCode}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center space-y-4 py-4">
+            {qrCodeData?.qrLink ? (
+              <>
+                <img
+                  src={qrCodeData.qrLink}
+                  alt="QR Code"
+                  className="w-64 h-64 border rounded-lg"
+                />
+                <div className="text-center space-y-2">
+                  <p className="text-lg font-semibold text-primary">
+                    {moneyFormat(qrCodeData.amount)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {qrCodeData.description}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="text-center text-muted-foreground">
+                Đang tải mã QR...
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="sm:justify-center">
+            <Button onClick={() => setOpenQrDialog(false)} className="w-full sm:w-auto">
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <DataTableViewOptions table={table} />
     </div>

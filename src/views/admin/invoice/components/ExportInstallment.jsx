@@ -367,14 +367,14 @@ export default function InstallmentContract({ data = {} }) {
                 textAlign: 'justify',
                 fontSize: '12pt',
                 lineHeight: '1.26'
-              }}>{safe(item.price, '{#items}{price}{/items}')}</td>
+              }}>{safe(item.price ? vnd(item.price) : '', '{#items}{price}{/items}')}</td>
               <td style={{
                 border: '1px solid #000',
                 padding: '4px',
                 textAlign: 'justify',
                 fontSize: '12pt',
                 lineHeight: '1.26'
-              }}>{safe(item.total, '{#items}{total}{/items}')}</td>
+              }}>{safe(item.total ? vnd(item.total) : '', '{#items}{total}{/items}')}</td>
             </tr>
           )) : (
             <tr>
@@ -416,6 +416,26 @@ export default function InstallmentContract({ data = {} }) {
             </tr>
           )}
         </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan="4" style={{
+              border: '1px solid #000',
+              padding: '4px',
+              textAlign: 'right',
+              fontSize: '12pt',
+              fontWeight: 'bold',
+              lineHeight: '1.26'
+            }}>TỔNG CỘNG</td>
+            <td style={{
+              border: '1px solid #000',
+              padding: '4px',
+              textAlign: 'justify',
+              fontSize: '12pt',
+              fontWeight: 'bold',
+              lineHeight: '1.26'
+            }}>{safe(data?.totals?.grandTotal ? vnd(data.totals.grandTotal) : '', '{total}')}</td>
+          </tr>
+        </tfoot>
       </table>
 
       <p style={{ textAlign: 'justify', margin: 0, lineHeight: '1.26' }}>

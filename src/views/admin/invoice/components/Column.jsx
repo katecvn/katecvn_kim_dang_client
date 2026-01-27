@@ -1,7 +1,9 @@
 import { DataTableRowActions } from './DataTableRowAction'
 import { DataTableColumnHeader } from './DataTableColumnHeader'
-import { normalizeText } from '@/utils/normalize-text'
+import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Phone, CreditCard } from 'lucide-react'
+import { normalizeText } from '@/utils/normalize-text'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
 import { statuses, paymentStatuses } from '../data'
@@ -11,7 +13,6 @@ import ViewInvoiceDialog from './ViewInvoiceDialog'
 import { toast } from 'sonner'
 import { useDispatch } from 'react-redux'
 import { updateInvoiceStatus } from '@/stores/InvoiceSlice'
-import { Badge } from '@/components/ui/badge'
 import UpdateInvoiceStatusDialog from './UpdateInvoiceStatusDialog'
 
 export const columns = [
@@ -111,13 +112,15 @@ export const columns = [
             </span>
           )}
 
-          <span className="text-primary underline hover:text-secondary-foreground">
+          <span className="flex items-center gap-1 text-primary underline hover:text-secondary-foreground">
+            <Phone className="h-3 w-3" />
             <a href={`tel:${customer.phone}`}>{customer.phone}</a>
           </span>
 
-          {row.original.customerEmail && (
-            <span className="text-muted-foreground">
-              {row.original.customerEmail}
+          {customer.identityCard && (
+            <span className="flex items-center gap-1 text-muted-foreground text-xs">
+              <CreditCard className="h-3 w-3" />
+              {customer.identityCard}
             </span>
           )}
         </div>
@@ -203,28 +206,41 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Công nợ" />
     ),
     cell: ({ row }) => {
-      const receipts = row.original?.receipts || []
-      const debt = receipts.length > 0 ? receipts[0]?.debt : null
+      const invoice = row.original
+      const paymentStatus = invoice?.paymentStatus
+      const totalAmount = parseFloat(invoice?.totalAmount || 0)
+      const paidAmount = parseFloat(invoice?.paidAmount || 0)
+      const remainingAmount = totalAmount - paidAmount
 
-      if (!debt) {
+      // If fully paid
+      if (paymentStatus === 'paid' || remainingAmount <= 0) {
+        return <span className="text-green-500">Thanh toán toàn bộ</span>
+      }
+
+      // If partially paid
+      if (paidAmount > 0 && remainingAmount > 0) {
         return (
-          <span className="italic text-muted-foreground">
-            Chưa có phiếu thu
+          <span className="text-yellow-600">
+            Còn nợ: {moneyFormat(remainingAmount)}
           </span>
         )
       }
 
-      if (debt.status === 'closed') {
-        return <span className="text-green-500">Thanh toán toàn bộ</span>
+      // If not paid at all
+      if (paidAmount === 0) {
+        return (
+          <span className="text-red-500">
+            Còn nợ: {moneyFormat(remainingAmount)}
+          </span>
+        )
       }
 
-      const remainingAmount = moneyFormat(debt.remainingAmount)
-
-      if (debt.paidAmount === 0) {
-        return <span className="text-red-500">Còn nợ: {remainingAmount}</span>
-      }
-
-      return <span className="text-yellow-600">Còn nợ: {remainingAmount}</span>
+      // Default fallback
+      return (
+        <span className="italic text-muted-foreground">
+          Chưa có phiếu thu
+        </span>
+      )
     },
     enableSorting: true,
     enableHiding: true,
@@ -247,9 +263,32 @@ export const columns = [
 
       const handleSubmit = async (nextStatus) => {
         try {
-          await dispatch(
+          const result = await dispatch(
             updateInvoiceStatus({ id: row.original.id, status: nextStatus }),
           ).unwrap()
+
+          // Handle warehouseInfo response when status changes to rejected
+          if (nextStatus === 'rejected' && result?.warehouseInfo) {
+            const { warehouseInfo } = result
+
+            if (warehouseInfo.message) {
+              toast.info(warehouseInfo.message, { duration: 5000 })
+            }
+
+            if (warehouseInfo.hasPayments) {
+              toast.warning('Đơn hàng đã có thanh toán, vui lòng kiểm tra phiếu thu', {
+                duration: 5000,
+              })
+            }
+
+            if (warehouseInfo.returnReceiptCode) {
+              toast.success(
+                `Đã tạo phiếu nhập trả hàng: ${warehouseInfo.returnReceiptCode}`,
+                { duration: 6000 }
+              )
+            }
+          }
+
           toast.success('Cập nhật trạng thái hóa đơn thành công')
           setOpenUpdateStatus(false)
         } catch (error) {

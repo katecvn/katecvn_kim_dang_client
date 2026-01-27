@@ -2,53 +2,12 @@ import { DataTableRowActions } from './DataTableRowAction'
 import { DataTableColumnHeader } from './DataTableColumnHeader'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
-import { normalizeText } from '@/utils/normalize-text'
 import { useState } from 'react'
 import ViewReceiptDialog from './ViewReceiptDialog'
 import { Badge } from '@/components/ui/badge'
-import { toast } from 'sonner'
-import { useDispatch } from 'react-redux'
-import { updatePaymentStatus } from '@/stores/PaymentSlice'
-import { getMyReceipts, getReceipts } from '@/stores/ReceiptSlice'
 import { Checkbox } from '@/components/ui/checkbox'
-
-const getNearestDueDateInfo = (payments = []) => {
-  const pendingPayments = payments.filter(
-    (p) => p.dueDate && p.status !== 'success',
-  )
-
-  if (!pendingPayments.length) return null
-
-  const nearest = pendingPayments
-    .map((p) => new Date(p.dueDate))
-    .sort((a, b) => a - b)[0]
-
-  const today = new Date()
-  const diffMs = nearest.setHours(0, 0, 0, 0) - today.setHours(0, 0, 0, 0)
-
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-
-  let color = 'bg-green-500'
-  let label = `Còn ${diffDays} ngày`
-
-  if (diffDays < 0) {
-    color = 'bg-destructive'
-    label = `Quá hạn ${Math.abs(diffDays)} ngày`
-  } else if (diffDays === 0) {
-    color = 'bg-orange-500'
-    label = 'Hạn hôm nay'
-  } else if (diffDays <= 3) {
-    color = 'bg-orange-500'
-    label = `Còn ${diffDays} ngày`
-  }
-
-  return {
-    date: nearest,
-    diffDays,
-    label,
-    color,
-  }
-}
+import { useDispatch } from 'react-redux'
+import { getReceiptById } from '@/stores/ReceiptSlice'
 
 export const columns = [
   {
@@ -82,19 +41,39 @@ export const columns = [
     ),
     cell: function Cell({ row }) {
       const [showViewReceiptDialog, setShowViewReceiptDialog] = useState(false)
+      const [receiptDetail, setReceiptDetail] = useState(null)
+      const [loading, setLoading] = useState(false)
+      const dispatch = useDispatch()
+
+      const handleViewReceipt = async () => {
+        setLoading(true)
+        try {
+          const result = await dispatch(getReceiptById(row.original.id)).unwrap()
+          setReceiptDetail(result)
+          setShowViewReceiptDialog(true)
+        } catch (error) {
+          console.error('Error fetching receipt:', error)
+          // Fallback to list data if fetch fails
+          setReceiptDetail(row.original)
+          setShowViewReceiptDialog(true)
+        } finally {
+          setLoading(false)
+        }
+      }
+
       return (
         <>
-          {showViewReceiptDialog && (
+          {showViewReceiptDialog && receiptDetail && (
             <ViewReceiptDialog
               open={showViewReceiptDialog}
               onOpenChange={setShowViewReceiptDialog}
-              receipt={row.original}
+              receipt={receiptDetail}
               showTrigger={false}
             />
           )}
           <div
-            className="w-28 cursor-pointer text-primary hover:underline"
-            onClick={() => setShowViewReceiptDialog(true)}
+            className={`w-28 cursor-pointer text-primary hover:underline ${loading ? 'opacity-50' : ''}`}
+            onClick={handleViewReceipt}
           >
             <div className="flex items-center gap-2">
               <span>{row.getValue('code')}</span>
@@ -112,185 +91,112 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'customer',
+    accessorKey: 'receiverType',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Khách hàng" />
+      <DataTableColumnHeader column={column} title="Loại" />
     ),
     cell: ({ row }) => (
-      <div
-        className="flex w-40 flex-col break-words"
-        title={row.original.customer.name}
-      >
-        <span className="font-semibold">{row.original.customer.name}</span>
-        <span className="text-muted-foreground">
-          <a
-            className="text-primary underline hover:text-secondary-foreground"
-            href={`mailto:${row.original.customer.email}`}
-          >
-            {row.original.customer.email}
-          </a>
-        </span>
-        <span className="text-muted-foreground">
-          <a href={`tel:${row.original.customer.phone}`}>
-            {row.original.customer.phone}
-          </a>
-        </span>
-      </div>
-    ),
-    enableSorting: true,
-    enableHiding: true,
-    filterFn: (row, id, value) => {
-      const customerName = normalizeText(row.original.customer.name)
-      const searchValue = normalizeText(value)
-
-      return customerName.includes(searchValue)
-    },
-  },
-  {
-    accessorKey: 'user',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Người tạo" />
-    ),
-    cell: ({ row }) => (
-      <div className="w-32 truncate" title={row.original.user?.fullName}>
-        {row.original.user?.fullName}
+      <div className="w-28">
+        <Badge variant="outline">
+          {row.getValue('receiverType') === 'customer' ? 'Khách hàng' : 'Nhà cung cấp'}
+        </Badge>
       </div>
     ),
     enableSorting: true,
     enableHiding: true,
   },
   {
-    accessorKey: 'date',
+    accessorKey: 'reason',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Ngày lập" />
+      <DataTableColumnHeader column={column} title="Lý do" />
     ),
     cell: ({ row }) => (
-      <div className="w-28">{dateFormat(row.getValue('date'))}</div>
+      <div className="w-48 truncate" title={row.getValue('reason')}>
+        {row.getValue('reason') || 'Không có'}
+      </div>
     ),
     enableSorting: true,
     enableHiding: true,
   },
   {
-    accessorKey: 'totalAmount',
+    accessorKey: 'paymentDate',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Tổng tiền" />
+      <DataTableColumnHeader column={column} title="Ngày thanh toán" />
+    ),
+    cell: ({ row }) => (
+      <div className="w-32">{dateFormat(row.getValue('paymentDate'))}</div>
+    ),
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'amount',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Số tiền" />
     ),
     cell: ({ row }) => {
       return (
         <div className="flex space-x-2">
           <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
-            {moneyFormat(row.getValue('totalAmount'))}
+            {moneyFormat(row.getValue('amount'))}
           </span>
         </div>
       )
     },
   },
   {
-    accessorKey: 'paidAmount',
+    accessorKey: 'paymentMethod',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Đã thanh toán" />
+      <DataTableColumnHeader column={column} title="Phương thức" />
     ),
     cell: ({ row }) => {
+      const method = row.getValue('paymentMethod')
       return (
-        <div className="flex space-x-2">
-          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
-            {moneyFormat(row.original.debt.paidAmount)}
-          </span>
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: 'debt',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nợ" />
-    ),
-    cell: function Cell({ row }) {
-      const payments = row.original.payments
-      const debtStatus = row.original.debt.status
-      const paymentId = payments[0]?.id
-
-      const dispatch = useDispatch()
-      const handleUpdatePaymentStatus = async () => {
-        try {
-          if (!payments.length) {
-            toast.warning(
-              'Vui lòng thêm ít nhất 1 khoản thanh toán cho phiếu thu',
-            )
-            return
-          }
-          if (payments.length > 1) {
-            toast.warning(
-              'Có nhiều khoản thu đối với phiếu thu này!!! Xem chi tiết từng khoản thu trước khi duyệt',
-            )
-            return
-          }
-          if (debtStatus === 'closed') {
-            toast.warning('Phiếu thu này đã được thu toàn bộ')
-            return
-          }
-          const isConfirmed = window.confirm(
-            'Bạn có chắc muốn duyệt nhanh khoản thanh toán cho phiếu thu này chứ',
-          )
-          if (isConfirmed) {
-            await dispatch(
-              updatePaymentStatus({ id: paymentId, status: 'success' }),
-            ).unwrap()
-            const getAllReceipt = JSON.parse(
-              localStorage.getItem('permissionCodes'),
-            ).includes('GET_RECEIPT')
-            getAllReceipt
-              ? await dispatch(getReceipts()).unwrap()
-              : await dispatch(getMyReceipts()).unwrap()
-          }
-        } catch (error) {
-          console.log('Submit error: ', error)
-        }
-      }
-
-      return (
-        <div
-          className="flex cursor-pointer space-x-2"
-          onClick={() => {
-            handleUpdatePaymentStatus()
-          }}
-        >
-          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
-            <Badge
-              className={
-                row.original.debt.remainingAmount > 0
-                  ? 'bg-destructive'
-                  : 'bg-green-500'
-              }
-            >
-              {row.original.debt.remainingAmount > 0
-                ? moneyFormat(row.original.debt.remainingAmount)
-                : 'Đã thanh toán hết'}
-            </Badge>
-          </span>
-        </div>
-      )
-    },
-  },
-  {
-    id: 'dueDate',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Hạn chót" />
-    ),
-    cell: ({ row }) => {
-      const dueInfo = getNearestDueDateInfo(row.original.payments)
-      if (!dueInfo) {
-        return null
-      }
-      return (
-        <div className="">
-          <Badge className={dueInfo.color}>
-            {`${dateFormat(dueInfo.date)} (${dueInfo.label})`}
+        <div className="w-28">
+          <Badge variant="outline">
+            {method === 'cash' ? 'Tiền mặt' : method === 'transfer' ? 'Chuyển khoản' : method}
           </Badge>
         </div>
       )
     },
-    enableSorting: false,
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'status',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Trạng thái" />
+    ),
+    cell: ({ row }) => {
+      const status = row.getValue('status')
+      return (
+        <div className="w-28">
+          <Badge className={status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'}>
+            {status === 'completed' ? 'Hoàn thành' : status === 'draft' ? 'Nháp' : status}
+          </Badge>
+        </div>
+      )
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'dueDate',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Hạn chót" />
+    ),
+    cell: ({ row }) => {
+      const dueDate = row.getValue('dueDate')
+      if (!dueDate) {
+        return <div className="w-28 text-muted-foreground">Không có</div>
+      }
+      return (
+        <div className="w-28">
+          {dateFormat(dueDate)}
+        </div>
+      )
+    },
+    enableSorting: true,
     enableHiding: true,
   },
 

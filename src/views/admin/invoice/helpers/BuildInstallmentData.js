@@ -28,12 +28,16 @@ export async function buildInstallmentData(invoice) {
     total: Number(item?.total || 0),
   }))
 
-  // Generate QR code from salesContract.code
+  // Generate QR code with URL to open invoice dialog
   let qrCodeDataUrl = null
-  const contractCode = invoice?.salesContract?.code
-  if (contractCode) {
+  const invoiceId = invoice?.id
+  if (invoiceId) {
     try {
-      qrCodeDataUrl = await QRCode.toDataURL(contractCode, {
+      // Create URL that will navigate to /invoice and open ViewInvoiceDialog
+      const baseUrl = window.location.origin
+      const invoiceUrl = `${baseUrl}/invoice?view=${invoiceId}`
+      
+      qrCodeDataUrl = await QRCode.toDataURL(invoiceUrl, {
         width: 200,
         margin: 1,
         errorCorrectionLevel: 'M'
@@ -84,5 +88,8 @@ export async function buildInstallmentData(invoice) {
 
     // QR code for contract code
     qrCode: qrCodeDataUrl,
+    
+    // Print tracking info
+    printCount: invoice?.salesContract?.printCount || 0,
   }
 }

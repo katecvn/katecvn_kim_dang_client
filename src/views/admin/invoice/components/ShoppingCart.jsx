@@ -43,7 +43,7 @@ const ShoppingCart = ({
 }) => {
   if (selectedProducts.length === 0) {
     return (
-      <div className="relative flex w-[560px] flex-col border-l bg-gradient-to-b from-background to-muted/20">
+      <div className="relative flex w-[680px] flex-col border-l bg-gradient-to-b from-background to-muted/20">
         {/* Left divider */}
         <div className="absolute bottom-0 left-0 top-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
         {/* Right divider */}
@@ -86,7 +86,7 @@ const ShoppingCart = ({
   }
 
   return (
-    <div className="relative flex w-[560px] flex-col border-l bg-gradient-to-b from-background to-muted/20">
+    <div className="relative flex w-[680px] flex-col border-l bg-gradient-to-b from-background to-muted/20">
       {/* Left divider */}
       <div className="absolute bottom-0 left-0 top-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
 
@@ -194,6 +194,18 @@ const ShoppingCart = ({
                             {product.code}
                           </p>
                         )}
+                        {/* Price Sync Timestamp */}
+                        {product.syncMapping?.lastSyncAt && (
+                          <p className="mt-0.5 text-[10px] text-muted-foreground/80">
+                            {product.syncMapping.supplier?.name} - Cập nhật: {new Date(product.syncMapping.lastSyncAt).toLocaleString('vi-VN', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        )}
                       </div>
                       <Button
                         type="button"
@@ -207,7 +219,7 @@ const ShoppingCart = ({
                     </div>
 
                     {/* Price and Quantity Row */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       {/* Unit Selection */}
                       <div className="flex-1">
                         <label className="mb-1 block text-[10px] text-muted-foreground">

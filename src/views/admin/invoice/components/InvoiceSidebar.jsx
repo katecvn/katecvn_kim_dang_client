@@ -648,6 +648,29 @@ const InvoiceSidebar = ({
             )}
           />
 
+          {/* Transaction Type */}
+          <FormField
+            control={form.control}
+            name="transactionType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Loại giao dịch</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value || 'RETAIL'}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn loại giao dịch" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="RETAIL">Bán lẻ</SelectItem>
+                    <SelectItem value="WHOLESALE">Bán sĩ</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           {/* Note */}
           <FormField
             control={form.control}

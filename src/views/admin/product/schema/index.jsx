@@ -86,6 +86,10 @@ const baseCreateSchema = z.object({
 
   basePrice: z.union([z.string(), z.number()]).optional(), // giá gốc
   manageSerial: z.boolean().default(false), // quản lý serial
+
+  // Price Sync fields
+  syncEnabled: z.boolean().optional().default(false),
+  syncExternalCode: z.string().optional().nullable(),
 })
 
 const createProductSchema = baseCreateSchema.superRefine((data, ctx) => {
@@ -183,6 +187,9 @@ const createProductSchema = baseCreateSchema.superRefine((data, ctx) => {
 
 const updateProductSchema = baseCreateSchema
   .extend({
+    // Make image optional for update (user may not change image)
+    image: z.instanceof(File).optional(),
+
     attributeIdsWithValue: z
       .array(
         z

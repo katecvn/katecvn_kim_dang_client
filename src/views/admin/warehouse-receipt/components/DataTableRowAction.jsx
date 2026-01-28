@@ -25,8 +25,52 @@ export function DataTableRowActions({ row }) {
     if (receipt.status === 'posted') {
       return
     }
+
+    // Validate lot allocations for export receipts (receiptType = 2)
+    if (receipt.receiptType === 2) {
+      // Check if receipt has details
+      if (!receipt.details || receipt.details.length === 0) {
+        alert('Phiếu xuất kho phải có ít nhất một sản phẩm')
+        return
+      }
+
+      // Check if all details have lot allocations
+      const missingAllocations = receipt.details.filter((detail) => {
+        return !detail.lotAllocations || detail.lotAllocations.length === 0
+      })
+
+      if (missingAllocations.length > 0) {
+        const productNames = missingAllocations
+          .map((d) => d.productName)
+          .join(', ')
+        alert(
+          `Vui lòng phân bổ lô cho các sản phẩm sau trước khi duyệt phiếu:\n${productNames}`
+        )
+        return
+      }
+
+      // Validate that total allocated quantity matches qtyActual for each detail
+      const invalidAllocations = receipt.details.filter((detail) => {
+        const totalAllocated = detail.lotAllocations.reduce(
+          (sum, alloc) => sum + parseFloat(alloc.quantity || 0),
+          0
+        )
+        return Math.abs(totalAllocated - parseFloat(detail.qtyActual)) > 0.001
+      })
+
+      if (invalidAllocations.length > 0) {
+        const productNames = invalidAllocations
+          .map((d) => d.productName)
+          .join(', ')
+        alert(
+          `Tổng số lượng phân bổ lô không khớp với số lượng xuất cho:\n${productNames}`
+        )
+        return
+      }
+    }
+
     const confirm = window.confirm(
-      'Bạn có chắc chắn muốn duyệt phiếu kho này không? Sau khi duyệt sẽ không thể chỉnh sửa.',
+      'Bạn có chắc chắn muốn duyệt phiếu kho này không? Sau khi duyệt sẽ không thể chỉnh sửa.'
     )
     if (confirm) {
       await dispatch(postWarehouseReceipt(receipt.id))
@@ -44,14 +88,12 @@ export function DataTableRowActions({ row }) {
 
   return (
     <>
-      {showViewDialog && (
-        <ViewWarehouseReceiptDialog
-          open={showViewDialog}
-          onOpenChange={setShowViewDialog}
-          receipt={receipt}
-          showTrigger={false}
-        />
-      )}
+      <ViewWarehouseReceiptDialog
+        open={showViewDialog}
+        onOpenChange={setShowViewDialog}
+        receiptId={receipt.id}
+        showTrigger={false}
+      />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

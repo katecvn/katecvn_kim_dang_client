@@ -5,10 +5,11 @@ import api from '@/utils/axios'
  * @param {number} invoiceId - Invoice ID
  * @returns {Promise} Warehouse receipt data
  */
-const generateWarehouseReceiptFromInvoice = async (invoiceId) => {
+const generateWarehouseReceiptFromInvoice = async (invoiceId, selectedItemIds = []) => {
   try {
     const { data } = await api.post('/warehouse-receipts/generate-from-invoice', {
       invoiceId,
+      selectedItemIds,
     })
     return data?.data
   } catch (error) {

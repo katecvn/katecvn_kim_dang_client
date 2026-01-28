@@ -305,6 +305,7 @@ export const columns = [
               onOpenChange={setOpenUpdateStatus}
               invoiceId={row.original.id}
               currentStatus={currentStatus}
+              paymentStatus={paymentStatus}
               statuses={statuses}
               onSubmit={handleSubmit}
             />
@@ -334,6 +335,9 @@ export const columns = [
               </span>
               {paymentStatusObj?.label || 'Không xác định'}
             </Badge>
+
+
+
           </div>
         </>
       )

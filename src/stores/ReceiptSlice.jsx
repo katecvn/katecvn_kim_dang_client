@@ -98,6 +98,20 @@ export const getReceiptQRCode = createAsyncThunk(
   },
 )
 
+export const updateReceiptStatus = createAsyncThunk(
+  'receipt/update-status',
+  async ({ id, status }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/payment-vouchers/${id}`, { status })
+      toast.success('Cập nhật trạng thái phiếu thu thành công')
+      return response.data.data || response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 const initialState = {
   receipt: {},
   receipts: [],

@@ -5,9 +5,9 @@ export const receiptTypes = [
   { value: 2, label: 'Xuất kho', color: 'bg-orange-500' },
 ]
 
-export const receiptStatuses = [
+export const warehouseReceiptStatuses = [
   { value: 'draft', label: 'Nháp', color: 'bg-yellow-500' },
-  { value: 'posted', label: 'Đã duyệt', color: 'bg-green-500' },
+  { value: 'posted', label: 'Đã ghi sổ', color: 'bg-green-500' },
 ]
 
 export const fulfillmentStatuses = [

@@ -49,12 +49,13 @@ const ProductGrid = ({
                   className={cn(
                     "group cursor-pointer transition-all hover:shadow-sm",
                     isSelected && "ring-2 ring-primary bg-primary/5",
-                    isOutOfStock && "opacity-60"
+                    // isOutOfStock && "opacity-60" // Allow selection even if out of stock
                   )}
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
-                    if (!isOutOfStock) onAddProduct(product)
+                    // Allow selection even if out of stock
+                    onAddProduct(product)
                   }}
                 >
                   <CardContent className="p-2.5">
@@ -128,16 +129,15 @@ const ProductGrid = ({
                       </div>
 
                       {/* Add Button */}
-                      {!isOutOfStock && (
-                        <Button
-                          size="sm"
-                          variant={isSelected ? "default" : "outline"}
-                          className="shrink-0 h-7 text-xs"
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          {isSelected ? 'Đã chọn' : 'Thêm'}
-                        </Button>
-                      )}
+                      {/* Always show Add button */}
+                      <Button
+                        size="sm"
+                        variant={isSelected ? "default" : "outline"}
+                        className="shrink-0 h-7 text-xs"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        {isSelected ? 'Đã chọn' : 'Thêm'}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

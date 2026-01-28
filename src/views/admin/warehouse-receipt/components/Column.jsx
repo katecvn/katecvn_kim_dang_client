@@ -6,7 +6,8 @@ import { useState } from 'react'
 import ViewWarehouseReceiptDialog from './ViewWarehouseReceiptDialog'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { receiptTypes, receiptStatuses } from '../data'
+import { receiptTypes, warehouseReceiptStatuses } from '../data'
+import Can from '@/utils/can'
 
 export const columns = [
   {
@@ -40,16 +41,20 @@ export const columns = [
     ),
     cell: function Cell({ row }) {
       const [showViewDialog, setShowViewDialog] = useState(false)
+
       return (
         <>
-          {showViewDialog && (
-            <ViewWarehouseReceiptDialog
-              open={showViewDialog}
-              onOpenChange={setShowViewDialog}
-              receipt={row.original}
-              showTrigger={false}
-            />
-          )}
+          <Can permission={'GET_WAREHOUSE_RECEIPT'}>
+            {showViewDialog && (
+              <ViewWarehouseReceiptDialog
+                open={showViewDialog}
+                onOpenChange={setShowViewDialog}
+                receiptId={row.original.id}
+                showTrigger={false}
+              />
+            )}
+          </Can>
+
           <div
             className="w-32 cursor-pointer text-primary hover:underline"
             onClick={() => setShowViewDialog(true)}
@@ -57,26 +62,6 @@ export const columns = [
             {row.getValue('code')}
           </div>
         </>
-      )
-    },
-    enableSorting: true,
-    enableHiding: true,
-  },
-  {
-    accessorKey: 'receiptType',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Loại" />
-    ),
-    cell: ({ row }) => {
-      const type = receiptTypes.find(
-        (t) => t.value === row.getValue('receiptType'),
-      )
-      return (
-        <div className="w-28">
-          <Badge className={type?.color || 'bg-gray-500'}>
-            {type?.label || 'Không xác định'}
-          </Badge>
-        </div>
       )
     },
     enableSorting: true,
@@ -170,7 +155,7 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Trạng thái" />
     ),
     cell: ({ row }) => {
-      const status = receiptStatuses.find(
+      const status = warehouseReceiptStatuses.find(
         (s) => s.value === row.getValue('status'),
       )
       return (

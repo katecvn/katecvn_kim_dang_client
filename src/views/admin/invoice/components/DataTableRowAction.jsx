@@ -25,7 +25,9 @@ import UpdateInvoiceDialog from '@/views/admin/invoice/components/UpdateInvoiceD
 import CreateCreditNoteDialog from './CreateCreditNoteDialog'
 import ViewInvoiceDialog from './ViewInvoiceDialog'
 import EInvoicePublishDialog from './EInvoicePublishDialog'
-import ConfirmWarehouseReceiptDialog from './ConfirmWarehouseReceiptDialog'
+import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
+import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
+import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
 import {
   downloadPreviewDraftInvoice,
   getPreviewData,
@@ -34,7 +36,7 @@ import {
 import {
   generateWarehouseReceiptFromInvoice,
   postWarehouseReceipt,
-} from '@/api/warehouse_receipt'
+} from '@/stores/WarehouseReceiptSlice'
 import { getInvoices } from '@/stores/InvoiceSlice'
 import {
   getEndOfCurrentMonth,
@@ -67,7 +69,9 @@ const DataTableRowActions = ({ row }) => {
   const [eInvoiceLoading, setEInvoiceLoading] = useState(false)
   const [warehouseLoading, setWarehouseLoading] = useState(false)
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
-  
+  const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
+  const [showCreateSalesContractDialog, setShowCreateSalesContractDialog] = useState(false)
+
   // Print state
   const [printInvoice, setPrintInvoice] = useState(null)
   const [showAgreementPreview, setShowAgreementPreview] = useState(false)
@@ -138,13 +142,19 @@ const DataTableRowActions = ({ row }) => {
     setShowConfirmWarehouseDialog(true)
   }
 
-  const handleConfirmCreateWarehouseReceipt = async () => {
+  const handleConfirmCreateWarehouseReceipt = async (selectedItemIds) => {
     const invoiceId = invoice?.id
     if (!invoiceId) return
 
     try {
       setWarehouseLoading(true)
-      const data = await generateWarehouseReceiptFromInvoice(invoiceId)
+      const data = await dispatch(
+        generateWarehouseReceiptFromInvoice({
+          invoiceId,
+          selectedItemIds,
+          type: 'retail',
+        }),
+      ).unwrap()
       toast.success(`Đã tạo phiếu xuất kho ${data?.code || 'thành công'}`)
 
       // Refresh invoice list
@@ -156,9 +166,12 @@ const DataTableRowActions = ({ row }) => {
       ).unwrap()
     } catch (error) {
       console.error('Create warehouse receipt error:', error)
-      toast.error(
-        error?.response?.data?.message || 'Tạo phiếu xuất kho thất bại'
-      )
+      // Toast is handled in slice or here? Slice does NOT have toast for generate
+      // But slice has rejectWithValue with message.
+      // We can keep toast error here or rely on slice rejection.
+      // Slice thunk catches error and returns rejectWithValue(message).
+      // unwrap() throws the rejected value (message).
+      // So we catch it here.
     } finally {
       setWarehouseLoading(false)
     }
@@ -179,8 +192,9 @@ const DataTableRowActions = ({ row }) => {
 
     try {
       setWarehouseLoading(true)
-      const data = await postWarehouseReceipt(warehouseReceiptId)
-      toast.success('Đã ghi sổ kho thành công')
+      await dispatch(postWarehouseReceipt(warehouseReceiptId)).unwrap()
+      // Toast is handled in slice for postWarehouseReceipt ("Duyệt phiếu thành công")
+      // toast.success('Đã ghi sổ kho thành công')
 
       // Refresh invoice list
       await dispatch(
@@ -191,9 +205,7 @@ const DataTableRowActions = ({ row }) => {
       ).unwrap()
     } catch (error) {
       console.error('Post warehouse receipt error:', error)
-      toast.error(
-        error?.response?.data?.message || 'Ghi sổ kho thất bại'
-      )
+      // Error toast is handled in slice
     } finally {
       setWarehouseLoading(false)
     }
@@ -266,6 +278,22 @@ const DataTableRowActions = ({ row }) => {
     }
   }
 
+  const handleCreateReceipt = () => {
+    if (invoice?.status === 'paid' || invoice?.status === 'rejected') {
+      toast.warning('Không thể tạo phiếu thu cho hóa đơn đã thanh toán hoặc bị từ chối')
+      return
+    }
+    setShowCreateReceiptDialog(true)
+  }
+
+  const handleCreateSalesContract = () => {
+    if (invoice?.salesContract) {
+      toast.warning('Đơn hàng này đã lập hợp đồng')
+      return
+    }
+    setShowCreateSalesContractDialog(true)
+  }
+
   return (
     <>
       {showDeleteInvoiceDialog && (
@@ -293,6 +321,26 @@ const DataTableRowActions = ({ row }) => {
           invoice={invoice}
           onConfirm={handleConfirmCreateWarehouseReceipt}
           loading={warehouseLoading}
+        />
+      )}
+
+      {showCreateReceiptDialog && (
+        <CreateReceiptDialog
+          invoices={[invoice.id]}
+          open={showCreateReceiptDialog}
+          onOpenChange={setShowCreateReceiptDialog}
+          showTrigger={false}
+          table={{ resetRowSelection: () => { } }} // Mock table object needed for dialog
+        />
+      )}
+
+      {showCreateSalesContractDialog && (
+        <CreateSalesContractDialog
+          invoiceIds={[invoice.id]}
+          open={showCreateSalesContractDialog}
+          onOpenChange={setShowCreateSalesContractDialog}
+          showTrigger={false}
+          table={{ resetRowSelection: () => { } }} // Mock table object needed for dialog
         />
       )}
 
@@ -329,7 +377,7 @@ const DataTableRowActions = ({ row }) => {
               </DropdownMenuItem>
             </Can>
           )}
-          
+
           <DropdownMenuSeparator />
 
           {/* In Hóa Đơn */}
@@ -407,6 +455,32 @@ const DataTableRowActions = ({ row }) => {
           )}
 
           <DropdownMenuSeparator />
+
+          <DropdownMenuSeparator />
+
+          {/* Create Receipt */}
+          {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && (
+            <Can permission="CREATE_RECEIPT">
+              <DropdownMenuItem onClick={handleCreateReceipt}>
+                Tạo Phiếu Thu
+                <DropdownMenuShortcut>
+                  <IconPlus className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
+
+          {/* Create Sales Contract */}
+          {invoice?.status === 'accepted' && !invoice?.salesContract && (
+            <Can permission="CREATE_SALES_CONTRACT">
+              <DropdownMenuItem onClick={handleCreateSalesContract}>
+                Tạo Hợp Đồng
+                <DropdownMenuShortcut>
+                  <IconPlus className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
 
           {/* ===== WAREHOUSE RECEIPT ACTIONS ===== */}
           {/* Tạo Phiếu Xuất Kho - Chỉ hiển thị khi status = accepted và chưa có phiếu kho */}

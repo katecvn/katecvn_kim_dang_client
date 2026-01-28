@@ -86,11 +86,18 @@ export const postWarehouseReceipt = createAsyncThunk(
 
 export const generateWarehouseReceiptFromInvoice = createAsyncThunk(
   'warehouseReceipt/generate-from-invoice',
-  async (invoiceId, { rejectWithValue }) => {
+  async ({ invoiceId, selectedItemIds, type = 'retail' }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/warehouse-receipts/generate-from-invoice', {
-        invoiceId,
-      })
+      const response = await api.post(
+        '/warehouse-receipts/generate-from-invoice',
+        {
+          invoiceId,
+          selectedItemIds,
+        },
+        {
+          params: { type },
+        },
+      )
       return response.data.data
     } catch (error) {
       const message = handleError(error)
@@ -103,6 +110,7 @@ const initialState = {
   warehouseReceipt: {},
   warehouseReceipts: [],
   loading: false,
+  detailLoading: false,
   error: null,
 }
 
@@ -127,14 +135,14 @@ export const warehouseReceiptSlice = createSlice({
       })
       // Get warehouse receipt by ID
       .addCase(getWarehouseReceiptById.pending, (state) => {
-        state.loading = true
+        state.detailLoading = true
       })
       .addCase(getWarehouseReceiptById.fulfilled, (state, action) => {
-        state.loading = false
+        state.detailLoading = false
         state.warehouseReceipt = action.payload
       })
       .addCase(getWarehouseReceiptById.rejected, (state, action) => {
-        state.loading = false
+        state.detailLoading = false
         state.error = action.payload?.message || 'Lỗi không xác định'
         toast.error(state.error)
       })

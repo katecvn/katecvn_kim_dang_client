@@ -70,7 +70,7 @@ const CreateReceiptDialog = ({
   const [createdReceiptId, setCreatedReceiptId] = useState(null)
   const setting = useSelector((state) => state.setting.setting)
   const invoiceItems = invoiceData?.flatMap((invoice) => invoice.invoiceItems)
-  const customer = invoiceData[0]?.customer
+  const customer = invoiceData?.[0]?.customer
   const banks = setting?.payload?.banks || []
 
   const totalAmount = invoiceItems
@@ -82,6 +82,10 @@ const CreateReceiptDialog = ({
   const totalDiscount = invoiceItems
     ?.map((product) => product.discount)
     .reduce((acc, discount) => acc + discount, 0)
+
+  const remainingAmount = invoiceData?.reduce((acc, invoice) => {
+    return acc + (parseFloat(invoice.totalAmount || 0) - parseFloat(invoice.paidAmount || 0))
+  }, 0)
 
   const form = useForm({
     resolver: zodResolver(createReceiptSchema),
@@ -97,10 +101,13 @@ const CreateReceiptDialog = ({
   })
 
   const fetchData = useCallback(async () => {
+    const validInvoices = invoices?.filter((id) => id)
+    if (!validInvoices || validInvoices.length === 0) return
+
     setLoading(true)
     try {
-      const data = await reviewReceipt(invoices)
-      setInvoiceData(data)
+      const data = await reviewReceipt(validInvoices)
+      setInvoiceData(data || [])
     } catch (error) {
       setLoading(false)
       console.log('Failed to fetch data: ', error)
@@ -111,7 +118,7 @@ const CreateReceiptDialog = ({
 
   useEffect(() => {
     fetchData()
-    table.resetRowSelection()
+    table?.resetRowSelection?.()
   }, [invoices, fetchData, table])
 
   useEffect(() => {
@@ -120,11 +127,12 @@ const CreateReceiptDialog = ({
 
   useEffect(() => {
     if (invoiceData.length > 0) {
-      form.setValue('totalAmount', totalAmount)
+      // Default to remaining amount for payment input
+      form.setValue('totalAmount', remainingAmount > 0 ? remainingAmount : 0)
       form.setValue('totalTaxAmount', totalTaxAmount)
       form.setValue('totalDiscount', totalDiscount)
     }
-  }, [invoiceData, form, totalAmount, totalTaxAmount, totalDiscount])
+  }, [invoiceData, form, remainingAmount, totalTaxAmount, totalDiscount])
   const navigate = useNavigate()
 
   const onSubmit = async (data) => {

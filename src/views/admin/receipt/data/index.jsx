@@ -1,4 +1,22 @@
-import { IconBrandVisa, IconCash } from '@tabler/icons-react'
+import { IconBrandVisa, IconCash, IconCircleCheck, IconCircleX, IconFileText } from '@tabler/icons-react'
+
+const receiptStatus = [
+  {
+    value: 'draft',
+    label: 'Nháp',
+    icon: IconFileText,
+  },
+  {
+    value: 'completed',
+    label: 'Đã thu',
+    icon: IconCircleCheck,
+  },
+  {
+    value: 'canceled',
+    label: 'Đã hủy',
+    icon: IconCircleX
+  }
+]
 
 const paymentMethods = [
   {
@@ -44,4 +62,4 @@ const paymentStatus = [
   },
 ]
 
-export { paymentMethods, debts, paymentStatus }
+export { paymentMethods, debts, paymentStatus, receiptStatus }

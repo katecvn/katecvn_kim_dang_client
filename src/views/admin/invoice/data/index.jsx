@@ -12,19 +12,19 @@ import { CheckCircleIcon, TruckIcon } from 'lucide-react'
 const statuses = [
   {
     value: 'pending',
-    label: 'Chờ duyệt',
+    label: 'Chờ xác nhận',
     icon: IconRefreshDot,
     color: 'text-yellow-500',
   },
   {
     value: 'accepted',
-    label: 'Đã duyệt (Đang giao)',
+    label: 'Đã xác nhận',
     icon: TruckIcon,
     color: 'text-blue-500',
   },
   {
     value: 'delivered',
-    label: 'Đã giao',
+    label: 'Hoàn thành',
     icon: CheckCircleIcon,
     color: 'text-green-500',
   },

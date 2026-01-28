@@ -4,6 +4,8 @@ import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
 
 import { DataTableViewOptions } from './DataTableViewOption'
+import { DataTableFacetedFilter } from './DataTableFacetedFilter'
+import { warehouseReceiptStatuses } from '../data'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -19,6 +21,15 @@ const DataTableToolbar = ({ table }) => {
           }
           className="h-8 w-[150px] lg:w-[250px]"
         />
+
+        {/* Filter by status */}
+        {table.getColumn('status') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('status')}
+            title="Trạng thái"
+            options={warehouseReceiptStatuses}
+          />
+        )}
 
         {isFiltered && (
           <Button

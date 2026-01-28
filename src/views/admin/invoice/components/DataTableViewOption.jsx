@@ -13,7 +13,7 @@ import {
 const DataTableViewOptions = ({ table }) => {
   const options = {
     code: 'Mã HĐ',
-    amount: 'Tông tiền',
+    amount: 'Tổng tiền',
     taxAmount: 'Thuế',
     discount: 'Giảm giá',
     subTotal: 'Tổng cộng',

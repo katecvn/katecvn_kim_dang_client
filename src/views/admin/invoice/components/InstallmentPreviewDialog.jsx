@@ -246,8 +246,9 @@ export default function InstallmentPreviewDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        isViewInvoiceDialog={false}
         className={isMobile
-          ? "max-w-full w-full h-full p-0 gap-0 flex flex-col"
+          ? "max-w-full w-full h-screen inset-0 p-0 gap-0 flex flex-col top-0 left-0 right-0 m-0 rounded-none translate-x-0 translate-y-0 z-[10000]"
           : "max-w-[80vw] gap-4"
         }
       >

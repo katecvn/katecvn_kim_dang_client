@@ -31,6 +31,13 @@ import { buildAgreementData } from '../helpers/BuildAgreementData'
 import { buildInstallmentData } from '../helpers/BuildInstallmentData'
 import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
+import { IconPlus, IconPackageExport, IconCheck, IconPackage } from '@tabler/icons-react'
+import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
+import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
+import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
+import { generateWarehouseReceiptFromInvoice, postWarehouseReceipt } from '@/api/warehouse_receipt'
+import { getInvoices } from '@/stores/InvoiceSlice'
+import { getStartOfCurrentMonth, getEndOfCurrentMonth } from '@/utils/date-format'
 
 const MobileInvoiceCard = ({
   invoice,
@@ -45,7 +52,7 @@ const MobileInvoiceCard = ({
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
-  
+
   // Print states
   const [printInvoice, setPrintInvoice] = useState(null)
   const [showAgreementPreview, setShowAgreementPreview] = useState(false)
@@ -56,6 +63,14 @@ const MobileInvoiceCard = ({
   const [installmentData, setInstallmentData] = useState(null)
   const [installmentFileName, setInstallmentFileName] = useState('hop-dong-tra-cham.docx')
   const [installmentExporting, setInstallmentExporting] = useState(false)
+
+  // New actions state
+  const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
+  const [showCreateSalesContractDialog, setShowCreateSalesContractDialog] = useState(false)
+  const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
+  const [warehouseLoading, setWarehouseLoading] = useState(false)
+
+
 
   const { customer, amount, discount, taxAmount, status, paymentStatus, code, createdAt } = invoice
 
@@ -124,6 +139,101 @@ const MobileInvoiceCard = ({
     } catch (error) {
       console.log('Submit error: ', error)
       toast.error('Cập nhật trạng thái thất bại')
+    }
+  }
+
+  // ===== NEW ACTION HANDLERS =====
+  const handleCreateReceipt = () => {
+    if (invoice?.status === 'paid' || invoice?.status === 'rejected') {
+      toast.warning('Không thể tạo phiếu thu cho hóa đơn đã thanh toán hoặc bị từ chối')
+      return
+    }
+    setShowCreateReceiptDialog(true)
+  }
+
+  const handleCreateSalesContract = () => {
+    if (invoice?.salesContract) {
+      toast.warning('Đơn hàng này đã lập hợp đồng')
+      return
+    }
+    setShowCreateSalesContractDialog(true)
+  }
+
+  const handleCreateWarehouseReceipt = async () => {
+    const invoiceStatus = invoice?.status
+    if (invoiceStatus !== 'accepted') {
+      toast.warning('Chỉ có thể tạo phiếu xuất kho cho đơn hàng đã duyệt')
+      return
+    }
+
+    if (invoice?.warehouseReceiptId) {
+      toast.warning('Đơn hàng này đã có phiếu xuất kho')
+      return
+    }
+
+    // Show confirmation dialog
+    setShowConfirmWarehouseDialog(true)
+  }
+
+  const handleConfirmCreateWarehouseReceipt = async () => {
+    const invoiceId = invoice.id
+    if (!invoiceId) return
+
+    try {
+      setWarehouseLoading(true)
+      const data = await generateWarehouseReceiptFromInvoice(invoiceId)
+      toast.success(`Đã tạo phiếu xuất kho ${data?.code || 'thành công'}`)
+
+      // Refresh invoice list
+      await dispatch(
+        getInvoices({
+          fromDate: getStartOfCurrentMonth(),
+          toDate: getEndOfCurrentMonth(),
+        }),
+      ).unwrap()
+    } catch (error) {
+      console.error('Create warehouse receipt error:', error)
+      toast.error(
+        error?.response?.data?.message || 'Tạo phiếu xuất kho thất bại'
+      )
+    } finally {
+      setWarehouseLoading(false)
+      setShowConfirmWarehouseDialog(false)
+    }
+  }
+
+  const handlePostWarehouseReceipt = async () => {
+    const warehouseReceiptId = invoice?.warehouseReceiptId
+    if (!warehouseReceiptId) {
+      toast.warning('Không tìm thấy phiếu xuất kho')
+      return
+    }
+
+    const warehouseStatus = invoice?.warehouseReceipt?.status
+    if (warehouseStatus === 'POSTED') {
+      toast.warning('Phiếu xuất kho đã được ghi sổ')
+      return
+    }
+
+    try {
+      setWarehouseLoading(true)
+      const data = await postWarehouseReceipt(warehouseReceiptId)
+      toast.success('Đã ghi sổ kho thành công')
+
+      // Refresh invoice list
+      await dispatch(
+        getInvoices({
+          fromDate: getStartOfCurrentMonth(),
+          toDate: getEndOfCurrentMonth(),
+        }),
+      ).unwrap()
+    } catch (error) {
+      console.error('Post warehouse receipt error:', error)
+      toast.error(
+        error?.response?.data?.message || 'Ghi sổ kho thất bại'
+      )
+    } finally {
+      setWarehouseLoading(false)
     }
   }
 
@@ -224,6 +334,37 @@ const MobileInvoiceCard = ({
         />
       )}
 
+      {/* Confirm Warehouse Receipt Dialog */}
+      {showConfirmWarehouseDialog && (
+        <ConfirmWarehouseReceiptDialog
+          open={showConfirmWarehouseDialog}
+          onOpenChange={setShowConfirmWarehouseDialog}
+          invoice={invoice}
+          onConfirm={handleConfirmCreateWarehouseReceipt}
+          loading={warehouseLoading}
+        />
+      )}
+
+      {showCreateReceiptDialog && (
+        <CreateReceiptDialog
+          invoices={[invoice.id]}
+          open={showCreateReceiptDialog}
+          onOpenChange={setShowCreateReceiptDialog}
+          showTrigger={false}
+          table={{ resetRowSelection: () => { } }} // Mock table object needed for dialog
+        />
+      )}
+
+      {showCreateSalesContractDialog && (
+        <CreateSalesContractDialog
+          invoiceIds={[invoice.id]}
+          open={showCreateSalesContractDialog}
+          onOpenChange={setShowCreateSalesContractDialog}
+          showTrigger={false}
+          table={{ resetRowSelection: () => { } }} // Mock table object needed for dialog
+        />
+      )}
+
       <div className="border rounded-lg bg-card mb-3 overflow-hidden">
         {/* Header - Always Visible */}
         <div className="p-3 border-b bg-background/50 flex items-center gap-2">
@@ -282,7 +423,70 @@ const MobileInvoiceCard = ({
                 In Hợp Đồng
               </DropdownMenuItem>
 
+              <DropdownMenuItem onClick={handlePrintInstallment}>
+                <IconFileTypePdf className="mr-2 h-4 w-4" />
+                In Hợp Đồng
+              </DropdownMenuItem>
+
               <DropdownMenuSeparator />
+
+              {/* Create Receipt */}
+              {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && (
+                <Can permission="CREATE_RECEIPT">
+                  <DropdownMenuItem onClick={handleCreateReceipt}>
+                    <IconPlus className="mr-2 h-4 w-4" />
+                    Tạo Phiếu Thu
+                  </DropdownMenuItem>
+                </Can>
+              )}
+
+              {/* Create Sales Contract */}
+              {invoice?.status === 'accepted' && !invoice?.salesContract && (
+                <Can permission="CREATE_SALES_CONTRACT">
+                  <DropdownMenuItem onClick={handleCreateSalesContract}>
+                    <IconPlus className="mr-2 h-4 w-4" />
+                    Tạo Hợp Đồng
+                  </DropdownMenuItem>
+                </Can>
+              )}
+
+              <DropdownMenuSeparator />
+
+              {/* Warehouse Actions */}
+              {invoice?.status === 'accepted' && !invoice?.warehouseReceiptId && (
+                <Can permission="CREATE_INVOICE">
+                  <DropdownMenuItem
+                    onClick={handleCreateWarehouseReceipt}
+                    className="text-blue-600"
+                  >
+                    <IconPackageExport className="mr-2 h-4 w-4" />
+                    Tạo Phiếu Xuất Kho
+                  </DropdownMenuItem>
+                </Can>
+              )}
+
+              {invoice?.warehouseReceipt?.status === 'DRAFT' && (
+                <Can permission="CREATE_INVOICE">
+                  <DropdownMenuItem
+                    onClick={handlePostWarehouseReceipt}
+                    className="text-green-600"
+                  >
+                    <IconCheck className="mr-2 h-4 w-4" />
+                    Ghi Sổ Kho
+                  </DropdownMenuItem>
+                </Can>
+              )}
+
+              {invoice?.warehouseReceiptId && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    toast.info(`Phiếu kho: ${invoice?.warehouseReceipt?.code || invoice?.warehouseReceiptId}`)
+                  }}
+                >
+                  <IconPackage className="mr-2 h-4 w-4" />
+                  Xem Phiếu Kho
+                </DropdownMenuItem>
+              )}
 
               <Can permission="DELETE_INVOICE">
                 <DropdownMenuItem

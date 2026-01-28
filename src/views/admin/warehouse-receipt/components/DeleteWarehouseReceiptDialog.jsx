@@ -9,17 +9,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { deleteReceipt } from '@/stores/ReceiptSlice'
+import { deleteWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { TrashIcon } from '@radix-ui/react-icons'
 import { useDispatch, useSelector } from 'react-redux'
 
-const DeleteReceiptDialog = ({ receipt, showTrigger = true, onSuccess, ...props }) => {
+const DeleteWarehouseReceiptDialog = ({ receipt, showTrigger = true, onSuccess, ...props }) => {
   const dispatch = useDispatch()
-  const loading = useSelector((state) => state.receipt.loading)
+  const loading = useSelector((state) => state.warehouseReceipt.loading)
 
-  const destroy = async (data) => {
+  const destroy = async (id) => {
     try {
-      await dispatch(deleteReceipt(data)).unwrap()
+      await dispatch(deleteWarehouseReceipt(id)).unwrap()
       onSuccess?.()
     } catch (error) {
       console.log('Submit error: ', error)
@@ -39,7 +39,7 @@ const DeleteReceiptDialog = ({ receipt, showTrigger = true, onSuccess, ...props 
         <DialogHeader>
           <DialogTitle>Bạn chắc chắn thực hiện hành động này?</DialogTitle>
           <DialogDescription>
-            Hành động này không thể hoàn tác. Loại thuế: sẽ bị xóa
+            Hành động này không thể hoàn tác. Phiếu xuất kho <span className="font-semibold">{receipt?.code}</span> sẽ bị xóa.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:space-x-0">
@@ -50,7 +50,7 @@ const DeleteReceiptDialog = ({ receipt, showTrigger = true, onSuccess, ...props 
             <Button
               variant="destructive"
               onClick={() => destroy(receipt.id)}
-              loading={loading}
+              disabled={loading}
             >
               Tiếp tục
             </Button>
@@ -61,4 +61,4 @@ const DeleteReceiptDialog = ({ receipt, showTrigger = true, onSuccess, ...props 
   )
 }
 
-export { DeleteReceiptDialog }
+export { DeleteWarehouseReceiptDialog }

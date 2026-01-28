@@ -1,0 +1,241 @@
+import { useState, useEffect } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/custom/Button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
+import { IconPackageExport } from '@tabler/icons-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { InfoCircledIcon } from '@radix-ui/react-icons'
+
+const ConfirmWarehouseReceiptDialog = ({
+  open,
+  onOpenChange,
+  invoice,
+  onConfirm,
+  loading = false,
+}) => {
+  const [selectedItems, setSelectedItems] = useState({})
+
+  useEffect(() => {
+    if (invoice?.invoiceItems) {
+      const initialSelection = {}
+      invoice.invoiceItems.forEach((item) => {
+        // Only select items that are NOT in a sales contract
+        if (!item.salesContractItemId) {
+          initialSelection[item.id] = true
+        }
+      })
+      setSelectedItems(initialSelection)
+    }
+  }, [invoice])
+
+  if (!invoice) return null
+
+  const handleConfirm = async () => {
+    const selectedIds = Object.keys(selectedItems).filter(
+      (id) => selectedItems[id],
+    )
+    await onConfirm?.(selectedIds)
+    onOpenChange(false)
+  }
+
+  const toggleItem = (itemId) => {
+    setSelectedItems((prev) => ({
+      ...prev,
+      [itemId]: !prev[itemId],
+    }))
+  }
+
+  const toggleAll = (checked) => {
+    const newSelection = {}
+    invoice.invoiceItems.forEach((item) => {
+      if (!item.salesContractItemId) {
+        newSelection[item.id] = checked
+      }
+    })
+    setSelectedItems(newSelection)
+  }
+
+  const validItemsCount = invoice.invoiceItems?.filter(
+    (item) => !item.salesContractItemId,
+  ).length
+
+  const selectedCount = Object.values(selectedItems).filter(Boolean).length
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[800px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <IconPackageExport className="h-5 w-5 text-blue-600" />
+            Xác nhận tạo phiếu xuất kho
+          </DialogTitle>
+          <DialogDescription>
+            Chọn sản phẩm để tạo phiếu xuất kho từ hóa đơn{' '}
+            <span className="font-semibold text-primary">{invoice.code}</span>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Invoice Info */}
+          <div className="rounded-lg border bg-muted/50 p-3 text-sm">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="text-muted-foreground">Khách hàng:</span>
+                <div className="font-medium">{invoice.customer?.name}</div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Mã hóa đơn:</span>
+                <div className="font-medium">{invoice.code}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Products to export */}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Sản phẩm sẽ xuất kho:</h4>
+              <span className="text-sm text-muted-foreground">
+                Đã chọn: {selectedCount}/{validItemsCount}
+              </span>
+            </div>
+            <div className="max-h-[400px] overflow-auto rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={
+                          selectedCount === validItemsCount &&
+                          validItemsCount > 0
+                        }
+                        onCheckedChange={toggleAll}
+                        disabled={validItemsCount === 0}
+                      />
+                    </TableHead>
+                    <TableHead className="w-12">STT</TableHead>
+                    <TableHead>Sản phẩm</TableHead>
+                    <TableHead className="text-right">Số lượng</TableHead>
+                    <TableHead>Đơn vị</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invoice.invoiceItems?.map((item, index) => {
+                    const isContractItem = !!item.salesContractItemId
+                    return (
+                      <TableRow
+                        key={item.id}
+                        className={isContractItem ? 'bg-muted/30' : ''}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={!!selectedItems[item.id]}
+                            onCheckedChange={() => toggleItem(item.id)}
+                            disabled={isContractItem}
+                          />
+                        </TableCell>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>
+                          <div className="font-medium">{item.productName}</div>
+                          {isContractItem && (
+                            <span className="text-xs text-orange-600">
+                              (Thuộc hợp đồng)
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-blue-600">
+                          {item.quantity}
+                        </TableCell>
+                        <TableCell>{item.unitName || 'N/A'}</TableCell>
+                        <TableCell>
+                          {isContractItem ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <InfoCircledIcon className="h-3 w-3" />
+                                    Không thể xuất
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>
+                                    Sản phẩm này nằm trong hợp đồng <br /> không
+                                    thể xuất tại đây
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <span className="text-xs text-green-600">
+                              Có thể xuất
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+
+          {/* Warning */}
+          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+            <p className="font-medium">⚠️ Lưu ý:</p>
+            <ul className="ml-4 mt-1 list-disc space-y-1">
+              <li>
+                Phiếu xuất kho sẽ được tạo ở trạng thái <strong>Nháp</strong>
+              </li>
+              <li>
+                Tồn kho chưa bị trừ cho đến khi <strong>Ghi sổ kho</strong>
+              </li>
+              <li>Bạn có thể xem và chỉnh sửa phiếu kho sau khi tạo</li>
+            </ul>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
+            Hủy
+          </Button>
+          <Button
+            type="button"
+            onClick={handleConfirm}
+            disabled={loading || selectedCount === 0}
+            loading={loading}
+          >
+            <IconPackageExport className="mr-2 h-4 w-4" />
+            Tạo phiếu xuất kho ({selectedCount})
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export default ConfirmWarehouseReceiptDialog

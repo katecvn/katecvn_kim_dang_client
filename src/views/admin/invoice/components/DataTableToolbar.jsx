@@ -6,29 +6,18 @@ import Can from '@/utils/can'
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CreateInvoiceDialog from './CreateInvoiceDialog'
-import { IconFileTypePdf, IconFileTypeXls, IconPackageExport, IconCheck } from '@tabler/icons-react'
+import { IconFileTypeXls } from '@tabler/icons-react'
 import { toast } from 'sonner'
 import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
 import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
 import PrintInvoiceView from './PrintInvoiceView'
-import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
 import { useDispatch, useSelector } from 'react-redux'
-import { getInvoices, recordPrintAttempt, recordPrintSuccess } from '@/stores/InvoiceSlice'
+import { useNavigate } from 'react-router-dom'
 import { getSetting } from '@/stores/SettingSlice'
-import { generateWarehouseReceiptFromInvoice, postWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { getUsers } from '@/stores/UserSlice'
 import ExportInvoiceDialog from './ExportInvoiceDialog'
 import { getCustomers } from '@/stores/CustomerSlice'
-import { exportQuotationPdf } from '../helpers/ExportQuotationPdf'
-import { buildQuotationData } from '../helpers/BuildQuotationData'
-import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
-import { buildAgreementData } from '../helpers/BuildAgreementData'
-import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
-import { buildInstallmentData } from '../helpers/BuildInstallmentData'
-import QuotationPreviewDialog from '../components_notuse/QuotationPreviewDialog'
-import AgreementPreviewDialog from './AgreementPreviewDialog'
-import InstallmentPreviewDialog from './InstallmentPreviewDialog'
 import { statuses } from '../data'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import {
@@ -36,7 +25,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { EllipsisVertical, TruckIcon } from 'lucide-react'
 import DeliveryReminderDialog from './DeliveryReminderDialog'
@@ -51,23 +39,9 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([])
   const [selectedInvoices, setSelectedInvoices] = useState([])
 
-  const [showQuotationPreview, setShowQuotationPreview] = useState(false)
-  const [quotationData, setQuotationData] = useState(null)
-  const [quotationFileName, setQuotationFileName] = useState('quotation.pdf')
-  const [quotationExporting, setQuotationExporting] = useState(false)
-
-  const [showAgreementPreview, setShowAgreementPreview] = useState(false)
-  const [agreementData, setAgreementData] = useState(null)
-  const [agreementFileName, setAgreementFileName] = useState('thoa-thuan-mua-ban.pdf')
-  const [agreementExporting, setAgreementExporting] = useState(false)
-
-  const [showInstallmentPreview, setShowInstallmentPreview] = useState(false)
-  const [installmentData, setInstallmentData] = useState(null)
-  const [installmentFileName, setInstallmentFileName] = useState('hop-dong-tra-cham.docx')
-  const [installmentExporting, setInstallmentExporting] = useState(false)
-
   const [showDeliveryReminderDialog, setShowDeliveryReminderDialog] = useState(false)
-  const [warehouseLoading, setWarehouseLoading] = useState(false)
+
+  const navigate = useNavigate()
 
   // Auto-open invoice dialog when triggered from mobile cart button
   useEffect(() => {
@@ -78,60 +52,6 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
     }
   }, [])
 
-  const handleShowCreateReceiptDialog = () => {
-    const selectedRows = table.getSelectedRowModel().rows
-
-    if (selectedRows.length !== 1) {
-      toast.warning('Vui lòng chọn 1 (Một) hóa đơn')
-      return
-    }
-    const invoices = selectedRows.map((row) => row.original.id)
-    if (invoices.length === 0) {
-      toast.warning('Vui lòng chọn ít nhất 1 hóa đơn để tạo phiếu thu')
-      return
-    }
-    const uniqueCustomer = [
-      ...new Set(selectedRows.map((row) => row.original.customerId)),
-    ]
-
-    if (uniqueCustomer.length > 1) {
-      toast.warning('Chỉ được phép tạo phiếu thu cho cùng 1 khách hàng')
-      return
-    }
-
-    if (
-      selectedRows.some(
-        (row) =>
-          row.original.status === 'paid' || row.original.status === 'rejected',
-      )
-    ) {
-      toast.warning('Không thể tạo phiếu thu cho hóa đơn đã thanh toán')
-      return
-    }
-
-    setSelectedInvoices(invoices)
-    setShowCreateReceiptDialog(true)
-  }
-
-  const handleShowCreateSalesContractDialog = () => {
-    const selectedRows = table.getSelectedRowModel().rows
-
-    if (selectedRows.length !== 1) {
-      toast.warning('Vui lòng chọn 1 (Một) hóa đơn')
-      return
-    }
-
-    // Check if invoice already has a sales contract
-    if (selectedRows[0].original.salesContract) {
-      toast.warning('Đơn hàng này đã lập hợp đồng')
-      return
-    }
-
-    const invoiceIds = selectedRows.map((row) => row.original.id)
-    setSelectedInvoiceIds(invoiceIds)
-    setShowCreateSalesContractDialog(true)
-  }
-
   const dispatch = useDispatch()
   useEffect(() => {
     dispatch(getSetting('general_information'))
@@ -141,29 +61,6 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
   const loading = useSelector((state) => state.setting.loading)
   const [invoice, setInvoice] = useState(null)
 
-  const handlePrintInvoice = async () => {
-    const selectedRows = table.getSelectedRowModel().rows
-    if (selectedRows.length !== 1) {
-      toast.warning('Vui lòng chọn 1 (Một) hóa đơn')
-      return
-    }
-    const invoiceId = selectedRows[0].original.id
-    const getAdminInvoice = JSON.parse(
-      localStorage.getItem('permissionCodes'),
-    ).includes('GET_INVOICE')
-
-    try {
-      const data = getAdminInvoice
-        ? await getInvoiceDetail(invoiceId)
-        : await getInvoiceDetailByUser(invoiceId)
-      setInvoice(data)
-      table.resetRowSelection()
-      setTimeout(() => setInvoice(null), 0)
-    } catch (error) {
-      console.log('Submit error: ', error)
-    }
-  }
-
   const [showExportDialog, setShowExportDialog] = useState(false)
 
   const users = useSelector((state) => state.user.users)
@@ -171,122 +68,6 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
     dispatch(getUsers())
     dispatch(getCustomers())
   }, [dispatch])
-
-  // ===== WAREHOUSE RECEIPT HANDLERS =====
-  const handleBatchCreateWarehouseReceipts = async () => {
-    const selectedRows = table.getSelectedRowModel().rows
-
-    if (selectedRows.length === 0) {
-      toast.warning('Vui lòng chọn ít nhất 1 đơn hàng')
-      return
-    }
-
-    // Filter only accepted/delivered invoices without warehouse receipt
-    const validInvoices = selectedRows.filter(
-      row => (row.original.status === 'accepted' || row.original.status === 'delivered') && !row.original.warehouseReceiptId
-    )
-
-    if (validInvoices.length === 0) {
-      toast.warning('Không có đơn hàng nào đủ điều kiện tạo phiếu xuất kho')
-      return
-    }
-
-    if (validInvoices.length !== selectedRows.length) {
-      toast.info(`Chỉ ${validInvoices.length}/${selectedRows.length} đơn đủ điều kiện`)
-    }
-
-    try {
-      setWarehouseLoading(true)
-      let successCount = 0
-      let failCount = 0
-
-      for (const row of validInvoices) {
-        try {
-          await dispatch(generateWarehouseReceiptFromInvoice(row.original.id)).unwrap()
-          successCount++
-        } catch (error) {
-          console.error(`Failed to create warehouse receipt for invoice ${row.original.code}:`, error)
-          failCount++
-        }
-      }
-
-      if (successCount > 0) {
-        toast.success(`Đã tạo ${successCount} phiếu xuất kho thành công`)
-        await dispatch(getInvoices({
-          fromDate: null,
-          toDate: null,
-        })).unwrap()
-        table.resetRowSelection()
-      }
-
-      if (failCount > 0) {
-        toast.error(`${failCount} phiếu tạo thất bại`)
-      }
-    } catch (error) {
-      console.error('Batch create warehouse receipts error:', error)
-      toast.error('Có lỗi xảy ra khi tạo phiếu xuất kho')
-    } finally {
-      setWarehouseLoading(false)
-    }
-  }
-
-  const handleBatchPostWarehouseReceipts = async () => {
-    const selectedRows = table.getSelectedRowModel().rows
-
-    if (selectedRows.length === 0) {
-      toast.warning('Vui lòng chọn ít nhất 1 đơn hàng')
-      return
-    }
-
-    // Filter only invoices with DRAFT warehouse receipts
-    const validInvoices = selectedRows.filter(
-      row => row.original.warehouseReceipt?.status === 'DRAFT'
-    )
-
-    if (validInvoices.length === 0) {
-      toast.warning('Không có phiếu kho nháp nào để ghi sổ')
-      return
-    }
-
-    if (validInvoices.length !== selectedRows.length) {
-      toast.info(`Chỉ ${validInvoices.length}/${selectedRows.length} phiếu kho ở trạng thái nháp`)
-    }
-
-    try {
-      setWarehouseLoading(true)
-      let successCount = 0
-      let failCount = 0
-
-      for (const row of validInvoices) {
-        try {
-          await dispatch(postWarehouseReceipt(row.original.warehouseReceiptId)).unwrap()
-          successCount++
-        } catch (error) {
-          console.error(`Failed to post warehouse receipt for invoice ${row.original.code}:`, error)
-          failCount++
-        }
-      }
-
-      if (successCount > 0) {
-        toast.success(`Đã ghi sổ ${successCount} phiếu kho thành công`)
-        await dispatch(getInvoices({
-          fromDate: null,
-          toDate: null,
-        })).unwrap()
-        table.resetRowSelection()
-      }
-
-      if (failCount > 0) {
-        toast.error(`${failCount} phiếu ghi sổ thất bại`)
-      }
-    } catch (error) {
-      console.error('Batch post warehouse receipts error:', error)
-      toast.error('Có lỗi xảy ra khi ghi sổ kho')
-    } finally {
-      setWarehouseLoading(false)
-    }
-  }
-
 
   const isMobile = useMediaQuery('(max-width: 768px)')
 
@@ -326,11 +107,6 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {/* In & Export */}
-              <DropdownMenuItem onClick={handlePrintInvoice} className="text-xs">
-                <IconFileTypePdf className="mr-2 h-3 w-3" />
-                In HĐ
-              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setShowExportDialog(true)}
                 className="text-xs"
@@ -338,92 +114,6 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
                 <IconFileTypeXls className="mr-2 h-3 w-3" />
                 Xuất file
               </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
-
-              {/* In Thỏa Thuận Mua Bán */}
-              <DropdownMenuItem
-                onClick={async () => {
-                  const selectedRows = table.getSelectedRowModel().rows
-                  if (selectedRows.length !== 1) {
-                    toast.warning('Vui lòng chọn 1 (Một) hóa đơn')
-                    return
-                  }
-                  const invoiceId = selectedRows[0].original.id
-                  const getAdminInvoice = JSON.parse(
-                    localStorage.getItem('permissionCodes'),
-                  ).includes('GET_INVOICE')
-                  try {
-                    const data = getAdminInvoice
-                      ? await getInvoiceDetail(invoiceId)
-                      : await getInvoiceDetailByUser(invoiceId)
-                    const baseAgreementData = buildAgreementData(data)
-                    setAgreementData(baseAgreementData)
-                    setAgreementFileName(`thoa-thuan-mua-ban-${data.code || 'agreement'}.pdf`)
-                    setShowAgreementPreview(true)
-                  } catch (error) {
-                    console.error('Load agreement data error:', error)
-                    toast.error('Không lấy được dữ liệu thỏa thuận mua bán')
-                  }
-                }}
-                className="text-xs"
-              >
-                <IconFileTypePdf className="mr-2 h-3 w-3" />
-                In Thỏa Thuận
-              </DropdownMenuItem>
-
-              {/* In Hợp Đồng */}
-              <DropdownMenuItem
-                onClick={async () => {
-                  const selectedRows = table.getSelectedRowModel().rows
-                  if (selectedRows.length !== 1) {
-                    toast.warning('Vui lòng chọn 1 (Một) hóa đơn')
-                    return
-                  }
-                  const invoiceId = selectedRows[0].original.id
-                  const getAdminInvoice = JSON.parse(
-                    localStorage.getItem('permissionCodes'),
-                  ).includes('GET_INVOICE')
-                  try {
-                    const data = getAdminInvoice
-                      ? await getInvoiceDetail(invoiceId)
-                      : await getInvoiceDetailByUser(invoiceId)
-                    const baseInstallmentData = await buildInstallmentData(data)
-                    setInstallmentData(baseInstallmentData)
-                    setInstallmentFileName(`hop-dong-tra-cham-${data.code || 'contract'}.docx`)
-                    setShowInstallmentPreview(true)
-                  } catch (error) {
-                    console.error('Load installment data error:', error)
-                    toast.error('Không lấy được dữ liệu hợp đồng trả chậm')
-                  }
-                }}
-                className="text-xs"
-              >
-                <IconFileTypePdf className="mr-2 h-3 w-3" />
-                In Hợp Đồng
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
-
-              {/* Tạo phiếu thu */}
-              <DropdownMenuItem
-                onClick={handleShowCreateReceiptDialog}
-                className="text-xs"
-              >
-                <PlusIcon className="mr-2 h-3 w-3" />
-                Tạo phiếu thu
-              </DropdownMenuItem>
-
-              {/* Tạo hợp đồng */}
-              <DropdownMenuItem
-                onClick={handleShowCreateSalesContractDialog}
-                className="text-xs"
-              >
-                <PlusIcon className="mr-2 h-3 w-3" />
-                Tạo hợp đồng
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
 
               {/* Gửi nhắc giao hàng */}
               <DropdownMenuItem
@@ -480,79 +170,6 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
             onOpenChange={setShowCreateSalesContractDialog}
             showTrigger={false}
             table={table}
-          />
-        )}
-
-        {/* Preview Dialogs */}
-        {quotationData && (
-          <QuotationPreviewDialog
-            open={showQuotationPreview}
-            onOpenChange={(open) => {
-              if (!open) setShowQuotationPreview(false)
-            }}
-            initialData={quotationData}
-            onConfirm={async (finalData) => {
-              try {
-                setQuotationExporting(true)
-                await exportQuotationPdf(finalData, quotationFileName)
-                toast.success('Đã xuất báo giá thành công')
-                setShowQuotationPreview(false)
-                table.resetRowSelection()
-              } catch (error) {
-                console.error('Export quotation error:', error)
-                toast.error('Xuất báo giá thất bại')
-              } finally {
-                setQuotationExporting(false)
-              }
-            }}
-          />
-        )}
-
-        {agreementData && (
-          <AgreementPreviewDialog
-            open={showAgreementPreview}
-            onOpenChange={(open) => {
-              if (!open) setShowAgreementPreview(false)
-            }}
-            initialData={agreementData}
-            onConfirm={async (finalData) => {
-              try {
-                setAgreementExporting(true)
-                await exportAgreementPdf(finalData, agreementFileName)
-                toast.success('Đã in thỏa thuận mua bán thành công')
-                setShowAgreementPreview(false)
-                table.resetRowSelection()
-              } catch (error) {
-                console.error('Export agreement error:', error)
-                toast.error('In thỏa thuận mua bán thất bại')
-              } finally {
-                setAgreementExporting(false)
-              }
-            }}
-          />
-        )}
-
-        {installmentData && (
-          <InstallmentPreviewDialog
-            open={showInstallmentPreview}
-            onOpenChange={(open) => {
-              if (!open) setShowInstallmentPreview(false)
-            }}
-            initialData={installmentData}
-            onConfirm={async (finalData) => {
-              try {
-                setInstallmentExporting(true)
-                await exportInstallmentWord(finalData, installmentFileName)
-                toast.success('Đã xuất hợp đồng trả chậm thành công')
-                setShowInstallmentPreview(false)
-                table.resetRowSelection()
-              } catch (error) {
-                console.error('Export installment error:', error)
-                toast.error('Xuất hợp đồng trả chậm thất bại')
-              } finally {
-                setInstallmentExporting(false)
-              }
-            }}
           />
         )}
 
@@ -654,295 +271,6 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
               isMyInvoice={isMyInvoice}
             />
           )}
-
-          {/* In Hóa Đơn */}
-          <Button
-            className=""
-            variant="outline"
-            size="sm"
-            onClick={handlePrintInvoice}
-            loading={loading}
-          >
-            <IconFileTypePdf className="mr-2 size-4" aria-hidden="true" />
-            In Hóa Đơn
-          </Button>
-          {invoice && setting && (
-            <PrintInvoiceView invoice={invoice} setting={setting} />
-          )}
-
-          {/* Báo giá PDF */}
-          {/* <Button
-          className=""
-          variant="outline"
-          size="sm"
-          onClick={async () => {
-            const selectedRows = table.getSelectedRowModel().rows
-            if (selectedRows.length !== 1) {
-              toast.warning('Vui lòng chọn 1 (Một) hóa đơn để xuất báo giá')
-              return
-            }
-
-            const invoiceId = selectedRows[0].original.id
-            const getAdminInvoice = JSON.parse(
-              localStorage.getItem('permissionCodes'),
-            ).includes('GET_INVOICE')
-
-            try {
-              const data = getAdminInvoice
-                ? await getInvoiceDetail(invoiceId)
-                : await getInvoiceDetailByUser(invoiceId)
-
-              const baseQuotationData = buildQuotationData(data)
-
-              setQuotationData(baseQuotationData)
-              setQuotationFileName(`${data.code || 'quotation'}.pdf`)
-              setShowQuotationPreview(true)
-            } catch (error) {
-              console.error('Load quotation data error:', error)
-              toast.error('Không lấy được dữ liệu báo giá')
-            }
-          }}
-          loading={loading || quotationExporting}
-        >
-          <IconFileTypePdf className="mr-2 size-4" aria-hidden="true" />
-          Báo giá PDF
-        </Button> */}
-
-          {quotationData && (
-            <QuotationPreviewDialog
-              open={showQuotationPreview}
-              onOpenChange={(open) => {
-                if (!open) {
-                  setShowQuotationPreview(false)
-                }
-              }}
-              initialData={quotationData}
-              onConfirm={async (finalData) => {
-                try {
-                  setQuotationExporting(true)
-                  await exportQuotationPdf(finalData, quotationFileName)
-                  toast.success('Đã xuất báo giá thành công')
-                  setShowQuotationPreview(false)
-                  table.resetRowSelection()
-                } catch (error) {
-                  console.error('Export quotation error:', error)
-                  toast.error('Xuất báo giá thất bại')
-                } finally {
-                  setQuotationExporting(false)
-                }
-              }}
-            />
-          )}
-
-          {/* In Thỏa Thuận Mua Bán */}
-          <Button
-            className=""
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              const selectedRows = table.getSelectedRowModel().rows
-              if (selectedRows.length !== 1) {
-                toast.warning('Vui lòng chọn 1 (Một) hóa đơn để in thỏa thuận mua bán')
-                return
-              }
-
-              const invoiceId = selectedRows[0].original.id
-              const getAdminInvoice = JSON.parse(
-                localStorage.getItem('permissionCodes'),
-              ).includes('GET_INVOICE')
-
-              try {
-                const data = getAdminInvoice
-                  ? await getInvoiceDetail(invoiceId)
-                  : await getInvoiceDetailByUser(invoiceId)
-
-                const baseAgreementData = buildAgreementData(data)
-
-                setAgreementData(baseAgreementData)
-                setAgreementFileName(`thoa-thuan-mua-ban-${data.code || 'agreement'}.pdf`)
-                setShowAgreementPreview(true)
-              } catch (error) {
-                console.error('Load agreement data error:', error)
-                toast.error('Không lấy được dữ liệu thỏa thuận mua bán')
-              }
-            }}
-            loading={loading || agreementExporting}
-          >
-            <IconFileTypePdf className="mr-2 size-4" aria-hidden="true" />
-            In Thỏa Thuận Mua Bán
-          </Button>
-
-          {agreementData && (
-            <AgreementPreviewDialog
-              open={showAgreementPreview}
-              onOpenChange={(open) => {
-                if (!open) {
-                  setShowAgreementPreview(false)
-                }
-              }}
-              initialData={agreementData}
-              onConfirm={async (finalData) => {
-                try {
-                  setAgreementExporting(true)
-                  await exportAgreementPdf(finalData, agreementFileName)
-                  toast.success('Đã in thỏa thuận mua bán thành công')
-                  setShowAgreementPreview(false)
-                  table.resetRowSelection()
-                } catch (error) {
-                  console.error('Export agreement error:', error)
-                  toast.error('In thỏa thuận mua bán thất bại')
-                } finally {
-                  setAgreementExporting(false)
-                }
-              }}
-            />
-          )}
-
-          {/* In Hợp Đồng Bán Hàng */}
-          <Button
-            className=""
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              const selectedRows = table.getSelectedRowModel().rows
-              if (selectedRows.length !== 1) {
-                toast.warning('Vui lòng chọn 1 (Một) hóa đơn để in hợp đồng')
-                return
-              }
-
-              const invoiceId = selectedRows[0].original.id
-              const getAdminInvoice = JSON.parse(
-                localStorage.getItem('permissionCodes'),
-              ).includes('GET_INVOICE')
-
-              try {
-                const data = getAdminInvoice
-                  ? await getInvoiceDetail(invoiceId)
-                  : await getInvoiceDetailByUser(invoiceId)
-
-                // Check if salesContract exists
-                if (!data.salesContract || Object.keys(data.salesContract).length === 0) {
-                  toast.warning('Đơn bán này không lập hợp đồng')
-                  return
-                }
-
-                // Record print attempt
-                if (data.salesContract.id) {
-                  dispatch(recordPrintAttempt(data.salesContract.id))
-                }
-
-                const baseInstallmentData = await buildInstallmentData(data)
-
-                setInstallmentData(baseInstallmentData)
-                setInstallmentFileName(`hop-dong-tra-cham-${data.code || 'contract'}.docx`)
-                setShowInstallmentPreview(true)
-              } catch (error) {
-                console.error('Load installment data error:', error)
-                toast.error('Không lấy được dữ liệu hợp đồng trả chậm')
-              }
-            }}
-            loading={loading || installmentExporting}
-          >
-            <IconFileTypePdf className="mr-2 size-4" aria-hidden="true" />
-            In Hợp Đồng Bán Hàng
-          </Button>
-
-          {installmentData && (
-            <InstallmentPreviewDialog
-              open={showInstallmentPreview}
-              onOpenChange={(open) => {
-                if (!open) {
-                  setShowInstallmentPreview(false)
-                }
-              }}
-              initialData={installmentData}
-              onConfirm={async (finalData) => {
-                try {
-                  setInstallmentExporting(true)
-                  await exportInstallmentWord(finalData, installmentFileName)
-
-                  // Record print success
-                  const selectedRows = table.getSelectedRowModel().rows
-                  if (selectedRows.length === 1) {
-                    const invoiceId = selectedRows[0].original.id
-                    const getAdminInvoice = JSON.parse(
-                      localStorage.getItem('permissionCodes'),
-                    ).includes('GET_INVOICE')
-                    const data = getAdminInvoice
-                      ? await getInvoiceDetail(invoiceId)
-                      : await getInvoiceDetailByUser(invoiceId)
-                    if (data.salesContract?.id) {
-                      dispatch(recordPrintSuccess(data.salesContract.id))
-                    }
-                  }
-
-                  toast.success('Đã xuất hợp đồng trả chậm thành công')
-                  setShowInstallmentPreview(false)
-                  table.resetRowSelection()
-                } catch (error) {
-                  console.error('Export installment error:', error)
-                  toast.error('Xuất hợp đồng trả chậm thất bại')
-                } finally {
-                  setInstallmentExporting(false)
-                }
-              }}
-            />
-          )}
-
-          {/* Tạo phiếu thu */}
-          <Can permission={['CREATE_RECEIPT']}>
-            <Button
-              className=""
-              variant="outline"
-              size="sm"
-              onClick={handleShowCreateReceiptDialog}
-            >
-              <PlusIcon className="mr-2 size-4" aria-hidden="true" />
-              Tạo phiếu thu
-            </Button>
-          </Can>
-
-          {/* Tạo hợp đồng */}
-          <Can permission={['CREATE_SALES_CONTRACT']}>
-            <Button
-              className=""
-              variant="outline"
-              size="sm"
-              onClick={handleShowCreateSalesContractDialog}
-            >
-              <PlusIcon className="mr-2 size-4" aria-hidden="true" />
-              Tạo Hợp Đồng
-            </Button>
-          </Can>
-
-          {/* ===== WAREHOUSE RECEIPT BUTTONS ===== */}
-          {/* Tạo Phiếu Xuất Kho Hàng Loạt */}
-          <Can permission={['CREATE_INVOICE']}>
-            <Button
-              className=""
-              variant="outline"
-              size="sm"
-              onClick={handleBatchCreateWarehouseReceipts}
-              loading={warehouseLoading}
-            >
-              <IconPackageExport className="mr-2 size-4" aria-hidden="true" />
-              Tạo Phiếu Xuất Kho
-            </Button>
-          </Can>
-
-          {/* Ghi Sổ Kho Hàng Loạt */}
-          <Can permission={['CREATE_INVOICE']}>
-            <Button
-              className=""
-              variant="outline"
-              size="sm"
-              onClick={handleBatchPostWarehouseReceipts}
-              loading={warehouseLoading}
-            >
-              <IconCheck className="mr-2 size-4" aria-hidden="true" />
-              Ghi Sổ Kho
-            </Button>
-          </Can>
 
           {/* Gửi nhắc giao hàng */}
           <Button

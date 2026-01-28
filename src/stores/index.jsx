@@ -35,6 +35,7 @@ import positionReducer from './PositionSlice'
 import permissionReducer from './PermissionSlice'
 import parentRolePermissionReducer from './ParentAccountRolePermissionSlice'
 import warehouseReceiptReducer from './WarehouseReceiptSlice'
+import lotReducer from './LotSlice'
 
 const persistConfig = { key: 'katec-vn', storage }
 
@@ -76,6 +77,7 @@ export const store = configureStore({
     customerTimeline: customerTimelineReducer,
     crmReport: crmReportReducer,
     warehouseReceipt: warehouseReceiptReducer,
+    lot: lotReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ serializableCheck: false }),

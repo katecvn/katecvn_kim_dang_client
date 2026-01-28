@@ -16,12 +16,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { AlertCircle } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 const UpdateInvoiceStatusDialog = ({
   open,
   onOpenChange,
   invoiceId,
   currentStatus,
+  paymentStatus,
   statuses = [],
   onSubmit,
 }) => {
@@ -62,6 +65,8 @@ const UpdateInvoiceStatusDialog = ({
     }
   }
 
+  const isPaid = paymentStatus === 'paid'
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[460px]">
@@ -79,47 +84,58 @@ const UpdateInvoiceStatusDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2">
-          <div className="text-sm font-medium">Trạng thái mới</div>
+        {isPaid ? (
+          <div className="py-4">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Không thể thay đổi trạng thái</AlertTitle>
+              <AlertDescription>
+                Hóa đơn này đã được thanh toán hoàn tất (Paid). Bạn không thể thay đổi trạng thái của hóa đơn này.
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Trạng thái mới</div>
 
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger>
-              <SelectValue placeholder="Chọn trạng thái">
-                {selectedStatusObj ? (
-                  <span
-                    className={`inline-flex items-center gap-2 font-medium ${
-                      selectedStatusObj.color || ''
-                    }`}
-                  >
-                    {selectedStatusObj.icon ? (
-                      <selectedStatusObj.icon className="h-4 w-4" />
-                    ) : null}
-                    {selectedStatusObj.label}
-                  </span>
-                ) : null}
-              </SelectValue>
-            </SelectTrigger>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn trạng thái">
+                  {selectedStatusObj ? (
+                    <span
+                      className={`inline-flex items-center gap-2 font-medium ${selectedStatusObj.color || ''
+                        }`}
+                    >
+                      {selectedStatusObj.icon ? (
+                        <selectedStatusObj.icon className="h-4 w-4" />
+                      ) : null}
+                      {selectedStatusObj.label}
+                    </span>
+                  ) : null}
+                </SelectValue>
+              </SelectTrigger>
 
-            <SelectContent>
-              {statuses.map((s) => (
-                <SelectItem
-                  key={s.value}
-                  value={s.value}
-                  className="cursor-pointer"
-                >
-                  <span
-                    className={`inline-flex items-center gap-2 font-medium ${
-                      s.color || ''
-                    }`}
+              <SelectContent position="popper">
+                {statuses.map((s) => (
+                  <SelectItem
+                    key={s.value}
+                    value={s.value}
+                    className="cursor-pointer"
                   >
-                    {s.icon ? <s.icon className="h-4 w-4" /> : null}
-                    {s.label}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+                    <span
+                      className={`inline-flex items-center gap-2 font-medium ${s.color || ''
+                        }`}
+                    >
+                      {s.icon ? <s.icon className="h-4 w-4" /> : null}
+                      {s.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
 
         <DialogFooter className="gap-2">
           <Button
@@ -128,11 +144,14 @@ const UpdateInvoiceStatusDialog = ({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            Hủy
+            {isPaid ? 'Đóng' : 'Hủy'}
           </Button>
-          <Button type="button" onClick={handleSave} disabled={loading}>
-            {loading ? 'Đang cập nhật...' : 'Cập nhật'}
-          </Button>
+          {!isPaid && (
+            <Button type="button" onClick={handleSave} disabled={loading}>
+              {loading ? 'Đang cập nhật...' : 'Cập nhật'}
+            </Button>
+          )}
+
         </DialogFooter>
       </DialogContent>
     </Dialog>

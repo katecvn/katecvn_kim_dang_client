@@ -167,6 +167,46 @@ export const columns = [
     enableHiding: true,
   },
   {
+    accessorKey: 'warehouseStatus',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Trạng thái xuất" />
+    ),
+    cell: ({ row }) => {
+      const firstInvoice = row.original.invoices?.[0]
+      const warehouseReceipt = firstInvoice?.warehouseReceipts?.[0]
+
+      return (
+        <Badge
+          variant="outline"
+          className={`cursor-default select-none ${warehouseReceipt
+            ? warehouseReceipt.status === 'draft'
+              ? 'text-yellow-600'
+              : warehouseReceipt.status === 'posted'
+                ? 'text-green-600'
+                : 'text-gray-500'
+            : 'text-gray-400'
+            }`}
+          title={
+            warehouseReceipt
+              ? `Mã: ${warehouseReceipt.code}`
+              : 'Chưa có phiếu xuất kho'
+          }
+        >
+          <span className="mr-1">📦</span>
+          {warehouseReceipt
+            ? warehouseReceipt.status === 'draft'
+              ? 'Nháp'
+              : warehouseReceipt.status === 'posted'
+                ? 'Đã ghi sổ'
+                : warehouseReceipt.status
+            : 'Chưa xuất'}
+        </Badge>
+      )
+    },
+    enableSorting: false,
+    enableHiding: true,
+  },
+  {
     accessorKey: 'invoices',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Thanh toán" />
@@ -177,7 +217,7 @@ export const columns = [
       if (!firstInvoice) {
         return <span className="text-muted-foreground text-sm">—</span>
       }
-      
+
       const paymentStatus = paymentStatuses.find(
         (s) => s.value === firstInvoice.paymentStatus,
       )

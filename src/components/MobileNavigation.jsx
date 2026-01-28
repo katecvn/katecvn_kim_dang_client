@@ -90,9 +90,9 @@ const MobileNavigation = ({ onCategoryClick }) => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
       {/* Backdrop blur effect */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/80 backdrop-blur-xl border-t border-border/50" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/80 backdrop-blur-xl border-t border-border/50 pointer-events-none" />
 
-      <div className="relative flex h-16 items-center justify-around px-4 pb-safe">
+      <div className="relative flex h-16 items-center justify-around px-4 pb-safe z-10">
         {navItems.map((item) => {
           const Icon = item.icon
           const active = isActive(item.path)

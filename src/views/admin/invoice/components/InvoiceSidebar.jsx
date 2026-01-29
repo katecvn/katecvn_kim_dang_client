@@ -802,10 +802,7 @@ const InvoiceSidebar = ({
           <Button
             type="button"
             className="w-full"
-            onClick={() => {
-              onPrintInvoice()
-              form.handleSubmit(onSubmit)()
-            }}
+            onClick={form.handleSubmit((data) => onSubmit(data, { printInvoice: true }))}
             disabled={loading}
           >
             <IconFileTypePdf className="h-4 w-4 mr-2" />
@@ -814,14 +811,11 @@ const InvoiceSidebar = ({
           <Button
             type="button"
             className="w-full"
-            onClick={() => {
-              onPrintQuotation()
-              form.handleSubmit(onSubmit)()
-            }}
+            onClick={form.handleSubmit((data) => onSubmit(data, { printAgreement: true }))}
             disabled={loading}
           >
             <IconFileTypePdf className="h-4 w-4 mr-2" />
-            {isUpdate ? 'Cập nhật Và In Thỏa Thuận' : 'Tạo Và In Thỏa Thuận'}
+            {isUpdate ? 'Cập nhật Và In Thỏa Thuận' : 'Tạo Và In Thỏa Thuận (Agreement)'}
           </Button>
         </div>
       </div>

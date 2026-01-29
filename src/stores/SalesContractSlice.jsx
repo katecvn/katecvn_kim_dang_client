@@ -5,16 +5,18 @@ import { toast } from 'sonner'
 
 export const getSalesContracts = createAsyncThunk(
   'salesContract/get-sales-contracts',
-  async ({ fromDate = null, toDate = null }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 20 }, { rejectWithValue }) => {
     try {
       const response = await api.get('/sales-contracts', {
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
+          page,
+          limit,
         },
       })
       const { data } = response.data
-      return data.data  // Extract the array from { data: [...], pagination: {...} }
+      return data // Return { data: [...], pagination: {...} }
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -170,10 +172,45 @@ export const reviewSalesContract = createAsyncThunk(
   },
 )
 
+export const getLiquidationPreview = createAsyncThunk(
+  'salesContract/get-liquidation-preview',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/sales-contracts/${id}/liquidation-preview`)
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const liquidateSalesContract = createAsyncThunk(
+  'salesContract/liquidate',
+  async ({ id, data }, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await api.post(`/sales-contracts/${id}/liquidate`, data)
+      toast.success('Thanh lý hợp đồng thành công')
+      dispatch(getSalesContracts({}))
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      toast.error(message)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 const salesContractSlice = createSlice({
   name: 'salesContract',
   initialState: {
     contracts: [],
+    pagination: {
+      page: 1,
+      limit: 20,
+      total: 0,
+      totalPages: 1,
+    },
     loading: false,
     error: null,
   },
@@ -187,7 +224,8 @@ const salesContractSlice = createSlice({
       })
       .addCase(getSalesContracts.fulfilled, (state, action) => {
         state.loading = false
-        state.contracts = action.payload
+        state.contracts = action.payload.data
+        state.pagination = action.payload.pagination
       })
       .addCase(getSalesContracts.rejected, (state, action) => {
         state.loading = false
@@ -258,6 +296,17 @@ const salesContractSlice = createSlice({
         state.loading = false
       })
       .addCase(cancelSalesContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Liquidate Sales Contract
+      .addCase(liquidateSalesContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(liquidateSalesContract.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(liquidateSalesContract.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })

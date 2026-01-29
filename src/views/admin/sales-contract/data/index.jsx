@@ -1,25 +1,28 @@
 import {
   IconRefreshDot,
   IconFileInvoiceFilled,
+  IconClockHour4,
+  IconTruckDelivery,
+  IconArchive,
 } from '@tabler/icons-react'
 import { CheckCircleIcon, HandCoinsIcon, TruckIcon, XCircleIcon } from 'lucide-react'
 
 const statuses = [
   {
     value: 'draft',
-    label: 'Đang chờ',
-    icon: IconRefreshDot,
+    label: 'Chờ xác nhận',
+    icon: IconClockHour4,
     color: 'text-gray-500',
   },
   {
     value: 'confirmed',
-    label: 'Đã xác nhận',
-    icon: IconFileInvoiceFilled,
+    label: 'Đang giao hàng',
+    icon: IconTruckDelivery,
     color: 'text-blue-500',
   },
   {
     value: 'completed',
-    label: 'Hoàn thành',
+    label: 'Đã giao hàng',
     icon: CheckCircleIcon,
     color: 'text-green-500',
   },
@@ -29,7 +32,14 @@ const statuses = [
     icon: XCircleIcon,
     color: 'text-red-500',
   },
+  {
+    value: 'liquidated',
+    label: 'Đã thanh lý',
+    icon: IconArchive,
+    color: 'text-red-500',
+  }
 ]
+
 
 const paymentStatuses = [
   {

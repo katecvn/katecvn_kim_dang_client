@@ -22,12 +22,18 @@ import { DataTableToolbar } from './DataTableToolbar'
 import { DataTablePagination } from './DataTablePagination'
 import { Skeleton } from '@/components/ui/skeleton'
 import { normalizeText } from '@/utils/normalize-text'
+import MobileSalesContractCard from './MobileSalesContractCard'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 
 const SalesContractDataTable = ({
   columns,
   data,
   loading = false,
+  pagination = { page: 1, limit: 20, totalPages: 1 },
+  onPageChange,
+  onPageSizeChange
 }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
   const [columnFilters, setColumnFilters] = useState([])
@@ -37,17 +43,34 @@ const SalesContractDataTable = ({
   const table = useReactTable({
     data,
     columns,
-    initialState: {
-      pagination: {
-        pageSize: 30,
-      },
-    },
+    pageCount: pagination.totalPages,
+    manualPagination: true,
     state: {
       sorting,
       columnVisibility,
       rowSelection,
       columnFilters,
       globalFilter,
+      pagination: {
+        pageIndex: pagination.page - 1,
+        pageSize: pagination.limit
+      }
+    },
+    onPaginationChange: (updater) => {
+      // updater can be a value or function
+      if (typeof updater === 'function') {
+        const newState = updater({
+          pageIndex: pagination.page - 1,
+          pageSize: pagination.limit
+        })
+        onPageChange(newState.pageIndex + 1)
+        if (newState.pageSize !== pagination.limit) {
+          onPageSizeChange(newState.pageSize)
+        }
+      } else {
+        onPageChange(updater.pageIndex + 1)
+        onPageSizeChange(updater.pageSize)
+      }
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
@@ -68,6 +91,45 @@ const SalesContractDataTable = ({
       return value.toString().includes(normalizeText(filterValue))
     },
   })
+
+  // Mobile View - Card List
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
+        <DataTableToolbar table={table} />
+
+        <div className="space-y-2">
+          {loading ? (
+            <>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="border rounded-lg p-3 space-y-2">
+                  <Skeleton className="h-[20px] w-1/3 rounded-md" />
+                  <Skeleton className="h-[16px] w-2/3 rounded-md" />
+                  <Skeleton className="h-[16px] w-1/2 rounded-md" />
+                </div>
+              ))}
+            </>
+          ) : table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <MobileSalesContractCard
+                key={row.id}
+                contract={row.original}
+                isSelected={row.getIsSelected()}
+                onSelectChange={(checked) => row.toggleSelected(checked)}
+                onRowAction={() => { }}
+              />
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Không có kết quả nào
+            </div>
+          )}
+        </div>
+
+        <DataTablePagination table={table} />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">

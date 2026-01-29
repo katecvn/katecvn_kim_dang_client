@@ -32,7 +32,6 @@ import { cn } from '@/lib/utils'
 import { getCustomers } from '@/stores/CustomerSlice'
 import UpdateCustomerDialog from '../../customer/components/UpdateCustomerDialog'
 import CreateCustomerDialog from '../../customer/components/CreateCustomerDialog'
-import { productTypeMap } from '../data'
 import { createInvoiceSchema } from '../schema'
 import { getSetting } from '@/stores/SettingSlice'
 import { getUsers } from '@/stores/UserSlice'
@@ -51,6 +50,9 @@ import CategorySidebar from './CategorySidebar'
 import ProductGrid from './ProductGrid'
 import ShoppingCart from './ShoppingCart'
 import InvoiceSidebar from './InvoiceSidebar'
+import AgreementPreviewDialog from './AgreementPreviewDialog'
+import { buildAgreementData } from '../helpers/BuildAgreementData'
+import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 
 const CreateInvoiceDialog = ({
   open,
@@ -72,9 +74,12 @@ const CreateInvoiceDialog = ({
   const [productStartDate, setProductStartDate] = useState({})
   const [hasPrintQuotation, setHasPrintQuotation] = useState(false)
   const [applyWarrantyItems, setApplyWarrantyItems] = useState({})
-  const [showQuotationPreview, setShowQuotationPreview] = useState(false)
-  const [quotationData, setQuotationData] = useState(null)
-  const [quotationFileName, setQuotationFileName] = useState('quotation.pdf')
+
+  // Agreement State
+  const [showAgreementPreview, setShowAgreementPreview] = useState(false)
+  const [agreementData, setAgreementData] = useState(null)
+  const [agreementFileName, setAgreementFileName] = useState('thoa-thuan-mua-ban.pdf')
+
   const [showCreateProductDialog, setShowCreateProductDialog] = useState(false)
   const [applyExpiryItems, setApplyExpiryItems] = useState({})
   const [expiryDurations, setExpiryDurations] = useState({})
@@ -96,13 +101,7 @@ const CreateInvoiceDialog = ({
   // giá override theo đơn vị đang chọn (nếu user sửa giá)
   const [priceOverrides, setPriceOverrides] = useState({})
 
-  const sharingRatios = useSelector((state) => state.setting.setting)
-  const users = useSelector((state) => state.user.users)
-  const [isSharing, setIsSharing] = useState(false)
   const [isCreateReceipt, setIsCreateReceipt] = useState(false)
-  const handleCreateReceipt = () => {
-    setIsCreateReceipt((prev) => !prev)
-  }
 
   const [showCreateOtherExpensesDialog, setShowCreateOtherExpensesDialog] =
     useState(false)
@@ -155,12 +154,8 @@ const CreateInvoiceDialog = ({
   // Listen for real-time price updates
   useSocketEvent({
     product_price_updated: (updatedProduct) => {
-      console.log('💰 [CreateInvoice] Product price updated:', updatedProduct)
-
-      // Update product in Redux store
       dispatch(updateProductInStore(updatedProduct))
 
-      // If product is in selected products, show notification
       const isSelected = selectedProducts.some(p => p.id === updatedProduct.id)
       if (isSelected) {
         toast.info(`Giá "${updatedProduct.name}" đã cập nhật`, {
@@ -461,21 +456,17 @@ const CreateInvoiceDialog = ({
     })
   }
 
-  const onSubmit = async (data) => {
-    console.log('=== 🔍 INVOICE SUBMIT DEBUG ===')
-    console.log('1. Form data:', data)
-    console.log('2. Selected products:', selectedProducts)
-    console.log('3. Customer edit data:', customerEditData)
-    console.log('4. Is print contract:', isPrintContract)
-    console.log('5. Expected delivery date:', expectedDeliveryDate)
+  const onSubmit = async (data, options = {}) => {
+    const shouldPrintInvoice = options.printInvoice || hasPrintInvoice
+    const shouldPrintAgreement = options.printAgreement || isPrintContract
+    const shouldPrintQuotation = options.printQuotation || hasPrintQuotation
+    const effectiveIsPrintContract = isPrintContract
 
     // Validate: must have at least one product
     if (!selectedProducts || selectedProducts.length === 0) {
-      console.log('❌ FAIL: No products selected')
       toast.error('Vui lòng chọn ít nhất 1 sản phẩm')
       return
     }
-    console.log('✅ PASS: Has products')
 
     // Validate: customer either selected or filled manually with all required fields
     const hasSelectedCustomer = !!data.customerId
@@ -487,27 +478,14 @@ const CreateInvoiceDialog = ({
       customerEditData.identityDate &&
       customerEditData.identityPlace?.trim()
 
-    console.log('6. Has selected customer:', hasSelectedCustomer)
-    console.log('7. Has new customer data:', hasNewCustomerData)
-    console.log('   - name:', customerEditData?.name)
-    console.log('   - phone:', customerEditData?.phone)
-    console.log('   - address:', customerEditData?.address)
-    console.log('   - identityCard:', customerEditData?.identityCard)
-    console.log('   - identityDate:', customerEditData?.identityDate)
-    console.log('   - identityPlace:', customerEditData?.identityPlace)
-
     if (!hasSelectedCustomer && !hasNewCustomerData) {
-      console.log('❌ FAIL: No customer selected and no new customer data')
       toast.error('Vui lòng chọn khách hàng hoặc nhập đầy đủ thông tin khách hàng mới (Tên, SĐT, Địa chỉ, CCCD, Ngày cấp, Nơi cấp)')
       return
     }
-    console.log('✅ PASS: Has customer')
 
     // Validate: if printing contract, check all required customer info
-    if (isPrintContract) {
+    if (effectiveIsPrintContract) {
       const contractCustomerData = hasSelectedCustomer ? selectedCustomer : customerEditData
-
-      console.log('8. Contract customer data check:', contractCustomerData)
 
       // Check required fields: name, phone, address, identityCard, identityDate
       // Email is optional
@@ -536,17 +514,10 @@ const CreateInvoiceDialog = ({
       }
 
       if (missingFields.length > 0) {
-        console.log('❌ FAIL: Missing contract fields:', missingFields)
         toast.error(`Để in hợp đồng, vui lòng điền đầy đủ: ${missingFields.join(', ')}`)
         return
       }
-
-      console.log('✅ PASS: All contract customer info validated')
     }
-    console.log('✅ PASS: Contract validation OK')
-    console.log('=== ✅ ALL VALIDATIONS PASSED ===')
-    console.log('Proceeding to submit...')
-
 
     // validations liên quan expiry/account giữ nguyên
     for (const product of selectedProducts) {
@@ -712,10 +683,10 @@ const CreateInvoiceDialog = ({
       }),
 
       // ========== OPTIONS IN ẤN ==========
-      isPrintContract: isPrintContract || false,
-      hasPrintInvoice: hasPrintInvoice || false,
-      hasPrintQuotation: hasPrintQuotation || false,
-      ...(isPrintContract && {
+      isPrintContract: effectiveIsPrintContract || false,
+      hasPrintInvoice: shouldPrintInvoice || false,
+      hasPrintQuotation: shouldPrintQuotation || false,
+      ...(effectiveIsPrintContract && {
         expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate).toISOString() : null
       }),
     }
@@ -745,20 +716,27 @@ const CreateInvoiceDialog = ({
         ? await getInvoiceDetail(invoiceId)
         : await getInvoiceDetailByUser(invoiceId)
 
-      if (hasPrintInvoice) {
+      if (shouldPrintInvoice) {
         const generalInformationData = await dispatch(
           getSetting('general_information'),
         ).unwrap()
         setGeneralInformation(generalInformationData)
         setInvoice(invoiceData)
 
+        // Clear invoice state after a delay to reset printing view
         setTimeout(() => {
           setInvoice(null)
           setHasPrintInvoice(false)
           form.reset()
           onOpenChange?.(false)
         }, 1000)
-      } else if (hasPrintQuotation) {
+      } else if (shouldPrintAgreement) {
+        const baseAgreementData = buildAgreementData(invoiceData)
+        setAgreementData(baseAgreementData)
+        setAgreementFileName(`thoa-thuan-mua-ban-${invoiceData.code || 'agreement'}.pdf`)
+        setShowAgreementPreview(true)
+        // Note: Do not reset form/close dialog here; wait for Preview Dialog close/confirm
+      } else if (shouldPrintQuotation) {
         const baseQuotationData = buildQuotationData(invoiceData)
         setQuotationData(baseQuotationData)
         setQuotationFileName(`${invoiceData.code || 'quotation'}.pdf`)
@@ -769,9 +747,11 @@ const CreateInvoiceDialog = ({
         onOpenChange?.(false)
       }
     } catch (error) {
-      console.log('Submit error:', error)
+      console.error('Submit error:', error)
     }
   }
+
+
 
   const handleSelectProduct = (value) => {
     const productIds = value.map((product) => product.value)
@@ -1477,9 +1457,9 @@ const CreateInvoiceDialog = ({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden border-t">
               {/* 4-COLUMN LAYOUT */}
-              <div className="flex flex-1 overflow-hidden">
+              <div className="flex overflow-hidden">
                 {/* LEFT SECTION: Category + Products */}
-                <div className="flex flex-col flex-1">
+                <div className="flex flex-col w-[700px]">
                   {/* UNIFIED SEARCH BAR spanning columns 1 & 2 */}
                   <div className="p-4 border-b bg-background/80 backdrop-blur-sm">
                     <div className="relative">
@@ -1615,28 +1595,33 @@ const CreateInvoiceDialog = ({
         <PrintInvoiceView invoice={invoice} setting={generalInformation} />
       )}
 
-      {quotationData && (
-        <QuotationPreviewDialog
-          open={showQuotationPreview}
+      {agreementData && (
+        <AgreementPreviewDialog
+          open={showAgreementPreview}
           onOpenChange={(open) => {
             if (!open) {
-              setShowQuotationPreview(false)
+              setShowAgreementPreview(false)
+              setIsPrintContract(false) // Reset flag
               form.reset()
               onOpenChange?.(false)
             }
           }}
-          initialData={quotationData}
+          initialData={agreementData}
           onConfirm={async (finalData) => {
             try {
-              await exportQuotationPdf(finalData, quotationFileName)
-              toast.success('Đã xuất báo giá thành công!')
+              setAgreementExporting(true)
+              await exportAgreementPdf(finalData, agreementFileName)
+              toast.success('Đã in thỏa thuận mua bán thành công')
 
-              setShowQuotationPreview(false)
+              setShowAgreementPreview(false)
+              setIsPrintContract(false)
               form.reset()
               onOpenChange?.(false)
             } catch (error) {
-              console.error('Export quotation error:', error)
-              toast.error('Xuất báo giá thất bại')
+              console.error('Export agreement error:', error)
+              toast.error('In thỏa thuận mua bán thất bại')
+            } finally {
+              setAgreementExporting(false)
             }
           }}
         />

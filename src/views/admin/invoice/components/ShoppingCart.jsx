@@ -43,7 +43,7 @@ const ShoppingCart = ({
 }) => {
   if (selectedProducts.length === 0) {
     return (
-      <div className="relative flex w-[680px] flex-col border-l bg-gradient-to-b from-background to-muted/20">
+      <div className="relative flex flex-1 flex-col border-l bg-gradient-to-b from-background to-muted/20">
         {/* Left divider */}
         <div className="absolute bottom-0 left-0 top-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
         {/* Right divider */}
@@ -86,7 +86,7 @@ const ShoppingCart = ({
   }
 
   return (
-    <div className="relative flex w-[680px] flex-col border-l bg-gradient-to-b from-background to-muted/20">
+    <div className="relative flex flex-1 flex-col border-l bg-gradient-to-b from-background to-muted/20">
       {/* Left divider */}
       <div className="absolute bottom-0 left-0 top-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
 

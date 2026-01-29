@@ -84,6 +84,20 @@ export const postWarehouseReceipt = createAsyncThunk(
   },
 )
 
+export const cancelWarehouseReceipt = createAsyncThunk(
+  'warehouseReceipt/cancel-warehouse-receipt',
+  async (id, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post(`/warehouse-receipts/${id}/cancel`)
+      await dispatch(getWarehouseReceipts()).unwrap()
+      toast.success('Hủy phiếu thành công')
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 export const generateWarehouseReceiptFromInvoice = createAsyncThunk(
   'warehouseReceipt/generate-from-invoice',
   async ({ invoiceId, selectedItemIds, type = 'retail' }, { rejectWithValue }) => {
@@ -192,6 +206,19 @@ export const warehouseReceiptSlice = createSlice({
         state.loading = false
       })
       .addCase(postWarehouseReceipt.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload?.message || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+      // Cancel warehouse receipt
+      .addCase(cancelWarehouseReceipt.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(cancelWarehouseReceipt.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(cancelWarehouseReceipt.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload?.message || 'Lỗi không xác định'
         toast.error(state.error)

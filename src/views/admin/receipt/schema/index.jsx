@@ -28,7 +28,7 @@ const createReceiptSchema = z
 
     bankAccount: z.any().optional().nullable(),
 
-    dueDate: z.string().optional().nullable(),
+
 
     isDeposit: z.boolean().optional().default(false),
   })
@@ -39,12 +39,7 @@ const createReceiptSchema = z
         message: 'Vui lòng chọn tài khoản nhận tiền',
       })
     }
-    if (data.dueDate && isNaN(Date.parse(data.dueDate))) {
-      ctx.addIssue({
-        path: ['dueDate'],
-        message: 'Hạn chót đóng tiền không hợp lệ',
-      })
-    }
+
   })
 
 const createPaymentSchema = z

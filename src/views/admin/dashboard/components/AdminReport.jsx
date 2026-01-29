@@ -17,6 +17,10 @@ import { Link } from 'react-router-dom'
 import { getStatisticWithDate } from '@/api/statistic.jsx'
 import CrmReportOverview from './CrmReportOverview'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import SilverPriceRate from './SilverPriceRate'
+import DailyRevenueChart from './DailyRevenueChart'
+import PurchaseStats from './PurchaseStats'
+import PendingOrders from './PendingOrders'
 
 const AdminReport = ({ fromDate, toDate }) => {
   const loading = useSelector((state) => state.statistic.loading)
@@ -175,21 +179,33 @@ const AdminReport = ({ fromDate, toDate }) => {
             </Card>
           </div>
 
+          {/* NEW SECTION: Silver Price & Pending Orders */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <div className="col-span-2">
+              <SilverPriceRate />
+            </div>
+            <div className="col-span-5">
+              <PendingOrders />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 py-2 lg:grid-cols-12">
-            <div className="h-auto lg:col-span-8">
+            <div className="h-auto lg:col-span-8 space-y-4">
               <MonthlyRevenue
                 loading={loading}
                 data={statistic?.businessPlan}
                 fromDate={fromDate}
                 toDate={toDate}
               />
+              <DailyRevenueChart fromDate={fromDate} toDate={toDate} />
             </div>
 
-            <div className="h-auto lg:col-span-4">
+            <div className="h-auto lg:col-span-4 space-y-4">
               <RecentSales
                 loading={loading}
                 recentSales={statistic?.recentSales}
               />
+              <PurchaseStats fromDate={fromDate} toDate={toDate} />
             </div>
           </div>
         </TabsContent>

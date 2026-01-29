@@ -53,6 +53,7 @@ import { createReceipt, getReceiptQRCode } from '@/stores/ReceiptSlice'
 import { Input } from '@/components/ui/input'
 import { useNavigate } from 'react-router-dom'
 import { getSetting } from '@/stores/SettingSlice'
+import { cn } from '@/lib/utils'
 
 const CreateReceiptDialog = ({
   invoices,
@@ -60,6 +61,9 @@ const CreateReceiptDialog = ({
   onOpenChange,
   showTrigger = true,
   table,
+  contentClassName,
+  overlayClassName,
+  onSuccess,
   ...props
 }) => {
   const dispatch = useDispatch()
@@ -95,7 +99,7 @@ const CreateReceiptDialog = ({
       paymentMethod: paymentMethods[0].value,
       paymentNote: '',
       bankAccount: null,
-      dueDate: null,
+
       isDeposit: false,
     }),
   })
@@ -162,11 +166,11 @@ const CreateReceiptDialog = ({
       // Date & Status
       paymentDate: new Date().toISOString(),  // Current timestamp
       reason: data.note || 'Thu tiền bán hàng',  // Lý do
-      status: 'completed',  // completed | draft
+      // status: 'completed',  // completed | draft
 
       // Additional notes
       paymentNote: data.paymentNote || null,
-      dueDate: data.dueDate || null
+
     }
 
     try {
@@ -194,6 +198,12 @@ const CreateReceiptDialog = ({
   }
 
   const navigateAway = () => {
+    if (onSuccess) {
+      form.reset()
+      onSuccess()
+      return
+    }
+
     const getAdminReceipt = JSON.parse(
       localStorage.getItem('permissionCodes'),
     ).includes('GET_RECEIPT')
@@ -222,7 +232,7 @@ const CreateReceiptDialog = ({
           </DialogTrigger>
         )}
 
-        <DialogContent className="md:h-auto md:max-w-full">
+        <DialogContent className={cn("md:h-auto md:max-w-full", contentClassName)} overlayClassName={overlayClassName}>
           <DialogHeader>
             <DialogTitle>Thêm phiếu thu mới</DialogTitle>
             <DialogDescription>
@@ -418,7 +428,7 @@ const CreateReceiptDialog = ({
                                   )}
                                 />
 
-                                <div className="mb-3">
+                                <div className="mb-3 mt-3">
                                   <FormField
                                     control={form.control}
                                     name="paymentMethod"
@@ -436,7 +446,7 @@ const CreateReceiptDialog = ({
                                               <SelectValue placeholder="Chọn phương thức" />
                                             </SelectTrigger>
                                           </FormControl>
-                                          <SelectContent>
+                                          <SelectContent className="z-[100020]">
                                             <SelectGroup>
                                               {paymentMethods.map((method) => (
                                                 <SelectItem
@@ -483,7 +493,7 @@ const CreateReceiptDialog = ({
                                               </SelectTrigger>
                                             </FormControl>
 
-                                            <SelectContent>
+                                            <SelectContent className="z-[100020]">
                                               <SelectGroup>
                                                 {banks.map((bank, index) => (
                                                   <SelectItem
@@ -512,23 +522,7 @@ const CreateReceiptDialog = ({
                                     />
                                   )}
 
-                                  <FormField
-                                    control={form.control}
-                                    name="dueDate"
-                                    render={({ field }) => (
-                                      <FormItem className="mb-3 space-y-1">
-                                        <FormLabel>Hạn chót đóng tiền</FormLabel>
-                                        <FormControl>
-                                          <Input
-                                            type="date"
-                                            value={field.value || ''}
-                                            onChange={field.onChange}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
+
                                 </div>
 
                                 <div className="mb-3">

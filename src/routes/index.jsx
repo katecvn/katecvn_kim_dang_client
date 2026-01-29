@@ -12,6 +12,8 @@ import MyPurchaseOrderPage from '@/views/admin/purchase-order/MyPurchaseOrderPag
 import ProductPage from '@/views/admin/product/ProductPage'
 import MyReceiptPage from '@/views/admin/receipt/MyReceiptPage'
 import ReceiptPage from '@/views/admin/receipt/ReceiptPage'
+import PaymentPage from '@/views/admin/payment/PaymentPage'
+import MyPaymentPage from '@/views/admin/payment/MyPaymentPage'
 import RevenuePage from '@/views/admin/revenue/RevenuePage'
 import RolePage from '@/views/admin/role/RolePage'
 import AccessLogPage from '@/views/admin/setting/access-log/AccessLogPage'
@@ -126,6 +128,16 @@ const routes = [
   {
     path: '/receipt-user',
     element: MyReceiptPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/payment',
+    element: PaymentPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/payment-user',
+    element: MyPaymentPage,
     layout: AdminLayout,
   },
   {

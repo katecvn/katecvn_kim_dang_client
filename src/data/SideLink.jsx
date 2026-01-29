@@ -219,6 +219,30 @@ export const sideLinks = [
         icon: <IconReceiptPound size={18} />,
         permission: ['GET_PURCHASE_ORDER_USER', 'GET_PURCHASE_ORDER'],
       },
+      {
+        title: 'Hợp đồng mua hàng',
+        href: '/sales-contracts',
+        icon: <IconReceipt size={18} />,
+        permission: 'GET_SALES_CONTRACT',
+      },
+      {
+        title: 'Hợp đồng của tôi',
+        href: '/sales-contract-user',
+        icon: <IconReceiptRupee size={18} />,
+        permission: ['GET_SALES_CONTRACT_USER', 'GET_SALES_CONTRACT'],
+      },
+      {
+        title: 'Phiếu chi',
+        href: '/payment',
+        icon: <IconReceipt size={18} />,
+        permission: 'GET_RECEIPT',
+      },
+      {
+        title: 'Phiếu chi của tôi',
+        href: '/payment-user',
+        icon: <IconReceiptRupee size={18} />,
+        permission: 'GET_RECEIPT_USER',
+      },
     ],
   },
 

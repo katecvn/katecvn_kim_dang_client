@@ -119,13 +119,13 @@ const ProductGrid = ({
                         </div>
 
                         {/* Product Description/Note */}
-                        {product.note && (
+                        {/* {product.note && (
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                               {product.note}
                             </p>
                           </div>
-                        )}
+                        )} */}
                       </div>
 
                       {/* Add Button */}

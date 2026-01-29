@@ -1,0 +1,644 @@
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/custom/Button'
+import { Separator } from '@/components/ui/separator'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { CheckIcon, Mail, MapPin, User, Calendar, Truck } from 'lucide-react'
+import { CaretSortIcon, MobileIcon } from '@radix-ui/react-icons'
+import { IconDatabasePlus } from '@tabler/icons-react'
+import { cn } from '@/lib/utils'
+import { moneyFormat, toVietnamese } from '@/utils/money-format'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { toast } from 'sonner'
+import { DatePicker } from '@/components/custom/DatePicker'
+import { createSupplier } from '@/stores/SupplierSlice'
+
+const PurchaseOrderSidebar = ({
+  form,
+  suppliers,
+  selectedSupplier,
+  supplierEditData,
+  onSupplierEditDataChange,
+  onSelectSupplier,
+  paymentMethods,
+  calculateSubTotal,
+  calculateTotalTax,
+  calculateTotalDiscount,
+  calculateTotalAmount,
+  calculateExpenses,
+  onEditExpenses,
+  onSubmit,
+  loading,
+  expectedDeliveryDate,
+  onExpectedDeliveryDateChange,
+  isUpdate = false,
+}) => {
+  const dispatch = useDispatch()
+  const [openOrderDatePicker, setOpenOrderDatePicker] = useState(false)
+  const [openDeliveryDatePicker, setOpenDeliveryDatePicker] = useState(false)
+
+  // Note: Purchase Order typically doesn't need ID Card info for suppliers like Invoices do for individual customers
+  // But we'll keep basic contact info
+
+  const [isCreatingSupplier, setIsCreatingSupplier] = useState(false)
+
+  const handleCreateSupplierInline = async () => {
+    if (!supplierEditData.name?.trim()) {
+      toast.error('Vui lòng nhập tên nhà cung cấp')
+      return
+    }
+    if (!supplierEditData.phone?.trim()) {
+      toast.error('Vui lòng nhập số điện thoại')
+      return
+    }
+
+    try {
+      setIsCreatingSupplier(true)
+      const newSupplier = await dispatch(
+        createSupplier({
+          name: supplierEditData.name,
+          phone: supplierEditData.phone,
+          email: supplierEditData.email || '',
+          address: supplierEditData.address || '',
+          taxCode: supplierEditData.taxCode || '',
+          note: '',
+          status: 'active'
+        })
+      ).unwrap()
+
+      if (newSupplier) {
+        toast.success('Tạo nhà cung cấp thành công')
+        onSelectSupplier(newSupplier)
+        // Reset edit data is handled by parent or we can clear it here if needed, 
+        // but typically selecting replaces the edit data view
+      }
+    } catch (error) {
+      console.error('Error creating supplier:', error)
+      toast.error('Lỗi tạo nhà cung cấp')
+    } finally {
+      setIsCreatingSupplier(false)
+    }
+  }
+
+  const subtotal = calculateSubTotal()
+  const tax = calculateTotalTax()
+  const discount = calculateTotalDiscount()
+  const expenses = calculateExpenses ? calculateExpenses() : 0
+  const total = calculateTotalAmount()
+
+  return (
+    <div className="w-96 shrink-0 overflow-hidden bg-gradient-to-b border-l from-muted/50 to-background flex flex-col relative">
+      {/* Left divider */}
+      <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
+
+      {/* Header */}
+      <div className="p-4 border-b bg-background/80 backdrop-blur-sm">
+        <h3 className="font-semibold">Thông tin đơn đặt hàng</h3>
+      </div>
+
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-4">
+          {/* Supplier Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Nhà cung cấp</label>
+
+            {selectedSupplier ? (
+              <>
+                <div className="border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={`https://ui-avatars.com/api/?bold=true&background=random&name=${selectedSupplier?.name}`}
+                        alt={selectedSupplier?.name}
+                      />
+                      <AvatarFallback>
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {selectedSupplier?.name}
+                      </div>
+                      {selectedSupplier?.code && (
+                        <div className="text-xs text-muted-foreground">
+                          {selectedSupplier?.code}
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => onSelectSupplier(null)}
+                    >
+                      <CheckIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-1.5 text-xs">
+                    {selectedSupplier?.phone && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MobileIcon className="h-3 w-3" />
+                        <a
+                          href={`tel:${selectedSupplier?.phone}`}
+                          className="hover:text-primary"
+                        >
+                          {selectedSupplier?.phone}
+                        </a>
+                      </div>
+                    )}
+                    {selectedSupplier?.email && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-3 w-3" />
+                        <a
+                          href={`mailto:${selectedSupplier?.email}`}
+                          className="hover:text-primary truncate"
+                        >
+                          {selectedSupplier?.email}
+                        </a>
+                      </div>
+                    )}
+                    {selectedSupplier?.address && (
+                      <div className="flex items-start gap-2 text-muted-foreground">
+                        <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                        <span className="line-clamp-2">{selectedSupplier?.address}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Supplier Edit Fields - Always visible when supplier selected */}
+                <Separator />
+                <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                  <div className="text-xs font-medium text-muted-foreground">Thông tin nhà cung cấp (có thể sửa)</div>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Tên nhà cung cấp</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập tên"
+                        value={supplierEditData?.name || ''}
+                        onChange={(e) => onSupplierEditDataChange({ ...supplierEditData, name: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Số điện thoại</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập SĐT"
+                        value={supplierEditData?.phone || ''}
+                        onChange={(e) => onSupplierEditDataChange({ ...supplierEditData, phone: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập email"
+                        value={supplierEditData?.email || ''}
+                        onChange={(e) => onSupplierEditDataChange({ ...supplierEditData, email: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Địa chỉ</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập địa chỉ"
+                        value={supplierEditData?.address || ''}
+                        onChange={(e) => onSupplierEditDataChange({ ...supplierEditData, address: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Mã số thuế</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="MST"
+                        value={supplierEditData?.taxCode || ''}
+                        onChange={(e) => onSupplierEditDataChange({ ...supplierEditData, taxCode: e.target.value })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+                </div>
+              </>
+            ) : (
+              <>
+                <FormField
+                  control={form.control}
+                  name="supplierId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between font-normal"
+                            >
+                              {field.value
+                                ? suppliers.find((s) => s.id.toString() === field.value.toString())?.name
+                                : 'Chọn nhà cung cấp'}
+                              <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                          <Command>
+                            <CommandInput placeholder="Tìm kiếm..." className="h-9" />
+                            <CommandEmpty>Không tìm thấy</CommandEmpty>
+                            <CommandGroup>
+                              <CommandList>
+                                {suppliers.map((supplier) => (
+                                  <CommandItem
+                                    value={supplier.id.toString()}
+                                    key={supplier.id}
+                                    onSelect={() => onSelectSupplier(supplier)}
+                                  >
+                                    {supplier.name} - {supplier.phone}
+                                    <CheckIcon
+                                      className={cn(
+                                        'ml-auto h-4 w-4',
+                                        supplier.id.toString() === field.value?.toString()
+                                          ? 'opacity-100'
+                                          : 'opacity-0'
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandList>
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Supplier Input Fields - For creating new */}
+                <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                  <div className="text-xs font-medium text-muted-foreground">Hoặc nhập thông tin nhà cung cấp mới</div>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Tên nhà cung cấp</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập tên"
+                        value={supplierEditData?.name || ''}
+                        onChange={(e) => onSupplierEditDataChange({
+                          ...supplierEditData,
+                          name: e.target.value
+                        })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Số điện thoại</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập SĐT"
+                        value={supplierEditData?.phone || ''}
+                        onChange={(e) => onSupplierEditDataChange({
+                          ...supplierEditData,
+                          phone: e.target.value
+                        })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập email"
+                        value={supplierEditData?.email || ''}
+                        onChange={(e) => onSupplierEditDataChange({
+                          ...supplierEditData,
+                          email: e.target.value
+                        })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Địa chỉ</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nhập địa chỉ"
+                        value={supplierEditData?.address || ''}
+                        onChange={(e) => onSupplierEditDataChange({
+                          ...supplierEditData,
+                          address: e.target.value
+                        })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs">Mã số thuế</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="MST"
+                        value={supplierEditData?.taxCode || ''}
+                        onChange={(e) => onSupplierEditDataChange({
+                          ...supplierEditData,
+                          taxCode: e.target.value
+                        })}
+                        className="h-8 text-xs"
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  <p className="text-[10px] text-muted-foreground italic">
+                    * Nhà cung cấp sẽ được tạo tự động khi lưu đơn hàng nếu chưa có
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Order Date */}
+          <FormField
+            control={form.control}
+            name="orderDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Ngày đặt hàng</FormLabel>
+                <Popover open={openOrderDatePicker} onOpenChange={setOpenOrderDatePicker}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          'w-full justify-start text-left font-normal',
+                          !field.value && 'text-muted-foreground'
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {field.value
+                          ? new Date(field.value).toLocaleDateString('vi-VN')
+                          : 'Chọn ngày'}
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <DatePicker
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) => {
+                        field.onChange(date ? date.toISOString() : null)
+                        setOpenOrderDatePicker(false)
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Expected Delivery Date - Always visible for PO */}
+          <FormField
+            control={form.control}
+            name="expectedDeliveryDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Ngày dự kiến giao hàng</FormLabel>
+                <Popover open={openDeliveryDatePicker} onOpenChange={setOpenDeliveryDatePicker}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          'w-full justify-start text-left font-normal',
+                          !field.value && 'text-muted-foreground'
+                        )}
+                      >
+                        <Truck className="mr-2 h-4 w-4" />
+                        {field.value
+                          ? new Date(field.value).toLocaleDateString('vi-VN')
+                          : 'Chọn ngày'}
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <DatePicker
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) => {
+                        field.onChange(date ? date.toISOString() : null)
+                        onExpectedDeliveryDateChange(date ? date.toISOString() : null)
+                        setOpenDeliveryDatePicker(false)
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Payment Method */}
+          <FormField
+            control={form.control}
+            name="paymentMethod"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phương thức thanh toán</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn phương thức" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {paymentMethods.map((method) => (
+                      <SelectItem key={method.value} value={method.value}>
+                        {method.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Payment Terms */}
+          <FormField
+            control={form.control}
+            name="paymentTerms"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Điều khoản thanh toán</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ví dụ: Net 30" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Note */}
+          <FormField
+            control={form.control}
+            name="note"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ghi chú</FormLabel>
+                <FormControl>
+                  <Textarea
+                    rows={3}
+                    placeholder="Nhập ghi chú nếu có"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <Separator />
+
+          {/* Summary */}
+          <div className="space-y-2">
+            <h4 className="font-semibold text-sm">Tổng kết</h4>
+
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tạm tính:</span>
+                <span>{moneyFormat(subtotal)}</span>
+              </div>
+
+              {tax > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Thuế:</span>
+                  <span>{moneyFormat(tax)}</span>
+                </div>
+              )}
+
+              {discount > 0 && (
+                <div className="flex justify-between text-destructive">
+                  <span>Giảm giá:</span>
+                  <span>-{moneyFormat(discount)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center group">
+                <span className="text-muted-foreground">Phí khác:</span>
+                <div className="flex items-center gap-2">
+                  <span>{moneyFormat(expenses)}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      onEditExpenses && onEditExpenses()
+                    }}
+                  >
+                    <IconDatabasePlus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              {/* Fallback button if expenses is 0 to make it clear how to add */}
+              {expenses === 0 && (
+                <div className="text-right">
+                  <Button
+                    variant="link"
+                    className="h-auto p-0 text-xs text-primary"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      onEditExpenses && onEditExpenses()
+                    }}
+                  >
+                    + Thêm chi phí
+                  </Button>
+                </div>
+              )}
+
+              <Separator />
+
+              <div className="flex justify-between font-semibold text-base pt-1">
+                <span>Tổng cộng:</span>
+                <span className="text-primary">{moneyFormat(total)}</span>
+              </div>
+
+              <div className="text-xs text-muted-foreground pt-1">
+                Bằng chữ: <span className="font-medium">{toVietnamese(total)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ScrollArea>
+
+      {/* Footer Actions */}
+      <div className="p-4 border-t space-y-2">
+        {/* Main Button */}
+        <Button
+          className="w-full"
+          onClick={form.handleSubmit(onSubmit)}
+          disabled={loading}
+          loading={loading}
+        >
+          <IconDatabasePlus className="h-4 w-4 mr-2" />
+          {isUpdate ? 'Cập nhật đơn hàng' : 'Tạo đơn đặt hàng'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+export default PurchaseOrderSidebar

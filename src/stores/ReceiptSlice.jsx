@@ -66,13 +66,12 @@ export const deleteReceipt = createAsyncThunk(
   'receipt/delete-receipt',
   async (id, { rejectWithValue, dispatch }) => {
     try {
+      await api.delete(`/payment-vouchers/${id}`)
+
       const deleteAdminInvoices = JSON.parse(
         localStorage.getItem('permissionCodes'),
       ).includes('DELETE_RECEIPT')
 
-      deleteAdminInvoices
-        ? await api.delete(`/payment-vouchers/${id}`)
-        : await api.delete(`/payment-vouchers/${id}/delete-my-receipt`)
       deleteAdminInvoices
         ? await dispatch(getReceipts()).unwrap()
         : await dispatch(getMyReceipts()).unwrap()
@@ -102,7 +101,14 @@ export const updateReceiptStatus = createAsyncThunk(
   'receipt/update-status',
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/payment-vouchers/${id}`, { status })
+      let response
+      if (status === 'completed') {
+        response = await api.post(`/payment-vouchers/${id}/complete`)
+      } else if (status === 'canceled') {
+        response = await api.post(`/payment-vouchers/${id}/cancel`)
+      } else {
+        response = await api.put(`/payment-vouchers/${id}`, { status })
+      }
       toast.success('Cập nhật trạng thái phiếu thu thành công')
       return response.data.data || response.data
     } catch (error) {
@@ -174,15 +180,13 @@ export const receiptSlice = createSlice({
         state.error = null
       })
       .addCase(getReceiptQRCode.pending, (state) => {
-        state.loading = true
+        // Do not set global loading to true to avoid unmounting table rows
         state.error = null
       })
       .addCase(getReceiptQRCode.fulfilled, (state, action) => {
-        state.loading = false
         state.qrCodeData = action.payload
       })
       .addCase(getReceiptQRCode.rejected, (state, action) => {
-        state.loading = false
         state.error = action.payload.message || 'Không lấy được mã QR'
         state.qrCodeData = null
       })

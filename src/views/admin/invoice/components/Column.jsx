@@ -392,7 +392,7 @@ export const columns = [
             {user?.fullName || '—'}
           </span>
           <span className="text-xs text-muted-foreground">
-            {dateFormat(createdAt)}
+            {dateFormat(createdAt, true)}
           </span>
         </div>
       )

@@ -12,6 +12,8 @@ import { useState } from 'react'
 import Can from '@/utils/can'
 import { DeleteProductStockSnapshotDialog } from './DeleteProductStockSnapshotDialog'
 import { UpdateProductStockSnapshotDialog } from './UpdateProductStockSnapshotDialog'
+import { FileSpreadsheet } from 'lucide-react'
+import { exportDetailedLedgerToExcel } from '@/utils/export-detailed-ledger'
 
 const DataTableRowActions = ({ row }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -69,6 +71,14 @@ const DataTableRowActions = ({ row }) => {
               </DropdownMenuShortcut>
             </DropdownMenuItem>
           </Can>
+
+          {/* Sổ chi tiết */}
+          <DropdownMenuItem onSelect={() => exportDetailedLedgerToExcel(snapshot, { fromDate: new Date(), toDate: new Date() })}>
+            Sổ chi tiết
+            <DropdownMenuShortcut>
+              <FileSpreadsheet className="h-4 w-4" />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </>

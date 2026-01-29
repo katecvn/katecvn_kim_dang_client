@@ -12,8 +12,9 @@ import {
 import { deleteWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { TrashIcon } from '@radix-ui/react-icons'
 import { useDispatch, useSelector } from 'react-redux'
+import { cn } from '@/lib/utils'
 
-const DeleteWarehouseReceiptDialog = ({ receipt, showTrigger = true, onSuccess, ...props }) => {
+const DeleteWarehouseReceiptDialog = ({ receipt, showTrigger = true, onSuccess, contentClassName, overlayClassName, ...props }) => {
   const dispatch = useDispatch()
   const loading = useSelector((state) => state.warehouseReceipt.loading)
 
@@ -35,7 +36,7 @@ const DeleteWarehouseReceiptDialog = ({ receipt, showTrigger = true, onSuccess, 
           </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent>
+      <DialogContent className={cn(contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Bạn chắc chắn thực hiện hành động này?</DialogTitle>
           <DialogDescription>

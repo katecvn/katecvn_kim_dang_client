@@ -55,9 +55,13 @@ import UpdateInvoiceStatusDialog from './UpdateInvoiceStatusDialog'
 import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components/DeleteWarehouseReceiptDialog'
 import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/components/UpdateWarehouseReceiptStatusDialog'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
+import ViewWarehouseReceiptDialog from '../../warehouse-receipt/components/ViewWarehouseReceiptDialog'
 import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
+import ViewReceiptDialog from '../../receipt/components/ViewReceiptDialog'
+import ViewProductDialog from '../../product/components/ViewProductDialog'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
+import { getPublicUrl } from '@/utils/file'
 import InstallmentPreviewDialog from './InstallmentPreviewDialog'
 import { buildInstallmentData } from '../helpers/BuildInstallmentData'
 import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
@@ -65,6 +69,12 @@ import { updateReceiptStatus } from '@/stores/ReceiptSlice'
 import UpdateReceiptStatusDialog from '../../receipt/components/UpdateReceiptStatusDialog'
 import { DeleteReceiptDialog } from '../../receipt/components/DeleteReceiptDialog'
 import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
+import ViewSalesContractDialog from '../../sales-contract/components/ViewSalesContractDialog'
+import PrintInvoiceView from './PrintInvoiceView'
+import AgreementPreviewDialog from './AgreementPreviewDialog'
+import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
+import { buildAgreementData } from '../helpers/BuildAgreementData'
+import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 
 const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -73,6 +83,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
   const creditNotes = useSelector(
     (state) => state.creditNote.creditNotesByInvoiceId,
   )
+  const setting = useSelector((state) => state.setting.setting)
   const dispatch = useDispatch()
   const [openUpdateCN, setOpenUpdateCN] = useState(false)
   const [editingCN, setEditingCN] = useState(null)
@@ -86,6 +97,14 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
   const [installmentData, setInstallmentData] = useState(null)
   const [installmentFileName, setInstallmentFileName] = useState('hop-dong-tra-cham.docx')
   const [installmentExporting, setInstallmentExporting] = useState(false)
+
+  // State specific for ViewInvoiceDialog actions
+  const [printInvoice, setPrintInvoice] = useState(null)
+  const [showAgreementPreview, setShowAgreementPreview] = useState(false)
+  const [agreementData, setAgreementData] = useState(null)
+  const [agreementFileName, setAgreementFileName] = useState('thoa-thuan-mua-ban.pdf')
+  const [agreementExporting, setAgreementExporting] = useState(false)
+  const [showCreateSalesContractDialog, setShowCreateSalesContractDialog] = useState(false)
 
   // State for updating receipt status
   const [showUpdateReceiptStatus, setShowUpdateReceiptStatus] = useState(false)
@@ -173,6 +192,43 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
     }
   }
 
+  const handlePrintInvoice = async () => {
+    try {
+      // Reuse fetched invoice data if complete enough, or use 'invoice' state
+      if (!invoice) return
+      setPrintInvoice(invoice)
+      setTimeout(() => setPrintInvoice(null), 0)
+    } catch (error) {
+      console.log('Print invoice error: ', error)
+      toast.error('Lỗi in hóa đơn')
+    }
+  }
+
+  // View Product Dialog
+  const [showViewProductDialog, setShowViewProductDialog] = useState(false)
+  const [selectedProductId, setSelectedProductId] = useState(null)
+
+  const handlePrintAgreement = async () => {
+    if (!invoice) return
+    try {
+      const baseAgreementData = buildAgreementData(invoice)
+      setAgreementData(baseAgreementData)
+      setAgreementFileName(`thoa-thuan-mua-ban-${invoice.code || 'agreement'}.pdf`)
+      setShowAgreementPreview(true)
+    } catch (error) {
+      console.error('Load agreement data error:', error)
+      toast.error('Không lấy được dữ liệu thỏa thuận mua bán')
+    }
+  }
+
+  const handleCreateSalesContract = () => {
+    if (invoice?.salesContract) {
+      toast.warning('Đơn hàng này đã lập hợp đồng')
+      return
+    }
+    setShowCreateSalesContractDialog(true)
+  }
+
   const handleUpdateStatus = async (status, id) => {
     try {
       await dispatch(updateInvoiceStatus({ id, status })).unwrap()
@@ -211,13 +267,38 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
 
   const [selectedWarehouseReceipt, setSelectedWarehouseReceipt] = useState(null)
   const [showUpdateWarehouseReceiptStatus, setShowUpdateWarehouseReceiptStatus] = useState(false)
+
+  // Detail Dialogs State
+  const [showWarehouseReceiptDetailDialog, setShowWarehouseReceiptDetailDialog] = useState(false)
+  const [selectedWarehouseReceiptDetailId, setSelectedWarehouseReceiptDetailId] = useState(null)
+  const [showReceiptDetailDialog, setShowReceiptDetailDialog] = useState(false)
+  const [selectedReceiptDetail, setSelectedReceiptDetail] = useState(null)
+
+  const handleOpenWarehouseReceiptDetail = (id) => {
+    setSelectedWarehouseReceiptDetailId(id)
+    setShowWarehouseReceiptDetailDialog(true)
+  }
+
+  const handleOpenReceiptDetail = (receipt) => {
+    // Ensure we have invoice info in receipt if needed by ViewReceiptDialog
+    const receiptWithInvoice = {
+      ...receipt,
+      invoice: invoice || receipt.invoice
+    }
+    setSelectedReceiptDetail(receiptWithInvoice)
+    setShowReceiptDetailDialog(true)
+  }
   const [warehouseReceiptToDelete, setWarehouseReceiptToDelete] = useState(null)
   const [showDeleteWarehouseReceiptDialog, setShowDeleteWarehouseReceiptDialog] = useState(false)
 
-  // Creation Dialog State
+  // Create Receipt Dialog State
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
   const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
   const [warehouseLoading, setWarehouseLoading] = useState(false)
+
+  // Contract View State
+  const [showContractDetail, setShowContractDetail] = useState(false)
+  const [selectedContractId, setSelectedContractId] = useState(null)
 
   const handleCreateWarehouseReceipt = () => {
     const invoiceStatus = invoice?.status
@@ -300,7 +381,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
         <DialogContent
           isViewInvoiceDialog={isViewInvoiceDialog}
           className={cn(
-            "md:h-screen md:max-w-full md:z-50 md:my-0 md:top-0 md:translate-y-0",
+            "md:h-screen md:max-w-full md:z-[10001] md:my-0 md:top-0 md:translate-y-0",
             !isDesktop && isViewInvoiceDialog && "fixed inset-0 w-screen h-screen top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none z-[9999] translate-x-0 translate-y-0"
           )}>
           <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
@@ -351,7 +432,6 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                 <TableHead className="w-8">TT</TableHead>
                                 <TableHead className="min-w-40">Sản phẩm</TableHead>
                                 <TableHead className="min-w-20">Số Lượng</TableHead>
-                                <TableHead className="min-w-16">Tặng</TableHead>
                                 <TableHead className="min-w-16">Đơn Vị Tính</TableHead>
                                 <TableHead className="min-w-20 text-right">Giá</TableHead>
                                 <TableHead className="min-w-16 text-right">Thuế</TableHead>
@@ -372,25 +452,46 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                 <TableRow key={product.id}>
                                   <TableCell>{index + 1}</TableCell>
                                   <TableCell>
-                                    <div>
-                                      <div className="font-medium">
-                                        {product.productName}
-                                      </div>
-                                      {product?.options && (
-                                        <div className="break-words text-sm text-muted-foreground">
-                                          {product?.options
-                                            ?.filter((option) => !!option.code)
-                                            ?.map(
-                                              (option) =>
-                                                `${option.name} ${option?.pivot?.value || ''}`,
-                                            )
-                                            .join(', ')}
+                                    <div
+                                      className="flex items-start gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                                      onClick={() => {
+                                        if (product?.productId) {
+                                          setSelectedProductId(product.productId)
+                                          setShowViewProductDialog(true)
+                                        }
+                                      }}
+                                    >
+                                      {product.image && (
+                                        <div className="size-16 overflow-hidden rounded-md border shrink-0">
+                                          <img
+                                            src={getPublicUrl(product.image)}
+                                            alt={product.productName}
+                                            className="h-full w-full object-cover"
+                                          />
                                         </div>
                                       )}
+                                      <div>
+                                        <div className="font-medium text-blue-600 hover:underline">
+                                          {product.productName}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {product.productCode || product.code}
+                                        </div>
+                                        {product?.options && (
+                                          <div className="break-words text-sm text-muted-foreground">
+                                            {product?.options
+                                              ?.filter((option) => !!option.code)
+                                              ?.map(
+                                                (option) =>
+                                                  `${option.name} ${option?.pivot?.value || ''}`,
+                                              )
+                                              .join(', ')}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   </TableCell>
                                   <TableCell>{product.quantity}</TableCell>
-                                  <TableCell>{product.giveaway}</TableCell>
                                   <TableCell>
                                     {product.unitName || 'Không có'}
                                   </TableCell>
@@ -415,6 +516,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                   <TableCell>
                                     {product.note || 'Không có'}
                                   </TableCell>
+
                                 </TableRow>
                               ))}
                             </TableBody>
@@ -424,9 +526,29 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                         <div className="space-y-3">
                           {invoice?.invoiceItems.map((product, index) => (
                             <div key={product.id} className="border rounded-lg p-3 space-y-2 bg-card">
-                              {/* Header: STT + Product Name */}
-                              <div className="font-medium text-sm">
-                                {index + 1}. {product.productName}
+                              {/* Header: STT + Image + Product Name */}
+                              <div
+                                className="flex gap-3 items-start cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => {
+                                  if (product?.productId) {
+                                    setSelectedProductId(product.productId)
+                                    setShowViewProductDialog(true)
+                                  }
+                                }}
+                              >
+                                {product.image && (
+                                  <div className="size-16 rounded border overflow-hidden shrink-0">
+                                    <img src={getPublicUrl(product.image)} alt={product.productName} className="h-full w-full object-cover" />
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="font-medium text-sm text-blue-600 hover:underline">
+                                    {index + 1}. {product.productName}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {product.productCode || product.code}
+                                  </div>
+                                </div>
                               </div>
 
                               {/* Options if any */}
@@ -445,10 +567,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                   <span className="text-muted-foreground">SL: </span>
                                   <span className="font-medium">{product.quantity}</span>
                                 </div>
-                                <div>
-                                  <span className="text-muted-foreground">Tặng: </span>
-                                  <span className="font-medium">{product.giveaway}</span>
-                                </div>
+
                                 <div>
                                   <span className="text-muted-foreground">ĐVT: </span>
                                   <span className="font-medium">{product.unitName || 'Không có'}</span>
@@ -690,7 +809,15 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                 <div className="space-y-3 rounded-lg border p-4 text-sm">
                                   <div className="flex justify-between">
                                     <strong>Mã hợp đồng:</strong>
-                                    <span className="font-medium text-primary">{invoice.salesContract.code}</span>
+                                    <span
+                                      className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                      onClick={() => {
+                                        setSelectedContractId(invoice.salesContract.id)
+                                        setShowContractDetail(true)
+                                      }}
+                                    >
+                                      {invoice.salesContract.code}
+                                    </span>
                                   </div>
 
                                   <div className="flex justify-between">
@@ -781,7 +908,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <h3 className="font-semibold">Phiếu xuất kho</h3>
-                            {invoice?.status === 'accepted' && (
+                            {invoice?.status === 'accepted' ? (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -793,6 +920,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                   Tạo phiếu kho
                                 </span>
                               </Button>
+                            ) : (
+                              <span className="text-[12px] text-gray-500">Đơn hàng chưa được duyệt</span>
                             )}
                           </div>
 
@@ -815,8 +944,13 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                     {invoice.warehouseReceipts.map((receipt, index) => (
                                       <TableRow key={receipt.id}>
                                         <TableCell>{index + 1}</TableCell>
-                                        <TableCell className="font-medium text-primary">
-                                          {receipt.code}
+                                        <TableCell>
+                                          <span
+                                            className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
+                                            onClick={() => handleOpenWarehouseReceiptDetail(receipt.id)}
+                                          >
+                                            {receipt.code}
+                                          </span>
                                         </TableCell>
                                         <TableCell>
                                           {receipt.receiptType === 1
@@ -881,7 +1015,10 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                   <div key={receipt.id} className="space-y-3 rounded-lg border p-4 text-sm">
                                     <div className="flex justify-between">
                                       <strong>Mã phiếu kho:</strong>
-                                      <span className="font-medium text-primary">
+                                      <span
+                                        className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                        onClick={() => handleOpenWarehouseReceiptDetail(receipt.id)}
+                                      >
                                         {receipt.code}
                                       </span>
                                     </div>
@@ -1001,8 +1138,13 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                     {invoice.paymentVouchers.map((voucher, index) => (
                                       <TableRow key={voucher.id}>
                                         <TableCell>{index + 1}</TableCell>
-                                        <TableCell className="font-medium text-primary">
-                                          {voucher.code}
+                                        <TableCell>
+                                          <span
+                                            className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
+                                            onClick={() => handleOpenReceiptDetail(voucher)}
+                                          >
+                                            {voucher.code}
+                                          </span>
                                         </TableCell>
                                         <TableCell className="text-right font-semibold">
                                           {moneyFormat(voucher.amount)}
@@ -1072,7 +1214,12 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                                   <div key={voucher.id} className="space-y-2 rounded-lg border p-3 text-sm">
                                     <div className="flex justify-between">
                                       <strong>Mã phiếu:</strong>
-                                      <span className="font-medium text-primary">{voucher.code}</span>
+                                      <span
+                                        className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                        onClick={() => handleOpenReceiptDetail(voucher)}
+                                      >
+                                        {voucher.code}
+                                      </span>
                                     </div>
                                     <div className="flex justify-between">
                                       <strong>Số tiền:</strong>
@@ -1462,6 +1609,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                           <div className="font-medium">
                             {invoice?.user?.fullName} ({invoice?.user.code})
                           </div>
+                          <div className="text-xs text-muted-foreground">
+                            {dateFormat(invoice?.createdAt, true)}
+                          </div>
                         </div>
                       </div>
 
@@ -1570,7 +1720,25 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
             )}
           </div>
 
-          <DialogFooter className="flex gap-2 sm:space-x-0">
+          <DialogFooter className="flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0">
+            {invoice && (
+              <>
+                <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handlePrintInvoice}>
+                  In Hóa Đơn
+                </Button>
+                <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handlePrintAgreement}>
+                  In Thỏa Thuận
+                </Button>
+                <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handlePrintContract}>
+                  In Hợp Đồng
+                </Button>
+                {!invoice.salesContract && (
+                  <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handleCreateSalesContract}>
+                    Tạo Hợp Đồng
+                  </Button>
+                )}
+              </>
+            )}
             <DialogClose asChild>
               <Button type="button" variant="outline">
                 Đóng
@@ -1601,6 +1769,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
               setInstallmentExporting(false)
             }
           }}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
         />
       )}
 
@@ -1612,8 +1782,20 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
           currentStatus={selectedReceipt.status}
           statuses={receiptStatus}
           onSubmit={(status) => handleUpdateReceiptStatus(status, selectedReceipt.id)}
+          contentClassName="z-[10003]"
+          overlayClassName="z-[10002]"
         />
       )}
+
+      {/* Sales Contract Detail Dialog (Nested) */}
+      <ViewSalesContractDialog
+        open={showContractDetail}
+        onOpenChange={setShowContractDetail}
+        contractId={invoice?.salesContractId}
+        showTrigger={false}
+        contentClassName="z-[10003]"
+        overlayClassName="z-[10002]"
+      />
 
       {/* Delete Receipt Dialog */}
       {receiptToDelete && (
@@ -1626,6 +1808,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
             setShowDeleteReceiptDialog(false)
             fetchData()
           }}
+          contentClassName="z-[10003]"
+          overlayClassName="z-[10002]"
         />
       )}
 
@@ -1640,6 +1824,30 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
           paymentStatus={invoice?.paymentStatus}
           statuses={statuses}
           onSubmit={handleUpdateStatus}
+          className="z-[10003]"
+          overlayClassName="z-[10002]"
+        />
+      )}
+
+      {/* View Warehouse Receipt Detail Dialog */}
+      {showWarehouseReceiptDetailDialog && (
+        <ViewWarehouseReceiptDialog
+          open={showWarehouseReceiptDetailDialog}
+          onOpenChange={setShowWarehouseReceiptDetailDialog}
+          receiptId={selectedWarehouseReceiptDetailId}
+          contentClassName="!z-[10005]"
+          overlayClassName="z-[10004]"
+        />
+      )}
+
+      {/* View Receipt Detail Dialog */}
+      {showReceiptDetailDialog && (
+        <ViewReceiptDialog
+          open={showReceiptDetailDialog}
+          onOpenChange={setShowReceiptDetailDialog}
+          receipt={selectedReceiptDetail}
+          contentClassName="z-[10005]"
+          overlayClassName="z-[10004]"
         />
       )}
 
@@ -1652,6 +1860,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
           currentStatus={selectedWarehouseReceipt.status}
           statuses={warehouseReceiptStatuses}
           onSubmit={handleUpdateWarehouseReceiptStatus}
+          contentClassName="z-[10003]"
+          overlayClassName="z-[10002]"
         />
       )}
 
@@ -1675,6 +1885,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
         onConfirm={handleConfirmCreateWarehouseReceipt}
         loading={warehouseLoading}
         invoice={invoice}
+        contentClassName="z-[100010]"
+        overlayClassName="z-[100009]"
       />
 
       {/* Create Receipt Dialog */}
@@ -1688,7 +1900,66 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
           fetchData()
           setShowCreateReceiptDialog(false)
         }}
+        contentClassName="z-[100010]"
+        overlayClassName="z-[100009]"
       />
+
+
+      {/* Print Invoice View */}
+      {printInvoice && setting && (
+        <PrintInvoiceView invoice={printInvoice} setting={setting} />
+      )}
+
+      {/* Agreement Preview Dialog */}
+      {agreementData && (
+        <AgreementPreviewDialog
+          open={showAgreementPreview}
+          onOpenChange={(open) => {
+            if (!open) setShowAgreementPreview(false)
+          }}
+          initialData={agreementData}
+          onConfirm={async (finalData) => {
+            try {
+              setAgreementExporting(true)
+              await exportAgreementPdf(finalData, agreementFileName)
+              toast.success('Đã in thỏa thuận mua bán thành công')
+              setShowAgreementPreview(false)
+            } catch (error) {
+              console.error('Export agreement error:', error)
+              toast.error('In thỏa thuận mua bán thất bại')
+            } finally {
+              setAgreementExporting(false)
+            }
+          }}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
+
+      {/* Create Sales Contract Dialog */}
+      {showCreateSalesContractDialog && (
+        <CreateSalesContractDialog
+          invoiceIds={[invoice?.id]}
+          open={showCreateSalesContractDialog}
+          onOpenChange={setShowCreateSalesContractDialog}
+          showTrigger={false}
+          table={{ resetRowSelection: () => { } }}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
+
+      {/* View Product Dialog */}
+      {selectedProductId && (
+        <ViewProductDialog
+          open={showViewProductDialog}
+          onOpenChange={setShowViewProductDialog}
+          productId={selectedProductId}
+          showTrigger={false}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
     </>
   )
 }

@@ -9,6 +9,7 @@ import { useState } from 'react'
 import Can from '@/utils/can'
 import ViewSalesContractDialog from './ViewSalesContractDialog'
 import { Badge } from '@/components/ui/badge'
+import { CreditCard, Phone } from 'lucide-react'
 
 export const columns = [
   {
@@ -46,7 +47,7 @@ export const columns = [
 
       return (
         <>
-          <Can permission={'VIEW_SALES_CONTRACT'}>
+          <Can permission={'GET_SALES_CONTRACT'}>
             {showViewDialog && (
               <ViewSalesContractDialog
                 open={showViewDialog}
@@ -58,7 +59,7 @@ export const columns = [
           </Can>
 
           <span
-            className="cursor-pointer hover:text-primary"
+            className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
             onClick={() => setShowViewDialog(true)}
           >
             {row.original.code}
@@ -78,12 +79,14 @@ export const columns = [
           <span className="font-semibold">{row.original.buyerName}</span>
 
           {row.original.buyerIdentityNo && (
-            <span className="text-xs text-muted-foreground">
-              CCCD: {row.original.buyerIdentityNo}
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <CreditCard className="h-3 w-3" />
+              {row.original.buyerIdentityNo}
             </span>
           )}
 
-          <span className="text-primary underline hover:text-secondary-foreground">
+          <span className="text-primary underline hover:text-secondary-foreground flex items-center gap-1">
+            <Phone className="h-3 w-3" />
             <a href={`tel:${row.original.buyerPhone}`}>{row.original.buyerPhone}</a>
           </span>
         </div>
@@ -172,8 +175,7 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Trạng thái xuất" />
     ),
     cell: ({ row }) => {
-      const firstInvoice = row.original.invoices?.[0]
-      const warehouseReceipt = firstInvoice?.warehouseReceipts?.[0]
+      const warehouseReceipt = row.original.warehouseReceipts?.[0] || row.original.invoices?.[0]?.warehouseReceipts?.[0]
 
       return (
         <Badge

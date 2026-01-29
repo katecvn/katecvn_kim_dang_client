@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner'
 import { AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { cn } from '@/lib/utils'
 
 const UpdateInvoiceStatusDialog = ({
   open,
@@ -27,6 +28,8 @@ const UpdateInvoiceStatusDialog = ({
   paymentStatus,
   statuses = [],
   onSubmit,
+  className,
+  overlayClassName,
 }) => {
   const current = useMemo(
     () => statuses.find((s) => s.value === currentStatus),
@@ -66,10 +69,37 @@ const UpdateInvoiceStatusDialog = ({
   }
 
   const isPaid = paymentStatus === 'paid'
+  const isLocked = ['delivered', 'rejected'].includes(currentStatus)
+  const isActionDisabled = isPaid || isLocked
+
+  const filteredStatuses = useMemo(() => {
+    const permissions = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
+    const canReject = permissions.includes('REJECT_INVOICE')
+    const canRevert = permissions.includes('REVERT_INVOICE')
+
+    return statuses.filter((s) => {
+      // Hide 'completed' status as it is automated
+      if (s.value === 'delivered') return false
+
+      // Permission check for 'rejected'
+      if (s.value === 'rejected') {
+        if (!canReject) return false
+        // Only allow switching to 'rejected' if current status is 'pending'
+        if (currentStatus !== 'pending') return false
+      }
+
+      // Permission check for 'pending' (revert)
+      if (s.value === 'pending') {
+        if (!canRevert) return false
+      }
+
+      return true
+    })
+  }, [statuses, currentStatus])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[460px]">
+      <DialogContent className={cn('sm:max-w-[460px]', className)} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Cập nhật trạng thái hóa đơn</DialogTitle>
           <DialogDescription>
@@ -84,13 +114,15 @@ const UpdateInvoiceStatusDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        {isPaid ? (
+        {isActionDisabled ? (
           <div className="py-4">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Không thể thay đổi trạng thái</AlertTitle>
               <AlertDescription>
-                Hóa đơn này đã được thanh toán hoàn tất (Paid). Bạn không thể thay đổi trạng thái của hóa đơn này.
+                {isPaid
+                  ? 'Hóa đơn này đã được thanh toán hoàn tất (Paid). Bạn không thể thay đổi trạng thái của hóa đơn này.'
+                  : `Hóa đơn đang ở trạng thái "${current?.label || currentStatus}". Bạn không thể thay đổi trạng thái này.`}
               </AlertDescription>
             </Alert>
           </div>
@@ -115,8 +147,8 @@ const UpdateInvoiceStatusDialog = ({
                 </SelectValue>
               </SelectTrigger>
 
-              <SelectContent position="popper">
-                {statuses.map((s) => (
+              <SelectContent position="popper" className="z-[10004]">
+                {filteredStatuses.map((s) => (
                   <SelectItem
                     key={s.value}
                     value={s.value}
@@ -136,7 +168,6 @@ const UpdateInvoiceStatusDialog = ({
           </div>
         )}
 
-
         <DialogFooter className="gap-2">
           <Button
             type="button"
@@ -144,14 +175,13 @@ const UpdateInvoiceStatusDialog = ({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            {isPaid ? 'Đóng' : 'Hủy'}
+            {isActionDisabled ? 'Đóng' : 'Hủy'}
           </Button>
-          {!isPaid && (
+          {!isActionDisabled && (
             <Button type="button" onClick={handleSave} disabled={loading}>
               {loading ? 'Đang cập nhật...' : 'Cập nhật'}
             </Button>
           )}
-
         </DialogFooter>
       </DialogContent>
     </Dialog>

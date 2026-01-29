@@ -8,7 +8,6 @@ import { columns } from './components/Column'
 const ReceiptPage = () => {
   const dispatch = useDispatch()
   const receipts = useSelector((state) => state.receipt.receipts)
-  console.log(receipts)
   const loading = useSelector((state) => state.receipt.loading)
 
   useEffect(() => {

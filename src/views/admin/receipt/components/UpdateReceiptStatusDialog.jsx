@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 const UpdateReceiptStatusDialog = ({
   open,
@@ -24,13 +25,21 @@ const UpdateReceiptStatusDialog = ({
   currentStatus,
   statuses = [],
   onSubmit, // Handler function to call on save
+  contentClassName,
+  overlayClassName,
 }) => {
+  // Normalize status to handle both single and double 'l' from backend/frontend mismatch
+  const normalizedStatus = useMemo(() => {
+    if (currentStatus === 'cancelled') return 'canceled'
+    return currentStatus
+  }, [currentStatus])
+
   const current = useMemo(
-    () => statuses.find((s) => s.value === currentStatus),
-    [statuses, currentStatus],
+    () => statuses.find((s) => s.value === normalizedStatus),
+    [statuses, normalizedStatus],
   )
 
-  const [status, setStatus] = useState(currentStatus || '')
+  const [status, setStatus] = useState(normalizedStatus || '')
   const [loading, setLoading] = useState(false)
 
   // Explicit color mapping since data might not have it
@@ -38,15 +47,16 @@ const UpdateReceiptStatusDialog = ({
     switch (statusValue) {
       case 'draft': return 'text-gray-600'
       case 'completed': return 'text-green-600'
-      case 'canceled': return 'text-red-600'
+      case 'canceled':
+      case 'cancelled': return 'text-red-600'
       default: return ''
     }
   }
 
   useEffect(() => {
     if (!open) return
-    setStatus(currentStatus || '')
-  }, [open, currentStatus])
+    setStatus(normalizedStatus || '')
+  }, [open, normalizedStatus])
 
   const selectedStatusObj = useMemo(
     () => statuses.find((s) => s.value === status),
@@ -78,9 +88,21 @@ const UpdateReceiptStatusDialog = ({
     }
   }
 
+  const filteredStatuses = useMemo(() => {
+    if (normalizedStatus === 'canceled' || normalizedStatus === 'cancelled') {
+      return statuses.filter(
+        (s) => s.value === 'canceled' || s.value === 'cancelled',
+      )
+    }
+    if (normalizedStatus === 'completed') {
+      return statuses.filter((s) => s.value !== 'draft')
+    }
+    return statuses
+  }, [statuses, normalizedStatus])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[460px]">
+      <DialogContent className={cn("sm:max-w-[460px]", contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Cập nhật trạng thái phiếu thu</DialogTitle>
           <DialogDescription>
@@ -114,8 +136,8 @@ const UpdateReceiptStatusDialog = ({
               </SelectValue>
             </SelectTrigger>
 
-            <SelectContent position="popper">
-              {statuses.map((s) => (
+            <SelectContent position="popper" className="z-[10010]">
+              {filteredStatuses.map((s) => (
                 <SelectItem
                   key={s.value}
                   value={s.value}

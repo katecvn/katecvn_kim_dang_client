@@ -24,10 +24,21 @@ const SalesContractPage = () => {
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
   })
 
+  const pagination = useSelector((state) => state.salesContract.pagination)
+
+  // Local state likely not needed if using Redux pagination as truth, 
+  // but usually we keep local control for immediate UI feedback or just use the filters.
+  // Actually, let's keep it simple: filters control the API params.
+
+  const [pageParams, setPageParams] = useState({
+    page: 1,
+    limit: 20
+  })
+
   useEffect(() => {
     document.title = 'Danh sách hợp đồng bán hàng'
-    dispatch(getSalesContracts(filters))
-  }, [dispatch, filters])
+    dispatch(getSalesContracts({ ...filters, ...pageParams }))
+  }, [dispatch, filters, pageParams])
 
   return (
     <Layout>
@@ -54,6 +65,8 @@ const SalesContractPage = () => {
                     ? addHours(endOfDay(range.to), 0)
                     : addHours(endOfDay(endOfMonth(current)), 0),
                 }))
+                // Reset to page 1 on filter change
+                setPageParams(prev => ({ ...prev, page: 1 }))
               }}
             />
           </div>
@@ -64,6 +77,9 @@ const SalesContractPage = () => {
               data={contracts}
               columns={columns}
               loading={loading}
+              pagination={pagination}
+              onPageChange={(page) => setPageParams(prev => ({ ...prev, page }))}
+              onPageSizeChange={(limit) => setPageParams(prev => ({ ...prev, limit, page: 1 }))}
             />
           )}
         </div>

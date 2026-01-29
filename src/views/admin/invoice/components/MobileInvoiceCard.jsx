@@ -106,25 +106,36 @@ const MobileInvoiceCard = ({
     )
   }
 
-  const getDebtStatus = (row) => {
-    const receipts = row?.receipts || []
-    const debt = receipts.length > 0 ? receipts[0]?.debt : null
+  const getDebtStatus = (invoice) => {
+    const paymentStatus = invoice?.paymentStatus
+    const totalAmount = parseFloat(invoice?.totalAmount || 0)
+    const paidAmount = parseFloat(invoice?.paidAmount || 0)
+    const remainingAmount = totalAmount - paidAmount
 
-    if (!debt) {
-      return <span className="text-xs text-muted-foreground">Chưa có phiếu thu</span>
-    }
-
-    if (debt.status === 'closed') {
+    // If fully paid
+    if (paymentStatus === 'paid' || remainingAmount <= 0) {
       return <span className="text-xs text-green-500 font-medium">✓ Thanh toán toàn bộ</span>
     }
 
-    const remainingAmount = moneyFormat(debt.remainingAmount)
-
-    if (debt.paidAmount === 0) {
-      return <span className="text-xs text-red-500 font-medium">Còn nợ: {remainingAmount}</span>
+    // If partially paid
+    if (paidAmount > 0 && remainingAmount > 0) {
+      return (
+        <span className="text-xs text-yellow-600 font-medium">
+          Còn nợ: {moneyFormat(remainingAmount)}
+        </span>
+      )
     }
 
-    return <span className="text-xs text-yellow-600 font-medium">Còn nợ: {remainingAmount}</span>
+    // If not paid at all
+    if (paidAmount === 0) {
+      return (
+        <span className="text-xs text-red-500 font-medium">
+          Còn nợ: {moneyFormat(remainingAmount)}
+        </span>
+      )
+    }
+
+    return <span className="text-xs text-muted-foreground">Chưa có phiếu thu</span>
   }
 
   const isDuplicate = invoice?.creditNotes?.length > 0
@@ -377,7 +388,12 @@ const MobileInvoiceCard = ({
 
           {/* Code & Date */}
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sm truncate">{code}</div>
+            <div
+              className="font-semibold text-sm truncate text-primary cursor-pointer hover:underline"
+              onClick={() => setShowViewDialog(true)}
+            >
+              {code}
+            </div>
             <div className="text-xs text-muted-foreground">{dateFormat(createdAt)}</div>
           </div>
 

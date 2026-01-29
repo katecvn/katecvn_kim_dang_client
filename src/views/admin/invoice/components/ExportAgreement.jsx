@@ -163,7 +163,7 @@ export default function ExportSaleAgreement({ data = {} }) {
             <div style={{ marginBottom: '12px' }}>
               <span style={{ fontWeight: '600' }}>Tên khách hàng:</span>{' '}
               <span style={{
-                fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                fontFamily: 'Times New Roman, Times, serif',
                 fontSize: '18px',
                 color: '#1d4ed8'
               }}>
@@ -173,7 +173,7 @@ export default function ExportSaleAgreement({ data = {} }) {
                 <>
                   {' - '}
                   <span style={{
-                    fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                    fontFamily: 'Times New Roman, Times, serif',
                     fontSize: '18px',
                     color: '#1d4ed8'
                   }}>
@@ -233,14 +233,14 @@ export default function ExportSaleAgreement({ data = {} }) {
                         padding: '8px'
                       }}>
                         <div style={{
-                          fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                          fontFamily: 'Times New Roman, Times, serif',
                           color: '#1d4ed8'
                         }}>
                           {safe(item.name)}
                         </div>
                         {item.purity && (
                           <div style={{
-                            fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                            fontFamily: 'Times New Roman, Times, serif',
                             color: '#1d4ed8'
                           }}>
                             {item.purity}
@@ -249,7 +249,7 @@ export default function ExportSaleAgreement({ data = {} }) {
                         )}
                         {item.description && (
                           <div style={{
-                            fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                            fontFamily: 'Times New Roman, Times, serif',
                             color: '#1d4ed8'
                           }}>
                             {safe(item.description)}
@@ -257,7 +257,7 @@ export default function ExportSaleAgreement({ data = {} }) {
                         )}
                       </td>
                       <td style={{
-                        fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                        fontFamily: 'Times New Roman, Times, serif',
                         border: '1px solid black',
                         padding: '8px',
                         textAlign: 'center',
@@ -266,7 +266,7 @@ export default function ExportSaleAgreement({ data = {} }) {
                         {safe(item.weightDetail)}
                       </td>
                       <td style={{
-                        fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                        fontFamily: 'Times New Roman, Times, serif',
                         border: '1px solid black',
                         padding: '8px',
                         textAlign: 'right',
@@ -288,7 +288,7 @@ export default function ExportSaleAgreement({ data = {} }) {
                       TỔNG CỘNG:
                     </td>
                     <td style={{
-                      fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                      fontFamily: 'Times New Roman, Times, serif',
                       border: '1px solid black',
                       padding: '8px',
                       textAlign: 'right',
@@ -317,7 +317,7 @@ export default function ExportSaleAgreement({ data = {} }) {
                 </div>
                 {noteContent.split('\n').map((line, idx) => (
                   <div key={idx} style={{
-                    fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                    fontFamily: 'Times New Roman, Times, serif',
                     borderBottom: '1px dotted #9ca3af',
                     paddingBottom: '4px',
                     fontSize: '14px',
@@ -351,7 +351,7 @@ export default function ExportSaleAgreement({ data = {} }) {
 
                 {/* Tên khách hàng */}
                 <div style={{
-                  fontFamily: 'Segoe Script, Comic Sans MS, cursive',
+                  fontFamily: 'Times New Roman, Times, serif',
                   color: '#1d4ed8'
                 }}>
                   {safe(customer.name)}

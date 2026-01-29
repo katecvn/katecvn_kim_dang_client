@@ -8,18 +8,22 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuShortcut,
 } from '@/components/ui/dropdown-menu'
 import {
-  deleteWarehouseReceipt,
   postWarehouseReceipt,
 } from '@/stores/WarehouseReceiptSlice'
 import ViewWarehouseReceiptDialog from './ViewWarehouseReceiptDialog'
-import { IconCheck, IconTrash } from '@tabler/icons-react'
+import { IconCheck, IconTrash, IconCircleX } from '@tabler/icons-react'
+import { DeleteWarehouseReceiptDialog } from './DeleteWarehouseReceiptDialog'
+import { CancelWarehouseReceiptDialog } from './CancelWarehouseReceiptDialog'
 
 export function DataTableRowActions({ row }) {
   const dispatch = useDispatch()
   const receipt = row.original
   const [showViewDialog, setShowViewDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
 
   const handlePost = async () => {
     if (receipt.status === 'posted') {
@@ -69,20 +73,13 @@ export function DataTableRowActions({ row }) {
       }
     }
 
+    // Using window.confirm for now as I haven't created a confirm dialog for Post, but could be added later.
+    // Ideally we should have a ConfirmPostDialog too, but sticking to the requested scope (delete & cancel).
     const confirm = window.confirm(
       'Bạn có chắc chắn muốn duyệt phiếu kho này không? Sau khi duyệt sẽ không thể chỉnh sửa.'
     )
     if (confirm) {
       await dispatch(postWarehouseReceipt(receipt.id))
-    }
-  }
-
-  const handleDelete = async () => {
-    const confirm = window.confirm(
-      'Bạn có chắc chắn muốn xóa phiếu kho này không?',
-    )
-    if (confirm) {
-      await dispatch(deleteWarehouseReceipt(receipt.id))
     }
   }
 
@@ -95,39 +92,63 @@ export function DataTableRowActions({ row }) {
         showTrigger={false}
       />
 
+      {showDeleteDialog && (
+        <DeleteWarehouseReceiptDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          receipt={receipt}
+          showTrigger={false}
+          contentClassName="z-[10002]"
+          overlayClassName="z-[10001]"
+        />
+      )}
+
+      {showCancelDialog && (
+        <CancelWarehouseReceiptDialog
+          open={showCancelDialog}
+          onOpenChange={setShowCancelDialog}
+          receipt={receipt}
+          showTrigger={false}
+        />
+      )}
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+            className="flex size-8 p-0 data-[state=open]:bg-muted"
           >
             <DotsHorizontalIcon className="h-4 w-4" />
             <span className="sr-only">Mở menu</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem onClick={() => setShowViewDialog(true)}>
-            Xem chi tiết
-          </DropdownMenuItem>
-
           {receipt.status === 'draft' && (
             <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handlePost}>
-                <IconCheck className="mr-2 h-4 w-4" />
-                Duyệt phiếu
+              <DropdownMenuItem
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                Xóa
+                <DropdownMenuShortcut>
+                  <IconTrash className="h-4 w-4" />
+                </DropdownMenuShortcut>
               </DropdownMenuItem>
             </>
           )}
 
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={handleDelete}
-            className="text-destructive focus:text-destructive"
-          >
-            <IconTrash className="mr-2 h-4 w-4" />
-            Xóa
-          </DropdownMenuItem>
+          {receipt.status === 'posted' && (
+            <DropdownMenuItem
+              onClick={() => setShowCancelDialog(true)}
+              className="text-destructive focus:text-destructive"
+            >
+              Hủy
+              <DropdownMenuShortcut>
+                <IconCircleX className="h-4 w-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
+
         </DropdownMenuContent>
       </DropdownMenu>
     </>

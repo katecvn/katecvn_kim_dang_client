@@ -27,13 +27,13 @@ const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 const DialogContent = React.forwardRef(
-  ({ className, children, isViewInvoiceDialog, ...props }, ref) => {
+  ({ className, children, isViewInvoiceDialog, overlayClassName, ...props }, ref) => {
     // Detect if this is a nested dialog (not ViewInvoiceDialog)
     const isNestedDialog = !isViewInvoiceDialog
-    
+
     return (
       <DialogPortal>
-        <DialogOverlay />
+        <DialogOverlay className={cn(isNestedDialog && 'z-[9999]', overlayClassName)} />
         <DialogPrimitive.Content
           ref={ref}
           className={cn(

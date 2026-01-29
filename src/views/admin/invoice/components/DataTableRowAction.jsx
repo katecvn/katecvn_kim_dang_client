@@ -17,10 +17,12 @@ import {
   IconPackageExport,
   IconCheck,
   IconPackage,
+  IconCircleX,
 } from '@tabler/icons-react'
 import Can from '@/utils/can'
 import { useState } from 'react'
 import DeleteInvoiceDialog from './DeleteInvoiceDialog'
+import RejectInvoiceDialog from './RejectInvoiceDialog'
 import UpdateInvoiceDialog from '@/views/admin/invoice/components/UpdateInvoiceDialog.jsx'
 import CreateCreditNoteDialog from './CreateCreditNoteDialog'
 import ViewInvoiceDialog from './ViewInvoiceDialog'
@@ -37,7 +39,7 @@ import {
   generateWarehouseReceiptFromInvoice,
   postWarehouseReceipt,
 } from '@/stores/WarehouseReceiptSlice'
-import { getInvoices } from '@/stores/InvoiceSlice'
+import { getInvoices, updateInvoiceStatus } from '@/stores/InvoiceSlice'
 import {
   getEndOfCurrentMonth,
   getStartOfCurrentMonth,
@@ -59,6 +61,7 @@ const DataTableRowActions = ({ row }) => {
   const loading = useSelector((state) => state.setting.loading)
   const setting = useSelector((state) => state.setting.setting)
   const [showDeleteInvoiceDialog, setShowDeleteInvoiceDialog] = useState(false)
+  const [showRejectInvoiceDialog, setShowRejectInvoiceDialog] = useState(false)
   const [showUpdatePendingInvoiceDialog, setShowUpdatePendingInvoiceDialog] =
     useState(false)
   const [showCreateCreditNoteDialog, setShowCreateCreditNoteDialog] =
@@ -304,6 +307,14 @@ const DataTableRowActions = ({ row }) => {
           showTrigger={false}
         />
       )}
+      {showRejectInvoiceDialog && (
+        <RejectInvoiceDialog
+          open={showRejectInvoiceDialog}
+          onOpenChange={setShowRejectInvoiceDialog}
+          invoice={row.original}
+          showTrigger={false}
+        />
+      )}
       {showViewInvoiceDialog && (
         <ViewInvoiceDialog
           open={showViewInvoiceDialog}
@@ -357,6 +368,7 @@ const DataTableRowActions = ({ row }) => {
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem
             onClick={() => setShowViewInvoiceDialog(true)}
+            className="text-slate-600"
           >
             Xem
             <DropdownMenuShortcut>
@@ -378,10 +390,24 @@ const DataTableRowActions = ({ row }) => {
             </Can>
           )}
 
+          {row?.original?.status === 'pending' && (
+            <Can permission="REJECT_INVOICE">
+              <DropdownMenuItem
+                onClick={() => setShowRejectInvoiceDialog(true)}
+                className="text-red-600"
+              >
+                Hủy
+                <DropdownMenuShortcut>
+                  <IconCircleX className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
+
           <DropdownMenuSeparator />
 
           {/* In Hóa Đơn */}
-          <DropdownMenuItem onClick={handlePrintInvoice}>
+          <DropdownMenuItem onClick={handlePrintInvoice} className="text-purple-600">
             In Hóa Đơn
             <DropdownMenuShortcut>
               <IconFileTypePdf className="h-4 w-4" />
@@ -389,7 +415,7 @@ const DataTableRowActions = ({ row }) => {
           </DropdownMenuItem>
 
           {/* In Thỏa Thuận Mua Bán */}
-          <DropdownMenuItem onClick={handlePrintAgreement}>
+          <DropdownMenuItem onClick={handlePrintAgreement} className="text-purple-600">
             In Thỏa Thuận Mua Bán
             <DropdownMenuShortcut>
               <IconFileTypePdf className="h-4 w-4" />
@@ -397,7 +423,7 @@ const DataTableRowActions = ({ row }) => {
           </DropdownMenuItem>
 
           {/* In Hợp Đồng Bán Hàng */}
-          <DropdownMenuItem onClick={handlePrintInstallment}>
+          <DropdownMenuItem onClick={handlePrintInstallment} className="text-purple-600">
             In Hợp Đồng Bán Hàng
             <DropdownMenuShortcut>
               <IconFileTypePdf className="h-4 w-4" />
@@ -410,6 +436,7 @@ const DataTableRowActions = ({ row }) => {
             <Can permission="CREATE_INVOICE">
               <DropdownMenuItem
                 onClick={() => setShowCreateCreditNoteDialog(true)}
+                className="text-indigo-600"
               >
                 HĐ điều chỉnh
                 <DropdownMenuShortcut>
@@ -420,7 +447,7 @@ const DataTableRowActions = ({ row }) => {
           )}
           {/* Xem trước HĐĐT */}
           <Can permission="PREVIEW_SINVOICE_HIDE">
-            <DropdownMenuItem onClick={handleDownloadPreviewSInvoice}>
+            <DropdownMenuItem onClick={handleDownloadPreviewSInvoice} className="text-sky-600">
               Xem trước HĐĐT
               <DropdownMenuShortcut>
                 <IconFileTypePdf className="h-4 w-4" />
@@ -430,7 +457,7 @@ const DataTableRowActions = ({ row }) => {
 
           {/* Phát hành HĐĐT */}
           <Can permission="ISSUE_SINVOICE_HIDE">
-            <DropdownMenuItem onClick={handleOpenPublishEInvoice}>
+            <DropdownMenuItem onClick={handleOpenPublishEInvoice} className="text-cyan-600">
               Phát hành HĐĐT
               <DropdownMenuShortcut>
                 <IconFileTypePdf className="h-4 w-4" />
@@ -445,6 +472,7 @@ const DataTableRowActions = ({ row }) => {
                 onClick={() => {
                   window.open(`/sales-contracts?view=${invoice.salesContractId}`, '_blank')
                 }}
+                className="text-violet-600"
               >
                 In hợp đồng
                 <DropdownMenuShortcut>
@@ -461,7 +489,7 @@ const DataTableRowActions = ({ row }) => {
           {/* Create Receipt */}
           {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && (
             <Can permission="CREATE_RECEIPT">
-              <DropdownMenuItem onClick={handleCreateReceipt}>
+              <DropdownMenuItem onClick={handleCreateReceipt} className="text-emerald-600">
                 Tạo Phiếu Thu
                 <DropdownMenuShortcut>
                   <IconPlus className="h-4 w-4" />
@@ -471,16 +499,16 @@ const DataTableRowActions = ({ row }) => {
           )}
 
           {/* Create Sales Contract */}
-          {invoice?.status === 'accepted' && !invoice?.salesContract && (
+          {/* {invoice?.status === 'accepted' && !invoice?.salesContract && (
             <Can permission="CREATE_SALES_CONTRACT">
-              <DropdownMenuItem onClick={handleCreateSalesContract}>
+              <DropdownMenuItem onClick={handleCreateSalesContract} className="text-indigo-600">
                 Tạo Hợp Đồng
                 <DropdownMenuShortcut>
                   <IconPlus className="h-4 w-4" />
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
             </Can>
-          )}
+          )} */}
 
           {/* ===== WAREHOUSE RECEIPT ACTIONS ===== */}
           {/* Tạo Phiếu Xuất Kho - Chỉ hiển thị khi status = accepted và chưa có phiếu kho */}
@@ -489,7 +517,7 @@ const DataTableRowActions = ({ row }) => {
               <DropdownMenuItem
                 onClick={handleCreateWarehouseReceipt}
                 disabled={warehouseLoading}
-                className="text-blue-600"
+                className="text-orange-600"
               >
                 Tạo Phiếu Xuất Kho
                 <DropdownMenuShortcut>
@@ -505,7 +533,7 @@ const DataTableRowActions = ({ row }) => {
               <DropdownMenuItem
                 onClick={handlePostWarehouseReceipt}
                 disabled={warehouseLoading}
-                className="text-green-600"
+                className="text-orange-600"
               >
                 Ghi Sổ Kho
                 <DropdownMenuShortcut>
@@ -523,6 +551,7 @@ const DataTableRowActions = ({ row }) => {
                 // TODO: Navigate to warehouse receipt detail page when available
                 // window.open(`/warehouse-receipts?view=${invoice.warehouseReceiptId}`, '_blank')
               }}
+              className="text-orange-600"
             >
               Xem Phiếu Kho
               <DropdownMenuShortcut>

@@ -25,6 +25,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { InfoCircledIcon } from '@radix-ui/react-icons'
+import { cn } from '@/lib/utils'
 
 const ConfirmWarehouseReceiptDialog = ({
   open,
@@ -32,21 +33,34 @@ const ConfirmWarehouseReceiptDialog = ({
   invoice,
   onConfirm,
   loading = false,
+  type = 'retail', // 'retail' | 'contract'
+  contentClassName,
+  overlayClassName,
 }) => {
   const [selectedItems, setSelectedItems] = useState({})
+
+  // Helper to check if item is selectable
+  const isItemSelectable = (item) => {
+    if (type === 'contract') {
+      // In contract mode, we WANT to select contract items
+      // We essentially select EVERYTHING in the invoice because the invoice is linked to the contract
+      return true
+    }
+    // In retail mode, only select items NOT in a contract
+    return !item.salesContractItemId
+  }
 
   useEffect(() => {
     if (invoice?.invoiceItems) {
       const initialSelection = {}
       invoice.invoiceItems.forEach((item) => {
-        // Only select items that are NOT in a sales contract
-        if (!item.salesContractItemId) {
+        if (isItemSelectable(item)) {
           initialSelection[item.id] = true
         }
       })
       setSelectedItems(initialSelection)
     }
-  }, [invoice])
+  }, [invoice, type])
 
   if (!invoice) return null
 
@@ -68,30 +82,24 @@ const ConfirmWarehouseReceiptDialog = ({
   const toggleAll = (checked) => {
     const newSelection = {}
     invoice.invoiceItems.forEach((item) => {
-      if (!item.salesContractItemId) {
+      if (isItemSelectable(item)) {
         newSelection[item.id] = checked
       }
     })
     setSelectedItems(newSelection)
   }
 
-  const validItemsCount = invoice.invoiceItems?.filter(
-    (item) => !item.salesContractItemId,
-  ).length
+  const validItemsCount = invoice.invoiceItems?.filter(isItemSelectable).length
 
   const selectedCount = Object.values(selectedItems).filter(Boolean).length
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px]">
+      <DialogContent className={cn("max-w-3xl", contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <IconPackageExport className="h-5 w-5 text-blue-600" />
-            Xác nhận tạo phiếu xuất kho
-          </DialogTitle>
+          <DialogTitle>Xác nhận tạo phiếu xuất kho</DialogTitle>
           <DialogDescription>
-            Chọn sản phẩm để tạo phiếu xuất kho từ hóa đơn{' '}
-            <span className="font-semibold text-primary">{invoice.code}</span>
+            Chọn sản phẩm cần xuất kho từ hóa đơn này
           </DialogDescription>
         </DialogHeader>
 
@@ -141,25 +149,35 @@ const ConfirmWarehouseReceiptDialog = ({
                 </TableHeader>
                 <TableBody>
                   {invoice.invoiceItems?.map((item, index) => {
+                    const selectable = isItemSelectable(item)
                     const isContractItem = !!item.salesContractItemId
+
+                    // If not selectable (Retail mode + Contract Item), show disabled/tooltip
+                    // If selectable, show checkbox and normal status
+
                     return (
                       <TableRow
                         key={item.id}
-                        className={isContractItem ? 'bg-muted/30' : ''}
+                        className={!selectable ? 'bg-muted/30' : ''}
                       >
                         <TableCell>
                           <Checkbox
                             checked={!!selectedItems[item.id]}
                             onCheckedChange={() => toggleItem(item.id)}
-                            disabled={isContractItem}
+                            disabled={!selectable}
                           />
                         </TableCell>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>
                           <div className="font-medium">{item.productName}</div>
-                          {isContractItem && (
+                          {isContractItem && type === 'retail' && (
                             <span className="text-xs text-orange-600">
                               (Thuộc hợp đồng)
+                            </span>
+                          )}
+                          {isContractItem && type === 'contract' && (
+                            <span className="text-xs text-blue-600">
+                              (Theo hợp đồng)
                             </span>
                           )}
                         </TableCell>
@@ -168,7 +186,7 @@ const ConfirmWarehouseReceiptDialog = ({
                         </TableCell>
                         <TableCell>{item.unitName || 'N/A'}</TableCell>
                         <TableCell>
-                          {isContractItem ? (
+                          {!selectable ? (
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger>

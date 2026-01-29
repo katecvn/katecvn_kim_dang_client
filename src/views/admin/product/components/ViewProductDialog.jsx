@@ -43,10 +43,11 @@ import { moneyFormat } from '@/utils/money-format'
 import { dateFormat } from '@/utils/date-format'
 import { getPublicUrl } from '@/utils/file'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 import ProductSaleHistoryTab from './ProductSaleHistoryTab'
 
-const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
+const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, overlayClassName, ...props }) => {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(false)
 
@@ -172,7 +173,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, ...props }) => {
         </DialogTrigger>
       )}
 
-      <DialogContent className="max-w-7xl">
+      <DialogContent className={cn("max-w-7xl", contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>
             Chi tiết sản phẩm: {loading ? 'Đang tải...' : product?.name || '—'}

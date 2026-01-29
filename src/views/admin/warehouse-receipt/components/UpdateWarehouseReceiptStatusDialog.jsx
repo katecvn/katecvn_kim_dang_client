@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { IconCheck, IconPencil } from '@tabler/icons-react'
+import { cn } from '@/lib/utils'
 
 const UpdateWarehouseReceiptStatusDialog = ({
   open,
@@ -26,6 +27,8 @@ const UpdateWarehouseReceiptStatusDialog = ({
   currentStatus,
   statuses = [],
   onSubmit, // Handler function to call on save
+  contentClassName,
+  overlayClassName,
 }) => {
   const current = useMemo(
     () => statuses.find((s) => s.value === currentStatus),
@@ -38,7 +41,9 @@ const UpdateWarehouseReceiptStatusDialog = ({
   const getColor = (statusValue) => {
     switch (statusValue) {
       case 'draft': return 'text-yellow-600'
+      case 'confirmed': return 'text-blue-600'
       case 'posted': return 'text-green-600'
+      case 'cancelled': return 'text-red-600'
       default: return 'text-gray-600'
     }
   }
@@ -77,7 +82,7 @@ const UpdateWarehouseReceiptStatusDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[460px]">
+      <DialogContent className={cn("sm:max-w-[460px]", contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Cập nhật trạng thái phiếu xuất kho</DialogTitle>
           <DialogDescription>
@@ -111,7 +116,7 @@ const UpdateWarehouseReceiptStatusDialog = ({
               </SelectValue>
             </SelectTrigger>
 
-            <SelectContent position="popper">
+            <SelectContent position="popper" className="z-[10010]">
               {statuses.map((s) => (
                 <SelectItem
                   key={s.value}

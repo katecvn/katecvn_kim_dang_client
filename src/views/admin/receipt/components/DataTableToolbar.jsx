@@ -38,6 +38,11 @@ const DataTableToolbar = ({ table }) => {
 
     const receipt = selectedRows[0].original
 
+    if (receipt.status !== 'draft') {
+      toast.warning('Chỉ có thể tạo mã QR cho phiếu thu nháp')
+      return
+    }
+
     try {
       setQrLoading(true)
       const qrData = await dispatch(getReceiptQRCode(receipt.id)).unwrap()
@@ -89,7 +94,7 @@ const DataTableToolbar = ({ table }) => {
         <Button
           size="sm"
           variant="outline"
-          disabled={selectedRows.length !== 1}
+          disabled={selectedRows.length !== 1 || selectedRows[0]?.original?.status !== 'draft'}
           onClick={handleGenerateQR}
           loading={qrLoading}
         >

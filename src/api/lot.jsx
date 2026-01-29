@@ -17,7 +17,7 @@ export const getAvailableLots = async (productId) => {
  * @returns {Promise} Updated detail with allocations
  */
 export const allocateLots = async (detailId, allocations) => {
-  const { data } = await api.put(
+  const { data } = await api.post(
     `/warehouse-receipts/detail/${detailId}/allocations`,
     { allocations }
   )

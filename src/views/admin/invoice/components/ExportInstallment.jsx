@@ -527,7 +527,7 @@ export default function InstallmentContract({ data = {} }) {
           <tr>
             <td style={{
               width: '50%',
-              textAlign: 'justify',
+              textAlign: 'center',
               verticalAlign: 'top',
               padding: '0 10px 0 0'
             }}>
@@ -540,7 +540,7 @@ export default function InstallmentContract({ data = {} }) {
             </td>
             <td style={{
               width: '50%',
-              textAlign: 'justify',
+              textAlign: 'center',
               verticalAlign: 'top',
               padding: '0 0 0 10px'
             }}>

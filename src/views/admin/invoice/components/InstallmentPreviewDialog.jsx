@@ -11,6 +11,7 @@ import { Button } from '@/components/custom/Button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import ExportInstallment from './ExportInstallment'
+import { cn } from '@/lib/utils'
 
 const safe = (v, fallback = '') => (v === 0 || v ? String(v) : fallback)
 
@@ -19,6 +20,8 @@ export default function InstallmentPreviewDialog({
   onOpenChange,
   initialData,
   onConfirm,
+  contentClassName,
+  overlayClassName,
 }) {
   const [formData, setFormData] = useState(initialData || {})
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -247,10 +250,13 @@ export default function InstallmentPreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         isViewInvoiceDialog={false}
-        className={isMobile
-          ? "max-w-full w-full h-screen inset-0 p-0 gap-0 flex flex-col top-0 left-0 right-0 m-0 rounded-none translate-x-0 translate-y-0 z-[10000]"
-          : "max-w-[80vw] gap-4"
-        }
+        className={cn(
+          isMobile
+            ? "max-w-full w-full h-screen inset-0 p-0 gap-0 flex flex-col top-0 left-0 right-0 m-0 rounded-none translate-x-0 translate-y-0 z-[10000]"
+            : "max-w-[80vw] gap-4",
+          contentClassName
+        )}
+        overlayClassName={overlayClassName}
       >
         {/* Mobile: Complete custom layout */}
         {isMobile ? (

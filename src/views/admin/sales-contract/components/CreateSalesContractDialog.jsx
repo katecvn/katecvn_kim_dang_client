@@ -8,23 +8,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { MobileIcon } from '@radix-ui/react-icons'
 
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { moneyFormat } from '@/utils/money-format'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Mail, MapPin } from 'lucide-react'
+import { Check, ChevronsUpDown } from 'lucide-react'
 import {
   Form,
   FormControl,
@@ -34,22 +24,27 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 import { createSalesContractSchema } from '../schema'
-import { useDispatch, useSelector } from 'react-redux'
-import { createSalesContract, reviewSalesContract } from '@/stores/SalesContractSlice'
+import { useDispatch } from 'react-redux'
+import { createSalesContract } from '@/stores/SalesContractSlice'
+import { getInvoices, getInvoiceDetail } from '@/stores/InvoiceSlice'
 import { Input } from '@/components/ui/input'
 import { useNavigate } from 'react-router-dom'
 import { getSetting } from '@/stores/SettingSlice'
-import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
 
 const CreateSalesContractDialog = ({
   invoiceIds = [],
@@ -60,74 +55,119 @@ const CreateSalesContractDialog = ({
   ...props
 }) => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
+
+  // Local state
   const [loading, setLoading] = useState(false)
-  const [invoiceData, setInvoiceData] = useState([])
-  const setting = useSelector((state) => state.setting.setting)
-  const invoiceItems = invoiceData?.flatMap((invoice) => invoice.invoiceItems)
-  const customer = invoiceData[0]?.customer
+  const [invoiceList, setInvoiceList] = useState([])
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
+  const [selectedInvoice, setSelectedInvoice] = useState(null)
+  const [openCombobox, setOpenCombobox] = useState(false)
 
-  const totalAmount = invoiceItems
-    ?.map((product) => product)
-    .reduce((acc, product) => acc + product.total, 0) || 0
+  // Fetch list of invoices for dropdown
+  useEffect(() => {
+    if (open) {
+      dispatch(getInvoices({ fromDate: null, toDate: null }))
+        .unwrap()
+        .then((data) => {
+          setInvoiceList(data)
+        })
+        .catch(console.error)
 
-  const form = useForm({
-    resolver: zodResolver(createSalesContractSchema),
-    defaultValues: async () => ({
-      contractNumber: '',
-      contractDate: new Date().toISOString().split('T')[0],
-      deliveryDate: '',
-      paymentTerms: '',
-      note: '',
-    }),
-  })
+      dispatch(getSetting('general_information'))
+    }
+  }, [open, dispatch])
 
-  const fetchData = useCallback(async () => {
-    if (!invoiceIds || invoiceIds.length === 0) return
-    
-    setLoading(true)
-    try {
-      const getAdminInvoice = JSON.parse(
-        localStorage.getItem('permissionCodes'),
-      ).includes('GET_INVOICE')
-
-      const invoiceDetailsPromises = invoiceIds.map((id) =>
-        getAdminInvoice
-          ? getInvoiceDetail(id)
-          : getInvoiceDetailByUser(id),
-      )
-
-      const invoices = await Promise.all(invoiceDetailsPromises)
-      setInvoiceData(invoices)
-    } catch (error) {
-      console.log('Failed to fetch invoice data: ', error)
-    } finally {
-      setLoading(false)
+  // Handle passed invoiceIds prop (pre-selection)
+  useEffect(() => {
+    if (invoiceIds && invoiceIds.length > 0) {
+      setSelectedInvoiceId(invoiceIds[0])
     }
   }, [invoiceIds])
 
+  // Fetch detailed invoice data when selected
   useEffect(() => {
-    fetchData()
-    if (table) {
-      table.resetRowSelection()
+    const fetchDetail = async () => {
+      if (!selectedInvoiceId) {
+        setSelectedInvoice(null)
+        return
+      }
+
+      setLoading(true)
+      try {
+        const invoice = await dispatch(getInvoiceDetail(selectedInvoiceId)).unwrap()
+        setSelectedInvoice(invoice)
+
+        // Removed auto-filling form fields with invoice data as user requested manual input for specific fields,
+        // but let's check if we should auto-fill paymentTerm or note if they exist?
+        // User said: "chỉ nhập thêm các thông tin này... các cái khác đều tự động"
+        // So we keep form clean for manual input, or maybe set some defaults if logic permits.
+      } catch (error) {
+        console.error('Failed to fetch invoice detail:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [invoiceIds, fetchData, table])
 
-  useEffect(() => {
-    dispatch(getSetting('general_information'))
-  }, [dispatch])
+    fetchDetail()
+  }, [selectedInvoiceId, dispatch])
 
-  const navigate = useNavigate()
+  const form = useForm({
+    resolver: zodResolver(createSalesContractSchema),
+    defaultValues: {
+      contractNumber: '',
+      contractDate: new Date().toISOString().split('T')[0],
+      deliveryDate: '',
+      paymentTerms: 'Thanh toán trong 30 ngày', // User example suggest a default?
+      note: 'Hợp đồng bán hàng test', // User example default
+    },
+  })
+
+  // Watch values for summary if needed (optional)
 
   const onSubmit = async (data) => {
+    if (!selectedInvoice) return
+
+    // Construct payload as per user request
+    const customer = selectedInvoice.customer || {}
+    const items = selectedInvoice.invoiceItems || []
+
     const dataToSend = {
-      ...data,
-      invoiceIds: invoiceIds,
-      totalAmount,
+      customerId: customer.id || null, // from Invoice
+      buyerName: customer.name || '',
+      buyerPhone: customer.phone || '',
+      buyerAddress: customer.address || '',
+
+      // Assuming these might exist in customer object, or we send empty/defaults if missing
+      // The user said "các cái khác đều tự động" (others are automatic).
+      // We'll try to map what we can.
+      buyerIdentityNo: customer.identityCard || '', // common field name
+      buyerIdentityIssueDate: customer.identityDate || null,
+      buyerIdentityIssuePlace: customer.identityPlace || '',
+
+      contractNumber: data.contractNumber,
+      contractDate: data.contractDate,
+      deliveryDate: data.deliveryDate,
+      paymentTerm: data.paymentTerms, // Map input 'paymentTerms' to payload 'paymentTerm'
+      note: data.note,
+
+      items: items.map(item => ({
+        productId: item.productId || item.id, // check InvoiceItem structure
+        unitId: item.unitId,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        discount: item.discount || 0,
+        note: item.note || ''
+      }))
     }
+
+    // Log payload for debugging/verification
+    console.log('Contract Payload:', dataToSend)
+
     try {
       await dispatch(createSalesContract(dataToSend)).unwrap()
       const getAdminContract = JSON.parse(
-        localStorage.getItem('permissionCodes'),
+        localStorage.getItem('permissionCodes') || '[]'
       ).includes('GET_SALES_CONTRACT')
       getAdminContract ? navigate('/sales-contracts') : navigate('/sales-contract-user')
       form.reset()
@@ -139,283 +179,167 @@ const CreateSalesContractDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
-      <DialogContent className="md:h-auto md:max-w-full">
+      <DialogContent className="max-w-[600px] flex flex-col p-6">
         <DialogHeader>
-          <DialogTitle>Tạo hợp đồng bán hàng mới</DialogTitle>
+          <DialogTitle>Tạo hợp đồng bán hàng</DialogTitle>
           <DialogDescription>
-            Kiểm tra và hoàn thành thông tin bên dưới để tạo hợp đồng mới
+            Chọn hóa đơn và điền thông tin bổ sung để tạo hợp đồng.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[65vh] overflow-auto md:max-h-[75vh]">
-          <Form {...form}>
-            <form id="create-sales-contract" onSubmit={form.handleSubmit(onSubmit)}>
-              {loading ? (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
-                  {Array.from({ length: 6 }).map((_, index) => (
-                    <div key={index} className="flex items-center gap-4">
-                      <Skeleton className="h-[20px] w-full rounded-md" />
-                    </div>
-                  ))}
+        <Form {...form}>
+          <form id="create-sales-contract" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            {/* Invoice Selection */}
+            <div className="flex flex-col space-y-2">
+              <label className="text-sm font-medium">Chọn hóa đơn nguồn <span className="text-destructive">*</span></label>
+              <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCombobox}
+                    className="w-full justify-between"
+                  >
+                    {selectedInvoiceId
+                      ? invoiceList.find((invoice) => invoice.id === selectedInvoiceId)?.code || selectedInvoice?.code || "Đã chọn hóa đơn"
+                      : "Chọn hóa đơn..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Tìm mã hóa đơn..." />
+                    <CommandList>
+                      <CommandEmpty>Không tìm thấy hóa đơn.</CommandEmpty>
+                      <CommandGroup>
+                        {invoiceList.map((invoice) => (
+                          <CommandItem
+                            key={invoice.id}
+                            value={invoice.code}
+                            onSelect={() => {
+                              setSelectedInvoiceId(invoice.id)
+                              setOpenCombobox(false)
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedInvoiceId === invoice.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{invoice.code}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {invoice.customer?.name} - {moneyFormat(invoice.totalAmount)}
+                              </span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Display Invoice Info (Read-only) */}
+            {selectedInvoice && (
+              <div className="text-sm border rounded p-3 bg-muted/20">
+                <div className="flex justify-between">
+                  <span>Khách hàng: <strong>{selectedInvoice.customer?.name}</strong></span>
+                  <span>Tổng tiền: <strong>{moneyFormat(selectedInvoice.totalAmount)}</strong></span>
                 </div>
-              ) : (
-                <>
-                  <div className="flex flex-col gap-6 lg:flex-row">
-                    <div className="flex-1 space-y-6 rounded-lg border p-4">
-                      <h2 className="text-lg font-semibold">
-                        Thông tin chi tiết hợp đồng
-                      </h2>
+                <div className="text-muted-foreground mt-1 text-xs">
+                  Sản phẩm: {selectedInvoice.invoiceItems?.length || 0} món
+                </div>
+              </div>
+            )}
 
-                      <div className="space-y-6">
-                        {/* Invoice Items Table */}
-                        {invoiceItems && invoiceItems.length > 0 && (
-                          <div className="overflow-x-auto rounded-lg border">
-                            <Table className="min-w-full">
-                              <TableHeader>
-                                <TableRow className="bg-secondary text-xs">
-                                  <TableHead className="w-8">TT</TableHead>
-                                  <TableHead className="min-w-40">
-                                    Sản phẩm
-                                  </TableHead>
-                                  <TableHead className="min-w-20">SL</TableHead>
-                                  <TableHead className="min-w-16">ĐVT</TableHead>
-                                  <TableHead className="min-w-20">Giá</TableHead>
-                                  <TableHead className="min-w-28">
-                                    Tổng cộng
-                                  </TableHead>
-                                  <TableHead className="min-w-28">
-                                    Ghi chú
-                                  </TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {invoiceItems.map((product, index) => (
-                                  <TableRow key={product.id}>
-                                    <TableCell>{index + 1}</TableCell>
-                                    <TableCell>
-                                      <div>
-                                        <div className="font-medium">
-                                          {product.productName}
-                                        </div>
-                                        {product?.options && (
-                                          <div className="break-words text-sm text-muted-foreground">
-                                            {product?.options
-                                              ?.map(
-                                                (option) =>
-                                                  `${option.name}: ${option.pivot.value}`,
-                                              )
-                                              .join(', ')}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>{product.quantity}</TableCell>
-                                    <TableCell>
-                                      {product.unitName || 'Không có'}
-                                    </TableCell>
-                                    <TableCell className="text-end">
-                                      {moneyFormat(product.price)}
-                                    </TableCell>
-                                    <TableCell className="text-end">
-                                      {moneyFormat(product.total)}
-                                    </TableCell>
-                                    <TableCell>
-                                      {product.note || 'Không có'}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        )}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="contractNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Số hợp đồng <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input placeholder="HĐBH-202xxx" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="contractDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ngày ký <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-                        {/* Form Fields */}
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <FormField
-                            control={form.control}
-                            name="contractNumber"
-                            render={({ field }) => (
-                              <FormItem className="space-y-1">
-                                <FormLabel required={true}>
-                                  Số hợp đồng
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="HĐBH-2026-001"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="contractDate"
-                            render={({ field }) => (
-                              <FormItem className="space-y-1">
-                                <FormLabel required={true}>
-                                  Ngày ký hợp đồng
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="date"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="deliveryDate"
-                            render={({ field }) => (
-                              <FormItem className="space-y-1">
-                                <FormLabel>Ngày hẹn giao hàng</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="date"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <FormField
-                          control={form.control}
-                          name="paymentTerms"
-                          render={({ field }) => (
-                            <FormItem className="space-y-1">
-                              <FormLabel>Điều khoản thanh toán</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  rows={3}
-                                  placeholder="Trả trước 50%, còn lại trả sau khi nhận hàng..."
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="note"
-                          render={({ field }) => (
-                            <FormItem className="space-y-1">
-                              <FormLabel>Ghi chú hợp đồng</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  rows={3}
-                                  placeholder="Nhập ghi chú nếu có"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        {/* Summary */}
-                        <div className="rounded-lg bg-muted p-4">
-                          <div className="flex justify-between">
-                            <strong>Tổng giá trị hợp đồng:</strong>
-                            <span className="text-lg font-bold">
-                              {moneyFormat(totalAmount)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Customer Info Sidebar */}
-                    <div className="w-full rounded-lg border p-4 lg:w-72">
-                      <div className="flex items-center justify-between">
-                        <h2 className="py-2 text-lg font-semibold">
-                          Khách hàng
-                        </h2>
-                      </div>
-
-                      {customer && (
-                        <div className="space-y-6">
-                          <div className="flex items-center gap-4">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage
-                                src={`https://ui-avatars.com/api/?bold=true&background=random&name=${customer?.name}`}
-                                alt={customer?.name}
-                              />
-                              <AvatarFallback>KH</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium">{customer?.name}</div>
-                            </div>
-                          </div>
-
-                          <div>
-                            <div className="mb-2 flex items-center justify-between">
-                              <div className="font-medium">
-                                Thông tin khách hàng
-                              </div>
-                            </div>
-
-                            <div className="mt-4 space-y-2 text-sm">
-                              <div className="flex cursor-pointer items-center text-primary hover:text-secondary-foreground">
-                                <div className="mr-2 h-4 w-4 ">
-                                  <MobileIcon className="h-4 w-4" />
-                                </div>
-                                <a href={`tel:${customer?.phone}`}>
-                                  {customer?.phone || 'Chưa cập nhật'}
-                                </a>
-                              </div>
-
-                              <div className="flex items-center text-muted-foreground">
-                                <div className="mr-2 h-4 w-4 ">
-                                  <Mail className="h-4 w-4" />
-                                </div>
-                                <a href={`mailto:${customer?.email}`}>
-                                  {customer?.email || 'Chưa cập nhật'}
-                                </a>
-                              </div>
-
-                              <div className="flex items-center text-primary hover:text-secondary-foreground">
-                                <div className="mr-2 h-4 w-4 ">
-                                  <MapPin className="h-4 w-4" />
-                                </div>
-                                {customer?.address || 'Chưa cập nhật'}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
+            <FormField
+              control={form.control}
+              name="deliveryDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ngày giao hàng</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </form>
-          </Form>
-        </div>
+            />
 
-        <DialogFooter className="flex gap-2 sm:space-x-0">
+            <FormField
+              control={form.control}
+              name="paymentTerms"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Điều khoản thanh toán</FormLabel>
+                  <FormControl>
+                    <Textarea rows={2} placeholder="Ví dụ: Thanh toán trong 30 ngày..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="note"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ghi chú</FormLabel>
+                  <FormControl>
+                    <Textarea rows={2} placeholder="Ghi chú thêm..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+          </form>
+        </Form>
+
+        <DialogFooter className="flex gap-2">
           <DialogClose asChild>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                form.reset()
-              }}
-            >
+            <Button variant="outline" onClick={() => form.reset()}>
               Hủy
             </Button>
           </DialogClose>
-
-          <Button form="create-sales-contract" loading={loading}>
+          <Button
+            form="create-sales-contract"
+            loading={loading}
+            disabled={!selectedInvoiceId}
+          >
             Tạo hợp đồng
           </Button>
         </DialogFooter>

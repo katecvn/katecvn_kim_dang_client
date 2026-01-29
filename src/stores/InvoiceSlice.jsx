@@ -148,7 +148,12 @@ export const updateInvoiceStatus = createAsyncThunk(
   'invoice/update-invoice-status',
   async (data, { rejectWithValue, dispatch }) => {
     try {
-      const response = await api.put(`/invoice/${data.id}/update`, data)
+      let response
+      if (data.status === 'pending') {
+        response = await api.post(`/invoice/${data.id}/revert`)
+      } else {
+        response = await api.put(`/invoice/${data.id}/update`, data)
+      }
       await dispatch(
         getInvoices({
           fromDate: getStartOfCurrentMonth(),

@@ -8,6 +8,12 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { receiptTypes, warehouseReceiptStatuses } from '../data'
 import Can from '@/utils/can'
+import { useDispatch } from 'react-redux'
+import { updateWarehouseReceipt, getWarehouseReceipts, cancelWarehouseReceipt, postWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
+import { UpdateWarehouseReceiptStatusDialog } from './UpdateWarehouseReceiptStatusDialog'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import { CreditCard, Phone } from 'lucide-react'
 
 export const columns = [
   {
@@ -70,7 +76,7 @@ export const columns = [
   {
     id: 'partner',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Đối tác" />
+      <DataTableColumnHeader column={column} title="Khách hàng" />
     ),
     cell: ({ row }) => {
       const receiptType = row.original.receiptType
@@ -92,7 +98,24 @@ export const columns = [
         return (
           <div className="w-48 truncate" title={customer.name}>
             <span className="font-semibold">{customer.name}</span>
-            <div className="text-xs text-muted-foreground">{customer.code}</div>
+
+            {customer.taxCode && (
+              <span className="text-xs text-muted-foreground">
+                MST: {customer.taxCode}
+              </span>
+            )}
+
+            <span className="flex items-center gap-1 text-primary underline hover:text-secondary-foreground">
+              <Phone className="h-3 w-3" />
+              <a href={`tel:${customer.phone}`}>{customer.phone}</a>
+            </span>
+
+            {customer.identityCard && (
+              <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                <CreditCard className="h-3 w-3" />
+                {customer.identityCard}
+              </span>
+            )}
           </div>
         )
       }
@@ -108,7 +131,7 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Ngày lập" />
     ),
     cell: ({ row }) => (
-      <div className="w-32">{dateFormat(row.getValue('receiptDate'))}</div>
+      <div className="w-32">{dateFormat(row.getValue('receiptDate'), true)}</div>
     ),
     enableSorting: true,
     enableHiding: true,
@@ -154,16 +177,60 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Trạng thái" />
     ),
-    cell: ({ row }) => {
-      const status = warehouseReceiptStatuses.find(
-        (s) => s.value === row.getValue('status'),
+    cell: function Cell({ row }) {
+      const status = row.getValue('status')
+      const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+      const dispatch = useDispatch()
+
+      const handleUpdateStatus = async (newStatus, id) => {
+        try {
+          if (newStatus === 'cancelled') {
+            await dispatch(cancelWarehouseReceipt(id)).unwrap()
+          } else if (newStatus === 'posted') {
+            await dispatch(postWarehouseReceipt(id)).unwrap()
+          } else {
+            await dispatch(updateWarehouseReceipt({ id, data: { status: newStatus } })).unwrap()
+          }
+
+          toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
+          setShowUpdateStatusDialog(false)
+          dispatch(getWarehouseReceipts())
+        } catch (error) {
+          console.error(error)
+        }
+      }
+
+      const getStatus = warehouseReceiptStatuses.find(
+        (s) => s.value === status,
       )
+
       return (
-        <div className="w-28">
-          <Badge className={status?.color || 'bg-gray-500'}>
-            {status?.label || 'Không xác định'}
-          </Badge>
-        </div>
+        <>
+          <div className="w-28">
+            <Badge
+              className={cn(
+                "cursor-pointer hover:underline",
+                getStatus?.color || 'bg-gray-500'
+              )}
+              onClick={() => setShowUpdateStatusDialog(true)}
+            >
+              {getStatus?.label || 'Không xác định'}
+            </Badge>
+          </div>
+          {showUpdateStatusDialog && (
+            <UpdateWarehouseReceiptStatusDialog
+              open={showUpdateStatusDialog}
+              onOpenChange={setShowUpdateStatusDialog}
+              receiptId={row.original.id}
+              receiptCode={row.original.code}
+              currentStatus={status}
+              statuses={warehouseReceiptStatuses}
+              onSubmit={handleUpdateStatus}
+              contentClassName="z-[10002]"
+              overlayClassName="z-[10001]"
+            />
+          )}
+        </>
       )
     },
     enableSorting: true,
@@ -191,7 +258,7 @@ export const columns = [
       return (
         <div className="flex space-x-2">
           <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
-            {dateFormat(row.getValue('updatedAt'))}
+            {dateFormat(row.getValue('updatedAt'), true)}
           </span>
         </div>
       )

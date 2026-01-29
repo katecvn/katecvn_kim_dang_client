@@ -265,8 +265,11 @@ const ViewSalesContractDialog = ({
                             <TableHeader>
                               <TableRow className="bg-secondary text-xs">
                                 <TableHead className="w-8">TT</TableHead>
-                                <TableHead className="min-w-40">
+                                <TableHead className="min-w-64">
                                   Sản phẩm
+                                </TableHead>
+                                <TableHead className="min-w-20">
+                                  ĐVT
                                 </TableHead>
                                 <TableHead className="min-w-20 text-right">
                                   SL
@@ -283,8 +286,49 @@ const ViewSalesContractDialog = ({
                               {contract?.items?.map((item, index) => (
                                 <TableRow key={item.id || index}>
                                   <TableCell>{index + 1}</TableCell>
-                                  <TableCell className="font-medium">
-                                    {item.productName}
+                                  <TableCell>
+                                    <div className="flex items-center gap-3">
+                                      <div
+                                        className="size-10 shrink-0 overflow-hidden rounded-md border cursor-pointer"
+                                        onClick={() => {
+                                          if (item?.productId) {
+                                            setSelectedProductId(item.productId)
+                                            setShowViewProductDialog(true)
+                                          }
+                                        }}
+                                      >
+                                        {item.image ? (
+                                          <img
+                                            src={getPublicUrl(item.image)}
+                                            alt={item.productName}
+                                            className="h-full w-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                            <Package className="h-4 w-4 text-muted-foreground" />
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span
+                                          className="font-medium text-sm text-blue-600 cursor-pointer hover:underline truncate"
+                                          onClick={() => {
+                                            if (item?.productId) {
+                                              setSelectedProductId(item.productId)
+                                              setShowViewProductDialog(true)
+                                            }
+                                          }}
+                                        >
+                                          {item.productName}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {item.productCode}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    {item.unitName}
                                   </TableCell>
                                   <TableCell className="text-right">
                                     {parseInt(item.quantity)}

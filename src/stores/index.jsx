@@ -8,6 +8,7 @@ import customerReducer from './CustomerSlice'
 import productReducer from './ProductSlice'
 import invoiceReducer from './InvoiceSlice'
 import salesContractReducer from './SalesContractSlice'
+import purchaseContractReducer from './PurchaseContractSlice'
 import purchaseOrderReducer from './PurchaseOrderSlice'
 import receiptReducer from './ReceiptSlice'
 import categoryReducer from './CategorySlice'
@@ -60,6 +61,7 @@ export const store = configureStore({
     parentRolePermission: parentRolePermissionReducer,
     invoice: invoiceReducer,
     salesContract: salesContractReducer,
+    purchaseContract: purchaseContractReducer,
     purchaseOrder: purchaseOrderReducer,
     receipt: receiptReducer,
     statistic: statisticReducer,

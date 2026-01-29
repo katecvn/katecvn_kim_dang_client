@@ -11,4 +11,14 @@ export const statuses = [
     label: 'Ngưng',
     icon: IconLock,
   },
+  // {
+  //   value: 'ACTIVE',
+  //   label: 'Đang hoạt động',
+  //   icon: IconCircleCheck,
+  // },
+  // {
+  //   value: 'INACTIVE',
+  //   label: 'Ngừng hoạt động',
+  //   icon: IconLock,
+  // },
 ]

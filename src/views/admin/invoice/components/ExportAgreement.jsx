@@ -100,7 +100,7 @@ export default function ExportSaleAgreement({ data = {} }) {
           alignItems: 'center',
           justifyContent: 'space-between',
           backgroundColor: '#2C2E33',
-          padding: '12px 24px',
+          padding: '8px 24px',
           color: 'white'
         }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -160,7 +160,7 @@ export default function ExportSaleAgreement({ data = {} }) {
         }}>
           <div className='paper'>
             {/* Tên khách hàng */}
-            <div style={{ marginBottom: '12px' }}>
+            <div style={{ marginBottom: '4px' }}>
               <span style={{ fontWeight: '600' }}>Tên khách hàng:</span>{' '}
               <span style={{
                 fontFamily: 'Times New Roman, Times, serif',
@@ -185,7 +185,7 @@ export default function ExportSaleAgreement({ data = {} }) {
 
             {/* BẢNG SẢN PHẨM - Chiều cao cố định cao hơn */}
             <div style={{
-              marginBottom: '12px',
+              marginBottom: '4px',
               height: '180px'
             }}>
               <table
@@ -347,7 +347,7 @@ export default function ExportSaleAgreement({ data = {} }) {
                 </div>
 
                 {/* Khoảng trống cho chữ ký */}
-                <div style={{ marginTop: '50px' }}></div>
+                <div style={{ marginTop: '20px' }}></div>
 
                 {/* Tên khách hàng */}
                 <div style={{
@@ -400,9 +400,10 @@ export default function ExportSaleAgreement({ data = {} }) {
             alignItems: 'center',
             justifyContent: 'space-between',
             backgroundColor: '#f3ecec',
-            padding: '8px 176px',
+            padding: '4px 24px',
             fontSize: '12px',
-            color: '#1f2937'
+            color: '#1f2937',
+            marginTop: '12px',
           }}>
             <div style={{
               display: 'flex',

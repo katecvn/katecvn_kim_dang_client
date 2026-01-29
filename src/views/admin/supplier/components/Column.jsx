@@ -89,7 +89,11 @@ export const columns = [
     ),
     cell: function Cell({ row }) {
       const statusValue = row.getValue('status')
-      const status = statuses.find((status) => status.value === statusValue)
+      const status = statuses.find((status) => status.value === statusValue) || {
+        value: statusValue,
+        label: statusValue,
+        icon: null,
+      }
       const [
         showUpdateSupplierStatusDialog,
         setShowUpdateSupplierStatusDialog,

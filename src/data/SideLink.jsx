@@ -221,15 +221,15 @@ export const sideLinks = [
       },
       {
         title: 'Hợp đồng mua hàng',
-        href: '/sales-contracts',
+        href: '/purchase-contracts',
         icon: <IconReceipt size={18} />,
-        permission: 'GET_SALES_CONTRACT',
+        permission: 'GET_PURCHASE_CONTRACT',
       },
       {
         title: 'Hợp đồng của tôi',
-        href: '/sales-contract-user',
+        href: '/purchase-contract-user',
         icon: <IconReceiptRupee size={18} />,
-        permission: ['GET_SALES_CONTRACT_USER', 'GET_SALES_CONTRACT'],
+        permission: ['GET_PURCHASE_CONTRACT_USER', 'GET_PURCHASE_CONTRACT'],
       },
       {
         title: 'Phiếu chi',

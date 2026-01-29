@@ -9,6 +9,8 @@ import SalesContractPage from '@/views/admin/sales-contract/SalesContractPage'
 import MySalesContractPage from '@/views/admin/sales-contract/MySalesContractPage'
 import PurchaseOrderPage from '@/views/admin/purchase-order/PurchaseOrderPage'
 import MyPurchaseOrderPage from '@/views/admin/purchase-order/MyPurchaseOrderPage'
+import PurchaseContractPage from '@/views/admin/purchase-contract/PurchaseContractPage'
+import MyPurchaseContractPage from '@/views/admin/purchase-contract/MyPurchaseContractPage'
 import ProductPage from '@/views/admin/product/ProductPage'
 import MyReceiptPage from '@/views/admin/receipt/MyReceiptPage'
 import ReceiptPage from '@/views/admin/receipt/ReceiptPage'
@@ -118,6 +120,16 @@ const routes = [
   {
     path: '/purchase-order-user',
     element: MyPurchaseOrderPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/purchase-contracts',
+    element: PurchaseContractPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/purchase-contract-user',
+    element: MyPurchaseContractPage,
     layout: AdminLayout,
   },
   {

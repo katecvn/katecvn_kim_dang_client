@@ -7,7 +7,7 @@ export const getPayments = createAsyncThunk(
   'payment/get-payments',
   async ({ fromDate = null, toDate = null, page = 1, limit = 20 } = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get('/payment', {
+      const response = await api.get('/payment-vouchers', {
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
@@ -27,7 +27,7 @@ export const getMyPayments = createAsyncThunk(
   'payment/get-my-payments',
   async ({ fromDate = null, toDate = null, page = 1, limit = 20 } = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get('/payment/my-payment', {
+      const response = await api.get('/payment-vouchers/my-payment', {
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
@@ -47,8 +47,16 @@ export const updatePaymentStatus = createAsyncThunk(
   'payment/update-payment-status',
   async ({ id, status }, { rejectWithValue }) => {
     try {
-      await api.put(`/payment/${id}/update`, { status })
-      toast.success('Cập nhật trạng thái thanh toán thành công')
+      let response
+      if (status === 'completed') {
+        response = await api.post(`/payment-vouchers/${id}/complete`)
+      } else if (status === 'cancelled') {
+        response = await api.post(`/payment-vouchers/${id}/cancel`)
+      } else {
+        response = await api.put(`/payment-vouchers/${id}`, { status })
+      }
+      toast.success('Cập nhật trạng thái phiếu chi thành công')
+      return response.data.data || response.data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -60,7 +68,7 @@ export const createPayment = createAsyncThunk(
   'payment/create-payment',
   async (data, { rejectWithValue }) => {
     try {
-      await api.post('/payment', data)
+      await api.post('/payment-vouchers', data)
       toast.success('Tạo thanh toán thành công')
     } catch (error) {
       const message = handleError(error)
@@ -71,9 +79,17 @@ export const createPayment = createAsyncThunk(
 
 export const deletePayment = createAsyncThunk(
   'payment/delete-payment',
-  async (id, { rejectWithValue }) => {
+  async (id, { rejectWithValue, dispatch }) => {
     try {
-      await api.delete(`/payment/${id}/delete`)
+      await api.delete(`/payment-vouchers/${id}`)
+
+      const deleteAdminPayments = JSON.parse(
+        localStorage.getItem('permissionCodes'),
+      ).includes('DELETE_PAYMENT')
+
+      deleteAdminPayments
+        ? await dispatch(getPayments()).unwrap()
+        : await dispatch(getMyPayments()).unwrap()
       toast.success('Xóa thanh toán thành công')
     } catch (error) {
       const message = handleError(error)
@@ -86,7 +102,7 @@ export const updatePaymentDueDate = createAsyncThunk(
   'payment/update-due-date',
   async ({ id, dueDate }, { rejectWithValue }) => {
     try {
-      await api.put(`/payment/${id}/update-due-date`, { dueDate })
+      await api.put(`/payment-vouchers/${id}/update-due-date`, { dueDate })
       toast.success('Cập nhật hạn chót thành công')
       return { id, dueDate }
     } catch (error) {
@@ -119,9 +135,6 @@ export const paymentSlice = createSlice({
       })
       .addCase(getPayments.fulfilled, (state, action) => {
         state.loading = false
-        // Determine structure based on payload
-        // If payload has data and pagination, use them.
-        // Otherwise just set payments to payload (if array).
         if (action.payload?.data && Array.isArray(action.payload.data)) {
           state.payments = action.payload.data
           state.pagination = action.payload.pagination || state.pagination

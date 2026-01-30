@@ -1,4 +1,5 @@
 import { Button } from '@/components/custom/Button'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -28,13 +29,20 @@ import { getPurchaseOrderDetail } from '@/stores/PurchaseOrderSlice'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
 import { getPublicUrl } from '@/utils/file'
-import { CreditCard, Mail, MapPin, Trash2 } from 'lucide-react'
-import { IconCheck, IconInfoCircle, IconPencil, IconPlus } from '@tabler/icons-react'
+import { Mail, MapPin } from 'lucide-react'
+import { IconPlus, IconPencil, IconCheck } from '@tabler/icons-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import ConfirmImportWarehouseDialog from './ConfirmImportWarehouseDialog'
-import CreatePurchaseOrderPaymentDialog from './CreatePurchaseOrderPaymentDialog'
-import { toast } from 'sonner'
+import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
+import CreatePurchaseOrderPaymentDialog from '../../payment/components/CreatePurchaseOrderPaymentDialog'
+import ViewPurchaseContractDialog from '../../purchase-contract/components/ViewPurchaseContractDialog'
+import ViewProductDialog from '../../product/components/ViewProductDialog'
+import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
+import {
+  updatePurchaseOrderStatus,
+  confirmPurchaseOrder,
+  cancelPurchaseOrder,
+  revertPurchaseOrder,
+} from '@/stores/PurchaseOrderSlice'
 
 const ViewPurchaseOrderDialog = ({
   open,
@@ -52,6 +60,12 @@ const ViewPurchaseOrderDialog = ({
   // Dialog States
   const [showConfirmImportDialog, setShowConfirmImportDialog] = useState(false)
   const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false)
+  const [showContractDetail, setShowContractDetail] = useState(false)
+  const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+
+  // Product View State
+  const [showViewProductDialog, setShowViewProductDialog] = useState(false)
+  const [selectedProductId, setSelectedProductId] = useState(null)
 
   // Fetch Data
   const fetchData = async () => {
@@ -63,6 +77,24 @@ const ViewPurchaseOrderDialog = ({
       console.error('Fetch purchase order error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleUpdateStatus = async (status, id) => {
+    try {
+      if (status === 'ordered') {
+        await dispatch(confirmPurchaseOrder(id)).unwrap()
+      } else if (status === 'cancelled') {
+        await dispatch(cancelPurchaseOrder(id)).unwrap()
+      } else if (status === 'draft' && purchaseOrder.status === 'ordered') {
+        await dispatch(revertPurchaseOrder(id)).unwrap()
+      } else {
+        await dispatch(updatePurchaseOrderStatus({ id, status })).unwrap()
+      }
+      setShowUpdateStatusDialog(false)
+      fetchData()
+    } catch (error) {
+      console.error('Update status error:', error)
     }
   }
 
@@ -96,16 +128,18 @@ const ViewPurchaseOrderDialog = ({
 
   // Handlers
   const handleCreateImport = () => {
-    if (purchaseOrder?.status !== 'approved' && purchaseOrder?.status !== 'partial' && purchaseOrder?.status !== 'ordered' && purchaseOrder.status !== 'completed') {
-      // Adjust valid statuses as needed. Assuming 'ordered' is valid for import
-      // Or if user system uses 'accepted' like invoice? User data showed 'draft'.
-      // Let's assume 'ordered' or 'accepted' is required.
-      // For now, let's allow it if not draft/cancelled
+    if (purchaseOrder?.status !== 'ordered' && purchaseOrder?.status !== 'partial' && purchaseOrder?.status !== 'completed') {
+      toast.error('Chỉ có thể tạo phiếu nhập kho cho đơn hàng đã xác nhận (Đã đặt).')
+      return
     }
     setShowConfirmImportDialog(true)
   }
 
   const handleCreatePayment = () => {
+    if (purchaseOrder?.status !== 'ordered' && purchaseOrder?.status !== 'partial' && purchaseOrder?.status !== 'completed') {
+      toast.error('Chỉ có thể tạo phiếu chi cho đơn hàng đã xác nhận (Đã đặt).')
+      return
+    }
     setShowCreatePaymentDialog(true)
   }
 
@@ -138,7 +172,10 @@ const ViewPurchaseOrderDialog = ({
         )}>
         <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
           <DialogTitle className={cn(!isDesktop && "text-base")}>
-            Thông tin chi tiết đơn mua hàng: {purchaseOrder?.code}
+            Thông tin chi tiết đơn mua hàng: {purchaseOrder?.code} <br />
+            <span className="text-sm font-normal text-muted-foreground">
+              Ngày đặt: {dateFormat(purchaseOrder?.orderDate, true)}
+            </span>
           </DialogTitle>
           <DialogDescription className={cn(!isDesktop && "text-xs")}>
             Dưới đây là thông tin chi tiết đơn mua hàng: {purchaseOrder?.code}.
@@ -183,8 +220,12 @@ const ViewPurchaseOrderDialog = ({
                             <TableHead className="min-w-40">Sản phẩm</TableHead>
                             <TableHead className="min-w-20 text-center">ĐVT</TableHead>
                             <TableHead className="min-w-16 text-right">Số lượng</TableHead>
+                            <TableHead className="min-w-16 text-right">Đã nhận</TableHead>
                             <TableHead className="min-w-20 text-right">Giá nhập</TableHead>
+                            <TableHead className="min-w-16 text-center">% Thuế</TableHead>
                             <TableHead className="min-w-16 text-right">Thuế</TableHead>
+                            <TableHead className="min-w-16 text-center">% CK</TableHead>
+                            <TableHead className="min-w-16 text-right">CK</TableHead>
                             <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -193,11 +234,19 @@ const ViewPurchaseOrderDialog = ({
                             <TableRow key={index}>
                               <TableCell>{index + 1}</TableCell>
                               <TableCell>
-                                <div className="flex items-start gap-3">
-                                  {item.image && (
+                                <div
+                                  className="flex items-start gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => {
+                                    if (item.productId) {
+                                      setSelectedProductId(item.productId)
+                                      setShowViewProductDialog(true)
+                                    }
+                                  }}
+                                >
+                                  {item.product?.image && (
                                     <div className="size-16 overflow-hidden rounded-md border shrink-0">
                                       <img
-                                        src={getPublicUrl(item.image)}
+                                        src={getPublicUrl(item.product?.image)}
                                         alt={item.productName}
                                         className="h-full w-full object-cover"
                                       />
@@ -210,10 +259,14 @@ const ViewPurchaseOrderDialog = ({
                                 </div>
                               </TableCell>
                               <TableCell className="text-center">{item.unitName}</TableCell>
-                              <TableCell className="text-right">{item.quantity}</TableCell>
-                              <TableCell className="text-right">{moneyFormat(item.unitPrice || item.price)}</TableCell>
-                              <TableCell className="text-right">{moneyFormat(item.taxAmount || 0)}</TableCell>
-                              <TableCell className="text-right font-medium">{moneyFormat(item.total || item.totalAmount || (item.quantity * item.unitPrice))}</TableCell>
+                              <TableCell className="text-right">{Number(item.quantity)}</TableCell>
+                              <TableCell className="text-right">{Number(item.receivedQuantity)}</TableCell>
+                              <TableCell className="text-right">{moneyFormat(item.unitPrice)}</TableCell>
+                              <TableCell className="text-center">{Number(item.taxRate)}%</TableCell>
+                              <TableCell className="text-right">{moneyFormat(item.taxAmount)}</TableCell>
+                              <TableCell className="text-center">{Number(item.discountRate)}%</TableCell>
+                              <TableCell className="text-right">{moneyFormat(item.discountAmount)}</TableCell>
+                              <TableCell className="text-right font-medium">{moneyFormat(item.totalAmount)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -224,13 +277,21 @@ const ViewPurchaseOrderDialog = ({
                     <div className="space-y-3">
                       {purchaseOrder.items?.map((item, index) => (
                         <div key={index} className="border rounded-lg p-3 space-y-2 bg-card">
-                          <div className="font-medium text-sm text-blue-600">
+                          <div
+                            className="font-medium text-sm text-blue-600 cursor-pointer hover:underline"
+                            onClick={() => {
+                              if (item.productId) {
+                                setSelectedProductId(item.productId)
+                                setShowViewProductDialog(true)
+                              }
+                            }}
+                          >
                             {index + 1}. {item.productName}
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div>
                               <span className="text-muted-foreground">SL: </span>
-                              <span className="font-medium">{item.quantity} {item.unitName}</span>
+                              <span className="font-medium">{Number(item.quantity)} {item.unitName}</span>
                             </div>
                             <div>
                               <span className="text-muted-foreground">Giá: </span>
@@ -290,7 +351,10 @@ const ViewPurchaseOrderDialog = ({
 
                       <div className="flex justify-start border-t py-2">
                         <strong className="mr-2">Trạng thái đơn hàng: </strong>
-                        <span className={cn("px-2 py-0.5 rounded text-xs font-semibold border h-fit", getStatusColor(purchaseOrder.status))}>
+                        <span
+                          className={cn("px-2 py-0.5 rounded text-xs font-semibold border h-fit cursor-pointer hover:opacity-80", getStatusColor(purchaseOrder.status))}
+                          onClick={() => setShowUpdateStatusDialog(true)}
+                        >
                           {getStatusLabel(purchaseOrder.status)}
                         </span>
                       </div>
@@ -326,6 +390,30 @@ const ViewPurchaseOrderDialog = ({
                             </span>
                           </div>
                         )}
+                        {purchaseOrder.expectedReturnDate && (
+                          <div className="flex justify-between">
+                            <strong>Ngày trả hàng dự kiến: </strong>
+                            <span className="text-orange-600 font-medium">
+                              {dateFormat(purchaseOrder.expectedReturnDate)}
+                            </span>
+                          </div>
+                        )}
+                        <Separator className="" />
+                        {purchaseOrder.paymentMethod && (
+                          <div className="flex justify-between">
+                            <strong>Phương thức thanh toán: </strong>
+                            <span>
+                              {purchaseOrder.paymentMethod === 'cash' ? 'Tiền mặt' :
+                                purchaseOrder.paymentMethod === 'transfer' ? 'Chuyển khoản' : purchaseOrder.paymentMethod}
+                            </span>
+                          </div>
+                        )}
+                        {purchaseOrder.paymentTerms && (
+                          <div className="flex justify-between">
+                            <strong>Điều khoản thanh toán: </strong>
+                            <span>{purchaseOrder.paymentTerms}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -351,16 +439,45 @@ const ViewPurchaseOrderDialog = ({
                             <h3 className="font-semibold">Hợp đồng mua hàng</h3>
                             <div className="flex justify-between">
                               <strong>Mã hợp đồng:</strong>
-                              <span className="font-medium text-primary">{purchaseOrder.purchaseContract.code}</span>
+                              <span
+                                className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                onClick={() => setShowContractDetail(true)}
+                              >
+                                {purchaseOrder.purchaseContract.code}
+                              </span>
                             </div>
                             <div className="flex justify-between">
                               <strong>Ngày ký:</strong>
-                              <span>{dateFormat(purchaseOrder.purchaseContract.contractDate)}</span>
+                              <span>{dateFormat(purchaseOrder.purchaseContract.contractDate, true)}</span>
                             </div>
                             <div className="flex justify-between">
                               <strong>Tổng giá trị:</strong>
                               <span className="font-bold text-primary">{moneyFormat(purchaseOrder.purchaseContract.totalAmount)}</span>
                             </div>
+                            {purchaseOrder.purchaseContract.externalOrderCode && (
+                              <div className="flex justify-between">
+                                <strong>Mã đơn NCC:</strong>
+                                <span>{purchaseOrder.purchaseContract.externalOrderCode}</span>
+                              </div>
+                            )}
+                            {purchaseOrder.purchaseContract.validUntil && (
+                              <div className="flex justify-between">
+                                <strong>Hết hạn:</strong>
+                                <span>{dateFormat(purchaseOrder.purchaseContract.validUntil, true)}</span>
+                              </div>
+                            )}
+                            {purchaseOrder.purchaseContract.otherCosts > 0 && (
+                              <div className="flex justify-between">
+                                <strong>Chi phí khác:</strong>
+                                <span>{moneyFormat(purchaseOrder.purchaseContract.otherCosts)}</span>
+                              </div>
+                            )}
+                            {purchaseOrder.purchaseContract.terms && (
+                              <div className="">
+                                <strong>Điều khoản:</strong>
+                                <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line">{purchaseOrder.purchaseContract.terms}</p>
+                              </div>
+                            )}
                           </div>
                         </>
                       )}
@@ -411,13 +528,18 @@ const ViewPurchaseOrderDialog = ({
                                   </TableCell>
                                   <TableCell>
                                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}>
-                                      {receipt.status}
+                                      {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
+                                      {receipt.status === 'draft'
+                                        ? 'Nháp'
+                                        : receipt.status === 'posted'
+                                          ? 'Đã ghi sổ'
+                                          : receipt.status}
                                     </span>
                                   </TableCell>
                                   <TableCell className="text-right font-semibold">
                                     {moneyFormat(receipt.totalAmount)}
                                   </TableCell>
-                                  <TableCell>{dateFormat(receipt.receiptDate)}</TableCell>
+                                  <TableCell>{dateFormat(receipt.receiptDate, true)}</TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
@@ -457,9 +579,10 @@ const ViewPurchaseOrderDialog = ({
                               <TableRow className="bg-secondary text-xs">
                                 <TableHead className="w-12">STT</TableHead>
                                 <TableHead className="min-w-32">Mã phiếu</TableHead>
-                                <TableHead className="min-w-28 text-right">Số tiền</TableHead>
-                                <TableHead className="min-w-24">PT thanh toán</TableHead>
-                                <TableHead className="min-w-20">Trạng thái</TableHead>
+                                <TableHead className="min-w-32 text-right">Số tiền</TableHead>
+                                <TableHead className="min-w-32">PT thanh toán</TableHead>
+                                {/* <TableHead className="min-w-24">Loại phiếu</TableHead> */}
+                                <TableHead className="min-w-32">Trạng thái</TableHead>
                                 <TableHead className="min-w-32">Ngày tạo</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -472,12 +595,23 @@ const ViewPurchaseOrderDialog = ({
                                   <TableCell>
                                     {voucher.paymentMethod === 'cash' ? 'Tiền mặt' : voucher.paymentMethod === 'transfer' ? 'Chuyển khoản' : voucher.paymentMethod}
                                   </TableCell>
+                                  {/* <TableCell>
+                                    {voucher.voucherType === 'payment_out' ? 'Phiếu chi' : voucher.voucherType}
+                                    {voucher.transactionType && <span className="text-xs text-muted-foreground block">({voucher.transactionType})</span>}
+                                  </TableCell> */}
                                   <TableCell>
                                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}>
-                                      {voucher.status}
+                                      {voucher.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (voucher.status === 'completed' ? <IconCheck className="h-3 w-3" /> : null)}
+                                      {voucher.status === 'draft'
+                                        ? 'Nháp'
+                                        : voucher.status === 'completed'
+                                          ? 'Đã thanh toán'
+                                          : voucher.status === 'canceled'
+                                            ? 'Đã hủy'
+                                            : voucher.status}
                                     </span>
                                   </TableCell>
-                                  <TableCell>{dateFormat(voucher.createdAt)}</TableCell>
+                                  <TableCell>{dateFormat(voucher.paymentDate, true)}</TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
@@ -609,6 +743,32 @@ const ViewPurchaseOrderDialog = ({
                     </div>
                   </div>
                 </div>
+
+                {purchaseOrder.updatedByUser && (
+                  <div>
+                    <Separator className="my-4" />
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="font-medium">Người cập nhật</div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage
+                          src={`https://ui-avatars.com/api/?bold=true&background=random&name=${purchaseOrder?.updatedByUser?.fullName}`}
+                          alt={purchaseOrder?.updatedByUser?.fullName}
+                        />
+                        <AvatarFallback>UP</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">
+                          {purchaseOrder?.updatedByUser?.fullName}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {dateFormat(purchaseOrder?.updatedAt, true)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -631,8 +791,10 @@ const ViewPurchaseOrderDialog = ({
         <ConfirmImportWarehouseDialog
           open={showConfirmImportDialog}
           onOpenChange={setShowConfirmImportDialog}
-          purchaseOrder={purchaseOrder}
+          purchaseOrderId={purchaseOrder.id}
           onSuccess={() => fetchData()}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
         />
       )}
 
@@ -643,6 +805,46 @@ const ViewPurchaseOrderDialog = ({
           onOpenChange={setShowCreatePaymentDialog}
           purchaseOrder={purchaseOrder}
           onSuccess={() => fetchData()}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
+
+      {/* View Purchase Contract Dialog */}
+      {showContractDetail && (
+        <ViewPurchaseContractDialog
+          open={showContractDetail}
+          onOpenChange={setShowContractDetail}
+          purchaseContractId={purchaseOrder.purchaseContractId || purchaseOrder?.purchaseContract?.id}
+          showTrigger={false}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
+
+      {/* Update Purchase Order Status Dialog */}
+      {showUpdateStatusDialog && (
+        <UpdatePurchaseOrderStatusDialog
+          open={showUpdateStatusDialog}
+          onOpenChange={setShowUpdateStatusDialog}
+          purchaseOrderId={purchaseOrder.id}
+          currentStatus={purchaseOrder.status}
+          statuses={purchaseOrderStatuses}
+          onSubmit={handleUpdateStatus}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
+
+      {/* View Product Dialog */}
+      {showViewProductDialog && (
+        <ViewProductDialog
+          open={showViewProductDialog}
+          onOpenChange={setShowViewProductDialog}
+          productId={selectedProductId}
+          showTrigger={false}
+          contentClassName="z-[100021]"
+          overlayClassName="z-[100020]"
         />
       )}
     </Dialog>

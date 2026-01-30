@@ -260,10 +260,10 @@ const LotAllocationDialog = ({
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Tổng đã chọn:</span>
             <span className={`font-semibold ${totalSelected === qtyRequired
-                ? 'text-green-600'
-                : totalSelected > qtyRequired
-                  ? 'text-red-600'
-                  : 'text-orange-600'
+              ? 'text-green-600'
+              : totalSelected > qtyRequired
+                ? 'text-red-600'
+                : 'text-orange-600'
               }`}>
               {totalSelected} / {qtyRequired} cái
               {totalSelected === qtyRequired && <IconCheck className="inline ml-1 h-4 w-4" />}

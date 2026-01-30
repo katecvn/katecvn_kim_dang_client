@@ -21,6 +21,7 @@ import {
 import { DataTableToolbar } from './DataTableToolbar'
 import { DataTablePagination } from './DataTablePagination'
 import { Skeleton } from '@/components/ui/skeleton'
+import ViewPurchaseContractDialog from './ViewPurchaseContractDialog'
 
 const PurchaseContractDataTable = ({
   columns,
@@ -34,10 +35,14 @@ const PurchaseContractDataTable = ({
   const [columnVisibility, setColumnVisibility] = useState({})
   const [columnFilters, setColumnFilters] = useState([])
   const [sorting, setSorting] = useState([])
+  const [viewId, setViewId] = useState(null)
 
   const table = useReactTable({
     data,
     columns,
+    meta: {
+      onView: (id) => setViewId(id),
+    },
     state: {
       sorting,
       columnVisibility,
@@ -145,6 +150,18 @@ const PurchaseContractDataTable = ({
         </Table>
       </div>
       <DataTablePagination table={table} />
+
+      {/* View Dialog */}
+      {viewId && (
+        <ViewPurchaseContractDialog
+          open={!!viewId}
+          onOpenChange={(open) => {
+            if (!open) setViewId(null)
+          }}
+          purchaseContractId={viewId}
+          showTrigger={false}
+        />
+      )}
     </div>
   )
 }

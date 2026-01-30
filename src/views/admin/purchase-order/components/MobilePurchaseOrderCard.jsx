@@ -1,0 +1,423 @@
+
+import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/custom/Button'
+import { moneyFormat } from '@/utils/money-format'
+import { dateFormat } from '@/utils/date-format'
+import { cn } from '@/lib/utils'
+import { ChevronDown, MoreVertical, Eye, Pencil, Trash2, Phone, CreditCard } from 'lucide-react'
+import { IconPrinter, IconFileText, IconPackageImport, IconCreditCard, IconCircleX } from '@tabler/icons-react'
+import { useState } from 'react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { purchaseOrderStatuses, purchaseOrderPaymentStatuses } from '../data'
+import Can from '@/utils/can'
+import DeletePurchaseOrderDialog from './DeletePurchaseOrderDialog'
+import UpdatePurchaseOrderDialog from './UpdatePurchaseOrderDialog'
+import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
+import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
+import { useDispatch, useSelector } from 'react-redux'
+import { updatePurchaseOrderStatus, confirmPurchaseOrder, cancelPurchaseOrder, revertPurchaseOrder } from '@/stores/PurchaseOrderSlice'
+import { toast } from 'sonner'
+import PrintPurchaseOrderView from './PrintPurchaseOrderView'
+import PurchaseContractPreviewDialog from './PurchaseContractPreviewDialog'
+import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
+import CreatePurchaseOrderPaymentDialog from '../../payment/components/CreatePurchaseOrderPaymentDialog'
+import { buildPurchaseContractData } from '../helpers/BuildPurchaseContractData'
+import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
+
+const MobilePurchaseOrderCard = ({
+  purchaseOrder,
+  isSelected,
+  onSelectChange,
+  onRowAction,
+}) => {
+  const dispatch = useDispatch()
+  const setting = useSelector((state) => state.setting.setting)
+  const [expanded, setExpanded] = useState(false)
+  const [showViewDialog, setShowViewDialog] = useState(false)
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+
+  // Print states
+  const [showPrintOrder, setShowPrintOrder] = useState(false)
+  const [showContractPreview, setShowContractPreview] = useState(false)
+  const [contractPreviewData, setContractPreviewData] = useState(null)
+
+  // Action states
+  const [showImportWarehouseDialog, setShowImportWarehouseDialog] = useState(false)
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+
+  const { supplier, totalAmount, paidAmount, status, paymentStatus, code, orderDate, items } = purchaseOrder
+
+  const getStatusBadge = (statusValue) => {
+    const statusObj = purchaseOrderStatuses.find((s) => s.value === statusValue)
+    return (
+      <Badge
+        variant="outline"
+        className={`cursor-pointer ${statusObj?.color}`}
+        onClick={() => {
+          if (!['draft', 'cancelled', 'completed'].includes(statusValue)) {
+            setShowUpdateStatusDialog(true)
+          }
+        }}
+      >
+        <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
+          {statusObj?.icon ? <statusObj.icon className="h-3 w-3" /> : null}
+        </span>
+        {statusObj?.label || 'Không xác định'}
+      </Badge>
+    )
+  }
+
+  const getPaymentStatusBadge = (paymentStatusValue) => {
+    const paymentStatusObj = purchaseOrderPaymentStatuses.find(
+      (s) => s.value === paymentStatusValue
+    )
+    return (
+      <Badge variant="outline" className={paymentStatusObj?.color}>
+        <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
+          {paymentStatusObj?.icon ? (
+            <paymentStatusObj.icon className="h-3 w-3" />
+          ) : null}
+        </span>
+        {paymentStatusObj?.label || 'Không xác định'}
+      </Badge>
+    )
+  }
+
+  const getDebtStatus = (order) => {
+    const pStatus = order?.paymentStatus
+    const tAmount = parseFloat(order?.totalAmount || 0)
+    const pAmount = parseFloat(order?.paidAmount || 0)
+    const remainingAmount = tAmount - pAmount
+
+    if (pStatus === 'paid' || remainingAmount <= 0) {
+      return <span className="text-xs text-green-500 font-medium">✓ Thanh toán toàn bộ</span>
+    }
+
+    if (pAmount > 0 && remainingAmount > 0) {
+      return (
+        <span className="text-xs text-yellow-600 font-medium">
+          Còn nợ: {moneyFormat(remainingAmount)}
+        </span>
+      )
+    }
+
+    if (pAmount === 0) {
+      return (
+        <span className="text-xs text-red-500 font-medium">
+          Còn nợ: {moneyFormat(remainingAmount)}
+        </span>
+      )
+    }
+
+    return <span className="text-xs text-muted-foreground">Chưa thanh toán</span>
+  }
+
+  const handleUpdateStatus = async (nextStatus, id) => {
+    try {
+      if (nextStatus === 'ordered') {
+        await dispatch(confirmPurchaseOrder(id)).unwrap()
+      } else if (nextStatus === 'cancelled') {
+        await dispatch(cancelPurchaseOrder(id)).unwrap()
+      } else if (nextStatus === 'draft' && purchaseOrder.status === 'ordered') {
+        await dispatch(revertPurchaseOrder(id)).unwrap()
+      } else {
+        await dispatch(updatePurchaseOrderStatus({ id, status: nextStatus })).unwrap()
+      }
+      setShowUpdateStatusDialog(false)
+    } catch (error) {
+      // handled in slice
+    }
+  }
+
+  const handlePrintContract = () => {
+    const contract = buildPurchaseContractData(purchaseOrder, purchaseOrder.purchaseContract?.code || purchaseOrder.externalOrderCode || '')
+    setContractPreviewData(contract)
+    setShowContractPreview(true)
+  }
+
+  const handleCreateWarehouseReceipt = async (selectedIds) => {
+    const selectedItems = items.filter(item => selectedIds.includes(String(item.id)) || selectedIds.includes(item.id))
+
+    const payload = {
+      type: 'import',
+      supplierId: purchaseOrder.supplierId,
+      referenceId: purchaseOrder.id,
+      referenceType: 'purchase_order',
+      note: `Nhập kho từ đơn hàng ${purchaseOrder.code}`,
+      status: 'draft',
+      orderDate: new Date().toISOString(),
+      items: selectedItems.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitId: item.unitId,
+        unitPrice: item.unitPrice,
+        conversionFactor: item.conversionFactor || 1,
+      }))
+    }
+
+    try {
+      await dispatch(createWarehouseReceipt(payload)).unwrap()
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const canEdit = purchaseOrder?.status === 'draft'
+  const canDelete = purchaseOrder?.status === 'draft'
+  const canCancel = !['draft', 'cancelled', 'completed'].includes(purchaseOrder?.status)
+  const canImportWarehouse = ['ordered', 'confirmed', 'partial'].includes(purchaseOrder?.status)
+  const canPayment = !['draft', 'cancelled'].includes(purchaseOrder?.status) && purchaseOrder.paymentStatus !== 'paid'
+
+  return (
+    <>
+      {/* Dialogs */}
+      {showViewDialog && (
+        <ViewPurchaseOrderDialog
+          open={showViewDialog}
+          onOpenChange={setShowViewDialog}
+          purchaseOrderId={purchaseOrder.id}
+          showTrigger={false}
+        />
+      )}
+
+      {showUpdateDialog && (
+        <UpdatePurchaseOrderDialog
+          open={showUpdateDialog}
+          onOpenChange={setShowUpdateDialog}
+          purchaseOrderId={purchaseOrder.id}
+          showTrigger={false}
+        />
+      )}
+
+      {showDeleteDialog && (
+        <DeletePurchaseOrderDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          purchaseOrder={purchaseOrder}
+          showTrigger={false}
+        />
+      )}
+
+      {showUpdateStatusDialog && (
+        <UpdatePurchaseOrderStatusDialog
+          open={showUpdateStatusDialog}
+          onOpenChange={setShowUpdateStatusDialog}
+          purchaseOrderId={purchaseOrder.id}
+          currentStatus={status}
+          statuses={purchaseOrderStatuses}
+          onSubmit={handleUpdateStatus}
+        />
+      )}
+
+      {showImportWarehouseDialog && (
+        <ConfirmImportWarehouseDialog
+          open={showImportWarehouseDialog}
+          onOpenChange={setShowImportWarehouseDialog}
+          purchaseOrderId={purchaseOrder.id}
+          onConfirm={handleCreateWarehouseReceipt}
+        />
+      )}
+
+      {showPaymentDialog && (
+        <CreatePurchaseOrderPaymentDialog
+          open={showPaymentDialog}
+          onOpenChange={setShowPaymentDialog}
+          purchaseOrder={purchaseOrder}
+          showTrigger={false}
+        />
+      )}
+
+      {showContractPreview && contractPreviewData && (
+        <PurchaseContractPreviewDialog
+          open={showContractPreview}
+          onOpenChange={setShowContractPreview}
+          data={contractPreviewData}
+        />
+      )}
+
+      {showPrintOrder && (
+        <PrintPurchaseOrderView
+          purchaseOrder={purchaseOrder}
+          setting={setting}
+          onAfterPrint={() => setShowPrintOrder(false)}
+        />
+      )}
+
+      <div className="border rounded-lg bg-card mb-3 overflow-hidden">
+        {/* Header - Always Visible */}
+        <div className="p-3 border-b bg-background/50 flex items-center gap-2">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={onSelectChange}
+            className="h-4 w-4"
+          />
+
+          <div className="flex-1 min-w-0">
+            <div
+              className="font-semibold text-sm truncate text-primary cursor-pointer hover:underline"
+              onClick={() => setShowViewDialog(true)}
+            >
+              {code}
+            </div>
+            <div className="text-xs text-muted-foreground">{dateFormat(orderDate)}</div>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <Can permission="GET_PURCHASE_ORDER">
+                <DropdownMenuItem onClick={() => setShowViewDialog(true)}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Xem chi tiết
+                </DropdownMenuItem>
+              </Can>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem onClick={() => setShowPrintOrder(true)}>
+                <IconPrinter className="mr-2 h-4 w-4" />
+                In đơn hàng
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={handlePrintContract}>
+                <IconFileText className="mr-2 h-4 w-4" />
+                In hợp đồng
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              {canImportWarehouse && (
+                <Can permission="CREATE_WAREHOUSE_RECEIPT">
+                  <DropdownMenuItem onClick={() => setShowImportWarehouseDialog(true)}>
+                    <IconPackageImport className="mr-2 h-4 w-4" />
+                    Tạo phiếu nhập kho
+                  </DropdownMenuItem>
+                </Can>
+              )}
+
+              {canPayment && (
+                <Can permission="CREATE_PAYMENT">
+                  <DropdownMenuItem onClick={() => setShowPaymentDialog(true)}>
+                    <IconCreditCard className="mr-2 h-4 w-4" />
+                    Tạo phiếu chi
+                  </DropdownMenuItem>
+                </Can>
+              )}
+
+              <DropdownMenuSeparator />
+
+              {canEdit && (
+                <Can permission="UPDATE_PURCHASE_ORDER">
+                  <DropdownMenuItem onClick={() => setShowUpdateDialog(true)} className="text-blue-600">
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Sửa
+                  </DropdownMenuItem>
+                </Can>
+              )}
+
+              {canCancel && (
+                <Can permission="UPDATE_PURCHASE_ORDER">
+                  <DropdownMenuItem onClick={() => setShowUpdateStatusDialog(true)} className="text-red-600">
+                    <IconCircleX className="mr-2 h-4 w-4" />
+                    Hủy
+                  </DropdownMenuItem>
+                </Can>
+              )}
+
+
+              {canDelete && (
+                <Can permission="DELETE_PURCHASE_ORDER">
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Xóa
+                  </DropdownMenuItem>
+                </Can>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setExpanded(!expanded)}
+          >
+            <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
+          </Button>
+        </div>
+
+        {/* Supplier Section */}
+        <div className="p-3 border-b bg-background/30 space-y-1.5">
+          <div className="text-sm font-medium truncate">{supplier?.name}</div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Phone className="h-3 w-3" />
+            {supplier?.phone}
+          </div>
+          {supplier?.address && (
+            <div className="text-xs text-muted-foreground px-1">
+              {supplier?.address}
+            </div>
+          )}
+        </div>
+
+        {/* Amount Section */}
+        <div className="p-3 border-b bg-background/30 space-y-1">
+          <div className="flex justify-between items-start">
+            <span className="text-xs text-muted-foreground">Tổng tiền:</span>
+            <span className="text-sm font-semibold text-primary">{moneyFormat(totalAmount)}</span>
+          </div>
+        </div>
+
+        {/* Status & Debt Section */}
+        <div className="p-3 border-b bg-background/30 space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Trạng thái:</span>
+            {getStatusBadge(status)}
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Thanh toán:</span>
+            {getPaymentStatusBadge(paymentStatus || 'unpaid')}
+          </div>
+          <div className="flex justify-between items-start">
+            <span className="text-xs text-muted-foreground">Công nợ:</span>
+            <div>{getDebtStatus(purchaseOrder)}</div>
+          </div>
+        </div>
+
+        {/* Expanded Details - Items? Notes? */}
+        {expanded && (
+          <div className="p-3 bg-muted/30 space-y-2 border-t text-xs">
+            {purchaseOrder.note && (
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-muted-foreground">Ghi chú:</span>
+                <span>{purchaseOrder.note}</span>
+              </div>
+            )}
+            {/* Could list items summary here if needed */}
+            <div className="text-muted-foreground text-center italic">
+              {items?.length} sản phẩm
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
+export default MobilePurchaseOrderCard

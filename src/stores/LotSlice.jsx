@@ -34,7 +34,7 @@ export const getAvailableLots = createAsyncThunk(
   async (productId, { rejectWithValue }) => {
     try {
       const { data } = await api.get(`/lots/available?productId=${productId}`)
-      return data
+      return data.data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)

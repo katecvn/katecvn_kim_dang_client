@@ -8,10 +8,9 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { IconTrash, IconCircleX } from '@tabler/icons-react'
+import { IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { DeleteReceiptDialog } from './DeleteReceiptDialog'
-import { CancelReceiptDialog } from './CancelReceiptDialog'
 import { useDispatch } from 'react-redux'
 import { getReceiptQRCode } from '@/stores/ReceiptSlice'
 import { toast } from 'sonner'
@@ -28,7 +27,6 @@ import { QrCode } from 'lucide-react'
 
 const DataTableRowActions = ({ row }) => {
   const [showDeleteReceiptDialog, setShowDeleteReceiptDialog] = useState(false)
-  const [showCancelReceiptDialog, setShowCancelReceiptDialog] = useState(false)
   const [openQrDialog, setOpenQrDialog] = useState(false)
   const [qrCodeData, setQrCodeData] = useState(null)
   const [qrLoading, setQrLoading] = useState(false)
@@ -106,15 +104,6 @@ const DataTableRowActions = ({ row }) => {
         />
       )}
 
-      {showCancelReceiptDialog && (
-        <CancelReceiptDialog
-          open={showCancelReceiptDialog}
-          onOpenChange={setShowCancelReceiptDialog}
-          receipt={row.original}
-          showTrigger={false}
-        />
-      )}
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -145,18 +134,6 @@ const DataTableRowActions = ({ row }) => {
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
             </>
-          )}
-
-          {row.original.status === 'completed' && (
-            <DropdownMenuItem
-              onSelect={() => setShowCancelReceiptDialog(true)}
-              className="text-destructive focus:text-destructive"
-            >
-              Hủy
-              <DropdownMenuShortcut>
-                <IconCircleX className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

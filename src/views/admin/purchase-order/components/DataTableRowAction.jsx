@@ -14,38 +14,42 @@ import {
   IconTrash,
   IconCircleX,
   IconPrinter,
-  IconFileText,
+
   IconPackageImport,
   IconCreditCard,
+  IconCheck,
+  IconPackage,
 } from '@tabler/icons-react'
 import Can from '@/utils/can'
 import { useState } from 'react'
 import DeletePurchaseOrderDialog from './DeletePurchaseOrderDialog'
 import UpdatePurchaseOrderDialog from './UpdatePurchaseOrderDialog'
-import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
+
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
 import { useDispatch, useSelector } from 'react-redux'
-import { updatePurchaseOrderStatus } from '@/stores/PurchaseOrderSlice'
-import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
+import {
+  updatePurchaseOrderStatus,
+  confirmPurchaseOrder,
+  cancelPurchaseOrder,
+  revertPurchaseOrder,
+  getPurchaseOrders,
+} from '@/stores/PurchaseOrderSlice'
+import { createWarehouseReceipt, postWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { purchaseOrderStatuses } from '../data'
 import { toast } from 'sonner'
-import PurchaseContractPreviewDialog from './PurchaseContractPreviewDialog'
-import { buildPurchaseContractData } from '../helpers/BuildPurchaseContractData'
-import ConfirmImportWarehouseDialog from './ConfirmImportWarehouseDialog'
-import CreatePurchaseOrderPaymentDialog from './CreatePurchaseOrderPaymentDialog'
+import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
+import CreatePurchaseOrderPaymentDialog from '../../payment/components/CreatePurchaseOrderPaymentDialog'
 import PrintPurchaseOrderView from './PrintPurchaseOrderView'
 
-const DataTableRowActions = ({ row }) => {
+const DataTableRowActions = ({ row, table }) => {
   const purchaseOrder = row?.original || {}
   const setting = useSelector((state) => state.setting.setting)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
-  const [showViewDialog, setShowViewDialog] = useState(false)
+
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
 
   // New States
-  const [showContractPreview, setShowContractPreview] = useState(false)
-  const [contractPreviewData, setContractPreviewData] = useState(null)
   const [showImportWarehouseDialog, setShowImportWarehouseDialog] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   const [showPrintOrder, setShowPrintOrder] = useState(false)
@@ -54,19 +58,25 @@ const DataTableRowActions = ({ row }) => {
 
   const handleUpdateStatus = async (status, id) => {
     try {
-      await dispatch(updatePurchaseOrderStatus({ id, status })).unwrap()
-      toast.success('Cập nhật trạng thái thành công')
+      if (status === 'ordered') {
+        await dispatch(confirmPurchaseOrder(id)).unwrap()
+      } else if (status === 'cancelled') {
+        await dispatch(cancelPurchaseOrder(id)).unwrap()
+      } else if (status === 'draft' && purchaseOrder.status === 'ordered') {
+        await dispatch(revertPurchaseOrder(id)).unwrap()
+      } else {
+        // Fallback for other status updates if any
+        await dispatch(updatePurchaseOrderStatus({ id, status })).unwrap()
+      }
       setShowUpdateStatusDialog(false)
     } catch (error) {
       // Error handled in slice/toast
     }
   }
 
-  const handlePrintContract = () => {
-    const contract = buildPurchaseContractData(purchaseOrder, purchaseOrder.purchaseContract?.code || purchaseOrder.externalOrderCode || '')
-    setContractPreviewData(contract)
-    setShowContractPreview(true)
-  }
+
+
+
 
   const handleCreateWarehouseReceipt = async (selectedIds) => {
     const selectedItems = purchaseOrder.items.filter(item => selectedIds.includes(String(item.id)) || selectedIds.includes(item.id))
@@ -98,9 +108,28 @@ const DataTableRowActions = ({ row }) => {
     }
   }
 
+  const handlePostWarehouseReceipt = async () => {
+    const warehouseReceiptId = purchaseOrder?.warehouseReceiptId
+    if (!warehouseReceiptId) {
+      toast.warning('Không tìm thấy phiếu nhập kho')
+      return
+    }
+
+    try {
+      await dispatch(postWarehouseReceipt(warehouseReceiptId)).unwrap()
+      // Refresh list to update status
+      // We might need to refresh purchase orders to see the new status if backend updates PO too
+      // (Usually posting receipt updates receipt status, PO might track it via relation)
+      // Refreshing PO list just in case
+      await dispatch(getPurchaseOrders({})).unwrap() // Assuming generic fetch works or pass filters if needed
+    } catch (error) {
+      console.error('Post warehouse receipt error:', error)
+    }
+  }
+
   const canEdit = purchaseOrder?.status === 'draft'
   const canDelete = purchaseOrder?.status === 'draft'
-  const canCancel = !['draft', 'cancelled'].includes(purchaseOrder?.status)
+  const canCancel = !['draft', 'cancelled', 'completed'].includes(purchaseOrder?.status)
 
   const canImportWarehouse = ['ordered', 'confirmed', 'partial'].includes(purchaseOrder?.status)
   const canPayment = !['draft', 'cancelled'].includes(purchaseOrder?.status) && purchaseOrder.paymentStatus !== 'paid'
@@ -119,8 +148,11 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <Can permission="GET_PURCHASE_ORDER">
-            <DropdownMenuItem onClick={() => setShowViewDialog(true)} className="text-slate-600">
-              Xem chi tiết
+            <DropdownMenuItem
+              onClick={() => table?.options?.meta?.onViewPurchaseOrder?.(purchaseOrder.id)}
+              className="text-slate-600"
+            >
+              Xem
               <DropdownMenuShortcut>
                 <IconEye className="h-4 w-4" />
               </DropdownMenuShortcut>
@@ -136,18 +168,13 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={handlePrintContract}>
-            In hợp đồng
-            <DropdownMenuShortcut>
-              <IconFileText className="h-4 w-4" />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
+
 
           <DropdownMenuSeparator />
 
           {canImportWarehouse && (
             <Can permission="CREATE_WAREHOUSE_RECEIPT">
-              <DropdownMenuItem onClick={() => setShowImportWarehouseDialog(true)}>
+              <DropdownMenuItem onClick={() => setShowImportWarehouseDialog(true)} className="text-orange-600">
                 Tạo phiếu nhập
                 <DropdownMenuShortcut>
                   <IconPackageImport className="h-4 w-4" />
@@ -158,7 +185,7 @@ const DataTableRowActions = ({ row }) => {
 
           {canPayment && (
             <Can permission="CREATE_PAYMENT">
-              <DropdownMenuItem onClick={() => setShowPaymentDialog(true)}>
+              <DropdownMenuItem onClick={() => setShowPaymentDialog(true)} className="text-emerald-600">
                 Tạo phiếu chi
                 <DropdownMenuShortcut>
                   <IconCreditCard className="h-4 w-4" />
@@ -201,6 +228,39 @@ const DataTableRowActions = ({ row }) => {
               </DropdownMenuItem>
             </Can>
           )}
+
+          <DropdownMenuSeparator />
+
+          {/* Ghi Sổ Kho - Chỉ hiển thị khi có phiếu kho DRAFT */}
+          {purchaseOrder?.warehouseReceipt?.status === 'DRAFT' && (
+            <Can permission="CREATE_WAREHOUSE_RECEIPT">
+              <DropdownMenuItem
+                onClick={handlePostWarehouseReceipt}
+                className="text-orange-600"
+              >
+                Ghi Sổ Kho
+                <DropdownMenuShortcut>
+                  <IconCheck className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
+
+          {/* Xem Phiếu Kho - Hiển thị khi đã có phiếu kho */}
+          {purchaseOrder?.warehouseReceiptId && (
+            <DropdownMenuItem
+              onClick={() => {
+                // TODO: Navigate or show dialog. For now toast like invoice
+                toast.info(`Phiếu kho: ${purchaseOrder?.warehouseReceipt?.code || purchaseOrder?.warehouseReceiptId}`)
+              }}
+              className="text-orange-600"
+            >
+              Xem Phiếu Kho
+              <DropdownMenuShortcut>
+                <IconPackage className="h-4 w-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -223,14 +283,7 @@ const DataTableRowActions = ({ row }) => {
         />
       )}
 
-      {showViewDialog && (
-        <ViewPurchaseOrderDialog
-          open={showViewDialog}
-          onOpenChange={setShowViewDialog}
-          purchaseOrderId={purchaseOrder.id}
-          showTrigger={false}
-        />
-      )}
+
 
       {showUpdateStatusDialog && (
         <UpdatePurchaseOrderStatusDialog
@@ -244,19 +297,13 @@ const DataTableRowActions = ({ row }) => {
       )}
 
       {/* New Dialogs */}
-      {showContractPreview && contractPreviewData && (
-        <PurchaseContractPreviewDialog
-          open={showContractPreview}
-          onOpenChange={setShowContractPreview}
-          data={contractPreviewData}
-        />
-      )}
+
 
       {showImportWarehouseDialog && (
         <ConfirmImportWarehouseDialog
           open={showImportWarehouseDialog}
           onOpenChange={setShowImportWarehouseDialog}
-          purchaseOrder={purchaseOrder}
+          purchaseOrderId={purchaseOrder.id}
           onConfirm={handleCreateWarehouseReceipt}
         />
       )}

@@ -144,6 +144,63 @@ export const updatePurchaseOrder = createAsyncThunk(
   },
 )
 
+// Confirm PO
+export const confirmPurchaseOrder = createAsyncThunk(
+  'purchaseOrder/confirm',
+  async (id, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post(`/purchase-orders/${id}/confirm`)
+      await dispatch(
+        getMyPurchaseOrders({
+          fromDate: getStartOfCurrentMonth(),
+          toDate: getEndOfCurrentMonth(),
+        }),
+      ).unwrap()
+      toast.success('Đã xác nhận đơn hàng')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
+// Cancel PO
+export const cancelPurchaseOrder = createAsyncThunk(
+  'purchaseOrder/cancel',
+  async (id, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post(`/purchase-orders/${id}/cancel`)
+      await dispatch(
+        getMyPurchaseOrders({
+          fromDate: getStartOfCurrentMonth(),
+          toDate: getEndOfCurrentMonth(),
+        }),
+      ).unwrap()
+      toast.success('Đã hủy đơn hàng')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
+// Revert PO
+export const revertPurchaseOrder = createAsyncThunk(
+  'purchaseOrder/revert',
+  async (id, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post(`/purchase-orders/${id}/revert`)
+      await dispatch(
+        getMyPurchaseOrders({
+          fromDate: getStartOfCurrentMonth(),
+          toDate: getEndOfCurrentMonth(),
+        }),
+      ).unwrap()
+      toast.success('Đã chuyển về nháp')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
 export const updatePurchaseOrderStatus = createAsyncThunk(
   'purchaseOrder/update-purchase-order-status',
   async (data, { rejectWithValue, dispatch }) => {
@@ -245,6 +302,30 @@ export const purchaseOrderSlice = createSlice({
       .addCase(updatePurchaseOrderStatus.pending, (state) => {
         state.loading = true
         state.error = null
+      })
+      // Confirm
+      .addCase(confirmPurchaseOrder.fulfilled, (state) => { state.loading = false })
+      .addCase(confirmPurchaseOrder.pending, (state) => { state.loading = true })
+      .addCase(confirmPurchaseOrder.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+        toast.error(state.error)
+      })
+      // Cancel
+      .addCase(cancelPurchaseOrder.fulfilled, (state) => { state.loading = false })
+      .addCase(cancelPurchaseOrder.pending, (state) => { state.loading = true })
+      .addCase(cancelPurchaseOrder.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+        toast.error(state.error)
+      })
+      // Revert
+      .addCase(revertPurchaseOrder.fulfilled, (state) => { state.loading = false })
+      .addCase(revertPurchaseOrder.pending, (state) => { state.loading = true })
+      .addCase(revertPurchaseOrder.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+        toast.error(state.error)
       })
       .addCase(getPurchaseOrderDetail.pending, (state) => {
         // Don't set global loading to true to avoid unmounting the list/dialog

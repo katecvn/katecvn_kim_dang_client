@@ -608,6 +608,22 @@ const CreatePurchaseOrderDialog = ({
                     </div>
                   </div>
 
+                  {/* Add Product Button (Mobile) */}
+                  <div className="px-4 py-2 border-b flex justify-end bg-background">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-8 text-xs shadow-sm"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setShowCreateProduct(true)
+                      }}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Thêm sản phẩm
+                    </Button>
+                  </div>
+
                   {/* Category + Product Grid */}
                   <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full">
                     {/* Category Sidebar - Horizontal scroll with filter */}
@@ -719,6 +735,19 @@ const CreatePurchaseOrderDialog = ({
             </form>
           </Form>
         </div>
+
+        <CreateProductDialog
+          open={showCreateProduct}
+          onOpenChange={setShowCreateProduct}
+          onSuccess={() => {
+            dispatch(getProducts())
+            setShowCreateProduct(false)
+            toast.success('Đã thêm sản phẩm mới')
+          }}
+          showTrigger={false}
+          contentClassName="z-[10006]"
+          overlayClassName="z-[10005]"
+        />
       </>
     )
   }

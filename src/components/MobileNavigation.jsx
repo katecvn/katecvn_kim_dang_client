@@ -13,10 +13,17 @@ const MobileNavigation = ({ onCategoryClick }) => {
   // Poll for cart count and current view changes
   useEffect(() => {
     const interval = setInterval(() => {
-      const count = window.__invoiceDialog?.selectedProductsCount || 0
-      const view = window.__invoiceDialog?.currentView || 'products'
-      setCartCount(count)
-      setCurrentView(view)
+      // Prioritize checking active dialogs
+      if (window.__invoiceDialog) {
+        setCartCount(window.__invoiceDialog.selectedProductsCount || 0)
+        setCurrentView(window.__invoiceDialog.currentView || 'products')
+      } else if (window.__purchaseOrderDialog) {
+        setCartCount(window.__purchaseOrderDialog.selectedProductsCount || 0)
+        setCurrentView(window.__purchaseOrderDialog.currentView || 'products')
+      } else {
+        setCartCount(0)
+        setCurrentView('products')
+      }
     }, 500)
     return () => clearInterval(interval)
   }, [])
@@ -107,6 +114,10 @@ const MobileNavigation = ({ onCategoryClick }) => {
                     if (window.__invoiceDialog) {
                       const targetView = currentView === 'cart' ? 'products' : 'cart'
                       window.__invoiceDialog.setMobileView(targetView)
+                    } else if (window.__purchaseOrderDialog) {
+                      // If purchase order dialog is open, toggle between views
+                      const targetView = currentView === 'cart' ? 'products' : 'cart'
+                      window.__purchaseOrderDialog.setMobileView(targetView)
                     } else {
                       // Set flag to auto-open dialog when invoice page loads
                       localStorage.setItem('autoOpenInvoiceDialog', 'true')

@@ -7,10 +7,15 @@ import { moneyFormat } from '@/utils/money-format'
 import { purchaseOrderStatuses, purchaseOrderPaymentStatuses } from '../data'
 import { useState } from 'react'
 import Can from '@/utils/can'
-import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
+
 import { toast } from 'sonner'
 import { useDispatch } from 'react-redux'
-import { updatePurchaseOrderStatus } from '@/stores/PurchaseOrderSlice'
+import {
+  updatePurchaseOrderStatus,
+  confirmPurchaseOrder,
+  cancelPurchaseOrder,
+  revertPurchaseOrder
+} from '@/stores/PurchaseOrderSlice'
 import { Badge } from '@/components/ui/badge'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
 import { Phone, CreditCard } from 'lucide-react'
@@ -46,32 +51,23 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Mã ĐĐH" />
     ),
-    cell: function Cell({ row }) {
-      const [showViewDialog, setShowViewDialog] = useState(false)
-
+    cell: function Cell({ row, table }) {
       return (
         <>
           <Can permission={'GET_PURCHASE_ORDER'}>
-            {showViewDialog && (
-              <ViewPurchaseOrderDialog
-                open={showViewDialog}
-                onOpenChange={setShowViewDialog}
-                purchaseOrderId={row.original.id}
-                showTrigger={false}
-              />
-            )}
+            <span
+              className="cursor-pointer hover:text-primary hover:underline"
+              onClick={() => table.options.meta?.onViewPurchaseOrder?.(row.original.id)}
+            >
+              {row.original.code}
+            </span>
           </Can>
-
-          <span
-            className="cursor-pointer hover:text-primary"
-            onClick={() => setShowViewDialog(true)}
-          >
-            {row.original.code}
-          </span>
         </>
       )
     },
   },
+  // ... (unchanged)
+
   {
     accessorKey: 'supplier',
     header: ({ column }) => (
@@ -122,7 +118,7 @@ export const columns = [
     ),
     cell: ({ row }) => {
       const amount = row.original.totalAmount
-      const discount = row.original.discount
+      const discount = row.original.discountAmount
 
       return (
         <div className="flex flex-col">
@@ -210,16 +206,26 @@ export const columns = [
 
       const handleSubmit = async (nextStatus) => {
         try {
-          await dispatch(
-            updatePurchaseOrderStatus({ id: row.original.id, status: nextStatus }),
-          ).unwrap()
+          if (nextStatus === 'ordered') {
+            await dispatch(confirmPurchaseOrder(row.original.id)).unwrap()
+          } else if (nextStatus === 'cancelled') {
+            await dispatch(cancelPurchaseOrder(row.original.id)).unwrap()
+          } else if (nextStatus === 'draft' && row.original.status === 'ordered') {
+            await dispatch(revertPurchaseOrder(row.original.id)).unwrap()
+          } else {
+            await dispatch(
+              updatePurchaseOrderStatus({ id: row.original.id, status: nextStatus }),
+            ).unwrap()
+          }
           toast.success('Cập nhật trạng thái đơn đặt hàng thành công')
           setOpenUpdateStatus(false)
         } catch (error) {
           console.log('Submit error: ', error)
-          toast.error('Cập nhật trạng thái thất bại')
+          // toast handled in slice for specific actions or here if generic failed
         }
       }
+
+      const isTerminalStatus = ['cancelled', 'completed'].includes(currentStatus)
 
       return (
         <div className="flex flex-col gap-2">
@@ -236,9 +242,10 @@ export const columns = [
 
           <Badge
             variant="outline"
-            className={`cursor-pointer select-none ${statusObj?.color || ''}`}
-            onClick={() => setOpenUpdateStatus(true)}
-            title="Bấm để cập nhật trạng thái"
+            className={`select-none ${statusObj?.color || ''} ${!isTerminalStatus ? 'cursor-pointer' : 'cursor-default opacity-80'
+              }`}
+            onClick={() => !isTerminalStatus && setOpenUpdateStatus(true)}
+            title={!isTerminalStatus ? 'Bấm để cập nhật trạng thái' : ''}
           >
             <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
               {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
@@ -259,6 +266,17 @@ export const columns = [
           </Badge>
         </div>
       )
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'orderDate',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Ngày đặt" />
+    ),
+    cell: ({ row }) => {
+      return <span>{dateFormat(row.original.orderDate)}</span>
     },
     enableSorting: true,
     enableHiding: true,
@@ -334,6 +352,6 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Thao tác" />
     ),
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row, table }) => <DataTableRowActions row={row} table={table} />,
   },
 ]

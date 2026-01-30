@@ -10,7 +10,7 @@ const attributes = {
 const purchaseOrderStatuses = [
   {
     value: 'draft',
-    label: 'Nháp',
+    label: 'Chờ xác nhận',
     icon: Circle,
     color: 'bg-gray-100 text-gray-800 border-gray-300',
   },

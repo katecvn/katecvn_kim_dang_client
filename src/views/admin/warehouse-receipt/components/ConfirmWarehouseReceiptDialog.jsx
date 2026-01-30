@@ -118,6 +118,19 @@ const ConfirmWarehouseReceiptDialog = ({
             </div>
           </div>
 
+          {/* Warning for existing receipts */}
+          {(invoice.warehouseReceiptId || (invoice.warehouseReceipts && invoice.warehouseReceipts.length > 0)) && (
+            <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-200">
+              <p className="font-medium flex items-center">
+                <InfoCircledIcon className="mr-2 h-4 w-4" />
+                Đơn hàng này đã có phiếu xuất kho!
+              </p>
+              <p className="mt-1 text-xs ml-6">
+                Vui lòng kiểm tra kỹ các sản phẩm để tránh xuất trùng.
+              </p>
+            </div>
+          )}
+
           {/* Products to export */}
           <div>
             <div className="mb-2 flex items-center justify-between">
@@ -216,6 +229,19 @@ const ConfirmWarehouseReceiptDialog = ({
               </Table>
             </div>
           </div>
+
+          {/* Warning for existing receipts */}
+          {(invoice.warehouseReceiptId || (invoice.warehouseReceipts && invoice.warehouseReceipts.length > 0)) && (
+            <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-200">
+              <p className="font-medium flex items-center">
+                <InfoCircledIcon className="mr-2 h-4 w-4" />
+                Đơn hàng này đã có phiếu xuất kho!
+              </p>
+              <p className="mt-1 text-xs ml-6">
+                Vui lòng kiểm tra kỹ các sản phẩm để tránh xuất trùng.
+              </p>
+            </div>
+          )}
 
           {/* Warning */}
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">

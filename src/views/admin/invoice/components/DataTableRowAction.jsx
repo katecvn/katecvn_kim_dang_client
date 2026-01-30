@@ -136,10 +136,7 @@ const DataTableRowActions = ({ row }) => {
       return
     }
 
-    if (invoice?.warehouseReceiptId) {
-      toast.warning('Đơn hàng này đã có phiếu xuất kho')
-      return
-    }
+
 
     // Show confirmation dialog
     setShowConfirmWarehouseDialog(true)
@@ -169,12 +166,6 @@ const DataTableRowActions = ({ row }) => {
       ).unwrap()
     } catch (error) {
       console.error('Create warehouse receipt error:', error)
-      // Toast is handled in slice or here? Slice does NOT have toast for generate
-      // But slice has rejectWithValue with message.
-      // We can keep toast error here or rely on slice rejection.
-      // Slice thunk catches error and returns rejectWithValue(message).
-      // unwrap() throws the rejected value (message).
-      // So we catch it here.
     } finally {
       setWarehouseLoading(false)
     }
@@ -282,7 +273,7 @@ const DataTableRowActions = ({ row }) => {
   }
 
   const handleCreateReceipt = () => {
-    if (invoice?.status === 'paid' || invoice?.status === 'rejected') {
+    if (invoice?.paymentStatus === 'paid' || invoice?.status === 'rejected') {
       toast.warning('Không thể tạo phiếu thu cho hóa đơn đã thanh toán hoặc bị từ chối')
       return
     }
@@ -511,8 +502,8 @@ const DataTableRowActions = ({ row }) => {
           )} */}
 
           {/* ===== WAREHOUSE RECEIPT ACTIONS ===== */}
-          {/* Tạo Phiếu Xuất Kho - Chỉ hiển thị khi status = accepted và chưa có phiếu kho */}
-          {row?.original?.status === 'accepted' && !row?.original?.warehouseReceiptId && (
+          {/* Tạo Phiếu Xuất Kho - Chỉ hiển thị khi status = accepted */}
+          {row?.original?.status === 'accepted' && (
             <Can permission="CREATE_INVOICE">
               <DropdownMenuItem
                 onClick={handleCreateWarehouseReceipt}

@@ -591,12 +591,7 @@ const PurchaseOrderSidebar = ({
                 <span>{moneyFormat(subtotal)}</span>
               </div>
 
-              {tax > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Thuế:</span>
-                  <span>{moneyFormat(tax)}</span>
-                </div>
-              )}
+
 
               {discount > 0 && (
                 <div className="flex justify-between text-destructive">

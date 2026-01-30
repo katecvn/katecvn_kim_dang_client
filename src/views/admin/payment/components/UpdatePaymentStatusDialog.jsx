@@ -18,37 +18,49 @@ import {
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-const UpdatePurchaseOrderStatusDialog = ({
+const UpdatePaymentStatusDialog = ({
   open,
   onOpenChange,
-  purchaseOrderId,
+  paymentId,
   currentStatus,
   statuses = [],
-  onSubmit,
+  onSubmit, // Handler function to call on save
   contentClassName,
   overlayClassName,
 }) => {
-  const filteredStatuses = useMemo(
-    () => statuses.filter((s) => s.value !== 'completed'),
-    [statuses]
-  )
+  // Normalize status to handle both single and double 'l' from backend/frontend mismatch
+  const normalizedStatus = useMemo(() => {
+    if (currentStatus === 'cancelled') return 'cancelled'
+    return currentStatus
+  }, [currentStatus])
 
   const current = useMemo(
-    () => statuses.find((s) => s.value === currentStatus),
-    [statuses, currentStatus],
+    () => statuses.find((s) => s.value === normalizedStatus),
+    [statuses, normalizedStatus],
   )
 
-  const [status, setStatus] = useState(currentStatus || '')
+  const [status, setStatus] = useState(normalizedStatus || '')
   const [loading, setLoading] = useState(false)
+
+  // Explicit color mapping since data might not have it
+  const getColor = (statusValue) => {
+    switch (statusValue) {
+      case 'draft': return 'text-gray-600'
+      case 'completed': return 'text-green-600'
+      case 'canceled':
+      case 'cancelled': return 'text-red-600'
+      default: return ''
+    }
+  }
 
   useEffect(() => {
     if (!open) return
-    setStatus(currentStatus || '')
-  }, [open, currentStatus])
+    setStatus(normalizedStatus || '')
+  }, [open, normalizedStatus])
 
   const selectedStatusObj = useMemo(
-    () => filteredStatuses.find((s) => s.value === status),
-    [filteredStatuses, status],
+    () => statuses.find((s) => s.value === status),
+    [statuses, status],
   )
 
   const handleSave = async () => {
@@ -64,24 +76,38 @@ const UpdatePurchaseOrderStatusDialog = ({
 
     try {
       setLoading(true)
-      await onSubmit?.(status, purchaseOrderId)
+      await onSubmit?.(status, paymentId)
+    } catch (error) {
+      console.error(error)
     } finally {
       setLoading(false)
     }
   }
 
+  const filteredStatuses = useMemo(() => {
+    if (normalizedStatus === 'cancelled') {
+      return statuses.filter(
+        (s) => s.value === 'cancelled',
+      )
+    }
+    if (normalizedStatus === 'completed') {
+      return statuses.filter((s) => s.value !== 'draft')
+    }
+    return statuses
+  }, [statuses, normalizedStatus])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn("sm:max-w-[460px]", contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
-          <DialogTitle>Cập nhật trạng thái đơn đặt hàng</DialogTitle>
+          <DialogTitle>Cập nhật trạng thái phiếu chi</DialogTitle>
           <DialogDescription>
-            Đơn đặt hàng: <span className="font-semibold">#{purchaseOrderId}</span>
+            Phiếu chi: <span className="font-semibold">#{paymentId}</span>
             {current?.label ? (
               <>
                 {' '}
                 • Hiện tại:{' '}
-                <span className="font-semibold">{current.label}</span>
+                <span className={`font-semibold ${getColor(currentStatus)}`}>{current.label}</span>
               </>
             ) : null}
           </DialogDescription>
@@ -95,8 +121,7 @@ const UpdatePurchaseOrderStatusDialog = ({
               <SelectValue placeholder="Chọn trạng thái">
                 {selectedStatusObj ? (
                   <span
-                    className={`inline-flex items-center gap-2 font-medium ${selectedStatusObj.color || ''
-                      }`}
+                    className={`inline-flex items-center gap-2 font-medium ${getColor(status)}`}
                   >
                     {selectedStatusObj.icon ? (
                       <selectedStatusObj.icon className="h-4 w-4" />
@@ -107,7 +132,7 @@ const UpdatePurchaseOrderStatusDialog = ({
               </SelectValue>
             </SelectTrigger>
 
-            <SelectContent className="z-[100021]">
+            <SelectContent position="popper" className="z-[10010]">
               {filteredStatuses.map((s) => (
                 <SelectItem
                   key={s.value}
@@ -115,8 +140,7 @@ const UpdatePurchaseOrderStatusDialog = ({
                   className="cursor-pointer"
                 >
                   <span
-                    className={`inline-flex items-center gap-2 font-medium ${s.color || ''
-                      }`}
+                    className={`inline-flex items-center gap-2 font-medium ${getColor(s.value)}`}
                   >
                     {s.icon ? <s.icon className="h-4 w-4" /> : null}
                     {s.label}
@@ -145,4 +169,4 @@ const UpdatePurchaseOrderStatusDialog = ({
   )
 }
 
-export default UpdatePurchaseOrderStatusDialog
+export default UpdatePaymentStatusDialog

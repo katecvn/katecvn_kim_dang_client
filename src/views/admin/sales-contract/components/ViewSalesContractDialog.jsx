@@ -53,6 +53,7 @@ const ViewSalesContractDialog = ({
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const dispatch = useDispatch()
   const [contract, setContract] = useState({})
+  console.log('sales contract', contract)
   const [loading, setLoading] = useState(false)
   const [viewInvoiceOpen, setViewInvoiceOpen] = useState(false)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
@@ -297,9 +298,9 @@ const ViewSalesContractDialog = ({
                                           }
                                         }}
                                       >
-                                        {item.image ? (
+                                        {item?.product?.image ? (
                                           <img
-                                            src={getPublicUrl(item.image)}
+                                            src={getPublicUrl(item.product.image)}
                                             alt={item.productName}
                                             className="h-full w-full object-cover"
                                           />

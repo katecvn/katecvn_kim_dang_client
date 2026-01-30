@@ -98,6 +98,25 @@ export const cancelWarehouseReceipt = createAsyncThunk(
   },
 )
 
+export const generateWarehouseReceiptFromPO = createAsyncThunk(
+  'warehouseReceipt/generate-from-po',
+  async (purchaseOrderId, { rejectWithValue }) => {
+    try {
+      const response = await api.post(
+        '/warehouse-receipts/generate-from-purchase-order',
+        {
+          purchaseOrderId,
+        },
+      )
+      toast.success('Tạo phiếu nhập kho thành công')
+      return response.data.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 export const generateWarehouseReceiptFromInvoice = createAsyncThunk(
   'warehouseReceipt/generate-from-invoice',
   async ({ invoiceId, selectedItemIds, type = 'retail' }, { rejectWithValue }) => {

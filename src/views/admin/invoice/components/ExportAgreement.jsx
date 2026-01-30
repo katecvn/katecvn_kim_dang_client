@@ -306,7 +306,8 @@ export default function ExportSaleAgreement({ data = {} }) {
             <div style={{
               display: 'flex',
               alignItems: 'flex-start',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              marginTop: '12px',
             }}>
               <div style={{ width: '50%' }}>
                 <div style={{
@@ -347,12 +348,12 @@ export default function ExportSaleAgreement({ data = {} }) {
                 </div>
 
                 {/* Khoảng trống cho chữ ký */}
-                <div style={{ marginTop: '20px' }}></div>
+                <div style={{ marginTop: '40px' }}></div>
 
                 {/* Tên khách hàng */}
                 <div style={{
                   fontFamily: 'Times New Roman, Times, serif',
-                  color: '#1d4ed8'
+                  color: '#1d4ed8',
                 }}>
                   {safe(customer.name)}
                 </div>

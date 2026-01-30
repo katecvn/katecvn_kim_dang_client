@@ -243,44 +243,17 @@ const PurchaseOrderCart = ({
                       </div>
                     </div>
 
-                    {/* Tax and Discount */}
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      {/* Taxes */}
-                      <div className="flex-1">
-                        <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Thuế
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {productTaxes.map((tax) => {
-                            const isChecked = selectedProductTaxes.includes(tax.id)
-                            return (
-                              <div key={tax.id} className="flex items-center space-x-1">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={(e) => onTaxChange(product.id, tax.id, e.target.checked)}
-                                  className="h-3 w-3"
-                                />
-                                <span className="text-[10px]">{tax.code} ({tax.percentage}%)</span>
-                              </div>
-                            )
-                          })}
-                          {productTaxes.length === 0 && <span className="text-[10px] text-muted-foreground">Không có</span>}
-                        </div>
-                      </div>
-
-                      {/* Discount */}
-                      <div className="flex-1">
-                        <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Giảm giá
-                        </label>
-                        <MoneyInputQuick
-                          value={discounts[product.id] ?? 0}
-                          onChange={(num) => onDiscountChange(product.id, String(num))}
-                          placeholder="0"
-                          className="h-8 text-sm"
-                        />
-                      </div>
+                    {/* Discount Only */}
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        Giảm giá
+                      </label>
+                      <MoneyInputQuick
+                        value={discounts[product.id] ?? 0}
+                        onChange={(num) => onDiscountChange(product.id, String(num))}
+                        placeholder="0"
+                        className="h-8 text-sm"
+                      />
                     </div>
 
                     {/* Subtotal */}
@@ -289,7 +262,7 @@ const PurchaseOrderCart = ({
                         Thành tiền:
                       </span>
                       <span className="text-sm font-semibold text-primary">
-                        {moneyFormat(subtotal + taxAmount)}
+                        {moneyFormat(subtotal)}
                       </span>
                     </div>
                   </div>

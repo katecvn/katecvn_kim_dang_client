@@ -21,6 +21,7 @@ const DataTableViewOptions = ({ table }) => {
     status: 'Trạng thái',
     createdByUser: 'Người tạo',
     debt: 'Công nợ',
+    orderDate: 'Ngày đặt',
     expectedDeliveryDate: 'Ngày dự kiến giao hàng',
   }
 

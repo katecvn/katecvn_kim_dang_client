@@ -21,6 +21,10 @@ import {
 import { DataTableToolbar } from './DataTableToolbar'
 import { DataTablePagination } from './DataTablePagination'
 import { Skeleton } from '@/components/ui/skeleton'
+import MobilePurchaseOrderCard from './MobilePurchaseOrderCard'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
+
+import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
 
 const PurchaseOrderDataTable = ({
   columns,
@@ -28,6 +32,8 @@ const PurchaseOrderDataTable = ({
   loading = false,
   isMyPurchaseOrder = false,
 }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)')
+  const [viewId, setViewId] = useState(null)
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
   const [columnFilters, setColumnFilters] = useState([])
@@ -41,6 +47,9 @@ const PurchaseOrderDataTable = ({
       pagination: {
         pageSize: 30, //custom default page size
       },
+    },
+    meta: {
+      onViewPurchaseOrder: (id) => setViewId(id),
     },
     state: {
       sorting,
@@ -68,6 +77,57 @@ const PurchaseOrderDataTable = ({
       return value.toString().includes(filterValue.toLowerCase())
     },
   })
+
+  // Mobile View - Card List
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
+        <DataTableToolbar table={table} isMyPurchaseOrder={isMyPurchaseOrder} />
+
+        <div className="space-y-2">
+          {loading ? (
+            <>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="border rounded-lg p-3 space-y-2">
+                  <Skeleton className="h-[20px] w-1/3 rounded-md" />
+                  <Skeleton className="h-[16px] w-2/3 rounded-md" />
+                  <Skeleton className="h-[16px] w-1/2 rounded-md" />
+                </div>
+              ))}
+            </>
+          ) : table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <MobilePurchaseOrderCard
+                key={row.id}
+                purchaseOrder={row.original}
+                isSelected={row.getIsSelected()}
+                onSelectChange={(checked) => row.toggleSelected(checked)}
+                onRowAction={() => setViewId(row.original.id)}
+              />
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Không có kết quả nào
+            </div>
+          )}
+        </div>
+
+        <DataTablePagination table={table} />
+
+        {/* View Dialog Mobile */}
+        {viewId && (
+          <ViewPurchaseOrderDialog
+            open={!!viewId}
+            onOpenChange={(open) => {
+              if (!open) setViewId(null)
+            }}
+            purchaseOrderId={viewId}
+            showTrigger={false}
+          />
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -138,6 +198,18 @@ const PurchaseOrderDataTable = ({
       </div>
 
       <DataTablePagination table={table} />
+
+      {/* View Dialog Desktop */}
+      {viewId && (
+        <ViewPurchaseOrderDialog
+          open={!!viewId}
+          onOpenChange={(open) => {
+            if (!open) setViewId(null)
+          }}
+          purchaseOrderId={viewId}
+          showTrigger={false}
+        />
+      )}
     </div>
   )
 }

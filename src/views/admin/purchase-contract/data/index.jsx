@@ -5,7 +5,7 @@ import {
 } from '@tabler/icons-react'
 import { CheckCircleIcon, XCircleIcon } from 'lucide-react'
 
-const statuses = [
+const purchaseOrderStatuses = [
   {
     value: 'draft',
     label: 'Chờ xác nhận',
@@ -39,4 +39,4 @@ const statuses = [
 ]
 
 
-export { statuses }
+export { purchaseOrderStatuses }

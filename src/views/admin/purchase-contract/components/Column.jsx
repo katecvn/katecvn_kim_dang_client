@@ -36,10 +36,13 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Mã HĐ" />
     ),
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       // Placeholder for view dialog interaction
       return (
-        <div className={cn("w-28 font-medium cursor-pointer hover:underline text-primary")}>
+        <div
+          className={cn("w-28 font-medium cursor-pointer hover:underline text-primary")}
+          onClick={() => table.options.meta?.onView?.(row.original.id)}
+        >
           {row.getValue('code')}
         </div>
       )
@@ -103,11 +106,11 @@ export const columns = [
                     'bg-yellow-500'
             )}
           >
-            {status === 'completed' ? 'Hoàn thành' :
-              status === 'draft' ? 'Nháp' :
+            {status === 'completed' ? 'Đã giao hàng' :
+              status === 'draft' ? 'Chờ xác nhận' :
                 status === 'cancelled' ? 'Đã hủy' :
-                  status === 'confirmed' ? 'Đã chốt' :
-                    status}
+                  status === 'confirmed' ? 'Đang giao hàng' :
+                    'Đã thanh lý'}
           </Badge>
         </div>
       )

@@ -76,18 +76,18 @@ const RevenuePage = () => {
         </div>
         <div className="-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
           <div className="space-y-4">
-            <div className="rounded-lg">
-              <h2 className="text-lg font-bold">Doanh thu công ty</h2>
+            <div className="rounded-lg overflow-x-auto">
+              <h2 className="text-lg font-bold mb-2">Doanh thu công ty</h2>
 
-              <table className="w-full border-collapse border border-gray-300">
+              <table className="w-full border-collapse border border-gray-300 min-w-[800px]">
                 <thead>
                   <tr className="bg-gray-200 dark:bg-primary-foreground">
-                    <th className="w-[300px] border p-2">Nguồn</th>
-                    <th className="w-[300px] border p-2">Danh mục</th>
-                    <th className="w-[300px] border p-2">
+                    <th className="w-[150px] sm:w-[300px] border p-2">Nguồn</th>
+                    <th className="w-[200px] sm:w-[300px] border p-2">Danh mục</th>
+                    <th className="w-[150px] sm:w-[300px] border p-2">
                       Doanh thu chưa hệ số
                     </th>
-                    <th className="w-[300px] border p-2">Doanh thu có hệ số</th>
+                    <th className="w-[150px] sm:w-[300px] border p-2">Doanh thu có hệ số</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -204,128 +204,130 @@ const RevenuePage = () => {
             <div className="rounded-lg">
               {data?.revenueOfUser?.map((user) => (
                 <div key={user.userName} className="mt-8 rounded-lg">
-                  <h2 className="text-lg font-bold">
+                  <h2 className="text-lg font-bold mb-2">
                     Doanh thu: {user.userName}
                   </h2>
-                  <table className="mt-2 w-full border-collapse border border-gray-300">
-                    <thead>
-                      <tr className="bg-gray-200 dark:bg-primary-foreground">
-                        <th className="w-[300px] border p-2">Nguồn</th>
-                        <th className="w-[300px] border p-2">Danh mục</th>
-                        <th className="w-[300px] border p-2">
-                          Doanh thu chưa hệ số
-                        </th>
-                        <th className="w-[300px] border p-2">
-                          Doanh thu có hệ số
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loading ? (
-                        <>
-                          {Array.from({ length: 10 }).map((_, index) => (
-                            <tr key={`user-${index}`} className="border">
-                              <td className="border p-2">
-                                <Skeleton className="h-[20px] w-full rounded-md" />
-                              </td>
-                              <td className="border p-2">
-                                <Skeleton className="h-[20px] w-full rounded-md" />
-                              </td>
-                              <td className="border p-2">
-                                <Skeleton className="h-[20px] w-full rounded-md" />
-                              </td>
-                              <td className="border p-2">
-                                <Skeleton className="h-[20px] w-full rounded-md" />
-                              </td>
-                            </tr>
-                          ))}
-                        </>
-                      ) : user?.detail.length > 0 ? (
-                        <>
-                          {Object.entries(
-                            groupByCategoryType(user?.detail),
-                          ).map(([categoryType, items]) => {
-                            const totalWithoutCoefficient = items.reduce(
-                              (sum, item) => sum + item.withoutCoefficient,
-                              0,
-                            )
-                            const totalWithCoefficient = items.reduce(
-                              (sum, item) => sum + item.withCoefficient,
-                              0,
-                            )
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300 min-w-[800px]">
+                      <thead>
+                        <tr className="bg-gray-200 dark:bg-primary-foreground">
+                          <th className="w-[150px] sm:w-[300px] border p-2">Nguồn</th>
+                          <th className="w-[200px] sm:w-[300px] border p-2">Danh mục</th>
+                          <th className="w-[150px] sm:w-[300px] border p-2">
+                            Doanh thu chưa hệ số
+                          </th>
+                          <th className="w-[150px] sm:w-[300px] border p-2">
+                            Doanh thu có hệ số
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loading ? (
+                          <>
+                            {Array.from({ length: 10 }).map((_, index) => (
+                              <tr key={`user-${index}`} className="border">
+                                <td className="border p-2">
+                                  <Skeleton className="h-[20px] w-full rounded-md" />
+                                </td>
+                                <td className="border p-2">
+                                  <Skeleton className="h-[20px] w-full rounded-md" />
+                                </td>
+                                <td className="border p-2">
+                                  <Skeleton className="h-[20px] w-full rounded-md" />
+                                </td>
+                                <td className="border p-2">
+                                  <Skeleton className="h-[20px] w-full rounded-md" />
+                                </td>
+                              </tr>
+                            ))}
+                          </>
+                        ) : user?.detail.length > 0 ? (
+                          <>
+                            {Object.entries(
+                              groupByCategoryType(user?.detail),
+                            ).map(([categoryType, items]) => {
+                              const totalWithoutCoefficient = items.reduce(
+                                (sum, item) => sum + item.withoutCoefficient,
+                                0,
+                              )
+                              const totalWithCoefficient = items.reduce(
+                                (sum, item) => sum + item.withCoefficient,
+                                0,
+                              )
 
-                            return (
-                              <React.Fragment key={`category-${categoryType}`}>
-                                {items.map((item, index) => (
-                                  <tr key={item.categoryId} className="border">
-                                    {index === 0 && (
-                                      <td
-                                        className="border p-2 text-center font-semibold"
-                                        rowSpan={items.length + 1}
-                                      >
-                                        {categoryType === 'company'
-                                          ? 'Công ty'
-                                          : 'Đối tác'}
+                              return (
+                                <React.Fragment key={`category-${categoryType}`}>
+                                  {items.map((item, index) => (
+                                    <tr key={item.categoryId} className="border">
+                                      {index === 0 && (
+                                        <td
+                                          className="border p-2 text-center font-semibold"
+                                          rowSpan={items.length + 1}
+                                        >
+                                          {categoryType === 'company'
+                                            ? 'Công ty'
+                                            : 'Đối tác'}
+                                        </td>
+                                      )}
+                                      <td className="border p-2">
+                                        {item.categoryName}
                                       </td>
-                                    )}
-                                    <td className="border p-2">
-                                      {item.categoryName}
+                                      <td className="border p-2 text-end">
+                                        {moneyFormat(item.withoutCoefficient)}
+                                      </td>
+                                      <td className="border p-2 text-end">
+                                        {moneyFormat(item.withCoefficient)}
+                                      </td>
+                                    </tr>
+                                  ))}
+
+                                  <tr className="border bg-orange-200 font-semibold dark:bg-orange-400">
+                                    <td className="border p-2 text-center">
+                                      Tổng cộng
                                     </td>
                                     <td className="border p-2 text-end">
-                                      {moneyFormat(item.withoutCoefficient)}
+                                      {moneyFormat(totalWithoutCoefficient)}
                                     </td>
                                     <td className="border p-2 text-end">
-                                      {moneyFormat(item.withCoefficient)}
+                                      {moneyFormat(totalWithCoefficient)}
                                     </td>
                                   </tr>
-                                ))}
+                                </React.Fragment>
+                              )
+                            })}
 
-                                <tr className="border bg-orange-200 font-semibold dark:bg-orange-400">
-                                  <td className="border p-2 text-center">
-                                    Tổng cộng
-                                  </td>
-                                  <td className="border p-2 text-end">
-                                    {moneyFormat(totalWithoutCoefficient)}
-                                  </td>
-                                  <td className="border p-2 text-end">
-                                    {moneyFormat(totalWithCoefficient)}
-                                  </td>
-                                </tr>
-                              </React.Fragment>
-                            )
-                          })}
-
-                          <tr className="border bg-green-200 font-bold dark:bg-green-400">
-                            <td colSpan={2} className="border text-center">
-                              Tổng doanh thu
-                            </td>
-                            <td className="border p-2 text-end">
-                              {moneyFormat(
-                                calculateTotalRevenue(
-                                  user?.detail,
-                                  'withoutCoefficient',
-                                ),
-                              )}
-                            </td>
-                            <td className="border p-2 text-end">
-                              {moneyFormat(
-                                calculateTotalRevenue(
-                                  user?.detail,
-                                  'withCoefficient',
-                                ),
-                              )}
+                            <tr className="border bg-green-200 font-bold dark:bg-green-400">
+                              <td colSpan={2} className="border text-center">
+                                Tổng doanh thu
+                              </td>
+                              <td className="border p-2 text-end">
+                                {moneyFormat(
+                                  calculateTotalRevenue(
+                                    user?.detail,
+                                    'withoutCoefficient',
+                                  ),
+                                )}
+                              </td>
+                              <td className="border p-2 text-end">
+                                {moneyFormat(
+                                  calculateTotalRevenue(
+                                    user?.detail,
+                                    'withCoefficient',
+                                  ),
+                                )}
+                              </td>
+                            </tr>
+                          </>
+                        ) : (
+                          <tr>
+                            <td colSpan={4} className="p-4 text-center">
+                              <EmptyState />
                             </td>
                           </tr>
-                        </>
-                      ) : (
-                        <tr>
-                          <td colSpan={4} className="p-4 text-center">
-                            <EmptyState />
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ))}
             </div>

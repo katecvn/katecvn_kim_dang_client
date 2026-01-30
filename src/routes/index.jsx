@@ -46,6 +46,8 @@ import TaskPage from '@/views/admin/task/TaskPage'
 import WarehouseInPage from '@/views/admin/warehouse-receipt/WarehouseInPage'
 import WarehouseOutPage from '@/views/admin/warehouse-receipt/WarehouseOutPage'
 import LotPage from '@/views/admin/lot'
+import InventorySummaryPage from '@/views/admin/warehouse-report/InventorySummaryPage'
+import InventoryDetailPage from '@/views/admin/warehouse-report/InventoryDetailPage'
 
 const routes = [
   {
@@ -206,6 +208,16 @@ const routes = [
   {
     path: '/lots',
     element: LotPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/warehouse-report/summary',
+    element: InventorySummaryPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/warehouse-report/detail',
+    element: InventoryDetailPage,
     layout: AdminLayout,
   },
   {

@@ -155,6 +155,18 @@ export const sideLinks = [
         icon: <IconBox size={18} />,
         permission: 'GET_STOCK',
       },
+      {
+        title: ' Tổng hợp N-X-T',
+        href: '/warehouse-report/summary',
+        icon: <IconBox size={18} />,
+        permission: 'GET_STOCK',
+      },
+      {
+        title: 'Sổ chi tiết',
+        href: '/warehouse-report/detail',
+        icon: <IconBox size={18} />,
+        permission: 'GET_STOCK',
+      },
     ],
   },
 

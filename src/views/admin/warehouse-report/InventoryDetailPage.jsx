@@ -1,0 +1,328 @@
+import { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { Layout, LayoutBody } from '@/components/custom/Layout'
+import { getInventoryDetail } from '@/stores/WarehouseReportSlice'
+import { getProducts } from '@/stores/ProductSlice'
+import { startOfMonth, endOfMonth, format } from 'date-fns'
+import { useForm } from 'react-hook-form'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+} from '@/components/ui/form'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Button } from '@/components/custom/Button'
+import { cn } from '@/lib/utils'
+import { CalendarIcon, FileSpreadsheet, Search, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { DatePicker } from '@/components/custom/DatePicker'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { moneyFormat } from '@/utils/money-format'
+import { exportDetailedLedgerToExcel } from '@/utils/export-detailed-ledger'
+import { Input } from '@/components/ui/input'
+import { dateFormat } from '@/utils/date-format'
+
+const InventoryDetailPage = () => {
+  const dispatch = useDispatch()
+  const { inventoryDetail, loading } = useSelector((state) => state.warehouseReport)
+  const current = new Date()
+
+  const [filters, setFilters] = useState({
+    fromDate: startOfMonth(current),
+    toDate: endOfMonth(current),
+    productId: '', // Should be searchable select
+  })
+
+  // Dummy product name for header until we implement product selection properly
+  const productName = inventoryDetail.length > 0 ? (inventoryDetail[0].productName || 'Tất cả sản phẩm') : '...'
+
+  const form = useForm({
+    defaultValues: {
+      fromDate: filters.fromDate,
+      toDate: filters.toDate,
+    },
+  })
+
+  const onSubmit = (data) => {
+    setFilters(prev => ({
+      ...prev,
+      fromDate: data.fromDate || prev.fromDate,
+      toDate: data.toDate || prev.toDate,
+    }))
+  }
+
+  useEffect(() => {
+    document.title = 'Sổ chi tiết vật tư'
+    if (filters.productId) {
+      dispatch(getInventoryDetail(filters))
+    }
+  }, [dispatch, filters])
+
+  const handleSearchProduct = (e) => {
+    if (e.key === 'Enter') {
+      setFilters(prev => ({ ...prev, productId: e.target.value }))
+    }
+  }
+
+  return (
+    <Layout>
+      <LayoutBody className="flex flex-col" fixedHeight>
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">
+              Sổ Chi Tiết Vật Tư
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Sản phẩm: <span className="font-semibold text-primary">{productName}</span>
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-64 mr-2">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Nhập ID sản phẩm và Enter..."
+                className="pl-8 h-9"
+                onKeyDown={handleSearchProduct}
+              />
+            </div>
+
+            <Form {...form}>
+              <form id="inventory-detail-form" className="flex items-center gap-2">
+                <FormField
+                  control={form.control}
+                  name="fromDate"
+                  render={({ field }) => (
+                    <FormItem className="space-y-0">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={cn(
+                                'pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground',
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, 'dd/MM/yyyy')
+                              ) : (
+                                <span>Từ ngày</span>
+                              )}
+                              <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <DatePicker
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                              if (date) {
+                                field.onChange(date)
+                                onSubmit({ ...form.getValues(), fromDate: date })
+                              }
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </FormItem>
+                  )}
+                />
+
+                <span className="text-muted-foreground">-</span>
+
+                <FormField
+                  control={form.control}
+                  name="toDate"
+                  render={({ field }) => (
+                    <FormItem className="space-y-0">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={cn(
+                                'pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground',
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, 'dd/MM/yyyy')
+                              ) : (
+                                <span>Đến ngày</span>
+                              )}
+                              <CalendarIcon className="ml-2 h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <DatePicker
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                              if (date) {
+                                field.onChange(date)
+                                onSubmit({ ...form.getValues(), toDate: date })
+                              }
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </FormItem>
+                  )}
+                />
+              </form>
+            </Form>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white gap-2"
+              onClick={() => exportDetailedLedgerToExcel({ productName }, filters)}
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Xuất Excel
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto rounded-md border">
+          <Table className="relative w-full min-w-[1000px]">
+            <TableHeader className="sticky top-0 bg-secondary z-10">
+              <TableRow>
+                <TableHead colSpan={2} className="text-center border-r border-b">Chứng từ</TableHead>
+                <TableHead rowSpan={2} className="min-w-[200px] border-r">Đối tượng (Diễn giải)</TableHead>
+                <TableHead rowSpan={2} className="w-[60px] border-r">ĐVT</TableHead>
+                <TableHead colSpan={3} className="text-center border-r border-b">Nhập trong kỳ</TableHead>
+                <TableHead colSpan={3} className="text-center border-r border-b">Xuất trong kỳ</TableHead>
+                <TableHead colSpan={3} className="text-center border-b">Tồn cuối kỳ</TableHead>
+              </TableRow>
+              <TableRow>
+                <TableHead className="w-[100px] border-r">Số</TableHead>
+                <TableHead className="w-[100px] border-r">Ngày</TableHead>
+
+                {/* Nhập */}
+                <TableHead className="text-right border-r min-w-[80px]">SL</TableHead>
+                <TableHead className="text-right border-r min-w-[100px]">Đơn giá</TableHead>
+                <TableHead className="text-right border-r min-w-[100px]">Thành tiền</TableHead>
+
+                {/* Xuất */}
+                <TableHead className="text-right border-r min-w-[80px]">SL</TableHead>
+                <TableHead className="text-right border-r min-w-[100px]">Đơn giá</TableHead>
+                <TableHead className="text-right border-r min-w-[100px]">Thành tiền</TableHead>
+
+                {/* Tồn */}
+                <TableHead className="text-right border-r min-w-[80px]">SL</TableHead>
+                <TableHead className="text-right border-r min-w-[100px]">Đơn giá</TableHead>
+                <TableHead className="text-right min-w-[100px]">Thành tiền</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* Dư đầu */}
+              <TableRow className="bg-muted/30">
+                <TableCell className="border-r"></TableCell>
+                <TableCell className="border-r"></TableCell>
+                <TableCell className="border-r font-bold">Dư đầu kỳ</TableCell>
+                <TableCell className="border-r"></TableCell>
+
+                <TableCell className="border-r"></TableCell>
+                <TableCell className="border-r"></TableCell>
+                <TableCell className="border-r"></TableCell>
+
+                <TableCell className="border-r"></TableCell>
+                <TableCell className="border-r"></TableCell>
+                <TableCell className="border-r"></TableCell>
+
+                <TableCell className="text-right border-r font-medium">0</TableCell>
+                <TableCell className="text-right border-r">0</TableCell>
+                <TableCell className="text-right font-medium">0</TableCell>
+              </TableRow>
+
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={13} className="h-24 text-center">Đang tải...</TableCell>
+                </TableRow>
+              ) : !inventoryDetail?.data || inventoryDetail.data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={13} className="h-24 text-center">Không có dữ liệu (Vui lòng chọn sản phẩm và khoảng thời gian)</TableCell>
+                </TableRow>
+              ) : (
+                inventoryDetail.data.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="border-r font-medium text-blue-600">{item.documentCode}</TableCell>
+                    <TableCell className="border-r">{dateFormat(item.postingDate)}</TableCell>
+                    <TableCell className="border-r">{item.objectName || item.description}</TableCell>
+                    <TableCell className="border-r text-center">{item.unit?.name}</TableCell>
+
+                    {/* Nhập */}
+                    <TableCell className="text-right border-r font-medium text-green-600">
+                      {parseFloat(item.qtyIn) > 0 ? parseFloat(item.qtyIn) : ''}
+                    </TableCell>
+                    <TableCell className="text-right border-r">
+                      {parseFloat(item.qtyIn) > 0 ? moneyFormat(item.unitCost) : ''}
+                    </TableCell>
+                    <TableCell className="text-right border-r">
+                      {parseFloat(item.amountIn) > 0 ? moneyFormat(item.amountIn) : ''}
+                    </TableCell>
+
+                    {/* Xuất */}
+                    <TableCell className="text-right border-r font-medium text-orange-600">
+                      {parseFloat(item.qtyOut) > 0 ? parseFloat(item.qtyOut) : ''}
+                    </TableCell>
+                    <TableCell className="text-right border-r">
+                      {parseFloat(item.qtyOut) > 0 ? moneyFormat(item.unitCost) : ''}
+                    </TableCell>
+                    <TableCell className="text-right border-r">
+                      {parseFloat(item.amountOut) > 0 ? moneyFormat(item.amountOut) : ''}
+                    </TableCell>
+
+                    {/* Tồn */}
+                    <TableCell className="text-right border-r font-bold">{parseFloat(item.balanceQty)}</TableCell>
+                    <TableCell className="text-right border-r">{moneyFormat(item.unitCost)}</TableCell>
+                    <TableCell className="text-right font-bold">{moneyFormat(item.balanceAmount)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+
+              {/* Cộng */}
+              <TableRow className="font-bold bg-muted/50 border-t-2">
+                <TableCell className="border-r"></TableCell>
+                <TableCell className="border-r"></TableCell>
+                <TableCell className="border-r text-center">Cộng phát sinh</TableCell>
+                <TableCell className="border-r"></TableCell>
+
+                <TableCell className="text-right border-r">0</TableCell>
+                <TableCell className="text-right border-r"></TableCell>
+                <TableCell className="text-right border-r">0</TableCell>
+
+                <TableCell className="text-right border-r">0</TableCell>
+                <TableCell className="text-right border-r"></TableCell>
+                <TableCell className="text-right border-r">0</TableCell>
+
+                <TableCell className="text-right border-r">0</TableCell>
+                <TableCell className="text-right border-r"></TableCell>
+                <TableCell className="text-right">0</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </LayoutBody>
+    </Layout>
+  )
+}
+
+export default InventoryDetailPage

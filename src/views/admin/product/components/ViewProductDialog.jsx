@@ -130,7 +130,8 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
     // Use unitPricing from backend if available (more accurate)
     if (product?.unitPricing?.length) {
       return product.unitPricing
-        .filter(up => up.source === 'CONVERTED') // Only show converted units
+      return product.unitPricing
+        // .filter(up => up.source === 'CONVERTED') // Show ALL units including EXPLICIT
         .map(up => ({
           unitId: up.unitId,
           unitName: up.unitName,
@@ -139,12 +140,19 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
           source: up.source,
           convertedFrom: up.convertedFrom,
         }))
+        .sort((a, b) => {
+          // Move EXPLICIT to top
+          if (a.source === 'EXPLICIT' && b.source !== 'EXPLICIT') return -1;
+          if (a.source !== 'EXPLICIT' && b.source === 'EXPLICIT') return 1;
+          return 0;
+        })
     }
 
     // Fallback: calculate from unitConversions if unitPricing not available
     const basePrice = Number(product?.price || 0)
     if (!Number.isFinite(basePrice) || basePrice <= 0) return []
 
+    // Keep fallback using conversionRows if unitPricing is missing
     return conversionRows
       .map((c) => {
         const factor = Number(c?.conversionFactor || 0)
@@ -161,7 +169,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
         }
       })
       .filter(Boolean)
-  }, [conversionRows, product])
+  }, [product, conversionRows])
 
   return (
     <Dialog {...props}>
@@ -325,7 +333,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
                         Đơn vị quy đổi
                       </h3>
 
-                      {conversionRows.length === 0 ? (
+                      {convertedPrices.length === 0 ? (
                         <div className="text-sm text-muted-foreground">
                           Sản phẩm chưa có đơn vị quy đổi.
                         </div>
@@ -341,40 +349,44 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {conversionRows.map((c) => {
-                              const unitName = c?.unit?.name || '—'
-                              const factor = Number(c?.conversionFactor || 0)
-                              const unitPrice =
-                                Number(product?.price || 0) /
-                                (factor > 0 ? factor : 1)
+                            {convertedPrices.map((c) => {
+                              const unitName = c.unitName || '—'
+                              // const factor = Number(c?.conversionFactor || 0)
+                              // const unitPrice =
+                              //   Number(product?.price || 0) /
+                              //   (factor > 0 ? factor : 1)
+                              const isBase = c.source === 'EXPLICIT'
+                              const factor = c.convertedFrom ? Number(c.convertedFrom.conversionFactor) : 1
 
                               return (
-                                <TableRow key={c.id}>
+                                <TableRow key={c.unitId + c.source}>
                                   <TableCell>
-                                    <span className="font-medium">
-                                      1 {baseUnitName}
-                                    </span>{' '}
-                                    ={' '}
-                                    <span className="font-medium">
-                                      {factor || '—'}
-                                    </span>{' '}
-                                    <span className="font-medium">
-                                      {unitName}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    {factor > 0 ? (
-                                      <span className="font-semibold">
-                                        {moneyFormat(unitPrice)} / {unitName}
-                                      </span>
+                                    {isBase ? (
+                                      <span className="font-semibold text-primary">Đơn vị gốc</span>
                                     ) : (
-                                      <span className="text-muted-foreground">
-                                        —
-                                      </span>
+                                      <>
+                                        <span className="font-medium">
+                                          1 {c.convertedFrom?.unitName || baseUnitName}
+                                        </span>{' '}
+                                        ={' '}
+                                        <span className="font-medium">
+                                          {factor || '—'}
+                                        </span>{' '}
+                                        <span className="font-medium">
+                                          {unitName}
+                                        </span>
+                                      </>
                                     )}
                                   </TableCell>
+                                  <TableCell className="text-right">
+                                    <span className="font-semibold">
+                                      {moneyFormat(c.unitPrice)} / {unitName}
+                                    </span>
+                                  </TableCell>
                                   <TableCell className="text-center">
-                                    <span className="text-xs text-muted-foreground">CONVERTED</span>
+                                    <Badge variant={isBase ? "default" : "secondary"} className="text-[10px]">
+                                      {c.source === 'EXPLICIT' ? 'Thiết lập' : 'Quy đổi'}
+                                    </Badge>
                                   </TableCell>
                                 </TableRow>
                               )
@@ -510,6 +522,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
                                 <TableHead>Giá nhập</TableHead>
                                 <TableHead>Giá bán</TableHead>
                                 <TableHead>Đơn vị</TableHead>
+                                <TableHead>Thuế</TableHead>
                                 <TableHead>Ngày</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -523,6 +536,19 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
                                     {moneyFormat(p.price || 0)}
                                   </TableCell>
                                   <TableCell>{p.unitName}</TableCell>
+                                  <TableCell>
+                                    {p.taxes && p.taxes.length > 0 ? (
+                                      <div className="flex flex-col gap-1">
+                                        {p.taxes.map(t => (
+                                          <Badge key={t.title} variant="outline" className="text-[10px] whitespace-nowrap">
+                                            {t.title}: {t.percentage}%
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground text-xs">—</span>
+                                    )}
+                                  </TableCell>
                                   <TableCell>
                                     {dateFormat(p.createdAt, true)}
                                   </TableCell>

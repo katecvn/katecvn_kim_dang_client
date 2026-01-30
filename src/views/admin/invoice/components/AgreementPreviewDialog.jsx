@@ -12,6 +12,7 @@ import { Button } from '@/components/custom/Button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
+import { exportDomToImage } from '@/utils/exportToImage'
 import ExportAgreement from './ExportAgreement'
 
 const safe = (v, fallback = '') => (v === 0 || v ? String(v) : fallback)
@@ -35,7 +36,30 @@ export default function AgreementPreviewDialog({
   ...props
 }) {
   const [formData, setFormData] = useState(initialData || {})
+  const [isExporting, setIsExporting] = useState(false)
   const isMobile = useMediaQuery('(max-width: 768px)')
+
+  const handleExportImage = async (format = 'png') => {
+    setIsExporting(true)
+    try {
+      const filename = `thoa_thuan_${Date.now()}.${format}`
+      const options = format === 'jpeg'
+        ? { format: 'jpeg', quality: 0.9, scale: 2 }
+        : { format: 'png', scale: 3 }
+
+      const element = document.getElementById(isMobile ? 'agreement-preview-node-mobile' : 'agreement-preview-node')
+      if (!element) throw new Error('Không tìm thấy nội dung để xuất')
+
+      await exportDomToImage(element, filename, options)
+    } catch (error) {
+      console.error(error)
+      alert('Xuất thất bại: ' + error.message)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+
 
   useEffect(() => {
     if (!initialData) {
@@ -263,7 +287,7 @@ export default function AgreementPreviewDialog({
         ? "overflow-x-auto overflow-y-auto border bg-white max-w-full"
         : "overflow-auto border bg-white"
       }>
-        <div style={isMobile ? {
+        <div id="agreement-preview-node" style={isMobile ? {
           transform: 'scale(0.45)',
           transformOrigin: 'top left',
           minWidth: '210mm',
@@ -314,7 +338,7 @@ export default function AgreementPreviewDialog({
                     <span>Xem trước</span>
                   </div>
                   <div className="overflow-x-auto overflow-y-auto border-t bg-white">
-                    <div style={{
+                    <div id="agreement-preview-node-mobile" style={{
                       transform: 'scale(0.45)',
                       transformOrigin: 'top left',
                       minWidth: '210mm',
@@ -326,24 +350,46 @@ export default function AgreementPreviewDialog({
               </TabsContent>
             </Tabs>
 
-            <DialogFooter className="px-4 py-3 shrink-0 flex-row gap-2 border-t">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-                className="flex-1"
-              >
-                Hủy
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  onConfirm?.(formData)
-                }}
-                className="flex-1"
-              >
-                Xác nhận & Xuất PDF
-              </Button>
+            <DialogFooter className="px-4 py-3 shrink-0 flex flex-col gap-2 border-t">
+              <div className="flex gap-2 w-full">
+                <Button
+                  className="flex-1"
+                  variant="secondary"
+                  onClick={() => handleExportImage('png')}
+                  disabled={isExporting}
+                >
+                  {isExporting ? 'Đang xuất...' : 'Xuất PNG'}
+                </Button>
+                <Button
+                  className="flex-1"
+                  variant="outline"
+                  onClick={() => handleExportImage('jpeg')}
+                  disabled={isExporting}
+                >
+                  Xuất JPG
+                </Button>
+              </div>
+              <div className="flex gap-2 w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="flex-1"
+                  disabled={isExporting}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    onConfirm?.(formData)
+                  }}
+                  className="flex-1"
+                  disabled={isExporting}
+                >
+                  Xuất PDF
+                </Button>
+              </div>
             </DialogFooter>
           </>
         ) : (
@@ -367,16 +413,34 @@ export default function AgreementPreviewDialog({
                 variant="outline"
                 size="sm"
                 onClick={() => onOpenChange(false)}
+                disabled={isExporting}
               >
                 Hủy
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => handleExportImage('png')}
+                disabled={isExporting}
+              >
+                {isExporting ? '...' : 'Xuất PNG'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExportImage('jpeg')}
+                disabled={isExporting}
+              >
+                Xuất JPG
               </Button>
               <Button
                 size="sm"
                 onClick={() => {
                   onConfirm?.(formData)
                 }}
+                disabled={isExporting}
               >
-                Xác nhận & Xuất PDF
+                Xuất PDF
               </Button>
             </DialogFooter>
           </>

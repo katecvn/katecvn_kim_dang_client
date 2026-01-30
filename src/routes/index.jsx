@@ -45,6 +45,7 @@ import TicketPage from '@/views/admin/ticket/TicketPage'
 import TaskPage from '@/views/admin/task/TaskPage'
 import WarehouseInPage from '@/views/admin/warehouse-receipt/WarehouseInPage'
 import WarehouseOutPage from '@/views/admin/warehouse-receipt/WarehouseOutPage'
+import LotPage from '@/views/admin/lot'
 
 const routes = [
   {
@@ -200,6 +201,11 @@ const routes = [
   {
     path: '/warehouse-out',
     element: WarehouseOutPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/lots',
+    element: LotPage,
     layout: AdminLayout,
   },
   {

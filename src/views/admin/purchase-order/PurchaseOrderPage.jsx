@@ -16,6 +16,7 @@ import { DateRange } from '@/components/custom/DateRange.jsx'
 const PurchaseOrderPage = () => {
   const dispatch = useDispatch()
   const purchaseOrders = useSelector((state) => state.purchaseOrder.purchaseOrders)
+  console.log(purchaseOrders)
   const loading = useSelector((state) => state.purchaseOrder.loading)
   const current = new Date()
 

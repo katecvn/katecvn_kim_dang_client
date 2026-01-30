@@ -63,6 +63,10 @@ const PurchaseOrderSidebar = ({
   expectedDeliveryDate,
   onExpectedDeliveryDateChange,
   isUpdate = false,
+  isPrintContract,
+  setIsPrintContract,
+  contractNumber,
+  setContractNumber,
 }) => {
   const dispatch = useDispatch()
   const [openOrderDatePicker, setOpenOrderDatePicker] = useState(false)
@@ -409,6 +413,31 @@ const PurchaseOrderSidebar = ({
 
           <Separator />
 
+          {/* Contract Number Input - Always visible */}
+          <FormField
+            control={form.control}
+            name="contractNumber"
+            render={({ field }) => (
+              <FormItem className="mb-2">
+                <FormLabel>Số hợp đồng</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Nhập số hợp đồng..."
+                    className="h-9"
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(e)
+                      // Keep state sync for side-effects if needed, or remove if fully relying on form
+                      if (setContractNumber) setContractNumber(e.target.value)
+                      if (setIsPrintContract) setIsPrintContract(!!e.target.value)
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           {/* Order Date */}
           <FormField
             control={form.control}
@@ -478,8 +507,8 @@ const PurchaseOrderSidebar = ({
                       mode="single"
                       selected={field.value ? new Date(field.value) : undefined}
                       onSelect={(date) => {
-                        field.onChange(date ? date.toISOString() : null)
-                        onExpectedDeliveryDateChange(date ? date.toISOString() : null)
+                        field.onChange(date)
+                        onExpectedDeliveryDateChange(date)
                         setOpenDeliveryDatePicker(false)
                       }}
                     />
@@ -626,7 +655,6 @@ const PurchaseOrderSidebar = ({
 
       {/* Footer Actions */}
       <div className="p-4 border-t space-y-2">
-        {/* Main Button */}
         <Button
           className="w-full"
           onClick={form.handleSubmit(onSubmit)}

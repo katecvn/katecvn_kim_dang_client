@@ -11,13 +11,13 @@ export const getPurchaseOrders = createAsyncThunk(
   'purchaseOrder/get-purchase-orders',
   async ({ fromDate = null, toDate = null }, { rejectWithValue }) => {
     try {
-      const response = await api.get('/purchase-order', {
+      const response = await api.get('/purchase-orders', {
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
         },
       })
-      const { data } = response.data
+      const { data } = response.data.data
       return data
     } catch (error) {
       const message = handleError(error)
@@ -35,8 +35,8 @@ export const getPurchaseOrderDetail = createAsyncThunk(
       ).includes('GET_PURCHASE_ORDER')
 
       const response = getAdminPurchaseOrder
-        ? await api.get(`/purchase-order/${id}/admin`)
-        : await api.get(`/purchase-order/${id}/by-user`)
+        ? await api.get(`/purchase-orders/${id}`)
+        : await api.get(`/purchase-orders/${id}`)
 
       const { data } = response.data
       return data
@@ -51,14 +51,14 @@ export const getMyPurchaseOrders = createAsyncThunk(
   'purchaseOrder/get-my-purchase-orders',
   async ({ fromDate = null, toDate = null }, { rejectWithValue }) => {
     try {
-      const response = await api.get('/purchase-order/by-user', {
+      const response = await api.get('/purchase-orders', {
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
         },
       })
 
-      const { data } = response.data
+      const { data } = response.data.data
       return data
     } catch (error) {
       const message = handleError(error)
@@ -76,8 +76,8 @@ export const deletePurchaseOrder = createAsyncThunk(
       ).includes('DELETE_PURCHASE_ORDER')
 
       deleteAdminPurchaseOrders
-        ? await api.delete(`/purchase-order/${id}/delete`)
-        : await api.delete(`/purchase-order/${id}/delete-by-user`)
+        ? await api.delete(`/purchase-orders/${id}`)
+        : await api.delete(`/purchase-orders/${id}`)
       deleteAdminPurchaseOrders
         ? await dispatch(
           getPurchaseOrders({
@@ -103,7 +103,7 @@ export const createPurchaseOrder = createAsyncThunk(
   'purchaseOrder/create-purchase-order',
   async (dataToSend, { rejectWithValue, dispatch }) => {
     try {
-      const response = await api.post('/purchase-order/create', dataToSend)
+      const response = await api.post('/purchase-orders', dataToSend)
       await dispatch(
         getMyPurchaseOrders({
           fromDate: getStartOfCurrentMonth(),
@@ -125,7 +125,7 @@ export const updatePurchaseOrder = createAsyncThunk(
   async (dataToSend, { rejectWithValue, dispatch }) => {
     try {
       const response = await api.put(
-        `/purchase-order/${dataToSend.purchaseOrderId}/update-pending`,
+        `/purchase-orders/${dataToSend.purchaseOrderId}`,
         dataToSend,
       )
       await dispatch(
@@ -148,7 +148,7 @@ export const updatePurchaseOrderStatus = createAsyncThunk(
   'purchaseOrder/update-purchase-order-status',
   async (data, { rejectWithValue, dispatch }) => {
     try {
-      await api.put(`/purchase-order/${data.id}/update`, data)
+      await api.put(`/purchase-orders/${data.id}`, data)
       await dispatch(
         getPurchaseOrders({
           fromDate: getStartOfCurrentMonth(),
@@ -247,14 +247,13 @@ export const purchaseOrderSlice = createSlice({
         state.error = null
       })
       .addCase(getPurchaseOrderDetail.pending, (state) => {
-        state.loading = true
+        // Don't set global loading to true to avoid unmounting the list/dialog
+        // The component should handle its own loading state
       })
       .addCase(getPurchaseOrderDetail.fulfilled, (state, action) => {
-        state.loading = false
         state.purchaseOrder = action.payload
       })
       .addCase(getPurchaseOrderDetail.rejected, (state, action) => {
-        state.loading = false
         state.error = action.payload
       })
   },

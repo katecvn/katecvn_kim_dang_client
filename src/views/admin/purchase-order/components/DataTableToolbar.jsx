@@ -3,13 +3,15 @@ import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
 import { DataTableViewOptions } from './DataTableViewOption'
 import Can from '@/utils/can'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, TruckIcon } from 'lucide-react'
+import ReceiptReminderDialog from './ReceiptReminderDialog'
+import ExportPurchaseOrderDialog from './ExportPurchaseOrderDialog'
 import { useEffect, useState } from 'react'
 import CreatePurchaseOrderDialog from './CreatePurchaseOrderDialog'
-import { IconFileTypePdf, IconFileTypeXls, IconPackage } from '@tabler/icons-react'
+import { IconFileTypeXls } from '@tabler/icons-react'
 import { toast } from 'sonner'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
-import { statuses } from '../data'
+import { purchaseOrderStatuses } from '../data'
 import { useDispatch, useSelector } from 'react-redux'
 import { getUsers } from '@/stores/UserSlice'
 
@@ -18,8 +20,8 @@ const DataTableToolbar = ({ table, isMyPurchaseOrder }) => {
   const isFiltered = table.getState().columnFilters.length > 0
 
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
-  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null)
+  const [showReceiptReminderDialog, setShowReceiptReminderDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
 
   const users = useSelector((state) => state.user.users)
 
@@ -27,37 +29,7 @@ const DataTableToolbar = ({ table, isMyPurchaseOrder }) => {
     dispatch(getUsers())
   }, [dispatch])
 
-  // Handle create receipt from PO
-  const handleShowCreateReceiptDialog = () => {
-    const selectedRows = table.getSelectedRowModel().rows
 
-    if (selectedRows.length !== 1) {
-      toast.warning('Vui lòng chọn 1 (Một) đơn đặt hàng')
-      return
-    }
-
-    const po = selectedRows[0].original
-
-    // Check if PO is approved or partial
-    if (po.status !== 'approved' && po.status !== 'partial') {
-      toast.warning('Chỉ có thể tạo phiếu nhập kho từ đơn đã duyệt')
-      return
-    }
-
-    setSelectedPurchaseOrder(po)
-    setShowCreateReceiptDialog(true)
-  }
-
-  // Handle print PO
-  const handlePrintPO = () => {
-    const selectedRows = table.getSelectedRowModel().rows
-    if (selectedRows.length !== 1) {
-      toast.warning('Vui lòng chọn 1 (Một) đơn đặt hàng để in')
-      return
-    }
-    // TODO: Implement print PO functionality
-    toast.info('Chức năng in đơn đặt hàng đang được phát triển')
-  }
 
   // Handle export Excel
   const handleExportExcel = () => {
@@ -106,11 +78,11 @@ const DataTableToolbar = ({ table, isMyPurchaseOrder }) => {
         )}
 
         {/* Filter theo trạng thái */}
-        {statuses && table.getColumn('status') && (
+        {purchaseOrderStatuses && table.getColumn('status') && (
           <DataTableFacetedFilter
             column={table.getColumn('status')}
             title="Trạng thái"
-            options={statuses.map((s) => ({
+            options={purchaseOrderStatuses.map((s) => ({
               value: s.value,
               label: s.label,
             }))}
@@ -130,37 +102,39 @@ const DataTableToolbar = ({ table, isMyPurchaseOrder }) => {
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2 whitespace-nowrap">
+        {/* Nhắc nhở giao hàng (cho Nhà cung cấp) */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const selectedRows = table.getSelectedRowModel().rows
+            if (selectedRows.length === 0) {
+              toast.warning('Vui lòng chọn ít nhất 1 đơn hàng')
+              return
+            }
+            // Filter out draft/cancelled orders
+            const invalidOrders = selectedRows.filter(row => ['draft', 'cancelled'].includes(row.original.status))
+            if (invalidOrders.length > 0) {
+              toast.warning('Chỉ có thể gửi nhắc nhở cho đơn hàng đã đặt')
+              return
+            }
+
+            setShowReceiptReminderDialog(true)
+          }}
+        >
+          <TruckIcon className="mr-2 size-4" aria-hidden="true" />
+          Gửi nhắc hàng
+        </Button>
+
         {/* Xuất Excel */}
         <Button
           variant="outline"
           size="sm"
-          onClick={handleExportExcel}
+          onClick={() => setShowExportDialog(true)}
         >
           <IconFileTypeXls className="mr-2 size-4" aria-hidden="true" />
           Xuất Excel
         </Button>
-
-        {/* In đơn đặt hàng */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handlePrintPO}
-        >
-          <IconFileTypePdf className="mr-2 size-4" aria-hidden="true" />
-          In ĐĐH
-        </Button>
-
-        {/* Tạo phiếu nhập kho từ PO */}
-        <Can permission={['CREATE_RECEIPT']}>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleShowCreateReceiptDialog}
-          >
-            <IconPackage className="mr-2 size-4" aria-hidden="true" />
-            Tạo phiếu nhập
-          </Button>
-        </Can>
 
         {/* Tạo đơn đặt hàng */}
         <Can permission={['CREATE_PURCHASE_ORDER']}>
@@ -183,18 +157,25 @@ const DataTableToolbar = ({ table, isMyPurchaseOrder }) => {
           />
         )}
 
-        {/* Dialog tạo phiếu nhập kho (TODO: Implement) */}
-        {showCreateReceiptDialog && selectedPurchaseOrder && (
-          <div>
-            {/* TODO: Tạo CreateReceiptFromPODialog component */}
-            {/* <CreateReceiptFromPODialog
-              purchaseOrder={selectedPurchaseOrder}
-              open={showCreateReceiptDialog}
-              onOpenChange={setShowCreateReceiptDialog}
-              showTrigger={false}
-            /> */}
-          </div>
+        {/* Dialog Export */}
+        {showExportDialog && (
+          <ExportPurchaseOrderDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+            showTrigger={false}
+          />
         )}
+
+        {/* Dialog Nhắc nhở nhận hàng */}
+        {showReceiptReminderDialog && (
+          <ReceiptReminderDialog
+            open={showReceiptReminderDialog}
+            onOpenChange={setShowReceiptReminderDialog}
+            selectedPurchaseOrders={table.getSelectedRowModel().rows.map(r => r.original)}
+          />
+        )}
+
+
 
         <DataTableViewOptions table={table} />
       </div>

@@ -1,14 +1,40 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import * as lotApi from '@/api/lot'
+import api from '@/utils/axios'
 import { handleError } from '@/utils/handle-error'
 
 // Async thunks
+export const getLots = createAsyncThunk(
+  'lot/getLots',
+  async (params, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get('/lots', { params })
+      return data.data.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  }
+)
+
+export const createLot = createAsyncThunk(
+  'lot/create',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/lots', data)
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  }
+)
+
 export const getAvailableLots = createAsyncThunk(
   'lot/getAvailable',
   async (productId, { rejectWithValue }) => {
     try {
-      const response = await lotApi.getAvailableLots(productId)
-      return response.data
+      const { data } = await api.get(`/lots/available?productId=${productId}`)
+      return data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -20,8 +46,11 @@ export const allocateLots = createAsyncThunk(
   'lot/allocate',
   async ({ detailId, allocations }, { rejectWithValue }) => {
     try {
-      const response = await lotApi.allocateLots(detailId, allocations)
-      return response.data
+      const { data } = await api.post(
+        `/warehouse-receipts/detail/${detailId}/allocations`,
+        { allocations }
+      )
+      return data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -33,8 +62,10 @@ export const getLotAllocations = createAsyncThunk(
   'lot/getAllocations',
   async (detailId, { rejectWithValue }) => {
     try {
-      const response = await lotApi.getLotAllocations(detailId)
-      return response.data
+      const { data } = await api.get(
+        `/warehouse-receipts/detail/${detailId}/allocations`
+      )
+      return data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -43,6 +74,7 @@ export const getLotAllocations = createAsyncThunk(
 )
 
 const initialState = {
+  lots: [],
   availableLots: [],
   allocations: {},
   loading: false,
@@ -62,6 +94,19 @@ export const lotSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Get lots
+      .addCase(getLots.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getLots.fulfilled, (state, action) => {
+        state.loading = false
+        state.lots = action.payload || []
+      })
+      .addCase(getLots.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
       // Get available lots
       .addCase(getAvailableLots.pending, (state) => {
         state.loading = true
@@ -103,6 +148,18 @@ export const lotSlice = createSlice({
         }
       })
       .addCase(getLotAllocations.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Create lot
+      .addCase(createLot.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(createLot.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(createLot.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })

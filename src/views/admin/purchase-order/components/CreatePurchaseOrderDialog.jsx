@@ -32,6 +32,9 @@ import PurchaseOrderSidebar from './PurchaseOrderSidebar'
 import PurchaseOrderCart from './PurchaseOrderCart'
 import CreateOtherExpenses from '../../invoice/components/CreateOtherExpenses'
 import { attributes, productTypeMap } from '../data'
+import PurchaseContractPreviewDialog from './PurchaseContractPreviewDialog'
+import { buildPurchaseContractData } from '../helpers/BuildPurchaseContractData'
+import CreateProductDialog from '../../product/components/CreateProductDialog'
 
 const CreatePurchaseOrderDialog = ({
   open,
@@ -77,6 +80,14 @@ const CreatePurchaseOrderDialog = ({
     description: '',
   })
 
+  // Contract Printing
+  const [isPrintContract, setIsPrintContract] = useState(false)
+  const [contractNumber, setContractNumber] = useState('')
+  const [showContractPreview, setShowContractPreview] = useState(false)
+  const [contractPreviewData, setContractPreviewData] = useState(null)
+
+  // Create Product Dialog State
+  const [showCreateProduct, setShowCreateProduct] = useState(false)
 
   const form = useForm({
     resolver: zodResolver(createPurchaseOrderSchema),
@@ -87,6 +98,7 @@ const CreatePurchaseOrderDialog = ({
       note: '',
       paymentMethod: paymentMethods[0].value,
       paymentNote: '',
+      contractNumber: '',
       paymentTerms: '',
       expectedDeliveryDate: null,
     },
@@ -117,6 +129,10 @@ const CreatePurchaseOrderDialog = ({
     setSearchQuery('')
     setSelectedCategory('all')
     setMobileView('products')
+    setIsPrintContract(false)
+    setContractNumber('')
+    setShowContractPreview(false)
+    setContractPreviewData(null)
     form.reset()
   }, [open, form])
 
@@ -286,8 +302,19 @@ const CreatePurchaseOrderDialog = ({
 
   const handleSelectSupplier = (supplier) => {
     setSelectedSupplier(supplier)
-    form.setValue('supplierId', supplier?.id.toString())
-    setSupplierEditData(null)
+    if (supplier) {
+      form.setValue('supplierId', supplier.id.toString())
+      setSupplierEditData({
+        name: supplier.name,
+        phone: supplier.phone || '',
+        email: supplier.email || '',
+        address: supplier.address || '',
+        taxCode: supplier.taxCode || '',
+      })
+    } else {
+      form.setValue('supplierId', '')
+      setSupplierEditData(null)
+    }
   }
 
   const handleUnitChange = (productId, unitId) => {
@@ -439,10 +466,20 @@ const CreatePurchaseOrderDialog = ({
       }
     })
 
+    const formattedDate = expectedDeliveryDate
+      ? (expectedDeliveryDate instanceof Date ? expectedDeliveryDate.toISOString().split('T')[0] : expectedDeliveryDate)
+      : (data.expectedDeliveryDate ? new Date(data.expectedDeliveryDate).toISOString().split('T')[0] : null)
+
     const dataToSend = {
       supplierId: data.supplierId || null,
-      orderDate: data.orderDate ? data.orderDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      expectedDeliveryDate: expectedDeliveryDate ? expectedDeliveryDate : (data.expectedDeliveryDate ? data.expectedDeliveryDate.toISOString().split('T')[0] : null),
+      orderDate: data.orderDate ? new Date(data.orderDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      expectedDeliveryDate: formattedDate, // Ngày nhận hàng
+      expectedReturnDate: formattedDate,   // [MỚI] Ngày trả vỏ/két (Map theo yêu cầu user)
+      externalOrderCode: contractNumber,   // [MỚI] Mã đơn bên NCC (Số hợp đồng)
+      terms: data.paymentTerms,            // [MỚI] Điều khoản
+      otherCosts: otherExpenses.price,     // [MỚI] Chi phí khác
+      isPrintContract: true,               // [MỚI] Luôn in hợp đồng
+
       note: data.note,
       taxAmount: calculateTotalTax(),
       amount: calculateTotalAmount(), // Total amount
@@ -454,8 +491,8 @@ const CreatePurchaseOrderDialog = ({
       paidAmount: 0,
       items,
       paymentMethod: data.paymentMethod,
-      paymentNote: data.paymentNote, // Note: paymentNote is usually not in schema for PO but sticking to request
-      paymentTerms: data.paymentTerms,
+      paymentNote: data.paymentNote,
+      paymentTerms: data.paymentTerms, // Keep for backward compatibility if needed
       createdBy: authUserWithRoleHasPermissions.id,
       updatedBy: authUserWithRoleHasPermissions.id,
 
@@ -472,10 +509,23 @@ const CreatePurchaseOrderDialog = ({
     }
 
     try {
-      await dispatch(createPurchaseOrder(dataToSend)).unwrap()
-      form.reset()
-      onOpenChange?.(false)
+      const newOrder = await dispatch(createPurchaseOrder(dataToSend)).unwrap()
       toast.success('Tạo đơn hàng thành công')
+
+      // Luôn hiển thị xem trước hợp đồng (theo yêu cầu bỏ điều kiện isPrintContract)
+      // Prepare data for preview
+      const fullOrderData = {
+        ...newOrder,
+        // If new supplier was created inline, the response 'newOrder' should have it populated
+        // but we fallback to local state just in case for immediate preview
+        supplier: newOrder.supplier || selectedSupplier || (supplierEditData ? { ...supplierEditData, name: supplierEditData.name } : {}),
+        items: items
+      }
+
+      const contract = buildPurchaseContractData(fullOrderData, contractNumber)
+      setContractPreviewData(contract)
+      setShowContractPreview(true)
+
     } catch (error) {
       console.log('Submit error:', error)
       toast.error('Có lỗi xảy ra khi tạo đơn hàng')
@@ -559,7 +609,7 @@ const CreatePurchaseOrderDialog = ({
                   </div>
 
                   {/* Category + Product Grid */}
-                  <div className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full">
                     {/* Category Sidebar - Horizontal scroll with filter */}
                     <div className="border-b p-2 flex items-center gap-2">
                       <div className="flex-1 overflow-x-auto">
@@ -601,7 +651,7 @@ const CreatePurchaseOrderDialog = ({
                     </div>
 
                     {/* Product Grid - Vertical scroll */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto min-w-0 w-full">
                       <ProductGrid
                         products={filteredProducts}
                         onAddProduct={handleAddProduct}
@@ -657,6 +707,10 @@ const CreatePurchaseOrderDialog = ({
                         loading={loading}
                         expectedDeliveryDate={expectedDeliveryDate}
                         onExpectedDeliveryDateChange={setExpectedDeliveryDate}
+                        isPrintContract={isPrintContract}
+                        setIsPrintContract={setIsPrintContract}
+                        contractNumber={contractNumber}
+                        setContractNumber={setContractNumber}
                       />
                     </div>
                   </div>
@@ -713,6 +767,22 @@ const CreatePurchaseOrderDialog = ({
                   </div>
                 </div>
 
+                {/* Add Product Button */}
+                <div className="ml-auto">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-7 text-xs shadow-md"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setShowCreateProduct(true)
+                    }}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Thêm sản phẩm
+                  </Button>
+                </div>
+
                 {/* Category + Product Grid Row */}
                 <div className="flex flex-1 overflow-hidden">
                   {/* COLUMN 1: Category Sidebar */}
@@ -723,7 +793,7 @@ const CreatePurchaseOrderDialog = ({
                     productCounts={productCounts}
                   />
 
-                  {/* COLUMN 2: Product Grid */}
+
                   <ProductGrid
                     products={filteredProducts}
                     onAddProduct={handleAddProduct}
@@ -772,6 +842,10 @@ const CreatePurchaseOrderDialog = ({
                 loading={loading}
                 expectedDeliveryDate={expectedDeliveryDate}
                 onExpectedDeliveryDateChange={setExpectedDeliveryDate}
+                isPrintContract={isPrintContract}
+                setIsPrintContract={setIsPrintContract}
+                contractNumber={contractNumber}
+                setContractNumber={setContractNumber}
                 // Expenses
                 otherExpenses={otherExpenses}
                 calculateExpenses={calculateExpenses}
@@ -788,6 +862,35 @@ const CreatePurchaseOrderDialog = ({
         setOtherExpenses={handleSetOtherExpenses}
         otherExpenses={otherExpenses}
         showTrigger={false}
+      />
+
+      {/* Contract Preview Dialog */}
+      <PurchaseContractPreviewDialog
+        open={showContractPreview}
+        onOpenChange={(open) => {
+          setShowContractPreview(open)
+          if (!open) {
+            // If closing preview, close the main dialog too as order is done
+            onOpenChange?.(false)
+            form.reset()
+          }
+        }}
+        initialData={contractPreviewData}
+        contentClassName="z-[10006]"
+        overlayClassName="z-[10005]"
+      />
+
+      <CreateProductDialog
+        open={showCreateProduct}
+        onOpenChange={setShowCreateProduct}
+        onSuccess={() => {
+          dispatch(getProducts())
+          setShowCreateProduct(false)
+          toast.success('Đã thêm sản phẩm mới')
+        }}
+        showTrigger={false}
+        contentClassName="z-[10006]"
+        overlayClassName="z-[10005]"
       />
     </Dialog>
   )

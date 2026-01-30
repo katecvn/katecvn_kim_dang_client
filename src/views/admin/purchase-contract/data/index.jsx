@@ -1,11 +1,9 @@
 import {
-  IconRefreshDot,
-  IconFileInvoiceFilled,
   IconClockHour4,
   IconTruckDelivery,
   IconArchive,
 } from '@tabler/icons-react'
-import { CheckCircleIcon, HandCoinsIcon, XCircleIcon } from 'lucide-react'
+import { CheckCircleIcon, XCircleIcon } from 'lucide-react'
 
 const statuses = [
   {
@@ -41,25 +39,4 @@ const statuses = [
 ]
 
 
-const paymentStatuses = [
-  {
-    value: 'unpaid',
-    label: 'Chưa thanh toán',
-    icon: IconRefreshDot,
-    color: 'text-yellow-500',
-  },
-  {
-    value: 'partial',
-    label: 'Thanh toán một phần',
-    icon: HandCoinsIcon,
-    color: 'text-blue-500',
-  },
-  {
-    value: 'paid',
-    label: 'Đã thanh toán',
-    icon: CheckCircleIcon,
-    color: 'text-green-500',
-  },
-]
-
-export { statuses, paymentStatuses }
+export { statuses }

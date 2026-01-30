@@ -149,6 +149,12 @@ export const sideLinks = [
         icon: <IconBox size={18} />,
         permission: 'GET_WAREHOUSE_RECEIPT',
       },
+      {
+        title: 'Lô',
+        href: '/lots',
+        icon: <IconBox size={18} />,
+        permission: 'GET_STOCK',
+      },
     ],
   },
 

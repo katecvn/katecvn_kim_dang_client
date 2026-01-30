@@ -68,6 +68,8 @@ const CreateProductDialog = ({
   open,
   onOpenChange,
   showTrigger = true,
+  contentClassName,
+  overlayClassName,
   ...props
 }) => {
   const loading = useSelector((state) => state.product.loading)
@@ -340,7 +342,10 @@ const CreateProductDialog = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className="md:h-auto md:max-w-7xl">
+      <DialogContent
+        className={cn("md:h-auto md:max-w-7xl", contentClassName)}
+        overlayClassName={overlayClassName}
+      >
         <DialogHeader>
           <DialogTitle>Thêm sản phẩm mới</DialogTitle>
           <DialogDescription>

@@ -9,8 +9,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import { Separator } from '@/components/ui/separator'
-import { X, ShoppingCart as CartIcon, Minus, Plus, Package } from 'lucide-react'
+import { X, ShoppingCart as CartIcon, Minus, Plus, Package, Check as CheckIcon, ChevronsUpDown } from 'lucide-react'
 import { moneyFormat } from '@/utils/money-format'
 import { MoneyInputQuick } from '@/components/custom/MoneyInputQuick'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -259,6 +270,65 @@ const ShoppingCart = ({
                         />
                       </div>
 
+                      {/* Tax Selection */}
+                      <div className="flex-1">
+                        <label className="mb-1 block text-[10px] text-muted-foreground">
+                          Thuế
+                        </label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className="h-8 w-full justify-between text-xs px-2"
+                            >
+                              <span className="truncate">
+                                {selectedProductTaxes.length > 0
+                                  ? `${selectedProductTaxes.length} loại`
+                                  : 'Chọn'}
+                              </span>
+                              <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[200px] p-0">
+                            <Command>
+                              <CommandList>
+                                <CommandGroup>
+                                  {productTaxes.length > 0 ? (
+                                    productTaxes.map((tax) => (
+                                      <CommandItem
+                                        key={tax.id}
+                                        value={tax.id.toString()}
+                                        onSelect={() => {
+                                          const isChecked = !selectedProductTaxes.includes(tax.id)
+                                          onTaxChange(product.id, tax.id, isChecked)
+                                        }}
+                                      >
+                                        <div
+                                          className={cn(
+                                            'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                            selectedProductTaxes.includes(tax.id)
+                                              ? 'bg-primary text-primary-foreground'
+                                              : 'opacity-50 [&_svg]:invisible',
+                                          )}
+                                        >
+                                          <CheckIcon className={cn('h-4 w-4')} />
+                                        </div>
+                                        {tax.title} ({tax.percentage}%)
+                                      </CommandItem>
+                                    ))
+                                  ) : (
+                                    <div className="py-6 text-center text-sm text-muted-foreground">
+                                      Không có thông tin thuế
+                                    </div>
+                                  )}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
                       {/* Quantity Controls */}
                       <div className="flex-1">
                         <label className="mb-1 block text-[10px] text-muted-foreground">
@@ -315,6 +385,18 @@ const ShoppingCart = ({
                         {moneyFormat(subtotal)}
                       </span>
                     </div>
+
+                    {/* Tax Amount Display */}
+                    {taxAmount > 0 && (
+                      <div className="flex items-center justify-between border-t border-dashed pt-2">
+                        <span className="text-xs text-muted-foreground">
+                          Tiền thuế:
+                        </span>
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {moneyFormat(taxAmount)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

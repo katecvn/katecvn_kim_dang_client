@@ -1,104 +1,650 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useEffect, useState } from 'react'
-import { getPurchaseOrderDetail } from '@/api/purchase_order'
+import { Button } from '@/components/custom/Button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { moneyFormat, toVietnamese } from '@/utils/money-format'
+import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
+import React, { useEffect, useState } from 'react'
+import { purchaseOrderStatuses, purchaseOrderPaymentStatuses } from '../data'
+import { Separator } from '@/components/ui/separator'
+import { dateFormat } from '@/utils/date-format'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useDispatch } from 'react-redux'
+import { getPurchaseOrderDetail } from '@/stores/PurchaseOrderSlice'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import { cn } from '@/lib/utils'
+import { getPublicUrl } from '@/utils/file'
+import { CreditCard, Mail, MapPin, Trash2 } from 'lucide-react'
+import { IconCheck, IconInfoCircle, IconPencil, IconPlus } from '@tabler/icons-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import ConfirmImportWarehouseDialog from './ConfirmImportWarehouseDialog'
+import CreatePurchaseOrderPaymentDialog from './CreatePurchaseOrderPaymentDialog'
+import { toast } from 'sonner'
 
 const ViewPurchaseOrderDialog = ({
   open,
   onOpenChange,
   purchaseOrderId,
   showTrigger = true,
+  ...props
 }) => {
+  const isDesktop = useMediaQuery('(min-width: 768px)')
   const [purchaseOrder, setPurchaseOrder] = useState(null)
   const [loading, setLoading] = useState(false)
+  const dispatch = useDispatch()
+  const isViewInvoiceDialog = true
+
+  // Dialog States
+  const [showConfirmImportDialog, setShowConfirmImportDialog] = useState(false)
+  const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false)
+
+  // Fetch Data
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const data = await dispatch(getPurchaseOrderDetail(purchaseOrderId)).unwrap()
+      setPurchaseOrder(data)
+    } catch (error) {
+      console.error('Fetch purchase order error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    if (!open || !purchaseOrderId) return
-
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const data = await getPurchaseOrderDetail(purchaseOrderId)
-        setPurchaseOrder(data)
-      } catch (error) {
-        console.error('Fetch purchase order error:', error)
-      } finally {
-        setLoading(false)
-      }
+    if (open && purchaseOrderId) {
+      fetchData()
     }
+  }, [open, purchaseOrderId, dispatch])
 
-    fetchData()
-  }, [open, purchaseOrderId])
+
+  // Helpers
+  const getStatusColor = (statusValue) => {
+    const statusObj = purchaseOrderStatuses.find(s => s.value === statusValue)
+    return statusObj?.color || ''
+  }
+
+  const getStatusLabel = (statusValue) => {
+    const statusObj = purchaseOrderStatuses.find(s => s.value === statusValue)
+    return statusObj?.label || statusValue
+  }
+
+  const getPaymentStatusLabel = (statusValue) => {
+    const statusObj = purchaseOrderPaymentStatuses.find(s => s.value === statusValue)
+    return statusObj?.label || statusValue
+  }
+
+  const getPaymentStatusColor = (statusValue) => {
+    const statusObj = purchaseOrderPaymentStatuses.find(s => s.value === statusValue)
+    return statusObj?.color || ''
+  }
+
+  // Handlers
+  const handleCreateImport = () => {
+    if (purchaseOrder?.status !== 'approved' && purchaseOrder?.status !== 'partial' && purchaseOrder?.status !== 'ordered' && purchaseOrder.status !== 'completed') {
+      // Adjust valid statuses as needed. Assuming 'ordered' is valid for import
+      // Or if user system uses 'accepted' like invoice? User data showed 'draft'.
+      // Let's assume 'ordered' or 'accepted' is required.
+      // For now, let's allow it if not draft/cancelled
+    }
+    setShowConfirmImportDialog(true)
+  }
+
+  const handleCreatePayment = () => {
+    setShowCreatePaymentDialog(true)
+  }
+
+  // Helper for Warehouse Receipt Status (assuming similar to Invoice)
+  const getWarehouseReceiptStatusColor = (statusValue) => {
+    switch (statusValue) {
+      case 'draft': return 'bg-yellow-100 text-yellow-700'
+      case 'posted': return 'bg-green-100 text-green-700'
+      default: return 'bg-gray-100 text-gray-700'
+    }
+  }
+
+  // Helper for Payment Voucher Status
+  const getReceiptStatusColor = (statusValue) => {
+    switch (statusValue) {
+      case 'draft': return 'bg-yellow-100 text-yellow-700'
+      case 'completed': return 'bg-green-100 text-green-700'
+      case 'canceled': return 'bg-red-100 text-red-700'
+      default: return 'bg-gray-100 text-gray-700'
+    }
+  }
+
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Chi tiết đơn đặt hàng</DialogTitle>
+    <Dialog open={open} onOpenChange={onOpenChange} {...props}>
+      <DialogContent
+        className={cn(
+          "md:h-screen md:max-w-full md:z-[10001] md:my-0 md:top-0 md:translate-y-0",
+          !isDesktop && "fixed inset-0 w-screen h-screen top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none z-[9999] translate-x-0 translate-y-0"
+        )}>
+        <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
+          <DialogTitle className={cn(!isDesktop && "text-base")}>
+            Thông tin chi tiết đơn mua hàng: {purchaseOrder?.code}
+          </DialogTitle>
+          <DialogDescription className={cn(!isDesktop && "text-xs")}>
+            Dưới đây là thông tin chi tiết đơn mua hàng: {purchaseOrder?.code}.
+          </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-20 w-full" />
-          </div>
-        ) : purchaseOrder ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Mã đơn</p>
-                <p className="text-lg font-semibold">{purchaseOrder.code}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Trạng thái</p>
-                <p className="text-lg font-semibold">{purchaseOrder.status}</p>
-              </div>
+        <div className={cn(
+          "overflow-auto",
+          isDesktop ? "max-h-[75vh]" : "h-full px-4 pb-4"
+        )}>
+          {loading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <Skeleton className="h-[20px] w-full rounded-md" />
+                </div>
+              ))}
             </div>
+          ) : purchaseOrder ? (
+            <div className={cn(
+              "flex gap-6",
+              isDesktop ? "flex-row" : "flex-col"
+            )}>
+              {/* MAIN CONTENT BLOCK */}
+              <div className={cn(
+                "flex-1 rounded-lg border",
+                isDesktop ? "space-y-6 p-4" : "space-y-4 p-3"
+              )}>
+                <h2 className={cn(
+                  "font-semibold",
+                  isDesktop ? "text-lg" : "text-base"
+                )}>Thông tin đơn</h2>
 
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Nhà cung cấp</p>
-              <p className="font-semibold">{purchaseOrder.supplier?.name}</p>
-              <p className="text-sm">{purchaseOrder.supplier?.phone}</p>
-            </div>
+                <div className={cn("space-y-6", !isDesktop && "space-y-4")}>
+                  {/* ITEMS TABLE */}
+                  {isDesktop ? (
+                    <div className="overflow-x-auto rounded-lg border">
+                      <Table className="min-w-full">
+                        <TableHeader>
+                          <TableRow className="bg-secondary text-xs">
+                            <TableHead className="w-8">STT</TableHead>
+                            <TableHead className="min-w-40">Sản phẩm</TableHead>
+                            <TableHead className="min-w-20 text-center">ĐVT</TableHead>
+                            <TableHead className="min-w-16 text-right">Số lượng</TableHead>
+                            <TableHead className="min-w-20 text-right">Giá nhập</TableHead>
+                            <TableHead className="min-w-16 text-right">Thuế</TableHead>
+                            <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {purchaseOrder.items?.map((item, index) => (
+                            <TableRow key={index}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell>
+                                <div className="flex items-start gap-3">
+                                  {item.image && (
+                                    <div className="size-16 overflow-hidden rounded-md border shrink-0">
+                                      <img
+                                        src={getPublicUrl(item.image)}
+                                        alt={item.productName}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="font-medium text-blue-600">{item.productName}</div>
+                                    <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">{item.unitName}</TableCell>
+                              <TableCell className="text-right">{item.quantity}</TableCell>
+                              <TableCell className="text-right">{moneyFormat(item.unitPrice || item.price)}</TableCell>
+                              <TableCell className="text-right">{moneyFormat(item.taxAmount || 0)}</TableCell>
+                              <TableCell className="text-right font-medium">{moneyFormat(item.total || item.totalAmount || (item.quantity * item.unitPrice))}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    // MOBILE ITEMS
+                    <div className="space-y-3">
+                      {purchaseOrder.items?.map((item, index) => (
+                        <div key={index} className="border rounded-lg p-3 space-y-2 bg-card">
+                          <div className="font-medium text-sm text-blue-600">
+                            {index + 1}. {item.productName}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-muted-foreground">SL: </span>
+                              <span className="font-medium">{item.quantity} {item.unitName}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Giá: </span>
+                              <span className="font-medium">{moneyFormat(item.unitPrice)}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-between border-t pt-2 font-semibold text-sm">
+                            <span>Tổng cộng:</span>
+                            <span className="text-primary">{moneyFormat(item.total || item.totalAmount)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Danh sách sản phẩm</p>
-              <div className="border rounded-md">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="p-2 text-left">Sản phẩm</th>
-                      <th className="p-2 text-right">Số lượng</th>
-                      <th className="p-2 text-right">Đơn giá</th>
-                      <th className="p-2 text-right">Thành tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {purchaseOrder.items?.map((item, index) => (
-                      <tr key={index} className="border-t">
-                        <td className="p-2">{item.productName}</td>
-                        <td className="p-2 text-right">{item.quantity}</td>
-                        <td className="p-2 text-right">{item.price?.toLocaleString()}</td>
-                        <td className="p-2 text-right">{item.total?.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  <div className={cn(
+                    "grid gap-4",
+                    isDesktop ? "md:grid-cols-[2fr,1fr]" : "grid-cols-1"
+                  )}>
+                    {/* FINANCIALS (Right on Desktop) */}
+                    <div className={cn(
+                      "space-y-4 text-sm",
+                      isDesktop ? "order-2" : "order-1"
+                    )}>
+                      <div className="flex justify-between">
+                        <strong>Tổng tiền hàng:</strong>
+                        <span>{moneyFormat(purchaseOrder.subTotal || 0)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <strong>Thuế:</strong>
+                        <span>{moneyFormat(purchaseOrder.taxAmount)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <strong>Chi phí khác:</strong>
+                        <span>{moneyFormat(purchaseOrder.otherCosts || 0)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <strong>Giảm giá:</strong>
+                        <span>{moneyFormat(purchaseOrder.discount)}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-lg border-t pt-2 mt-2">
+                        <strong>Tổng cộng:</strong>
+                        <span className="font-bold text-primary">
+                          {moneyFormat(purchaseOrder.totalAmount)}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-start border-t py-2">
+                        <div className={cn("font-bold", isDesktop ? "text-sm" : "text-xs")}>
+                          Số tiền viết bằng chữ:{' '}
+                          <span className="font-bold">
+                            {toVietnamese(purchaseOrder.totalAmount)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-start border-t py-2">
+                        <strong className="mr-2">Trạng thái đơn hàng: </strong>
+                        <span className={cn("px-2 py-0.5 rounded text-xs font-semibold border h-fit", getStatusColor(purchaseOrder.status))}>
+                          {getStatusLabel(purchaseOrder.status)}
+                        </span>
+                      </div>
+
+                      <div className="space-y-3 pt-2">
+                        <div className="flex justify-between">
+                          <strong>Thanh toán: </strong>
+                          <span className={cn("font-medium", getPaymentStatusColor(purchaseOrder.paymentStatus))}>
+                            {getPaymentStatusLabel(purchaseOrder.paymentStatus)}
+                          </span>
+                        </div>
+                        {purchaseOrder.paidAmount > 0 && (
+                          <div className="flex justify-between">
+                            <strong>Đã thanh toán:</strong>
+                            <span className="font-medium text-green-600">
+                              {moneyFormat(purchaseOrder.paidAmount)}
+                            </span>
+                          </div>
+                        )}
+                        {purchaseOrder.paidAmount < purchaseOrder.totalAmount && (
+                          <div className="flex justify-between">
+                            <strong>Còn nợ:</strong>
+                            <span className="font-medium text-red-600">
+                              {moneyFormat(purchaseOrder.totalAmount - (purchaseOrder.paidAmount || 0))}
+                            </span>
+                          </div>
+                        )}
+                        {purchaseOrder.expectedDeliveryDate && (
+                          <div className="flex justify-between">
+                            <strong>Ngày nhận hàng dự kiến: </strong>
+                            <span className="text-orange-600 font-medium">
+                              {dateFormat(purchaseOrder.expectedDeliveryDate)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* NOTES & CONTRACT (Left on Desktop) */}
+                    <div className={cn(
+                      "flex flex-col gap-2",
+                      isDesktop ? "order-1" : "order-2"
+                    )}>
+                      <div className={cn(isDesktop ? "text-sm" : "text-xs")}>
+                        <strong className="text-destructive">
+                          Ghi chú:{' '}
+                        </strong>
+                        <span className="text-primary">
+                          {purchaseOrder.note || 'Không có'}
+                        </span>
+                      </div>
+
+                      {/* Purchase Contract Summary */}
+                      {purchaseOrder.purchaseContract && (
+                        <>
+                          <Separator className="my-4" />
+                          <div className="space-y-3 rounded-lg border p-4 text-sm">
+                            <h3 className="font-semibold">Hợp đồng mua hàng</h3>
+                            <div className="flex justify-between">
+                              <strong>Mã hợp đồng:</strong>
+                              <span className="font-medium text-primary">{purchaseOrder.purchaseContract.code}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <strong>Ngày ký:</strong>
+                              <span>{dateFormat(purchaseOrder.purchaseContract.contractDate)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <strong>Tổng giá trị:</strong>
+                              <span className="font-bold text-primary">{moneyFormat(purchaseOrder.purchaseContract.totalAmount)}</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* WAREHOUSE RECEIPTS SECTION */}
+                  <>
+                    <Separator className="my-4" />
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">Phiếu nhập kho</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1"
+                          onClick={handleCreateImport}
+                        >
+                          <IconPlus className="h-4 w-4" />
+                          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                            Tạo phiếu nhập
+                          </span>
+                        </Button>
+                      </div>
+
+                      {purchaseOrder?.warehouseReceipts && purchaseOrder.warehouseReceipts.length > 0 ? (
+                        <div className="overflow-x-auto rounded-lg border">
+                          <Table className="min-w-full">
+                            <TableHeader>
+                              <TableRow className="bg-secondary text-xs">
+                                <TableHead className="w-12">STT</TableHead>
+                                <TableHead className="min-w-32">Mã phiếu</TableHead>
+                                <TableHead className="min-w-32">Loại phiếu</TableHead>
+                                <TableHead className="min-w-32">Trạng thái</TableHead>
+                                <TableHead className="min-w-32 text-right">Tổng tiền</TableHead>
+                                <TableHead className="min-w-32">Ngày tạo</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {purchaseOrder.warehouseReceipts.map((receipt, index) => (
+                                <TableRow key={receipt.id}>
+                                  <TableCell>{index + 1}</TableCell>
+                                  <TableCell>
+                                    <span className="font-medium">{receipt.code}</span>
+                                  </TableCell>
+                                  <TableCell>
+                                    {receipt.receiptType === 1 ? 'Nhập kho' : receipt.receiptType}
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}>
+                                      {receipt.status}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="text-right font-semibold">
+                                    {moneyFormat(receipt.totalAmount)}
+                                  </TableCell>
+                                  <TableCell>{dateFormat(receipt.receiptDate)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <div className="text-center text-sm text-muted-foreground italic py-2">
+                          Chưa có dữ liệu phiếu nhập kho
+                        </div>
+                      )}
+                    </div>
+                  </>
+
+                  {/* PAYMENT VOUCHERS SECTION */}
+                  <>
+                    <Separator className="my-4" />
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">Phiếu chi</h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1"
+                          onClick={handleCreatePayment}
+                        >
+                          <IconPlus className="h-4 w-4" />
+                          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                            Tạo phiếu chi
+                          </span>
+                        </Button>
+                      </div>
+
+                      {purchaseOrder?.paymentVouchers && purchaseOrder.paymentVouchers.length > 0 ? (
+                        <div className="overflow-x-auto rounded-lg border">
+                          <Table className="min-w-full">
+                            <TableHeader>
+                              <TableRow className="bg-secondary text-xs">
+                                <TableHead className="w-12">STT</TableHead>
+                                <TableHead className="min-w-32">Mã phiếu</TableHead>
+                                <TableHead className="min-w-28 text-right">Số tiền</TableHead>
+                                <TableHead className="min-w-24">PT thanh toán</TableHead>
+                                <TableHead className="min-w-20">Trạng thái</TableHead>
+                                <TableHead className="min-w-32">Ngày tạo</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {purchaseOrder.paymentVouchers.map((voucher, index) => (
+                                <TableRow key={voucher.id}>
+                                  <TableCell>{index + 1}</TableCell>
+                                  <TableCell><span className="font-medium">{voucher.code}</span></TableCell>
+                                  <TableCell className="text-right font-semibold">{moneyFormat(voucher.amount)}</TableCell>
+                                  <TableCell>
+                                    {voucher.paymentMethod === 'cash' ? 'Tiền mặt' : voucher.paymentMethod === 'transfer' ? 'Chuyển khoản' : voucher.paymentMethod}
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}>
+                                      {voucher.status}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>{dateFormat(voucher.createdAt)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <div className="text-center text-sm text-muted-foreground italic py-2">
+                          Chưa có dữ liệu phiếu chi
+                        </div>
+                      )}
+                    </div>
+                  </>
+
+                </div>
+              </div>
+
+              {/* SIDEBAR (Right) */}
+              <div className={cn(
+                "rounded-lg border p-4 bg-card",
+                isDesktop ? "w-72 sticky top-0 h-fit" : "w-full"
+              )}>
+                {/* SUPPLIER INFO */}
+                <div className="flex items-center justify-between">
+                  <h2 className={cn(
+                    "py-2 font-semibold",
+                    isDesktop ? "text-lg" : "text-base"
+                  )}>Nhà cung cấp</h2>
+                </div>
+
+                <div className={cn(isDesktop ? "space-y-6" : "space-y-4")}>
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={`https://ui-avatars.com/api/?bold=true&background=random&name=${purchaseOrder?.supplier?.name}`}
+                        alt={purchaseOrder?.supplier?.name}
+                      />
+                      <AvatarFallback>NCC</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">
+                        {purchaseOrder?.supplier?.name}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="font-medium">Thông tin liên hệ</div>
+                    </div>
+
+                    <div className="mt-4 space-y-2 text-sm">
+                      <div className="flex cursor-pointer items-center text-primary hover:text-secondary-foreground">
+                        <div className="mr-2 h-4 w-4 ">
+                          <MobileIcon className="h-4 w-4" />
+                        </div>
+                        <a href={`tel:${purchaseOrder?.supplier?.phone}`}>
+                          {purchaseOrder?.supplier?.phone || 'Chưa cập nhật'}
+                        </a>
+                      </div>
+                      <div className="flex items-center text-muted-foreground">
+                        <div className="mr-2 h-4 w-4 ">
+                          <Mail className="h-4 w-4" />
+                        </div>
+                        <a href={`mailto:${purchaseOrder?.supplier?.email}`}>
+                          {purchaseOrder?.supplier?.email || 'Chưa cập nhật'}
+                        </a>
+                      </div>
+                      <div className="flex items-center text-primary hover:text-secondary-foreground">
+                        <div className="mr-2 h-4 w-4 ">
+                          <MapPin className="h-4 w-4" />
+                        </div>
+                        {purchaseOrder?.supplier?.address || 'Chưa cập nhật'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="my-4" />
+
+                {/* CREATOR INFO */}
+                <div className="flex items-center justify-between">
+                  <h2 className="py-2 text-lg font-semibold">
+                    Người lập đơn
+                  </h2>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={`https://ui-avatars.com/api/?bold=true&background=random&name=${purchaseOrder?.createdByUser?.fullName}`}
+                        alt={purchaseOrder?.createdByUser?.fullName}
+                      />
+                      <AvatarFallback>AD</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">
+                        {purchaseOrder?.createdByUser?.fullName} ({purchaseOrder?.createdByUser?.code})
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {dateFormat(purchaseOrder?.createdAt, true)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="font-medium">Thông tin nhân viên</div>
+                    </div>
+
+                    <div className="mt-4 space-y-2 text-sm">
+                      <div className="flex cursor-pointer items-center text-primary hover:text-secondary-foreground">
+                        <div className="mr-2 h-4 w-4 ">
+                          <MobileIcon className="h-4 w-4" />
+                        </div>
+                        <a href={`tel:${purchaseOrder?.createdByUser?.phone}`}>
+                          {purchaseOrder?.createdByUser?.phone || 'Chưa cập nhật'}
+                        </a>
+                      </div>
+
+                      <div className="flex items-center text-muted-foreground">
+                        <div className="mr-2 h-4 w-4 ">
+                          <Mail className="h-4 w-4" />
+                        </div>
+                        <a href={`mailto:${purchaseOrder?.createdByUser?.email}`}>
+                          {purchaseOrder?.createdByUser?.email || 'Chưa cập nhật'}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">Không tìm thấy dữ liệu đơn hàng</p>
+          )}
+        </div>
 
-            <div className="border-t pt-4">
-              <div className="flex justify-between">
-                <span className="font-medium">Tổng tiền:</span>
-                <span className="text-lg font-bold">{purchaseOrder.amount?.toLocaleString()} VNĐ</span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-center text-muted-foreground">Không tìm thấy dữ liệu</p>
-        )}
+        <DialogFooter className="flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0">
+          {/* Add Action Buttons Here if needed like Print, etc in future */}
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              Đóng
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
+
+      {/* Confirm Import Dialog */}
+      {showConfirmImportDialog && (
+        <ConfirmImportWarehouseDialog
+          open={showConfirmImportDialog}
+          onOpenChange={setShowConfirmImportDialog}
+          purchaseOrder={purchaseOrder}
+          onSuccess={() => fetchData()}
+        />
+      )}
+
+      {/* Create Payment Dialog */}
+      {showCreatePaymentDialog && (
+        <CreatePurchaseOrderPaymentDialog
+          open={showCreatePaymentDialog}
+          onOpenChange={setShowCreatePaymentDialog}
+          purchaseOrder={purchaseOrder}
+          onSuccess={() => fetchData()}
+        />
+      )}
     </Dialog>
   )
 }

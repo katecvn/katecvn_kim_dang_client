@@ -163,7 +163,7 @@ const UpdateProductDialog = ({
           effectiveDate: '',
           type: 'multiplier',
         },
-      document: new File([], ''),
+      image: new File([], ''),
       hasExpiry: product?.hasExpiry ?? false,
       code: product?.code ?? '',
       manageSerial: product?.manageSerial ?? false,
@@ -315,7 +315,7 @@ const UpdateProductDialog = ({
           effectiveDate: '',
           type: 'multiplier',
         },
-      document: new File([], ''),
+      image: new File([], ''),
       hasExpiry: product.hasExpiry ?? false,
       manageSerial: product.manageSerial ?? false,
       applyWarranty: !!product.warrantyPolicy,
@@ -382,7 +382,7 @@ const UpdateProductDialog = ({
       for (const c of filteredUnitConversions) map.set(String(c.unitId), c)
       const dedupUnitConversions = Array.from(map.values())
 
-      const dataToSend = {
+      const fullData = {
         code: data.code,
         taxIds: data.taxIds,
         attributeIdsWithValue: filteredAttributes,
@@ -421,6 +421,43 @@ const UpdateProductDialog = ({
         // Price Sync fields
         syncEnabled: data.syncEnabled || false,
         syncExternalCode: data.syncEnabled ? data.syncExternalCode : null,
+      }
+
+      // Filter only dirty fields
+      const { dirtyFields } = form.formState
+      const dataToSend = {}
+
+      // Always include these keys if they are in the fullData and determined 'dirty'
+      Object.keys(fullData).forEach((key) => {
+        // Special check for 'image' (controlled by selectedFile state, not just form dirty)
+        if (key === 'image') {
+          if (selectedFile) dataToSend[key] = selectedFile
+          // If selectedFile is null, we check if the form field was touched?
+          // Actually, if selectedFile is null, it means no new file.
+          // The form field 'image' is just a facilitator.
+          // Logic: "sửa nào gửi đó". If no new file selected, don't send 'image' key.
+          return
+        }
+
+        // For other fields, check dirtyFields
+        // User request: always send supplierId
+        if (dirtyFields[key] || key === 'supplierId') {
+          dataToSend[key] = fullData[key]
+        }
+      })
+
+      // Special case: syncExternalCode dependence on syncEnabled
+      // If syncEnabled changed to false, we must send syncExternalCode: null (which is in fullData)
+      // dirtyFields.syncEnabled would be true.
+      // If user clears syncExternalCode manually, dirtyFields.syncExternalCode is true.
+      // Seems covered.
+
+      console.log('📦 Partial Update Payload:', dataToSend)
+
+      if (Object.keys(dataToSend).length === 0) {
+        // toast.info('Không có thay đổi nào')
+        onOpenChange?.(false)
+        return
       }
 
       await dispatch(

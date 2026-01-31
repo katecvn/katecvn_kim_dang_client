@@ -7,7 +7,7 @@ export const getSystemLogs = createAsyncThunk(
   'systemLog/get-system-logs',
   async (params, { rejectWithValue }) => {
     try {
-      const response = await api.get('/system-logs', { params })
+      const response = await api.get('/audit-logs', { params })
       return response.data
     } catch (error) {
       const message = handleError(error)
@@ -35,8 +35,8 @@ export const systemLogSlice = createSlice({
       })
       .addCase(getSystemLogs.fulfilled, (state, action) => {
         state.loading = false
-        state.logs = action.payload.data
-        state.meta = action.payload.meta || {}
+        state.logs = action.payload.data.logs
+        state.meta = action.payload.data.meta || action.payload.meta || {}
       })
       .addCase(getSystemLogs.rejected, (state, action) => {
         state.loading = false

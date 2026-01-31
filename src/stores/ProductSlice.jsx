@@ -117,11 +117,18 @@ const buildFormData = (data) => {
     formData.append('image', data.image)
   }
 
-  // hasExpiry (always send)
-  formData.append('hasExpiry', !!data.hasExpiry)
+  // hasExpiry
+  if (data.hasExpiry !== undefined) {
+    formData.append('hasExpiry', !!data.hasExpiry)
+  }
 
   // warrantyPolicy
-  if (data.applyWarranty && data.warrantyPolicy) {
+  if ((data.applyWarranty !== undefined ? data.applyWarranty : !!data.warrantyPolicy) && data.warrantyPolicy) {
+    // NOTE: Logic complex here. 
+    // strict: if applyWarranty passed, use it. If not, if warrantyPolicy passed, implies active?
+    // Actually applyWarranty is in the simple fields list above, so it is appended if dirty.
+    // warrantyPolicy object is what we care about here.
+    // If data.warrantyPolicy exists, we likely want to update it.
     const wp = data.warrantyPolicy
     appendIfPresent('warrantyPolicy[periodMonths]', wp.periodMonths)
     formData.append('warrantyPolicy[conditions]', wp.conditions || '')
@@ -130,8 +137,10 @@ const buildFormData = (data) => {
   }
 
   // Price Sync fields
-  formData.append('syncEnabled', !!data.syncEnabled)
-  if (data.syncEnabled && data.syncExternalCode) {
+  if (data.syncEnabled !== undefined) {
+    formData.append('syncEnabled', !!data.syncEnabled)
+  }
+  if (data.syncExternalCode) { // logic dependent on syncEnabled usually, but if sent partially, we just strip if present
     formData.append('syncExternalCode', data.syncExternalCode)
   }
 

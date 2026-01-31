@@ -6,7 +6,7 @@ import { dateFormat } from '@/utils/date-format'
 import { cn } from '@/lib/utils'
 import { ChevronDown, MoreVertical, Eye, Pencil, Trash2, Phone, CreditCard } from 'lucide-react'
 import { IconFileTypePdf } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,14 +14,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { statuses, paymentStatuses } from '../data'
 import Can from '@/utils/can'
 import DeleteInvoiceDialog from './DeleteInvoiceDialog'
-import UpdateInvoiceDialog from './UpdateInvoiceDialog'
+import InvoiceDialog from './InvoiceDialog'
 import ViewInvoiceDialog from './ViewInvoiceDialog'
 import UpdateInvoiceStatusDialog from './UpdateInvoiceStatusDialog'
 import { useDispatch, useSelector } from 'react-redux'
 import { updateInvoiceStatus } from '@/stores/InvoiceSlice'
+import { updateSalesContract } from '@/stores/SalesContractSlice'
 import { toast } from 'sonner'
 import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
 import PrintInvoiceView from './PrintInvoiceView'
@@ -72,7 +80,41 @@ const MobileInvoiceCard = ({
 
 
 
+
+
   const { customer, amount, discount, taxAmount, status, paymentStatus, code, createdAt } = invoice
+
+  // Logic copied from UpdateInvoiceStatusDialog
+  const isPaid = paymentStatus === 'paid'
+  const isLocked = ['delivered', 'rejected'].includes(status)
+  const isActionDisabled = isPaid || isLocked
+
+  const filteredStatuses = useMemo(() => {
+    const permissions = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
+    const canReject = permissions.includes('REJECT_INVOICE')
+    const canRevert = permissions.includes('REVERT_INVOICE')
+
+    return statuses.filter((s) => {
+      // Hide 'completed' status as it is automated
+      if (s.value === 'delivered') return false
+
+      // Permission check for 'rejected'
+      if (s.value === 'rejected') {
+        if (!canReject) return false
+        // Only allow switching to 'rejected' if current status is 'pending'
+        if (status !== 'pending') return false
+      }
+
+      // Permission check for 'pending' (revert)
+      if (s.value === 'pending') {
+        if (!canRevert) return false
+      }
+
+      return true
+    })
+  }, [status])
+
+  const selectedStatusObj = statuses.find((s) => s.value === status)
 
   const getStatusBadge = (statusValue) => {
     const statusObj = statuses.find((s) => s.value === statusValue)
@@ -260,7 +302,6 @@ const MobileInvoiceCard = ({
         ? await getInvoiceDetail(invoiceId)
         : await getInvoiceDetailByUser(invoiceId)
       setPrintInvoice(data)
-      setTimeout(() => setPrintInvoice(null), 0)
     } catch (error) {
       console.log('Print invoice error: ', error)
       toast.error('Lỗi in hóa đơn')
@@ -328,10 +369,10 @@ const MobileInvoiceCard = ({
       )}
 
       {showUpdateDialog && (
-        <UpdateInvoiceDialog
+        <InvoiceDialog
           open={showUpdateDialog}
           onOpenChange={setShowUpdateDialog}
-          invoiceUpdateId={invoice.id}
+          invoiceId={invoice.id}
           showTrigger={false}
         />
       )}
@@ -397,6 +438,16 @@ const MobileInvoiceCard = ({
             <div className="text-xs text-muted-foreground">{dateFormat(createdAt)}</div>
           </div>
 
+          {/* Expand Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setExpanded(!expanded)}
+          >
+            <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
+          </Button>
+
           {/* Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -434,11 +485,6 @@ const MobileInvoiceCard = ({
               </DropdownMenuItem>
 
               {/* In Hợp Đồng Bán Hàng */}
-              <DropdownMenuItem onClick={handlePrintInstallment}>
-                <IconFileTypePdf className="mr-2 h-4 w-4" />
-                In Hợp Đồng
-              </DropdownMenuItem>
-
               <DropdownMenuItem onClick={handlePrintInstallment}>
                 <IconFileTypePdf className="mr-2 h-4 w-4" />
                 In Hợp Đồng
@@ -516,15 +562,7 @@ const MobileInvoiceCard = ({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Expand Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => setExpanded(!expanded)}
-          >
-            <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
-          </Button>
+
         </div>
 
         {/* Customer Section */}
@@ -570,7 +608,47 @@ const MobileInvoiceCard = ({
         <div className="p-3 border-b bg-background/30 space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-xs text-muted-foreground">Trạng thái:</span>
-            {getStatusBadge(status)}
+
+            <div className="w-[140px]">
+              <Select
+                value={status}
+                onValueChange={handleStatusUpdate}
+                disabled={isActionDisabled}
+              >
+                <SelectTrigger className="h-7 text-xs px-2">
+                  <SelectValue placeholder="Chọn trạng thái">
+                    {selectedStatusObj ? (
+                      <span
+                        className={`inline-flex items-center gap-1 font-medium ${selectedStatusObj.color || ''
+                          }`}
+                      >
+                        {selectedStatusObj.icon ? (
+                          <selectedStatusObj.icon className="h-3 w-3" />
+                        ) : null}
+                        {selectedStatusObj.label}
+                      </span>
+                    ) : null}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent position="popper" align="end" className="w-[140px] z-[10005]">
+                  {filteredStatuses.map((s) => (
+                    <SelectItem
+                      key={s.value}
+                      value={s.value}
+                      className="cursor-pointer text-xs"
+                    >
+                      <span
+                        className={`inline-flex items-center gap-1 font-medium ${s.color || ''
+                          }`}
+                      >
+                        {s.icon ? <s.icon className="h-3 w-3" /> : null}
+                        {s.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-xs text-muted-foreground">Thanh toán:</span>
@@ -631,10 +709,10 @@ const MobileInvoiceCard = ({
         )}
 
         {showUpdateDialog && (
-          <UpdateInvoiceDialog
+          <InvoiceDialog
             open={showUpdateDialog}
             onOpenChange={setShowUpdateDialog}
-            invoiceUpdateId={invoice.id}
+            invoiceId={invoice.id}
             showTrigger={false}
           />
         )}
@@ -661,7 +739,11 @@ const MobileInvoiceCard = ({
 
         {/* Print Invoice Dialog */}
         {printInvoice && setting && (
-          <PrintInvoiceView invoice={printInvoice} setting={setting} />
+          <PrintInvoiceView
+            invoice={printInvoice}
+            setting={setting}
+            onAfterPrint={() => setPrintInvoice(null)}
+          />
         )}
 
         {/* Print Agreement Dialog */}
@@ -699,6 +781,32 @@ const MobileInvoiceCard = ({
             onConfirm={async (finalData) => {
               try {
                 setInstallmentExporting(true)
+
+                // Save data if status is 'draft'
+                if (finalData.status === 'draft' && finalData.salesContractId) {
+                  const payload = {
+                    code: finalData.contract?.no,
+                    sellerName: finalData.seller?.name,
+                    sellerRepresentative: finalData.seller?.representative,
+                    sellerAddress: finalData.seller?.address,
+                    sellerPhone: finalData.seller?.phone,
+                    customerName: finalData.customer?.name,
+                    customerPhone: finalData.customer?.phone,
+                    customerAddress: finalData.customer?.address,
+                    customerIdentityCard: finalData.customer?.identityCard,
+                    customerIdentityDate: finalData.customer?.identityDate,
+                    customerIdentityPlace: finalData.customer?.identityPlace,
+                    deliveryDate: finalData.payment?.deliveryDate,
+                  }
+
+                  await dispatch(updateSalesContract({
+                    id: finalData.salesContractId,
+                    data: payload
+                  })).unwrap()
+
+                  toast.success('Đã lưu thông tin hợp đồng')
+                }
+
                 await exportInstallmentWord(finalData, installmentFileName)
                 toast.success('Đã xuất hợp đồng trả chậm thành công')
                 setShowInstallmentPreview(false)

@@ -3,11 +3,12 @@ import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import React, { useEffect, useRef } from 'react'
 import { useReactToPrint } from 'react-to-print'
 
-const PrintInvoiceView = ({ invoice, setting }) => {
+const PrintInvoiceView = ({ invoice, setting, onAfterPrint }) => {
   const contentRef = useRef(null)
   const reactToPrintFn = useReactToPrint({
     contentRef,
     documentTitle: invoice?.code ? `HD-${invoice?.code}` : 'Hóa đơn',
+    onAfterPrint: onAfterPrint,
   })
 
   useEffect(() => {

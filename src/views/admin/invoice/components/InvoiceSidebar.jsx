@@ -251,6 +251,7 @@ const InvoiceSidebar = ({
       </div>
 
       <ScrollArea className="flex-1">
+        <div id="invoice-sidebar-top" />
         <div className="p-4 space-y-4">
           {/* Customer Selection */}
           <div className="space-y-2">
@@ -887,7 +888,7 @@ const InvoiceSidebar = ({
           loading={loading}
         >
           <IconDatabasePlus className="h-4 w-4 mr-2" />
-          {isUpdate ? 'Cập nhật hóa đơn' : 'Tạo hóa đơn'}
+          {isUpdate ? 'Cập nhật đơn bán' : 'Tạo đơn bán'}
         </Button>
 
         {/* Print Buttons */}
@@ -901,7 +902,7 @@ const InvoiceSidebar = ({
             <IconFileTypePdf className="h-4 w-4 mr-2" />
             {isUpdate ? 'Cập nhật Và In Hóa Đơn' : 'Tạo Và In Hóa Đơn'}
           </Button>
-          <Button
+          {/* <Button
             type="button"
             className="w-full"
             onClick={form.handleSubmit((data) => onSubmit(data, { printAgreement: true }))}
@@ -909,7 +910,7 @@ const InvoiceSidebar = ({
           >
             <IconFileTypePdf className="h-4 w-4 mr-2" />
             {isUpdate ? 'Cập nhật Và In Thỏa Thuận' : 'Tạo Và In Thỏa Thuận'}
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>

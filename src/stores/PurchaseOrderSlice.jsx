@@ -308,7 +308,7 @@ export const purchaseOrderSlice = createSlice({
       .addCase(confirmPurchaseOrder.pending, (state) => { state.loading = true })
       .addCase(confirmPurchaseOrder.rejected, (state, action) => {
         state.loading = false
-        state.error = action.payload
+        state.error = action.payload?.message || 'Lỗi không xác định'
         toast.error(state.error)
       })
       // Cancel
@@ -316,7 +316,7 @@ export const purchaseOrderSlice = createSlice({
       .addCase(cancelPurchaseOrder.pending, (state) => { state.loading = true })
       .addCase(cancelPurchaseOrder.rejected, (state, action) => {
         state.loading = false
-        state.error = action.payload
+        state.error = action.payload?.message || 'Lỗi không xác định'
         toast.error(state.error)
       })
       // Revert
@@ -324,7 +324,7 @@ export const purchaseOrderSlice = createSlice({
       .addCase(revertPurchaseOrder.pending, (state) => { state.loading = true })
       .addCase(revertPurchaseOrder.rejected, (state, action) => {
         state.loading = false
-        state.error = action.payload
+        state.error = action.payload?.message || 'Lỗi không xác định'
         toast.error(state.error)
       })
       .addCase(getPurchaseOrderDetail.pending, (state) => {

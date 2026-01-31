@@ -65,6 +65,9 @@ const UpdatePurchaseOrderStatusDialog = ({
     try {
       setLoading(true)
       await onSubmit?.(status, purchaseOrderId)
+    } catch (error) {
+      console.log('Update status error:', error)
+      toast.error(error?.message || 'Có lỗi xảy ra khi cập nhật trạng thái')
     } finally {
       setLoading(false)
     }

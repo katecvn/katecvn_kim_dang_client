@@ -23,7 +23,7 @@ import Can from '@/utils/can'
 import { useState } from 'react'
 import DeleteInvoiceDialog from './DeleteInvoiceDialog'
 import RejectInvoiceDialog from './RejectInvoiceDialog'
-import UpdateInvoiceDialog from '@/views/admin/invoice/components/UpdateInvoiceDialog.jsx'
+import InvoiceDialog from './InvoiceDialog'
 import CreateCreditNoteDialog from './CreateCreditNoteDialog'
 import ViewInvoiceDialog from './ViewInvoiceDialog'
 import EInvoicePublishDialog from './EInvoicePublishDialog'
@@ -569,10 +569,10 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuContent>
       </DropdownMenu>
       {showUpdatePendingInvoiceDialog && (
-        <UpdateInvoiceDialog
+        <InvoiceDialog
           open={showUpdatePendingInvoiceDialog}
           onOpenChange={setShowUpdatePendingInvoiceDialog}
-          invoiceUpdateId={row.original.id}
+          invoiceId={row.original.id}
           showTrigger={false}
         />
       )}

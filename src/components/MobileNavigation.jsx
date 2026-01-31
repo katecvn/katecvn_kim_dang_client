@@ -39,7 +39,7 @@ const MobileNavigation = ({ onCategoryClick }) => {
     },
     {
       id: 'orders',
-      label: 'Đơn hàng',
+      label: 'Đơn bán',
       icon: Package,
       path: '/invoice',
       isCenter: false

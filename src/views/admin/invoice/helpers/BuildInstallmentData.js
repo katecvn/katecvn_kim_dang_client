@@ -91,5 +91,9 @@ export async function buildInstallmentData(invoice) {
     
     // Print tracking info
     printCount: invoice?.salesContract?.printCount || 0,
+    
+    // Sales Contract Info for Logic
+    status: invoice?.salesContract?.status || 'draft',
+    salesContractId: invoice?.salesContract?.id,
   }
 }

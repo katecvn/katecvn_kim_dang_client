@@ -5,7 +5,7 @@ import { DataTableViewOptions } from './DataTableViewOption'
 import Can from '@/utils/can'
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import CreateInvoiceDialog from './CreateInvoiceDialog'
+import InvoiceDialog from './InvoiceDialog'
 import { IconFileTypeXls } from '@tabler/icons-react'
 import { toast } from 'sonner'
 import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
@@ -136,7 +136,7 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
 
         {/* Dialogs */}
         {showCreateInvoiceDialog && (
-          <CreateInvoiceDialog
+          <InvoiceDialog
             type="common_invoice"
             open={showCreateInvoiceDialog}
             onOpenChange={setShowCreateInvoiceDialog}
@@ -312,7 +312,7 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
 
           {/* Dialog tạo hóa đơn chung */}
           {showCreateInvoiceDialog && (
-            <CreateInvoiceDialog
+            <InvoiceDialog
               type="common_invoice"
               open={showCreateInvoiceDialog}
               onOpenChange={setShowCreateInvoiceDialog}

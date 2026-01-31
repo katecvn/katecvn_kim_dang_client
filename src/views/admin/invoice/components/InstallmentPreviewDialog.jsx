@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import ExportInstallment from './ExportInstallment'
 import { cn } from '@/lib/utils'
+import { statuses } from '../../sales-contract/data'
 
 const safe = (v, fallback = '') => (v === 0 || v ? String(v) : fallback)
 
@@ -70,8 +71,17 @@ export default function InstallmentPreviewDialog({
   const payment = formData.payment ?? {}
 
   // Form fields JSX (not a function component to avoid re-creation on render)
+  const isEditable = formData.status === 'draft'
+  const statusLabel = statuses.find(s => s.value === formData.status)?.label || formData.status
+
+  // Form fields JSX (not a function component to avoid re-creation on render)
   const formFieldsContent = (
     <div className="space-y-4">
+      {!isEditable && (
+        <div className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800 border border-yellow-200">
+          Hợp đồng đang ở trạng thái <strong>{statusLabel}</strong>, không thể chỉnh sửa.
+        </div>
+      )}
       <div>
         <h3 className="mb-2 text-sm font-semibold">Thông tin hợp đồng</h3>
         <div className="space-y-2">
@@ -81,6 +91,7 @@ export default function InstallmentPreviewDialog({
               className="mt-1 h-8 text-xs"
               value={safe(contract.no)}
               onChange={(e) => handleChange('contract.no', e.target.value)}
+              disabled={!isEditable}
             />
           </label>
         </div>
@@ -99,6 +110,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('seller.name', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
           <label className="block text-xs font-medium">
@@ -109,6 +121,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('seller.representative', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
           <label className="block text-xs font-medium">
@@ -119,6 +132,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('seller.address', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
           <label className="block text-xs font-medium">
@@ -129,6 +143,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('seller.phone', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
         </div>
@@ -147,6 +162,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('customer.name', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
           <label className="block text-xs font-medium">
@@ -157,6 +173,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('customer.identityCard', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
           <label className="block text-xs font-medium">
@@ -168,6 +185,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('customer.identityDate', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
           <label className="block text-xs font-medium">
@@ -178,6 +196,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('customer.identityPlace', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
           <label className="block text-xs font-medium">
@@ -188,6 +207,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('customer.address', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
           <label className="block text-xs font-medium">
@@ -198,6 +218,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('customer.phone', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
         </div>
@@ -217,6 +238,7 @@ export default function InstallmentPreviewDialog({
               onChange={(e) =>
                 handleChange('payment.deliveryDate', e.target.value)
               }
+              disabled={!isEditable}
             />
           </label>
         </div>
@@ -252,7 +274,7 @@ export default function InstallmentPreviewDialog({
         isViewInvoiceDialog={false}
         className={cn(
           isMobile
-            ? "max-w-full w-full h-screen inset-0 p-0 gap-0 flex flex-col top-0 left-0 right-0 m-0 rounded-none translate-x-0 translate-y-0 z-[10000]"
+            ? "max-w-full w-full h-[100dvh] inset-0 p-0 gap-0 flex flex-col top-0 left-0 right-0 m-0 rounded-none translate-x-0 translate-y-0 z-[10000]"
             : "max-w-[80vw] gap-4",
           contentClassName
         )}
@@ -297,24 +319,26 @@ export default function InstallmentPreviewDialog({
               </TabsContent>
             </Tabs>
 
-            <DialogFooter className="px-4 py-3 shrink-0 flex-row gap-2 border-t">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-                className="flex-1"
-              >
-                Hủy
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  onConfirm?.(formData)
-                }}
-                className="flex-1"
-              >
-                Xác nhận & Xuất PDF
-              </Button>
+            <DialogFooter className="px-4 py-3 pb-12 shrink-0 flex flex-col gap-2 border-t bg-background">
+              <div className="flex gap-2 w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="flex-1"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    onConfirm?.(formData)
+                  }}
+                  className="flex-1"
+                >
+                  Xác nhận & Xuất PDF
+                </Button>
+              </div>
             </DialogFooter>
           </>
         ) : (

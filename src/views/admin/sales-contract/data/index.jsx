@@ -16,7 +16,7 @@ const statuses = [
   },
   {
     value: 'confirmed',
-    label: 'Đang giao hàng',
+    label: 'Chờ lấy hàng',
     icon: IconTruckDelivery,
     color: 'text-blue-500',
   },

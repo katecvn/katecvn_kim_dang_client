@@ -8,6 +8,7 @@ import {
   IconHeadset,
   IconLayoutDashboard,
   IconListCheck,
+  IconLogs,
   IconReceipt,
   IconReceiptDollar,
   IconReceiptPound,
@@ -29,10 +30,35 @@ export const sideLinks = [
     permission: 'GET_REPORT',
   },
   {
-    title: 'Doanh thu',
-    href: '/revenue',
+    title: 'Báo cáo',
     icon: <IconDatabaseDollar size={18} />,
-    permission: 'GET_REPORT',
+    permission: ['GET_REPORT', 'GET_PURCHASE_ORDER', 'GET_SALES_CONTRACT', 'GET_PURCHASE_CONTRACT'],
+    sub: [
+      {
+        title: 'Doanh thu',
+        href: '/revenue',
+        icon: <IconDatabaseDollar size={18} />,
+        permission: 'GET_REPORT',
+      },
+      {
+        title: 'Báo cáo tiền mua',
+        href: '/purchase-report',
+        icon: <IconDatabaseDollar size={18} />,
+        permission: 'GET_PURCHASE_ORDER',
+      },
+      {
+        title: 'Đơn chưa giao',
+        href: '/sales-backlog',
+        icon: <IconReceipt size={18} />,
+        permission: 'GET_SALES_CONTRACT',
+      },
+      {
+        title: 'Đơn chưa nhận',
+        href: '/purchase-backlog',
+        icon: <IconReceipt size={18} />,
+        permission: 'GET_PURCHASE_CONTRACT',
+      },
+    ],
   },
   {
     title: 'Sau bán hàng',
@@ -51,6 +77,7 @@ export const sideLinks = [
         icon: <IconCalendar size={18} />,
         permission: 'GET_EXPIRY_USER',
       },
+
     ],
   },
   {
@@ -261,6 +288,7 @@ export const sideLinks = [
         icon: <IconReceiptRupee size={18} />,
         permission: 'GET_RECEIPT_USER',
       },
+
     ],
   },
 
@@ -280,6 +308,12 @@ export const sideLinks = [
         href: '/role-and-permissions',
         icon: <IconShield size={18} />,
         permission: 'GET_ROLE',
+      },
+      {
+        title: 'Nhật ký hệ thống',
+        href: '/setting/system-log',
+        icon: <IconLogs size={18} />,
+        permission: 'SESSION_SETTING',
       },
       {
         title: 'Hệ thống',

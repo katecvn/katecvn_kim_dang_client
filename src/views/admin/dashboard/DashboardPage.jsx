@@ -1,176 +1,91 @@
+
 import React, { useEffect, useState } from 'react'
 import Can from '@/utils/can'
-import AdminReport from './components/AdminReport'
 import { Layout, LayoutBody } from '@/components/custom/Layout'
-import { endOfMonth, format, startOfMonth } from 'date-fns'
-import { useForm } from 'react-hook-form'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from '@/components/ui/form'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover.jsx'
-import { Button } from '@/components/custom/Button.jsx'
-import { cn } from '@/lib/utils.js'
-import { CalendarIcon } from 'lucide-react'
-import { DatePicker } from '@/components/custom/DatePicker.jsx'
+import DashboardSummary from './components/DashboardSummary'
+import MarketPriceWidget from './components/MarketPriceWidget'
+import DailyRevenueChart from './components/DailyRevenueChart'
+import PendingOrders from './components/PendingOrders'
+import RecentSales from './components/RecentSales'
+import api from '@/utils/axios'
+import { startOfMonth, endOfMonth } from 'date-fns'
 
 const DashboardPage = () => {
-  const current = new Date()
-  const [filters, setFilters] = useState({
-    fromDate: startOfMonth(current),
-    toDate: endOfMonth(current),
-  })
-  const form = useForm({
-    defaultValues: {
-      fromDate: filters.fromDate,
-      toDate: filters.toDate,
-    },
-  })
+  const [salesSummary, setSalesSummary] = useState([])
+  const [salesBacklog, setSalesBacklog] = useState([])
+  const [purchaseBacklog, setPurchaseBacklog] = useState([])
+  const [recentSales, setRecentSales] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const onSubmit = async (data) => {
-    setFilters({
-      fromDate: data.fromDate || filters.fromDate,
-      toDate: data.toDate || filters.toDate,
-    })
-  }
+  const current = new Date()
+  const fromDate = startOfMonth(current)
+  const toDate = endOfMonth(current)
 
   useEffect(() => {
-    document.title = 'Katec - CRM'
+    document.title = 'Tổng quan - CRM'
+
+    const fetchAllData = async () => {
+      setLoading(true)
+      try {
+        const [salesRes, salesBacklogRes, purchaseBacklogRes, recentRes] = await Promise.all([
+          api.get('/reports/sales/summary', { params: { fromDate, toDate } }),
+          api.get('/reports/sales/backlog'),
+          api.get('/reports/purchases/backlog'),
+          api.get('/invoice', { params: { limit: 5, sort: 'createdAt:desc' } })
+        ])
+
+        setSalesSummary(salesRes.data.data.data || [])
+        setSalesBacklog(salesBacklogRes.data.data || [])
+        setPurchaseBacklog(purchaseBacklogRes.data.data || [])
+        setRecentSales(recentRes.data.data || [])
+
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAllData()
   }, [])
 
   return (
     <Layout>
-      <LayoutBody className="flex flex-col" fixedHeight>
-        <div className="mb-4 block items-center justify-between space-y-2 md:flex lg:flex">
+      <LayoutBody className="flex flex-col space-y-6" fixedHeight>
+        <div className="flex items-center justify-between space-y-2">
           <h2 className="text-2xl font-bold tracking-tight">Tổng quan</h2>
-
-          <div>
-            <Form {...form}>
-              <form
-                action=""
-                id={'statistic-date-form'}
-                className="flex items-center gap-3 sm:justify-end"
-              >
-                <FormField
-                  control={form.control}
-                  name="fromDate"
-                  render={({ field }) => (
-                    <FormItem className="mb-2 space-y-1">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={'outline'}
-                              className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground',
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, 'dd/MM/yyyy').toString()
-                              ) : (
-                                <span>Chọn ngày</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-auto min-w-[fit-content] p-0"
-                          align="start"
-                        >
-                          <DatePicker
-                            initialFocus
-                            mode="single"
-                            captionLayout="dropdown-buttons"
-                            fromYear={2018}
-                            toYear={2035}
-                            selected={field.value}
-                            onSelect={(date) => {
-                              field.onChange(date)
-                              onSubmit(form.getValues())
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="toDate"
-                  render={({ field }) => (
-                    <FormItem className="mb-2 space-y-1">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={'outline'}
-                              className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground',
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, 'dd/MM/yyyy').toString()
-                              ) : (
-                                <span>Chọn ngày</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-auto min-w-[fit-content] p-0"
-                          align="start"
-                        >
-                          <DatePicker
-                            initialFocus
-                            mode="single"
-                            captionLayout="dropdown-buttons"
-                            fromYear={2018}
-                            toYear={2035}
-                            selected={field.value}
-                            onSelect={(date) => {
-                              if (
-                                field.name === 'fromDate' &&
-                                form.getValues('toDate') &&
-                                date > form.getValues('toDate')
-                              ) {
-                                alert('Từ ngày không thể lớn hơn đến ngày!')
-                              } else if (
-                                field.name === 'toDate' &&
-                                form.getValues('fromDate') &&
-                                date < form.getValues('fromDate')
-                              ) {
-                                alert('Đến ngày không thể nhỏ hơn từ ngày!')
-                              } else {
-                                field.onChange(date)
-                              }
-                              onSubmit(form.getValues())
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </form>
-            </Form>
-          </div>
         </div>
 
         <Can permission={['GET_REPORT']}>
-          <AdminReport fromDate={filters.fromDate} toDate={filters.toDate} />
+          <div className="space-y-6 pb-8">
+            <DashboardSummary />
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+              <div className="col-span-2 space-y-4">
+                <MarketPriceWidget />
+                {/* Can put Recent Sales here too if we want shorter left column */}
+              </div>
+              <div className="col-span-5 space-y-4">
+                <DailyRevenueChart
+                  data={salesSummary}
+                  loading={loading}
+                  fromDate={fromDate}
+                  toDate={toDate}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <PendingOrders
+                    salesBacklog={salesBacklog}
+                    purchaseBacklog={purchaseBacklog}
+                    loading={loading}
+                  />
+                  <RecentSales
+                    recentSales={recentSales}
+                    loading={loading}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </Can>
       </LayoutBody>
     </Layout>

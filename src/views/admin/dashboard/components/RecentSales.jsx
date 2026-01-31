@@ -1,5 +1,5 @@
-import EmptyState from '@/components/custom/EmptyState'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
+import React from 'react'
 import {
   Card,
   CardContent,
@@ -11,72 +11,53 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { moneyFormat } from '@/utils/money-format'
 import { IconArrowRight } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
+import { format } from 'date-fns'
 
-const RecentSales = ({ recentSales, loading }) => {
+const RecentSales = ({ recentSales = [], loading = false }) => {
   return (
-    <Card className="col-span-1 lg:col-span-3">
-      <CardHeader>
-        <CardTitle>Đơn hàng gần đây</CardTitle>
+    <Card className="col-span-1 shadow-none border-none">
+      <CardHeader className="px-0 pt-0">
+        <CardTitle className="text-base">Đơn hàng gần đây</CardTitle>
         <CardDescription>
-          Bạn có {recentSales?.length} trong hôm nay
+          Giao dịch bán hàng mới nhất
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="h-[475px] space-y-4 overflow-y-auto px-2">
+      <CardContent className="px-0">
+        <div className="space-y-4">
           {loading ? (
-            Array.from({ length: 6 }).map((_, index) => (
+            Array.from({ length: 4 }).map((_, index) => (
               <div key={index} className="flex items-center gap-4">
-                <Skeleton className="h-[20px] w-full rounded-md" />
+                <Skeleton className="h-[40px] w-[40px] rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-[10px] w-[150px] rounded-md" />
+                  <Skeleton className="h-[10px] w-[100px] rounded-md" />
+                </div>
               </div>
             ))
           ) : recentSales?.length ? (
-            recentSales?.map((invoice) => (
-              <div className="flex items-center" key={invoice.code}>
-                <Avatar className="h-8 w-8">
-                  <AvatarImage
-                    src={`https://ui-avatars.com/api/?bold=true&background=random&name=${invoice?.customerName}`}
-                    alt={invoice?.customerName}
-                  />
-                  <AvatarFallback>AD</AvatarFallback>
-                </Avatar>
-                <div className="ml-4 space-y-1">
-                  <div className="flex flex-col text-sm">
-                    <span className="font-medium leading-none">
-                      {invoice?.customerName}
-                    </span>
-                    <span className="text-muted-foreground">
-                      <a
-                        className="text-primary underline hover:text-secondary-foreground"
-                        href={`mailto:${invoice?.customerEmail}`}
-                      >
-                        {invoice?.customerEmail}
-                      </a>
-                    </span>
-                    <span className="text-muted-foreground">
-                      <a href={`tel:${invoice?.customerPhone}`}>
-                        {invoice?.customerPhone}
-                      </a>
-                    </span>
-                  </div>
+            recentSales.map((invoice) => (
+              <div className="flex items-center justify-between border-b pb-2 last:border-0" key={invoice.id}>
+                <div className="flex flex-col gap-1">
+                  <div className="font-medium text-sm">{invoice?.buyerName || invoice?.customerName || 'Khách lẻ'}</div>
+                  <div className="text-xs text-muted-foreground">{invoice?.code}</div>
                 </div>
-                <div className="ml-auto text-sm font-medium">
-                  {moneyFormat(invoice.amount)}
+                <div className="text-right">
+                  <div className="font-medium text-sm">{moneyFormat(invoice.totalAmount)}</div>
+                  <div className="text-xs text-muted-foreground">{format(new Date(invoice.createdAt), 'dd/MM HH:mm')}</div>
                 </div>
               </div>
             ))
           ) : (
-            <EmptyState />
+            <div className="py-4 text-center text-sm text-muted-foreground">Chưa có giao dịch nào</div>
           )}
 
-          <div className="float-end">
+          <div className="pt-2">
             <Link
-              className="flex items-center text-end text-primary"
+              className="flex items-center justify-center text-sm text-primary hover:underline"
               to={'/invoice'}
             >
-              <div className="mr-2 h-4 w-4">
-                <IconArrowRight className="h-4 w-4" />
-              </div>
-              Xem tất cả
+              Xem tất cả đơn hàng
+              <IconArrowRight className="ml-1 h-3 w-3" />
             </Link>
           </div>
         </div>

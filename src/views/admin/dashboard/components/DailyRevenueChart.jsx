@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import {
   Bar,
   BarChart,
@@ -6,7 +6,8 @@ import {
   ResponsiveContainer,
   XAxis,
   YAxis,
-  Tooltip
+  Tooltip,
+  Legend
 } from 'recharts'
 import {
   Card,
@@ -17,60 +18,28 @@ import {
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { dateFormat } from '@/utils/date-format'
-import { useDispatch, useSelector } from 'react-redux'
-import { getInvoices } from '@/stores/InvoiceSlice'
-import { eachDayOfInterval, format, isSameDay, parseISO } from 'date-fns'
-import { vi } from 'date-fns/locale'
+import { format } from 'date-fns'
 
-const DailyRevenueChart = ({ fromDate, toDate }) => {
-  const dispatch = useDispatch()
-  const invoices = useSelector((state) => state.invoice.invoices)
-  const loading = useSelector((state) => state.invoice.loading)
+const DailyRevenueChart = ({ data, loading, fromDate, toDate }) => {
 
-  // Local state to store processed chart data
-  const [chartData, setChartData] = useState([])
+  const chartData = useMemo(() => {
+    if (!data || data.length === 0) return []
 
-  useEffect(() => {
-    if (fromDate && toDate) {
-      dispatch(getInvoices({ fromDate, toDate }))
-    }
-  }, [dispatch, fromDate, toDate])
-
-  useEffect(() => {
-    if (!invoices || !fromDate || !toDate) return
-
-    // 1. Generate all days in interval
-    const days = eachDayOfInterval({ start: fromDate, end: toDate })
-
-    // 2. Aggregate aggregated data
-    const aggregated = days.map(day => {
-      const dayInvoices = invoices.filter(inv => {
-        if (inv.status === 'cancelled' || inv.status === 'draft') return false
-
-        const invDate = parseISO(inv.createdAt)
-        return isSameDay(invDate, day)
-      })
-
-      const total = dayInvoices.reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0)
-
-      return {
-        date: format(day, 'dd/MM', { locale: vi }),
-        fullDate: format(day, 'dd/MM/yyyy'),
-        revenue: total,
-        count: dayInvoices.length
-      }
-    })
-
-    setChartData(aggregated)
-
-  }, [invoices, fromDate, toDate])
+    return data.map(item => ({
+      date: format(new Date(item.period), 'dd/MM'),
+      fullDate: format(new Date(item.period), 'dd/MM/yyyy'),
+      revenue: Number(item.totalSales) || 0,
+      paid: Number(item.totalPaid) || 0,
+      count: item.orderCount
+    }))
+  }, [data])
 
   return (
-    <Card className="col-span-1 lg:col-span-4">
+    <Card className="col-span-1 lg:col-span-4 shadow-none">
       <CardHeader>
         <CardTitle>Doanh số theo ngày</CardTitle>
         <CardDescription>
-          Chi tiết doanh thu từng ngày trong kỳ ({dateFormat(fromDate)} - {dateFormat(toDate)})
+          Chi tiết doanh thu và thực thu ({dateFormat(fromDate)} - {dateFormat(toDate)})
         </CardDescription>
       </CardHeader>
       <CardContent className="pl-2">
@@ -105,7 +74,9 @@ const DailyRevenueChart = ({ fromDate, toDate }) => {
                   return label
                 }}
               />
-              <Bar dataKey="revenue" fill="#adfa1d" radius={[4, 4, 0, 0]} name="Doanh thu" />
+              <Legend />
+              <Bar dataKey="revenue" fill="#adfa1d" radius={[4, 4, 0, 0]} name="Doanh số" />
+              <Bar dataKey="paid" fill="#16a34a" radius={[4, 4, 0, 0]} name="Thực thu" />
             </BarChart>
           </ResponsiveContainer>
         )}

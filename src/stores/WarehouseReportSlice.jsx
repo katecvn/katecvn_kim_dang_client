@@ -7,7 +7,7 @@ export const getInventorySummary = createAsyncThunk(
   'warehouseReport/getInventorySummary',
   async (params, { rejectWithValue }) => {
     try {
-      const { data } = await api.get('/reports/inventory-summary', { params })
+      const { data } = await api.get('/inventory/nxt-report', { params })
       return data.data
     } catch (error) {
       try {

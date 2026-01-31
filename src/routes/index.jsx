@@ -19,6 +19,8 @@ import MyPaymentPage from '@/views/admin/payment/MyPaymentPage'
 import RevenuePage from '@/views/admin/revenue/RevenuePage'
 import RolePage from '@/views/admin/role/RolePage'
 import AccessLogPage from '@/views/admin/setting/access-log/AccessLogPage'
+import SystemLogPage from '@/views/admin/setting/system-log/SystemLogPage'
+
 import BusinessPlanPage from '@/views/admin/setting/business-plan/BusinessPlanPage'
 import GeneralSettingPage from '@/views/admin/setting/general/GeneralSettingPage'
 import NotificationPage from '@/views/admin/setting/notification/NotificationPage'
@@ -48,6 +50,9 @@ import WarehouseOutPage from '@/views/admin/warehouse-receipt/WarehouseOutPage'
 import LotPage from '@/views/admin/lot'
 import InventorySummaryPage from '@/views/admin/warehouse-report/InventorySummaryPage'
 import InventoryDetailPage from '@/views/admin/warehouse-report/InventoryDetailPage'
+import PurchaseReportPage from '@/views/admin/purchase-order/PurchaseReportPage'
+import SalesBacklogPage from '@/views/admin/sales-contract/SalesBacklogPage'
+import PurchaseBacklogPage from '@/views/admin/purchase-contract/PurchaseBacklogPage'
 
 const routes = [
   {
@@ -221,6 +226,21 @@ const routes = [
     layout: AdminLayout,
   },
   {
+    path: '/purchase-report',
+    element: PurchaseReportPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/sales-backlog',
+    element: SalesBacklogPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/purchase-backlog',
+    element: PurchaseBacklogPage,
+    layout: AdminLayout,
+  },
+  {
     path: '/setting',
     element: SettingPage,
     layout: AdminLayout,
@@ -245,6 +265,12 @@ const routes = [
     element: AccessLogPage,
     layout: AdminLayout,
   },
+  {
+    path: '/setting/system-log',
+    element: SystemLogPage,
+    layout: AdminLayout,
+  },
+
   {
     path: '/setting/notification',
     element: NotificationPage,

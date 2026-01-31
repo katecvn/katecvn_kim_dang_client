@@ -43,17 +43,15 @@ const InventorySummaryPage = () => {
 
   // Calculate totals
   const totals = inventorySummary.reduce((acc, item) => {
-    // Note: Adjust these field names based on actual API response
-    // Currently using placeholders based on report structure
     return {
       openingQty: acc.openingQty + (item.openingQuantity || 0),
       openingAmount: acc.openingAmount + (item.openingAmount || 0),
-      inQty: acc.inQty + (item.inQuantity || 0),
-      inAmount: acc.inAmount + (item.inAmount || 0),
-      outQty: acc.outQty + (item.outQuantity || 0),
-      outAmount: acc.outAmount + (item.outAmount || 0),
-      closingQty: acc.closingQty + (item.quantity || 0), // Assuming 'quantity' is current stock from snapshot logic reuse
-      closingAmount: acc.closingAmount + (item.totalAmount || 0),
+      inQty: acc.inQty + (item.quantityIn || 0),
+      inAmount: acc.inAmount + (item.amountIn || 0),
+      outQty: acc.outQty + (item.quantityOut || 0),
+      outAmount: acc.outAmount + (item.amountOut || 0),
+      closingQty: acc.closingQty + (item.closingQuantity || 0),
+      closingAmount: acc.closingAmount + (item.closingAmount || 0),
     }
   }, {
     openingQty: 0, openingAmount: 0,
@@ -259,27 +257,27 @@ const InventorySummaryPage = () => {
                 inventorySummary.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell className="border-r text-center">{index + 1}</TableCell>
-                    <TableCell className="border-r font-medium">{item.product?.name || item.productName}</TableCell>
-                    <TableCell className="border-r text-center">{item.unitName}</TableCell>
+                    <TableCell className="border-r font-medium">{item.product?.name}</TableCell>
+                    <TableCell className="border-r text-center">{item.product?.unit?.name}</TableCell>
 
                     {/* Opening */}
                     <TableCell className="text-right border-r">{item.openingQuantity || 0}</TableCell>
                     <TableCell className="text-right border-r">{moneyFormat(item.openingAmount || 0)}</TableCell>
 
                     {/* In */}
-                    <TableCell className="text-right border-r">{item.inQuantity || 0}</TableCell>
-                    <TableCell className="text-right border-r">{moneyFormat(item.inAmount || 0)}</TableCell>
+                    <TableCell className="text-right border-r">{item.quantityIn || 0}</TableCell>
+                    <TableCell className="text-right border-r">{moneyFormat(item.amountIn || 0)}</TableCell>
 
                     {/* Out */}
-                    <TableCell className="text-right border-r">{item.outQuantity || 0}</TableCell>
-                    <TableCell className="text-right border-r">{moneyFormat(item.outAmount || 0)}</TableCell>
+                    <TableCell className="text-right border-r">{item.quantityOut || 0}</TableCell>
+                    <TableCell className="text-right border-r">{moneyFormat(item.amountOut || 0)}</TableCell>
 
-                    {/* Closing (Using quantity/totalAmount from snapshot logic if available) */}
-                    <TableCell className="text-right border-r font-medium">{item.quantity || 0}</TableCell>
-                    <TableCell className="text-right border-r font-medium">{moneyFormat(item.totalAmount || 0)}</TableCell>
+                    {/* Closing */}
+                    <TableCell className="text-right border-r font-medium">{item.closingQuantity || 0}</TableCell>
+                    <TableCell className="text-right border-r font-medium">{moneyFormat(item.closingAmount || 0)}</TableCell>
 
                     {/* Unit Price */}
-                    <TableCell className="text-right">{moneyFormat(item.price || 0)}</TableCell>
+                    <TableCell className="text-right">{moneyFormat(item.averageUnitPrice || 0)}</TableCell>
                   </TableRow>
                 ))
               )}

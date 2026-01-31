@@ -1,13 +1,14 @@
+
 import { DateRange } from '@/components/custom/DateRange'
 import EmptyState from '@/components/custom/EmptyState'
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { Skeleton } from '@/components/ui/skeleton'
 import api from '@/utils/axios'
 import { moneyFormat } from '@/utils/money-format'
-import { endOfMonth, startOfMonth, format } from 'date-fns'
+import { endOfMonth, format, startOfMonth } from 'date-fns'
 import React, { useCallback, useEffect, useState } from 'react'
 
-const RevenuePage = () => {
+const PurchaseReportPage = () => {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState(null)
 
@@ -20,7 +21,7 @@ const RevenuePage = () => {
   const fetchRevenue = useCallback(async () => {
     setLoading(true)
     try {
-      const { data } = await api.get('/reports/sales/summary', {
+      const { data } = await api.get('/reports/purchases/summary', {
         params: {
           fromDate: filters.fromDate,
           toDate: filters.toDate,
@@ -42,7 +43,7 @@ const RevenuePage = () => {
     <Layout>
       <LayoutBody className="flex flex-col" fixedHeight>
         <div className="mb-4 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
-          <h2 className="text-2xl font-bold tracking-tight">Doanh thu tháng</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Báo cáo tiền mua</h2>
           <div>
             <DateRange
               defaultValue={{
@@ -64,13 +65,13 @@ const RevenuePage = () => {
           {/* Summary Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <SummaryCard
-              title="Tổng đơn hàng"
+              title="Tổng đơn mua"
               value={data?.totals?.totalOrders}
               loading={loading}
             />
             <SummaryCard
-              title="Tổng doanh số"
-              value={data?.totals?.grandTotalSales}
+              title="Tổng tiền mua"
+              value={data?.totals?.grandTotalPurchase}
               isMoney
               loading={loading}
             />
@@ -100,10 +101,10 @@ const RevenuePage = () => {
                       Ngày
                     </th>
                     <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
-                      Số đơn hàng
+                      Số đơn mua
                     </th>
                     <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                      Doanh số
+                      Tiền mua
                     </th>
                     <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
                       Đã thanh toán
@@ -126,9 +127,9 @@ const RevenuePage = () => {
                     ))
                   ) : data?.data && data.data.length > 0 ? (
                     data.data.map((item, index) => {
-                      const totalSales = Number(item.totalSales) || 0
+                      const totalPurchase = Number(item.totalPurchase) || 0
                       const totalPaid = Number(item.totalPaid) || 0
-                      const unpaid = totalSales - totalPaid
+                      const unpaid = totalPurchase - totalPaid
 
                       return (
                         <tr
@@ -142,7 +143,7 @@ const RevenuePage = () => {
                             {item.orderCount}
                           </td>
                           <td className="p-4 align-middle text-right font-medium">
-                            {moneyFormat(totalSales)}
+                            {moneyFormat(totalPurchase)}
                           </td>
                           <td className="p-4 align-middle text-right text-green-600">
                             {moneyFormat(totalPaid)}
@@ -189,4 +190,4 @@ const SummaryCard = ({ title, value, isMoney = false, loading = false, className
   )
 }
 
-export default RevenuePage
+export default PurchaseReportPage

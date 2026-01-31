@@ -16,9 +16,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import { Button } from '@/components/custom/Button'
 import { cn } from '@/lib/utils'
-import { CalendarIcon, FileSpreadsheet, Search, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { CalendarIcon, FileSpreadsheet, Check, ChevronsUpDown } from 'lucide-react'
 import { DatePicker } from '@/components/custom/DatePicker'
 import {
   Table,
@@ -30,22 +38,34 @@ import {
 } from '@/components/ui/table'
 import { moneyFormat } from '@/utils/money-format'
 import { exportDetailedLedgerToExcel } from '@/utils/export-detailed-ledger'
-import { Input } from '@/components/ui/input'
 import { dateFormat } from '@/utils/date-format'
 
 const InventoryDetailPage = () => {
   const dispatch = useDispatch()
   const { inventoryDetail, loading } = useSelector((state) => state.warehouseReport)
+  const { products } = useSelector((state) => state.product)
   const current = new Date()
 
   const [filters, setFilters] = useState({
     fromDate: startOfMonth(current),
     toDate: endOfMonth(current),
-    productId: '', // Should be searchable select
+    productId: '',
   })
 
-  // Dummy product name for header until we implement product selection properly
-  const productName = inventoryDetail.length > 0 ? (inventoryDetail[0].productName || 'Tất cả sản phẩm') : '...'
+  const [openCombobox, setOpenCombobox] = useState(false)
+
+  // Fetch products on mount
+  useEffect(() => {
+    dispatch(getProducts())
+  }, [dispatch])
+
+  // Fetch detail when filter changes (and productId is set)
+  useEffect(() => {
+    document.title = 'Sổ chi tiết vật tư'
+    if (filters.productId) {
+      dispatch(getInventoryDetail(filters))
+    }
+  }, [dispatch, filters])
 
   const form = useForm({
     defaultValues: {
@@ -62,18 +82,8 @@ const InventoryDetailPage = () => {
     }))
   }
 
-  useEffect(() => {
-    document.title = 'Sổ chi tiết vật tư'
-    if (filters.productId) {
-      dispatch(getInventoryDetail(filters))
-    }
-  }, [dispatch, filters])
-
-  const handleSearchProduct = (e) => {
-    if (e.key === 'Enter') {
-      setFilters(prev => ({ ...prev, productId: e.target.value }))
-    }
-  }
+  const selectedProduct = products?.find(p => p.id === filters.productId)
+  const productName = selectedProduct ? selectedProduct.name : 'Chưa chọn sản phẩm'
 
   return (
     <Layout>
@@ -89,14 +99,50 @@ const InventoryDetailPage = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-64 mr-2">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Nhập ID sản phẩm và Enter..."
-                className="pl-8 h-9"
-                onKeyDown={handleSearchProduct}
-              />
-            </div>
+            {/* Product Select Combobox */}
+            <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCombobox}
+                  className="w-[250px] justify-between"
+                >
+                  {filters.productId
+                    ? products.find((product) => product.id === filters.productId)?.name
+                    : "Chọn sản phẩm..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[250px] p-0">
+                <Command>
+                  <CommandInput placeholder="Tìm sản phẩm..." />
+                  <CommandList>
+                    <CommandEmpty>Không tìm thấy sản phẩm.</CommandEmpty>
+                    <CommandGroup>
+                      {products?.map((product) => (
+                        <CommandItem
+                          key={product.id}
+                          value={product.name}
+                          onSelect={() => {
+                            setFilters(prev => ({ ...prev, productId: product.id }))
+                            setOpenCombobox(false)
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              filters.productId === product.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {product.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
 
             <Form {...form}>
               <form id="inventory-detail-form" className="flex items-center gap-2">
@@ -193,6 +239,7 @@ const InventoryDetailPage = () => {
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white gap-2"
               onClick={() => exportDetailedLedgerToExcel({ productName }, filters)}
+              disabled={!filters.productId}
             >
               <FileSpreadsheet className="h-4 w-4" />
               Xuất Excel

@@ -30,6 +30,100 @@ export const sideLinks = [
     permission: 'GET_REPORT',
   },
   {
+    title: 'Đơn bán & Thu',
+    icon: <IconReceiptDollar size={18} />,
+    permission: ['GET_INVOICE', 'GET_RECEIPT', 'GET_TAX', 'GET_SALES_CONTRACT'],
+    sub: [
+      {
+        title: 'Đơn bán',
+        href: '/invoice',
+        icon: <IconReceiptDollar size={18} />,
+        permission: 'GET_INVOICE',
+      },
+      {
+        title: 'Đơn bán của tôi',
+        href: '/invoice-user',
+        icon: <IconReceiptPound size={18} />,
+        permission: ['GET_INVOICE_USER', 'GET_INVOICE'],
+      },
+      {
+        title: 'Hợp đồng bán hàng',
+        href: '/sales-contracts',
+        icon: <IconReceipt size={18} />,
+        permission: 'GET_SALES_CONTRACT',
+      },
+      {
+        title: 'Hợp đồng của tôi',
+        href: '/sales-contract-user',
+        icon: <IconReceiptRupee size={18} />,
+        permission: ['GET_SALES_CONTRACT_USER', 'GET_SALES_CONTRACT'],
+      },
+      {
+        title: 'Phiếu thu',
+        href: '/receipt',
+        icon: <IconReceipt size={18} />,
+        permission: 'GET_RECEIPT',
+      },
+      {
+        title: 'Phiếu thu của tôi',
+        href: '/receipt-user',
+        icon: <IconReceiptRupee size={18} />,
+        permission: 'GET_RECEIPT_USER',
+      },
+      {
+        title: 'Thuế',
+        href: '/tax',
+        icon: <IconReceiptTax size={18} />,
+        permission: 'GET_TAX',
+      },
+    ],
+  },
+
+  {
+    title: 'Đơn mua & Chi',
+    icon: <IconReceiptDollar size={18} />,
+    permission: ['GET_PURCHASE_ORDER', 'GET_PURCHASE_ORDER_USER'],
+    sub: [
+      {
+        title: 'Đơn mua',
+        href: '/purchase-order',
+        icon: <IconReceiptDollar size={18} />,
+        permission: 'GET_PURCHASE_ORDER',
+      },
+      {
+        title: 'Đơn mua của tôi',
+        href: '/purchase-order-user',
+        icon: <IconReceiptPound size={18} />,
+        permission: ['GET_PURCHASE_ORDER_USER', 'GET_PURCHASE_ORDER'],
+      },
+      {
+        title: 'Hợp đồng mua hàng',
+        href: '/purchase-contracts',
+        icon: <IconReceipt size={18} />,
+        permission: 'GET_PURCHASE_CONTRACT',
+      },
+      {
+        title: 'Hợp đồng của tôi',
+        href: '/purchase-contract-user',
+        icon: <IconReceiptRupee size={18} />,
+        permission: ['GET_PURCHASE_CONTRACT_USER', 'GET_PURCHASE_CONTRACT'],
+      },
+      {
+        title: 'Phiếu chi',
+        href: '/payment',
+        icon: <IconReceipt size={18} />,
+        permission: 'GET_RECEIPT',
+      },
+      {
+        title: 'Phiếu chi của tôi',
+        href: '/payment-user',
+        icon: <IconReceiptRupee size={18} />,
+        permission: 'GET_RECEIPT_USER',
+      },
+
+    ],
+  },
+  {
     title: 'Báo cáo',
     icon: <IconDatabaseDollar size={18} />,
     permission: ['GET_REPORT', 'GET_PURCHASE_ORDER', 'GET_SALES_CONTRACT', 'GET_PURCHASE_CONTRACT'],
@@ -194,101 +288,6 @@ export const sideLinks = [
         icon: <IconBox size={18} />,
         permission: 'GET_STOCK',
       },
-    ],
-  },
-
-  {
-    title: 'Đơn bán & Thu',
-    icon: <IconReceiptDollar size={18} />,
-    permission: ['GET_INVOICE', 'GET_RECEIPT', 'GET_TAX', 'GET_SALES_CONTRACT'],
-    sub: [
-      {
-        title: 'Đơn bán',
-        href: '/invoice',
-        icon: <IconReceiptDollar size={18} />,
-        permission: 'GET_INVOICE',
-      },
-      {
-        title: 'Đơn bán của tôi',
-        href: '/invoice-user',
-        icon: <IconReceiptPound size={18} />,
-        permission: ['GET_INVOICE_USER', 'GET_INVOICE'],
-      },
-      {
-        title: 'Hợp đồng bán hàng',
-        href: '/sales-contracts',
-        icon: <IconReceipt size={18} />,
-        permission: 'GET_SALES_CONTRACT',
-      },
-      {
-        title: 'Hợp đồng của tôi',
-        href: '/sales-contract-user',
-        icon: <IconReceiptRupee size={18} />,
-        permission: ['GET_SALES_CONTRACT_USER', 'GET_SALES_CONTRACT'],
-      },
-      {
-        title: 'Phiếu thu',
-        href: '/receipt',
-        icon: <IconReceipt size={18} />,
-        permission: 'GET_RECEIPT',
-      },
-      {
-        title: 'Phiếu thu của tôi',
-        href: '/receipt-user',
-        icon: <IconReceiptRupee size={18} />,
-        permission: 'GET_RECEIPT_USER',
-      },
-      {
-        title: 'Thuế',
-        href: '/tax',
-        icon: <IconReceiptTax size={18} />,
-        permission: 'GET_TAX',
-      },
-    ],
-  },
-
-  {
-    title: 'Đơn mua & Chi',
-    icon: <IconReceiptDollar size={18} />,
-    permission: ['GET_PURCHASE_ORDER', 'GET_PURCHASE_ORDER_USER'],
-    sub: [
-      {
-        title: 'Đơn mua',
-        href: '/purchase-order',
-        icon: <IconReceiptDollar size={18} />,
-        permission: 'GET_PURCHASE_ORDER',
-      },
-      {
-        title: 'Đơn mua của tôi',
-        href: '/purchase-order-user',
-        icon: <IconReceiptPound size={18} />,
-        permission: ['GET_PURCHASE_ORDER_USER', 'GET_PURCHASE_ORDER'],
-      },
-      {
-        title: 'Hợp đồng mua hàng',
-        href: '/purchase-contracts',
-        icon: <IconReceipt size={18} />,
-        permission: 'GET_PURCHASE_CONTRACT',
-      },
-      {
-        title: 'Hợp đồng của tôi',
-        href: '/purchase-contract-user',
-        icon: <IconReceiptRupee size={18} />,
-        permission: ['GET_PURCHASE_CONTRACT_USER', 'GET_PURCHASE_CONTRACT'],
-      },
-      {
-        title: 'Phiếu chi',
-        href: '/payment',
-        icon: <IconReceipt size={18} />,
-        permission: 'GET_RECEIPT',
-      },
-      {
-        title: 'Phiếu chi của tôi',
-        href: '/payment-user',
-        icon: <IconReceiptRupee size={18} />,
-        permission: 'GET_RECEIPT_USER',
-      },
-
     ],
   },
 

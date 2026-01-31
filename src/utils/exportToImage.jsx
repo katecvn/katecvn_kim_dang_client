@@ -1,6 +1,9 @@
-
 import html2canvas from 'html2canvas'
 
+/**
+ * NUCLEAR APPROACH: Remove all styles, only keep essential inline styles
+ * Use this if the main export function still fails with oklch errors
+ */
 export async function exportDomToImage(
   element,
   filename = 'thoa_thuan.png',
@@ -10,10 +13,10 @@ export async function exportDomToImage(
 
   const { scale = 3, format = 'png', quality = 0.95 } = options
 
-  // 1. Clone node để xử lý (tránh ảnh hưởng giao diện thật)
+  // Clone the element
   const clone = element.cloneNode(true)
 
-  // 2. Tạo container ẩn
+  // Create hidden container
   const container = document.createElement('div')
   Object.assign(container.style, {
     position: 'fixed',
@@ -22,92 +25,17 @@ export async function exportDomToImage(
     background: '#fff',
     pointerEvents: 'none',
     zIndex: '-1',
-    width: 'fit-content',
-    height: 'fit-content',
-    overflow: 'visible'
   })
   document.body.appendChild(container)
   container.appendChild(clone)
 
-  // 3. Helper to convert any color to standard Hex/RGB
-  const ctx = document.createElement('canvas').getContext('2d')
-  const toStandardColor = (color) => {
-    if (!color || color === 'none' || color === 'transparent') return color
-    ctx.fillStyle = color
-    return ctx.fillStyle // Browser converts to Hex or RGBA
-  }
+  // STEP 1: Remove ALL stylesheets
+  const sheets = clone.querySelectorAll('style, link[rel="stylesheet"]')
+  sheets.forEach(s => s.remove())
 
-  // Helper check
-  const isSafeColor = (colorValue) => {
-    if (!colorValue || colorValue === 'transparent' || colorValue === 'none') {
-      return false
-    }
-    return colorValue.startsWith('rgb') || colorValue.startsWith('#')
-  }
-
-  // 4. Pre-process CLONE: Sanitize Colors & Remove Styles
-
-  // Step 1: Remove style tags
-  const styles = clone.querySelectorAll('style, link[rel="stylesheet"]')
-  styles.forEach(s => s.remove())
-
-  // Step 2: Traverse all elements and inline safe colors
-  const allElements = clone.querySelectorAll('*') // Does not include Pseudo-elements but getting computed style might reflect them if we were lucky (we aren't)
-
-  // Note: html2canvas parses pseudo elements separately. We can't easily inline styles into pseudo elements of a clone.
-  // HOWEVER, by removing classes (Step 3), we kill the pseudo elements defined by those classes.
-  // Unless... the pseudo elements are defined in a way that survives? No, removing class kills ::before/::after from utility classes.
-
-  allElements.forEach(el => {
-    const computedStyle = window.getComputedStyle(el)
-
-    const safeColors = {}
-
-    // 2.1 Basic Colors
-    const colorProps = [
-      'color',
-      'backgroundColor',
-      'borderTopColor',
-      'borderRightColor',
-      'borderBottomColor',
-      'borderLeftColor',
-      'fill',
-      'stroke'
-    ]
-
-    colorProps.forEach(prop => {
-      const value = computedStyle[prop]
-      if (isSafeColor(value)) {
-        safeColors[prop] = value
-      } else {
-        const converted = toStandardColor(value)
-        if (converted && isSafeColor(converted)) {
-          safeColors[prop] = converted
-        } else {
-          // If completely failed (still oklch), set to transparent to avoid crash
-          if (value && (value.includes('oklch') || value.includes('oklab'))) {
-            safeColors[prop] = 'transparent'
-          }
-        }
-      }
-    })
-
-    // 2.2 Shadows (Box & Text) - These are complex strings
-    const shadowProps = ['boxShadow', 'textShadow']
-    shadowProps.forEach(prop => {
-      const value = computedStyle[prop]
-      if (value && (value.includes('oklch') || value.includes('oklab'))) {
-        // Nuke shadows with modern colors to prevent crash
-        safeColors[prop] = 'none'
-      }
-    })
-
-    // 2.3 Background Image (Gradients)
-    if (computedStyle.backgroundImage && (computedStyle.backgroundImage.includes('oklch') || computedStyle.backgroundImage.includes('oklab'))) {
-      safeColors.backgroundImage = 'none'
-    }
-
-    // Step 3: Remove classes to detach from CSS variables
+  // STEP 2: Remove ALL classes
+  const allElements = clone.querySelectorAll('*')
+  Array.from(allElements).forEach(el => {
     try {
       if (el.className && typeof el.className === 'string') {
         el.className = ''
@@ -115,19 +43,78 @@ export async function exportDomToImage(
         el.setAttribute('class', '')
       }
     } catch (e) { }
-
-    // Step 4: Apply safe inline styles
-    Object.keys(safeColors).forEach(prop => {
-      el.style[prop] = safeColors[prop]
-    })
   })
 
-  // Reset transform/margin on root
-  if (clone.style) {
-    clone.style.transform = 'none'
-    clone.style.margin = '0'
-  }
+  // STEP 3: Apply ONLY safe basic styles from inline styles attribute
+  // We don't read computedStyle at all to avoid oklch
+  Array.from(allElements).forEach(el => {
+    // Clear any existing style
+    const oldStyle = el.getAttribute('style') || ''
 
+    // Only keep safe properties
+    const safeProps = {
+      // Layout
+      'width': true,
+      'height': true,
+      'padding': true,
+      'margin': true,
+      'display': true,
+      'flex': true,
+      'flex-direction': true,
+      'align-items': true,
+      'justify-content': true,
+      'position': true,
+      'top': true,
+      'left': true,
+      'right': true,
+      'bottom': true,
+
+      // Text
+      'font-size': true,
+      'font-family': true,
+      'font-weight': true,
+      'text-align': true,
+      'line-height': true,
+      'letter-spacing': true,
+
+      // Border
+      'border': true,
+      'border-width': true,
+      'border-style': true,
+      'border-collapse': true,
+
+      // Transform
+      'transform': true,
+      'transform-origin': true,
+
+      // Other
+      'overflow': true,
+      'vertical-align': true,
+      'z-index': true,
+    }
+
+    // Parse existing inline style
+    const newStyle = []
+    if (oldStyle) {
+      oldStyle.split(';').forEach(rule => {
+        const [prop, value] = rule.split(':').map(s => s.trim())
+        if (prop && value && safeProps[prop]) {
+          // Skip if value contains oklch
+          if (!value.includes('oklch') && !value.includes('oklab')) {
+            newStyle.push(`${prop}: ${value}`)
+          }
+        }
+      })
+    }
+
+    // Force safe colors (hardcoded)
+    // Black text
+    newStyle.push('color: rgb(0, 0, 0)')
+
+    el.setAttribute('style', newStyle.join('; '))
+  })
+
+  // Wait for settle
   await new Promise(r => setTimeout(r, 200))
 
   try {
@@ -154,14 +141,15 @@ export async function exportDomToImage(
       link.click()
       URL.revokeObjectURL(url)
     }
+
+    return { success: true }
   } catch (err) {
     console.error('Export error:', err)
     alert('Lỗi xuất ảnh: ' + err.message)
+    throw err
   } finally {
     if (document.body.contains(container)) {
       document.body.removeChild(container)
     }
   }
-
-  return { success: true }
 }

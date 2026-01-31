@@ -164,10 +164,10 @@ const ShoppingCart = ({
                 key={product.id}
                 className="rounded-lg border bg-card p-3 transition-shadow hover:shadow-sm"
               >
-                {/* Main Product Row */}
+                {/* Main Product Row Header */}
                 <div className="flex items-start gap-3">
                   {/* Contract Selection Checkbox */}
-                  <div className="flex items-center pt-5">
+                  <div className="flex items-center pt-2">
                     <Checkbox
                       checked={isSelectedForContract}
                       onCheckedChange={(checked) =>
@@ -192,9 +192,8 @@ const ShoppingCart = ({
                     )}
                   </div>
 
-                  {/* Product Info & Controls */}
-                  <div className="min-w-0 flex-1 space-y-2">
-                    {/* Name and Remove Button */}
+                  {/* Name and Remove Button */}
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <h4 className="line-clamp-1 text-sm font-medium">
@@ -208,7 +207,7 @@ const ShoppingCart = ({
                         {/* Price Sync Timestamp */}
                         {product.syncMapping?.lastSyncAt && (
                           <p className="mt-0.5 text-[10px] text-muted-foreground/80">
-                            {product.syncMapping.supplier?.name} - Cập nhật: {new Date(product.syncMapping.lastSyncAt).toLocaleString('vi-VN', {
+                            Cập nhật lần cuối: {new Date(product.syncMapping.lastSyncAt).toLocaleString('vi-VN', {
                               day: '2-digit',
                               month: '2-digit',
                               year: 'numeric',
@@ -228,9 +227,15 @@ const ShoppingCart = ({
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Price and Quantity Row */}
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                {/* Inputs and Totals (Full Width) */}
+                <div className="mt-3 space-y-3">
+                  {/* Price and Quantity Row */}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    {/* Group 1: Unit & Price */}
+                    <div className="flex flex-1 gap-2">
                       {/* Unit Selection */}
                       <div className="flex-1">
                         <label className="mb-1 block text-[10px] text-muted-foreground">
@@ -266,8 +271,59 @@ const ShoppingCart = ({
                           onChange={(num) =>
                             onPriceChange(product.id, String(num))
                           }
+                          onFocus={(e) => e.target.select()}
                           className="h-8 text-sm"
                         />
+                      </div>
+                    </div>
+
+                    {/* Group 2: Quantity & Tax */}
+                    <div className="flex flex-1 gap-2">
+                      {/* Quantity Controls */}
+                      <div className="flex-1">
+                        <label className="mb-1 block text-[10px] text-muted-foreground">
+                          Số lượng
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              onQuantityChange(
+                                product.id,
+                                Math.max(1, currentQuantity - 1),
+                              )
+                            }
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={currentQuantity}
+                            onChange={(e) =>
+                              onQuantityChange(
+                                product.id,
+                                Number(e.target.value),
+                              )
+                            }
+                            onFocus={(e) => e.target.select()}
+                            className="h-8 w-full min-w-0 p-0 text-center text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              onQuantityChange(product.id, currentQuantity + 1)
+                            }
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
 
                       {/* Tax Selection */}
@@ -328,76 +384,30 @@ const ShoppingCart = ({
                           </PopoverContent>
                         </Popover>
                       </div>
-
-                      {/* Quantity Controls */}
-                      <div className="flex-1">
-                        <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Số lượng
-                        </label>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              onQuantityChange(
-                                product.id,
-                                Math.max(1, currentQuantity - 1),
-                              )
-                            }
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={currentQuantity}
-                            onChange={(e) =>
-                              onQuantityChange(
-                                product.id,
-                                Number(e.target.value),
-                              )
-                            }
-                            className="h-8 w-14 p-0 text-center text-sm"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              onQuantityChange(product.id, currentQuantity + 1)
-                            }
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
                     </div>
-
-                    {/* Subtotal */}
-                    <div className="flex items-center justify-between border-t pt-2">
-                      <span className="text-xs text-muted-foreground">
-                        Thành tiền:
-                      </span>
-                      <span className="text-sm font-semibold text-primary">
-                        {moneyFormat(subtotal)}
-                      </span>
-                    </div>
-
-                    {/* Tax Amount Display */}
-                    {taxAmount > 0 && (
-                      <div className="flex items-center justify-between border-t border-dashed pt-2">
-                        <span className="text-xs text-muted-foreground">
-                          Tiền thuế:
-                        </span>
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {moneyFormat(taxAmount)}
-                        </span>
-                      </div>
-                    )}
                   </div>
+
+                  {/* Subtotal */}
+                  <div className="flex items-center justify-between border-t pt-2">
+                    <span className="text-xs text-muted-foreground">
+                      Thành tiền:
+                    </span>
+                    <span className="text-sm font-semibold text-primary">
+                      {moneyFormat(subtotal)}
+                    </span>
+                  </div>
+
+                  {/* Tax Amount Display */}
+                  {taxAmount > 0 && (
+                    <div className="flex items-center justify-between border-t border-dashed pt-2">
+                      <span className="text-xs text-muted-foreground">
+                        Tiền thuế:
+                      </span>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {moneyFormat(taxAmount)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             )

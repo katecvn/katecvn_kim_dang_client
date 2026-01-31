@@ -195,10 +195,10 @@ const CreatePurchaseOrderPaymentDialog = ({
                             <TableHead className="min-w-40">Sản phẩm</TableHead>
                             <TableHead className="min-w-20">SL</TableHead>
                             <TableHead className="min-w-16">ĐVT</TableHead>
-                            <TableHead className="min-w-20">đơn giá</TableHead>
+                            <TableHead className="min-w-20 text-right">Đơn giá</TableHead>
                             {/* <TableHead className="min-w-16">Thuế</TableHead>
                               <TableHead className="min-w-28 md:w-16">Giảm giá</TableHead> */}
-                            <TableHead className="min-w-28">Thành tiền</TableHead>
+                            <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
                             <TableHead className="min-w-28">Ghi chú</TableHead>
                           </TableRow>
                         </TableHeader>

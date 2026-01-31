@@ -59,7 +59,7 @@ const ProductGrid = ({
                   }}
                 >
                   <CardContent className="p-2.5">
-                    <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-[64px_1fr] gap-x-3 gap-y-2 md:flex md:items-start md:gap-3">
                       {/* Product Image */}
                       <div className="w-16 h-16 rounded-md bg-muted overflow-hidden relative shrink-0">
                         {product.image ? (
@@ -82,19 +82,20 @@ const ProductGrid = ({
                         )}
                       </div>
 
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0 flex items-center gap-3">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm line-clamp-1">
-                            {product.name}
-                          </h4>
+                      {/* Info Section (Name, Code + Desktop Price/Stock) */}
+                      <div className="flex flex-col min-w-0 md:flex-1">
+                        <h4 className="font-medium text-sm">
+                          {product.name}
+                        </h4>
 
-                          {product.code && (
-                            <p className="text-[11px] text-muted-foreground">
-                              {product.code}
-                            </p>
-                          )}
+                        {product.code && (
+                          <p className="text-[11px] text-muted-foreground">
+                            {product.code}
+                          </p>
+                        )}
 
+                        {/* Desktop Price/Stock Display */}
+                        <div className="hidden md:block">
                           <div className="flex items-center gap-3 mt-1">
                             <span className="text-sm font-semibold text-primary">
                               {moneyFormat(product.price)}
@@ -103,11 +104,35 @@ const ProductGrid = ({
                               Tồn: {stock}
                             </span>
                           </div>
-
-                          {/* Price Sync Timestamp */}
                           {product.syncMapping?.lastSyncAt && (
                             <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-                              {product.syncMapping.supplier?.name} - Cập nhật: {new Date(product.syncMapping.lastSyncAt).toLocaleString('vi-VN', {
+                              Cập nhật lần cuối: {new Date(product.syncMapping.lastSyncAt).toLocaleString('vi-VN', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Mobile Bottom Section (Price/Stock + Button) */}
+                      <div className="col-span-2 w-full md:w-auto flex items-center justify-between md:justify-start gap-3 pt-1 md:pt-0">
+                        {/* Mobile Price/Stock Display */}
+                        <div className="md:hidden flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="text-sm font-semibold text-primary">
+                              {moneyFormat(product.price)}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              Tồn: {stock}
+                            </span>
+                          </div>
+                          {product.syncMapping?.lastSyncAt && (
+                            <p className="text-[10px] text-muted-foreground/80 truncate mt-0.5">
+                              Cập nhật lần cuối lúc: {new Date(product.syncMapping.lastSyncAt).toLocaleString('vi-VN', {
                                 day: '2-digit',
                                 month: '2-digit',
                                 year: 'numeric',
@@ -118,26 +143,19 @@ const ProductGrid = ({
                           )}
                         </div>
 
-                        {/* Product Description/Note */}
-                        {/* {product.note && (
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                              {product.note}
-                            </p>
-                          </div>
-                        )} */}
+                        {/* Add Button */}
+                        <Button
+                          size="sm"
+                          variant={isSelected ? "default" : "outline"}
+                          className={cn(
+                            "shrink-0 h-7 text-xs md:w-auto",
+                            !isSelected && "border-green-600 text-green-600 hover:text-green-700 hover:border-green-700 hover:bg-green-50 md:border-input md:text-accent-foreground md:hover:bg-accent md:hover:text-accent-foreground md:hover:border-input"
+                          )}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          {isSelected ? 'Đã chọn' : 'Thêm'}
+                        </Button>
                       </div>
-
-                      {/* Add Button */}
-                      {/* Always show Add button */}
-                      <Button
-                        size="sm"
-                        variant={isSelected ? "default" : "outline"}
-                        className="shrink-0 h-7 text-xs"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        {isSelected ? 'Đã chọn' : 'Thêm'}
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>

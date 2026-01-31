@@ -423,13 +423,6 @@ const UpdateProductDialog = ({
         syncExternalCode: data.syncEnabled ? data.syncExternalCode : null,
       }
 
-      console.log('🔍 UPDATE PRODUCT - Form data:', data)
-      console.log('🔍 UPDATE PRODUCT - Data to send:', dataToSend)
-      console.log('🔍 UPDATE PRODUCT - Sync fields:', {
-        syncEnabled: dataToSend.syncEnabled,
-        syncExternalCode: dataToSend.syncExternalCode,
-      })
-
       await dispatch(
         updateProduct({ id: product.id, data: dataToSend }),
       ).unwrap()

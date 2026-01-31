@@ -43,6 +43,8 @@ import {
   cancelPurchaseOrder,
   revertPurchaseOrder,
 } from '@/stores/PurchaseOrderSlice'
+import ViewWarehouseReceiptDialog from '../../warehouse-receipt/components/ViewWarehouseReceiptDialog'
+import ViewPaymentDialog from '../../payment/components/ViewPaymentDialog'
 
 const ViewPurchaseOrderDialog = ({
   open,
@@ -59,9 +61,17 @@ const ViewPurchaseOrderDialog = ({
 
   // Dialog States
   const [showConfirmImportDialog, setShowConfirmImportDialog] = useState(false)
+
   const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false)
   const [showContractDetail, setShowContractDetail] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+
+  // Sub-detail Dialog States
+  const [showWarehouseReceiptDetail, setShowWarehouseReceiptDetail] = useState(false)
+  const [selectedReceiptDetail, setSelectedReceiptDetail] = useState(null)
+
+  const [showPaymentDetail, setShowPaymentDetail] = useState(false)
+  const [selectedPaymentDetail, setSelectedPaymentDetail] = useState(null)
 
   // Product View State
   const [showViewProductDialog, setShowViewProductDialog] = useState(false)
@@ -521,7 +531,15 @@ const ViewPurchaseOrderDialog = ({
                                 <TableRow key={receipt.id}>
                                   <TableCell>{index + 1}</TableCell>
                                   <TableCell>
-                                    <span className="font-medium">{receipt.code}</span>
+                                    <span
+                                      className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                      onClick={() => {
+                                        setSelectedReceiptDetail(receipt)
+                                        setShowWarehouseReceiptDetail(true)
+                                      }}
+                                    >
+                                      {receipt.code}
+                                    </span>
                                   </TableCell>
                                   <TableCell>
                                     {receipt.receiptType === 1 ? 'Nhập kho' : receipt.receiptType}
@@ -590,7 +608,17 @@ const ViewPurchaseOrderDialog = ({
                               {purchaseOrder.paymentVouchers.map((voucher, index) => (
                                 <TableRow key={voucher.id}>
                                   <TableCell>{index + 1}</TableCell>
-                                  <TableCell><span className="font-medium">{voucher.code}</span></TableCell>
+                                  <TableCell>
+                                    <span
+                                      className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                      onClick={() => {
+                                        setSelectedPaymentDetail(voucher)
+                                        setShowPaymentDetail(true)
+                                      }}
+                                    >
+                                      {voucher.code}
+                                    </span>
+                                  </TableCell>
                                   <TableCell className="text-right font-semibold">{moneyFormat(voucher.amount)}</TableCell>
                                   <TableCell>
                                     {voucher.paymentMethod === 'cash' ? 'Tiền mặt' : voucher.paymentMethod === 'transfer' ? 'Chuyển khoản' : voucher.paymentMethod}
@@ -795,6 +823,29 @@ const ViewPurchaseOrderDialog = ({
           onSuccess={() => fetchData()}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
+        />
+      )}
+
+      {/* View Warehouse Receipt Detail Dialog */}
+      {showWarehouseReceiptDetail && (
+        <ViewWarehouseReceiptDialog
+          open={showWarehouseReceiptDetail}
+          onOpenChange={setShowWarehouseReceiptDetail}
+          receiptId={selectedReceiptDetail?.id}
+          contentClassName="z-[100030]"
+          overlayClassName="z-[100029]"
+        />
+      )}
+
+      {/* View Payment Detail Dialog */}
+      {showPaymentDetail && (
+        <ViewPaymentDialog
+          open={showPaymentDetail}
+          onOpenChange={setShowPaymentDetail}
+          paymentId={selectedPaymentDetail?.id}
+          payment={selectedPaymentDetail}
+          contentClassName="z-[100030]"
+          overlayClassName="z-[100029]"
         />
       )}
 

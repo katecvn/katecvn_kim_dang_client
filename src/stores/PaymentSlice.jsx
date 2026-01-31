@@ -43,6 +43,19 @@ export const getMyPayments = createAsyncThunk(
   },
 )
 
+export const getPaymentById = createAsyncThunk(
+  'payment/get-payment-by-id',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/payment-vouchers/${id}`)
+      return response.data.data || response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 export const updatePaymentStatus = createAsyncThunk(
   'payment/update-payment-status',
   async ({ id, status }, { rejectWithValue }) => {

@@ -51,42 +51,44 @@ const DashboardPage = () => {
 
   return (
     <Layout>
-      <LayoutBody className="flex flex-col space-y-6" fixedHeight>
-        <div className="flex items-center justify-between space-y-2">
+      <LayoutBody className="flex flex-col h-full" fixedHeight>
+        <div className="flex-none flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold tracking-tight">Tổng quan</h2>
         </div>
 
-        <Can permission={['GET_REPORT']}>
-          <div className="space-y-6 pb-8">
-            <DashboardSummary />
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <Can permission={['GET_REPORT']}>
+            <div className="space-y-6 pb-8">
+              <DashboardSummary />
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-              <div className="col-span-2 space-y-4">
-                <MarketPriceWidget />
-                {/* Can put Recent Sales here too if we want shorter left column */}
-              </div>
-              <div className="col-span-5 space-y-4">
-                <DailyRevenueChart
-                  data={salesSummary}
-                  loading={loading}
-                  fromDate={fromDate}
-                  toDate={toDate}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <PendingOrders
-                    salesBacklog={salesBacklog}
-                    purchaseBacklog={purchaseBacklog}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                <div className="col-span-2 space-y-4">
+                  <MarketPriceWidget />
+                  {/* Can put Recent Sales here too if we want shorter left column */}
+                </div>
+                <div className="col-span-5 space-y-4">
+                  <DailyRevenueChart
+                    data={salesSummary}
                     loading={loading}
+                    fromDate={fromDate}
+                    toDate={toDate}
                   />
-                  <RecentSales
-                    recentSales={recentSales}
-                    loading={loading}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <PendingOrders
+                      salesBacklog={salesBacklog}
+                      purchaseBacklog={purchaseBacklog}
+                      loading={loading}
+                    />
+                    <RecentSales
+                      recentSales={recentSales}
+                      loading={loading}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </Can>
+          </Can>
+        </div>
       </LayoutBody>
     </Layout>
   )

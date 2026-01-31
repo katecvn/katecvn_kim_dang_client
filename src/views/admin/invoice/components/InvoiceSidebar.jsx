@@ -22,7 +22,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { CheckIcon, Mail, MapPin, User, Calendar, FileText, Printer } from 'lucide-react'
+import { CheckIcon, Mail, MapPin, User, Calendar, RefreshCcw } from 'lucide-react'
 import { MobileIcon, CaretSortIcon } from '@radix-ui/react-icons'
 import { IconDatabasePlus, IconFileTypePdf } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
@@ -37,7 +37,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
@@ -69,7 +68,10 @@ const InvoiceSidebar = ({
   selectedContractProducts = {},
   expectedDeliveryDate,
   onExpectedDeliveryDateChange,
-  isUpdate = false,  // ← NEW: Prop to determine if this is update mode
+  isUpdate = false,
+  customerErrors = {}, // Receive validation errors
+  deliveryDateError = '', // Receive delivery date error
+  onScrollToCart,
 }) => {
   const dispatch = useDispatch()
   const [newCustomerData, setNewCustomerData] = useState({
@@ -86,6 +88,47 @@ const InvoiceSidebar = ({
   const [openDeliveryDatePicker, setOpenDeliveryDatePicker] = useState(false)
   const [openIdentityDatePicker, setOpenIdentityDatePicker] = useState(false)
   const [isEditingCustomer, setIsEditingCustomer] = useState(false)
+  const [phoneError, setPhoneError] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [identityCardError, setIdentityCardError] = useState('')
+
+  const validatePhoneNumber = (phone) => {
+    if (!phone) {
+      setPhoneError('Số điện thoại là bắt buộc')
+      return
+    }
+    const regex = /^(0)(3|5|7|8|9)([0-9]{8})$/
+    if (!regex.test(phone)) {
+      setPhoneError('SĐT không hợp lệ (10 số, đầu 03, 05, 07, 08, 09)')
+    } else {
+      setPhoneError('')
+    }
+  }
+
+  const validateEmail = (email) => {
+    if (!email) {
+      setEmailError('')
+      return
+    }
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!regex.test(email)) {
+      setEmailError('Email không hợp lệ')
+    } else {
+      setEmailError('')
+    }
+  }
+
+  const validateIdentityCard = (id) => {
+    if (!id) {
+      setIdentityCardError('CCCD là bắt buộc')
+      return
+    }
+    if (id.length !== 12) {
+      setIdentityCardError('CCCD phải đủ 12 số')
+    } else {
+      setIdentityCardError('')
+    }
+  }
 
   const handleCreateCustomerInline = async () => {
     if (!newCustomerData.name.trim()) {
@@ -101,7 +144,7 @@ const InvoiceSidebar = ({
       return
     }
     if (!newCustomerData.identityCard.trim()) {
-      toast.error('Vui lòng nhập số CMND/CCCD')
+      toast.error('Vui lòng nhập số CCCD')
       return
     }
     if (!newCustomerData.identityDate) {
@@ -183,6 +226,7 @@ const InvoiceSidebar = ({
 
       if (!hasSelectedProducts) {
         toast.error('Vui lòng chọn ít nhất 1 sản phẩm để in hợp đồng')
+        if (onScrollToCart) onScrollToCart()
         return
       }
     }
@@ -202,7 +246,7 @@ const InvoiceSidebar = ({
       <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
 
       {/* Header */}
-      <div className="p-4 border-b bg-background/80 backdrop-blur-sm">
+      <div className="p-4 border-b bg-background">
         <h3 className="font-semibold">Thông tin đơn hàng</h3>
       </div>
 
@@ -241,7 +285,7 @@ const InvoiceSidebar = ({
                       className="h-7 w-7"
                       onClick={() => onSelectCustomer(null)}
                     >
-                      <CheckIcon className="h-4 w-4" />
+                      <RefreshCcw className="h-4 w-4" />
                     </Button>
                   </div>
 
@@ -285,39 +329,58 @@ const InvoiceSidebar = ({
                   <div className="text-xs font-medium text-muted-foreground">Thông tin khách hàng (có thể sửa)</div>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Tên khách hàng</FormLabel>
+                    <FormLabel className="text-xs">Tên khách hàng <span className="text-destructive"> *</span></FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Nhập tên"
                         value={customerEditData?.name || ''}
                         onChange={(e) => onCustomerEditDataChange({ ...customerEditData, name: e.target.value })}
-                        className="h-8 text-xs"
+                        onFocus={(e) => e.target.select()}
+                        autoCapitalize="words"
+                        className={cn("h-8 text-xs", customerErrors?.name && "border-destructive")}
                       />
                     </FormControl>
+                    {customerErrors?.name && <span className="text-[10px] text-destructive">{customerErrors.name}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Số điện thoại</FormLabel>
+                    <FormLabel className="text-xs">Số điện thoại <span className="text-destructive"> *</span></FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Nhập SĐT"
                         value={customerEditData?.phone || ''}
-                        onChange={(e) => onCustomerEditDataChange({ ...customerEditData, phone: e.target.value })}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value
+                          onCustomerEditDataChange({ ...customerEditData, phone: val })
+                          validatePhoneNumber(val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        inputMode="numeric"
+                        className={cn("h-8 text-xs", (phoneError || customerErrors?.phone) && "border-destructive")}
                       />
                     </FormControl>
+                    {(phoneError || customerErrors?.phone) && <span className="text-[10px] text-destructive">{phoneError || customerErrors?.phone}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Email (tùy chọn)</FormLabel>
+                    <FormLabel className="text-xs">Email</FormLabel>
                     <FormControl>
                       <Input
+                        type="email"
+                        autoCapitalize="none"
+                        autoCorrect="off"
                         placeholder="Nhập email"
                         value={customerEditData?.email || ''}
-                        onChange={(e) => onCustomerEditDataChange({ ...customerEditData, email: e.target.value })}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value
+                          onCustomerEditDataChange({ ...customerEditData, email: val })
+                          validateEmail(val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className={cn("h-8 text-xs", (emailError || customerErrors?.email) && "border-destructive")}
                       />
                     </FormControl>
+                    {(emailError || customerErrors?.email) && <span className="text-[10px] text-destructive">{emailError || customerErrors?.email}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
@@ -327,21 +390,29 @@ const InvoiceSidebar = ({
                         placeholder="Nhập địa chỉ"
                         value={customerEditData?.address || ''}
                         onChange={(e) => onCustomerEditDataChange({ ...customerEditData, address: e.target.value })}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 text-xs"
                       />
                     </FormControl>
                   </FormItem>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">CMND/CCCD</FormLabel>
+                    <FormLabel className="text-xs">CCCD <span className="text-destructive"> *</span></FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Nhập số CMND/CCCD"
+                        placeholder="Nhập số CCCD"
                         value={customerEditData?.identityCard || ''}
-                        onChange={(e) => onCustomerEditDataChange({ ...customerEditData, identityCard: e.target.value })}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 12)
+                          onCustomerEditDataChange({ ...customerEditData, identityCard: val })
+                          validateIdentityCard(val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        inputMode="numeric"
+                        className={cn("h-8 text-xs", (identityCardError || customerErrors?.identityCard) && "border-destructive")}
                       />
                     </FormControl>
+                    {(identityCardError || customerErrors?.identityCard) && <span className="text-[10px] text-destructive">{identityCardError || customerErrors?.identityCard}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
@@ -371,6 +442,7 @@ const InvoiceSidebar = ({
                             onCustomerEditDataChange({ ...customerEditData, identityDate: date ? date.toISOString() : null })
                             setOpenIdentityDatePicker(false)
                           }}
+                          disabled={(date) => date > new Date()}
                         />
                       </PopoverContent>
                     </Popover>
@@ -383,6 +455,7 @@ const InvoiceSidebar = ({
                         placeholder="Nhập nơi cấp"
                         value={customerEditData?.identityPlace || ''}
                         onChange={(e) => onCustomerEditDataChange({ ...customerEditData, identityPlace: e.target.value })}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -405,7 +478,7 @@ const InvoiceSidebar = ({
                             >
                               {field.value
                                 ? customers.find((c) => c.id === field.value)?.name
-                                : 'Chọn khách hàng'}
+                                : 'Chọn khách hàng cũ'}
                               <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
@@ -448,7 +521,7 @@ const InvoiceSidebar = ({
                   <div className="text-xs font-medium text-muted-foreground">Hoặc nhập thông tin khách hàng mới</div>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Tên khách hàng</FormLabel>
+                    <FormLabel className="text-xs">Tên khách hàng <span className="text-destructive"> *</span></FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Nhập tên"
@@ -457,39 +530,58 @@ const InvoiceSidebar = ({
                           ...customerEditData,
                           name: e.target.value
                         })}
-                        className="h-8 text-xs"
+                        onFocus={(e) => e.target.select()}
+                        autoCapitalize="words"
+                        className={cn("h-8 text-xs", customerErrors?.name && "border-destructive")}
                       />
                     </FormControl>
+                    {customerErrors?.name && <span className="text-[10px] text-destructive">{customerErrors.name}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Số điện thoại</FormLabel>
+                    <FormLabel className="text-xs">Số điện thoại <span className="text-destructive"> *</span></FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Nhập SĐT"
                         value={customerEditData?.phone || ''}
-                        onChange={(e) => onCustomerEditDataChange({
-                          ...customerEditData,
-                          phone: e.target.value
-                        })}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value
+                          onCustomerEditDataChange({
+                            ...customerEditData,
+                            phone: val
+                          })
+                          validatePhoneNumber(val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        inputMode="numeric"
+                        className={cn("h-8 text-xs", (phoneError || customerErrors?.phone) && "border-destructive")}
                       />
                     </FormControl>
+                    {(phoneError || customerErrors?.phone) && <span className="text-[10px] text-destructive">{phoneError || customerErrors?.phone}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Email (tùy chọn)</FormLabel>
+                    <FormLabel className="text-xs">Email</FormLabel>
                     <FormControl>
                       <Input
+                        type="email"
+                        autoCapitalize="none"
+                        autoCorrect="off"
                         placeholder="Nhập email"
                         value={customerEditData?.email || ''}
-                        onChange={(e) => onCustomerEditDataChange({
-                          ...customerEditData,
-                          email: e.target.value
-                        })}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value
+                          onCustomerEditDataChange({
+                            ...customerEditData,
+                            email: val
+                          })
+                          validateEmail(val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className={cn("h-8 text-xs", (emailError || customerErrors?.email) && "border-destructive")}
                       />
                     </FormControl>
+                    {(emailError || customerErrors?.email) && <span className="text-[10px] text-destructive">{emailError || customerErrors?.email}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
@@ -502,24 +594,32 @@ const InvoiceSidebar = ({
                           ...customerEditData,
                           address: e.target.value
                         })}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 text-xs"
                       />
                     </FormControl>
                   </FormItem>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">CMND/CCCD</FormLabel>
+                    <FormLabel className="text-xs">CCCD <span className="text-destructive"> *</span></FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Nhập số CMND/CCCD"
+                        placeholder="Nhập số CCCD"
                         value={customerEditData?.identityCard || ''}
-                        onChange={(e) => onCustomerEditDataChange({
-                          ...customerEditData,
-                          identityCard: e.target.value
-                        })}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 12)
+                          onCustomerEditDataChange({
+                            ...customerEditData,
+                            identityCard: val
+                          })
+                          validateIdentityCard(val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        inputMode="numeric"
+                        className={cn("h-8 text-xs", (identityCardError || customerErrors?.identityCard) && "border-destructive")}
                       />
                     </FormControl>
+                    {(identityCardError || customerErrors?.identityCard) && <span className="text-[10px] text-destructive">{identityCardError || customerErrors?.identityCard}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
@@ -552,6 +652,7 @@ const InvoiceSidebar = ({
                             })
                             setOpenIdentityDatePicker(false)
                           }}
+                          disabled={(date) => date > new Date()}
                         />
                       </PopoverContent>
                     </Popover>
@@ -567,6 +668,7 @@ const InvoiceSidebar = ({
                           ...customerEditData,
                           identityPlace: e.target.value
                         })}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -588,7 +690,7 @@ const InvoiceSidebar = ({
             name="orderDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Ngày đặt hàng</FormLabel>
+                <FormLabel>Ngày đặt hàng <span className="text-destructive"> *</span></FormLabel>
                 <Popover open={openOrderDatePicker} onOpenChange={setOpenOrderDatePicker}>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -614,6 +716,7 @@ const InvoiceSidebar = ({
                         field.onChange(date ? date.toISOString() : null)
                         setOpenOrderDatePicker(false)
                       }}
+                      disabled={(date) => date > new Date()}
                     />
                   </PopoverContent>
                 </Popover>
@@ -622,31 +725,7 @@ const InvoiceSidebar = ({
             )}
           />
 
-          {/* Payment Method */}
-          <FormField
-            control={form.control}
-            name="paymentMethod"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phương thức thanh toán</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn phương thức" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {paymentMethods.map((method) => (
-                      <SelectItem key={method.value} value={method.value}>
-                        {method.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
 
           {/* Transaction Type */}
           <FormField
@@ -654,7 +733,7 @@ const InvoiceSidebar = ({
             name="transactionType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Loại giao dịch</FormLabel>
+                <FormLabel>Loại giao dịch <span className="text-destructive"> *</span></FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value || 'RETAIL'}>
                   <FormControl>
                     <SelectTrigger>
@@ -662,8 +741,8 @@ const InvoiceSidebar = ({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="RETAIL">Bán lẻ</SelectItem>
-                    <SelectItem value="WHOLESALE">Bán sĩ</SelectItem>
+                    <SelectItem value="RETAIL">Không cần duyệt đơn</SelectItem>
+                    <SelectItem value="WHOLESALE">Cần duyệt đơn</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -756,14 +835,15 @@ const InvoiceSidebar = ({
 
         {isPrintContract && (
           <div className="mb-2 flex flex-col">
-            <label className="text-sm font-medium">Ngày dự kiến giao hàng</label>
+            <label className="text-sm font-medium">Ngày dự kiến giao hàng <span className="text-destructive"> *</span></label>
             <Popover open={openDeliveryDatePicker} onOpenChange={setOpenDeliveryDatePicker}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
                     'w-full justify-start text-left font-normal mt-1',
-                    !expectedDeliveryDate && 'text-muted-foreground'
+                    !expectedDeliveryDate && 'text-muted-foreground',
+                    deliveryDateError && 'border-destructive'
                   )}
                 >
                   <Calendar className="mr-2 h-4 w-4" />
@@ -780,9 +860,22 @@ const InvoiceSidebar = ({
                     onExpectedDeliveryDateChange(date ? date.toISOString() : null)
                     setOpenDeliveryDatePicker(false)
                   }}
+                  disabled={(date) => date < new Date().setHours(0, 0, 0, 0)} // Should not be in past? Prompt said "validate Identity Date (no future)". Does user want Delivery Date no future? Usually Delivery Date is in FUTURE. "Ngày dự kiến giao hàng" usually means future.
+                // User Request about "Ngày đặt hàng" and "Ngày cấp" -> "no future".
+                // For "Expected Delivery Date", user didn't explicitly strict "no future" or "no past". 
+                // But previously user said "Ngày đặt hàng ... không cho chọn trong tương lai".
+                // "Ngày cấp ... không được chọn ngày trong tương lai".
+                // "Ngày dự kiến giao hàng" -> normally IS in future.
+                // I will leave disabled logic as is (none) or basic. But user asked for "Inline Error". I will stick to adding the error display.
+
+                // Wait, I noticed I missed adding "disabled" to DatePicker in my previous edit for this field.
+                // Does "Ngày dự kiến giao hàng" need restriction?
+                // User prompt: "chỉ bắt buộc tên, só điện thoại, cccd, ngày đặt hàng, loại giao dịch, và ngày dự kiến giao hàng"
+                // I will just add the error display.
                 />
               </PopoverContent>
             </Popover>
+            {deliveryDateError && <span className="text-[10px] text-destructive mt-1">{deliveryDateError}</span>}
           </div>
         )}
 
@@ -815,7 +908,7 @@ const InvoiceSidebar = ({
             disabled={loading}
           >
             <IconFileTypePdf className="h-4 w-4 mr-2" />
-            {isUpdate ? 'Cập nhật Và In Thỏa Thuận' : 'Tạo Và In Thỏa Thuận (Agreement)'}
+            {isUpdate ? 'Cập nhật Và In Thỏa Thuận' : 'Tạo Và In Thỏa Thuận'}
           </Button>
         </div>
       </div>

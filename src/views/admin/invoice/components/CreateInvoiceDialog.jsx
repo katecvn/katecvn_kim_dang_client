@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 
 import { Button } from '@/components/custom/Button'
@@ -71,6 +71,7 @@ const CreateInvoiceDialog = ({
 
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [customerEditData, setCustomerEditData] = useState(null)
+  const [customerErrors, setCustomerErrors] = useState({})
   const [productStartDate, setProductStartDate] = useState({})
   const [hasPrintQuotation, setHasPrintQuotation] = useState(false)
   const [applyWarrantyItems, setApplyWarrantyItems] = useState({})
@@ -126,6 +127,15 @@ const CreateInvoiceDialog = ({
   const [selectedContractProducts, setSelectedContractProducts] = useState({})
   const [isPrintContract, setIsPrintContract] = useState(false)
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(null)
+  const [deliveryDateError, setDeliveryDateError] = useState('')
+
+  const cartRef = useRef(null)
+
+  const scrollToCart = () => {
+    if (cartRef.current) {
+      cartRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
   const handleStartDateChange = (productId, date) => {
     setProductStartDate((prev) => ({ ...prev, [productId]: date }))
@@ -200,6 +210,7 @@ const CreateInvoiceDialog = ({
     setCustomerAccounts([])
     setSelectedCustomer(null)
     setCustomerEditData(null)
+    setCustomerErrors({})
     setTotalAmount('')
     setIsSharing(false)
     setIsCreateReceipt(false)
@@ -208,6 +219,7 @@ const CreateInvoiceDialog = ({
     setSelectedContractProducts({})
     setIsPrintContract(false)
     setExpectedDeliveryDate(null)
+    setDeliveryDateError('')
   }, [open])
 
   const form = useForm({
@@ -220,7 +232,7 @@ const CreateInvoiceDialog = ({
       revenueSharing: null,
       paymentMethod: paymentMethods[0].value,
       paymentNote: '',
-      orderDate: null,
+      orderDate: new Date().toISOString(),
     },
   })
 
@@ -468,24 +480,59 @@ const CreateInvoiceDialog = ({
       return
     }
 
-    // Validate: customer either selected or filled manually with all required fields
     const hasSelectedCustomer = !!data.customerId
-    const hasNewCustomerData = customerEditData &&
-      customerEditData.name?.trim() &&
-      customerEditData.phone?.trim() &&
-      customerEditData.address?.trim() &&
-      customerEditData.identityCard?.trim() &&
-      customerEditData.identityDate &&
-      customerEditData.identityPlace?.trim()
 
-    if (!hasSelectedCustomer && !hasNewCustomerData) {
-      toast.error('Vui lòng chọn khách hàng hoặc nhập đầy đủ thông tin khách hàng mới (Tên, SĐT, Địa chỉ, CCCD, Ngày cấp, Nơi cấp)')
+    // Validate Phone Format
+    const phoneRegex = /^(0)(3|5|7|8|9)([0-9]{8})$/
+    const errors = {}
+
+    // Only validate if NO existing customer selected (creating new one) OR if updating existing info
+    // But data.customerId implies selected.
+    // If selectedCustomer, we generally trust it UNLESS we are in "Update Info" mode?
+    // The previous logic was: if (!hasSelectedCustomer && !hasNewCustomerData) ...
+    // And `hasNewCustomerData` checked for presence of fields.
+
+    // Logic:
+    // If hasSelectedCustomer -> OK.
+    // If !hasSelectedCustomer -> Must have valid newCustomerData.
+
+    // Always validate customer data (new or existing)
+    if (!customerEditData?.name?.trim()) errors.name = "Tên khách hàng là bắt buộc"
+
+    if (!customerEditData?.identityCard?.trim()) {
+      errors.identityCard = "CCCD là bắt buộc"
+    } else if (customerEditData.identityCard.trim().length !== 12) {
+      errors.identityCard = "CCCD phải đủ 12 số"
+    }
+
+    if (!customerEditData?.phone?.trim()) {
+      errors.phone = "Số điện thoại là bắt buộc"
+    } else if (!phoneRegex.test(customerEditData.phone.trim())) {
+      errors.phone = "SĐT không hợp lệ (10 số, đầu 03, 05, 07, 08, 09)"
+    }
+
+    // Validate Email Format (Optional but must be valid if provided)
+    if (customerEditData?.email?.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(customerEditData.email.trim())) {
+        errors.email = "Email không hợp lệ"
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setCustomerErrors(errors)
+      toast.error('Vui lòng kiểm tra lại thông tin khách hàng')
       return
     }
 
+    setCustomerErrors({})
+
+    // Validate: if printing contract, check all required customer info
     // Validate: if printing contract, check all required customer info
     if (effectiveIsPrintContract) {
-      const contractCustomerData = hasSelectedCustomer ? selectedCustomer : customerEditData
+      // Use customerEditData as the single source of truth since it contains the current form values
+      // (whether from selected customer or manually entered/edited)
+      const contractCustomerData = customerEditData || {}
 
       // Check required fields: name, phone, address, identityCard, identityDate
       // Email is optional
@@ -497,20 +544,19 @@ const CreateInvoiceDialog = ({
       if (!contractCustomerData?.phone?.trim()) {
         missingFields.push('Số điện thoại')
       }
-      if (!contractCustomerData?.address?.trim()) {
-        missingFields.push('Địa chỉ')
-      }
+      // if (!contractCustomerData?.address?.trim()) {
+      //   missingFields.push('Địa chỉ')
+      // }
       if (!contractCustomerData?.identityCard?.trim()) {
-        missingFields.push('CMND/CCCD')
+        missingFields.push('CCCD')
       }
-      if (!contractCustomerData?.identityDate) {
-        missingFields.push('Ngày cấp')
-      }
-      if (!contractCustomerData?.identityPlace?.trim()) {
-        missingFields.push('Nơi cấp')
-      }
+
+      // Check Delivery Date and set inline error state
       if (!expectedDeliveryDate) {
+        setDeliveryDateError('Ngày dự kiến giao hàng là bắt buộc')
         missingFields.push('Ngày dự kiến giao hàng')
+      } else {
+        setDeliveryDateError('')
       }
 
       if (missingFields.length > 0) {
@@ -518,6 +564,8 @@ const CreateInvoiceDialog = ({
         return
       }
     }
+
+    setDeliveryDateError('') // Clear error if not printing contract or validation passed
 
     // validations liên quan expiry/account giữ nguyên
     for (const product of selectedProducts) {
@@ -1319,7 +1367,10 @@ const CreateInvoiceDialog = ({
                 <div className="flex-1 overflow-y-auto">
                   <div className="flex flex-col">
                     {/* Shopping Cart */}
-                    <div className="[&>div]:!w-full [&>div]:border-0 [&>div]:!bg-transparent [&>div]:shadow-none">
+                    <div
+                      ref={cartRef}
+                      className="[&>div]:!w-full [&>div]:border-0 [&>div]:!bg-transparent [&>div]:shadow-none"
+                    >
                       <ShoppingCart
                         selectedProducts={selectedProducts}
                         quantities={quantities}
@@ -1381,6 +1432,9 @@ const CreateInvoiceDialog = ({
                         selectedContractProducts={selectedContractProducts}
                         expectedDeliveryDate={expectedDeliveryDate}
                         onExpectedDeliveryDateChange={setExpectedDeliveryDate}
+                        onScrollToCart={scrollToCart}
+                        customerErrors={customerErrors}
+                        deliveryDateError={deliveryDateError}
                       />
                     </div>
 
@@ -1420,6 +1474,42 @@ const CreateInvoiceDialog = ({
           <CreateProductDialog
             open={showCreateProductDialog}
             onOpenChange={setShowCreateProductDialog}
+          />
+        )}
+
+        {invoice && generalInformation && (
+          <PrintInvoiceView invoice={invoice} setting={generalInformation} />
+        )}
+
+        {agreementData && (
+          <AgreementPreviewDialog
+            open={showAgreementPreview}
+            onOpenChange={(open) => {
+              if (!open) {
+                setShowAgreementPreview(false)
+                setIsPrintContract(false) // Reset flag
+                form.reset()
+                onOpenChange?.(false)
+              }
+            }}
+            initialData={agreementData}
+            overlayClassName="z-[10001]"
+            contentClassName="z-[10002]"
+            onConfirm={async (finalData) => {
+              try {
+                // setAgreementExporting(true) // Helper state not strictly needed if handle in component or ignore
+                await exportAgreementPdf(finalData, agreementFileName)
+                toast.success('Đã in thỏa thuận mua bán thành công')
+
+                setShowAgreementPreview(false)
+                setIsPrintContract(false)
+                form.reset()
+                onOpenChange?.(false)
+              } catch (error) {
+                console.error('Export agreement error:', error)
+                toast.error('In thỏa thuận mua bán thất bại')
+              }
+            }}
           />
         )}
       </>
@@ -1528,15 +1618,30 @@ const CreateInvoiceDialog = ({
                   customers={customers}
                   selectedCustomer={selectedCustomer}
                   customerEditData={customerEditData}
-                  onCustomerEditDataChange={setCustomerEditData}
+                  customerErrors={customerErrors}
+                  onCustomerEditDataChange={(data) => {
+                    setCustomerEditData(data)
+                    setCustomerErrors({})
+                  }}
                   onSelectCustomer={(customer) => {
                     setSelectedCustomer(customer)
                     if (customer) {
                       form.setValue('customerId', customer.id.toString())
+                      setCustomerEditData({
+                        name: customer.name || '',
+                        phone: customer.phone || '',
+                        email: customer.email || '',
+                        address: customer.address || '',
+                        identityCard: customer.identityCard || '',
+                        identityDate: customer.identityDate || null,
+                        identityPlace: customer.identityPlace || '',
+                      })
                       handleSelectCustomer(customer)
+                      setCustomerErrors({})
                     } else {
                       form.setValue('customerId', '')
                       setCustomerEditData(null)
+                      setCustomerErrors({})
                     }
                   }}
                   paymentMethods={paymentMethods}
@@ -1555,7 +1660,12 @@ const CreateInvoiceDialog = ({
                   setIsPrintContract={setIsPrintContract}
                   selectedContractProducts={selectedContractProducts}
                   expectedDeliveryDate={expectedDeliveryDate}
-                  onExpectedDeliveryDateChange={setExpectedDeliveryDate}
+                  onExpectedDeliveryDateChange={(date) => {
+                    setExpectedDeliveryDate(date)
+                    setDeliveryDateError('')
+                  }}
+                  deliveryDateError={deliveryDateError}
+                  onScrollToCart={scrollToCart}
                 />
               </div>
             </form>
@@ -1607,6 +1717,8 @@ const CreateInvoiceDialog = ({
             }
           }}
           initialData={agreementData}
+          overlayClassName="z-[10001]"
+          contentClassName="z-[10002]"
           onConfirm={async (finalData) => {
             try {
               setAgreementExporting(true)

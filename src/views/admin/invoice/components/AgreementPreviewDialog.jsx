@@ -304,7 +304,7 @@ export default function AgreementPreviewDialog({
         isViewInvoiceDialog={false}
         className={cn(
           isMobile
-            ? "max-w-full w-full h-screen inset-0 p-0 gap-0 flex flex-col top-0 left-0 right-0 m-0 rounded-none translate-x-0 translate-y-0 z-[10000]"
+            ? "max-w-full w-full h-[100dvh] inset-0 p-0 gap-0 flex flex-col top-0 left-0 right-0 m-0 rounded-none translate-x-0 translate-y-0 z-[10000]"
             : "max-w-[80vw] gap-4",
           contentClassName
         )}
@@ -350,25 +350,7 @@ export default function AgreementPreviewDialog({
               </TabsContent>
             </Tabs>
 
-            <DialogFooter className="px-4 py-3 shrink-0 flex flex-col gap-2 border-t">
-              <div className="flex gap-2 w-full">
-                <Button
-                  className="flex-1"
-                  variant="secondary"
-                  onClick={() => handleExportImage('png')}
-                  disabled={isExporting}
-                >
-                  {isExporting ? 'Đang xuất...' : 'Xuất PNG'}
-                </Button>
-                <Button
-                  className="flex-1"
-                  variant="outline"
-                  onClick={() => handleExportImage('jpeg')}
-                  disabled={isExporting}
-                >
-                  Xuất JPG
-                </Button>
-              </div>
+            <DialogFooter className="px-4 py-3 pb-12 shrink-0 flex flex-col gap-2 border-t bg-background">
               <div className="flex gap-2 w-full">
                 <Button
                   variant="outline"
@@ -416,22 +398,6 @@ export default function AgreementPreviewDialog({
                 disabled={isExporting}
               >
                 Hủy
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleExportImage('png')}
-                disabled={isExporting}
-              >
-                {isExporting ? '...' : 'Xuất PNG'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExportImage('jpeg')}
-                disabled={isExporting}
-              >
-                Xuất JPG
               </Button>
               <Button
                 size="sm"

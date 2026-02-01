@@ -44,11 +44,16 @@ import { dateFormat } from '@/utils/date-format'
 import { getPublicUrl } from '@/utils/file'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 
 import ProductSaleHistoryTab from './ProductSaleHistoryTab'
+import UpdateProductDialog from './UpdateProductDialog'
+import { Edit } from 'lucide-react'
 
 const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, overlayClassName, ...props }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const [product, setProduct] = useState(null)
+  const [showUpdateProductDialog, setShowUpdateProductDialog] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const fetchProduct = useCallback(async () => {
@@ -181,8 +186,15 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
         </DialogTrigger>
       )}
 
-      <DialogContent className={cn("max-w-7xl", contentClassName)} overlayClassName={overlayClassName}>
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          "max-w-7xl",
+          isMobile && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none translate-x-0 translate-y-0 flex flex-col",
+          contentClassName
+        )}
+        overlayClassName={overlayClassName}
+      >
+        <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
           <DialogTitle>
             Chi tiết sản phẩm: {loading ? 'Đang tải...' : product?.name || '—'}
           </DialogTitle>
@@ -191,7 +203,10 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[75vh] overflow-auto">
+        <div className={cn(
+          "overflow-auto",
+          isMobile ? "h-full px-4 pb-4 flex-1" : "max-h-[75vh]"
+        )}>
           {loading ? (
             <div className="space-y-3">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -692,11 +707,36 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className={cn(isMobile && "pb-4 px-4 flex flex-row gap-2")}>
+          {product && (
+            <Button
+              className={cn("bg-blue-600 text-white hover:bg-blue-700", isMobile && "flex-1")}
+              onClick={() => setShowUpdateProductDialog(true)}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Sửa
+            </Button>
+          )}
           <DialogClose asChild>
-            <Button variant="outline">Đóng</Button>
+            <Button variant="outline" className={cn(isMobile && "flex-1")}>Đóng</Button>
           </DialogClose>
         </DialogFooter>
+
+        {product && (
+          <UpdateProductDialog
+            open={showUpdateProductDialog}
+            onOpenChange={(open) => {
+              setShowUpdateProductDialog(open)
+              if (!open) {
+                fetchProduct()
+              }
+            }}
+            product={product}
+            showTrigger={false}
+            contentClassName="z-[100030]"
+            overlayClassName="z-[100029]"
+          />
+        )}
       </DialogContent>
     </Dialog>
   )

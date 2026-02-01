@@ -14,6 +14,11 @@ import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
 import api from '@/utils/axios'
 import Pagination from '@/components/custom/Pagination'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import { cn } from '@/lib/utils'
+import { Calendar as CalendarIcon, User, FileText } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { DatePicker } from '@/components/custom/DatePicker'
 
 const SaleHistoryColGroup = () => (
   <colgroup>
@@ -28,7 +33,49 @@ const SaleHistoryColGroup = () => (
   </colgroup>
 )
 
+const DateFilterPicker = ({ value, onChange, placeholder, disabled }) => {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            'w-full justify-start text-left font-normal h-8 text-xs bg-background',
+            !value && 'text-muted-foreground'
+          )}
+          disabled={disabled}
+        >
+          <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+          {value ? dateFormat(value) : placeholder}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <DatePicker
+          mode="single"
+          selected={value ? new Date(value) : undefined}
+          onSelect={(date) => {
+            if (date) {
+              // Format manually to YYYY-MM-DD to avoid timezone shifts
+              const year = date.getFullYear()
+              const month = String(date.getMonth() + 1).padStart(2, '0')
+              const day = String(date.getDate()).padStart(2, '0')
+              onChange(`${year}-${month}-${day}`)
+            } else {
+              onChange('')
+            }
+            setOpen(false)
+          }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 const ProductSaleHistoryTab = ({ productId }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const [data, setData] = useState([])
   const [pagination, setPagination] = useState(null)
   const [totalsByUnit, setTotalsByUnit] = useState([])
@@ -94,44 +141,50 @@ const ProductSaleHistoryTab = ({ productId }) => {
 
   return (
     <div className="min-h-[450px] space-y-4 md:min-h-[460px]">
-      <div className="flex flex-wrap items-end gap-3">
+      <div className={cn(
+        "flex flex-wrap items-end gap-3",
+        isMobile && "grid grid-cols-2 gap-2"
+      )}>
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-muted-foreground">Từ ngày</span>
-          <Input
-            type="date"
+          <span className="text-[10px] text-muted-foreground uppercase font-semibold">Từ ngày</span>
+          <DateFilterPicker
             value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
+            onChange={setFromDate}
+            placeholder="Chọn ngày"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-muted-foreground">Đến ngày</span>
-          <Input
-            type="date"
+          <span className="text-[10px] text-muted-foreground uppercase font-semibold">Đến ngày</span>
+          <DateFilterPicker
             value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
+            onChange={setToDate}
+            placeholder="Chọn ngày"
           />
         </div>
 
-        <Button onClick={handleFilter}>Lọc</Button>
-
-        {(fromDate || toDate) && (
-          <Button variant="outline" onClick={handleClearFilter}>
-            Xóa lọc
-          </Button>
-        )}
-
-        <div className="ml-auto flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
-          <span className="text-muted-foreground">Tổng đã bán:</span>
-          {loading ? (
-            <span className="text-muted-foreground">...</span>
-          ) : totalsText ? (
-            <span className="font-medium">{totalsText}</span>
-          ) : (
-            <span className="text-muted-foreground">0</span>
+        <div className={cn("flex gap-2", isMobile && "col-span-2")}>
+          <Button onClick={handleFilter} size="sm" className="h-8 text-xs">Lọc</Button>
+          {(fromDate || toDate) && (
+            <Button variant="outline" onClick={handleClearFilter} size="sm" className="h-8 text-xs">
+              Xóa
+            </Button>
           )}
+
+          {/* Total Summary - Compact on mobile */}
+          <div className="ml-auto flex items-center gap-2 rounded-md border bg-background px-3 py-1 text-xs h-8">
+            <span className="text-muted-foreground hidden sm:inline">Tổng:</span>
+            {loading ? (
+              <span className="text-muted-foreground">...</span>
+            ) : totalsText ? (
+              <span className="font-medium text-primary">{totalsText}</span>
+            ) : (
+              <span className="text-muted-foreground">0</span>
+            )}
+          </div>
         </div>
       </div>
+
 
       {loading ? (
         <div className="space-y-2">
@@ -143,7 +196,62 @@ const ProductSaleHistoryTab = ({ productId }) => {
         <div className="py-8 text-center text-sm text-muted-foreground">
           Chưa có lịch sử bán
         </div>
+      ) : isMobile ? (
+        // MOBILE VIEW
+        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+          {data.map((item) => {
+            const customer = item?.invoice?.customer || {}
+            return (
+              <div key={item.id} className="rounded-lg border bg-card p-3 shadow-sm space-y-3 text-sm">
+                {/* Header: Date & Invoice */}
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <CalendarIcon className="h-3.5 w-3.5" />
+                    <span>{dateFormat(item.createdAt, true)}</span>
+                  </div>
+                  <div className="font-mono font-bold bg-muted px-2 py-0.5 rounded text-xs">
+                    {item?.invoice?.code}
+                  </div>
+                </div>
+
+                {/* Customer */}
+                <div className="flex gap-2.5">
+                  <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{customer?.name || '—'}</div>
+                    {customer?.phone && (
+                      <div className="text-xs text-muted-foreground">{customer.phone}</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Product Details Grid */}
+                <div className="grid grid-cols-2 gap-2 bg-secondary/30 p-2 rounded">
+                  <div>
+                    <span className="text-[10px] text-muted-foreground uppercase block font-semibold">Đơn giá</span>
+                    <span className="font-medium">{moneyFormat(item.price)}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-muted-foreground uppercase block font-semibold">Số lượng</span>
+                    <span className="font-medium">{item.quantity} {item.unitName}</span>
+                  </div>
+                  {item.taxAmount > 0 && (
+                    <div className="col-span-2 flex justify-between border-t border-dashed border-muted-foreground/20 pt-1 mt-1">
+                      <span className="text-xs text-muted-foreground">Thuế</span>
+                      <span>{moneyFormat(item.taxAmount)}</span>
+                    </div>
+                  )}
+                  <div className="col-span-2 flex justify-between items-center border-t border-muted-foreground/20 pt-2 mt-1">
+                    <span className="font-semibold text-muted-foreground">Thành tiền</span>
+                    <span className="font-bold text-primary text-base">{moneyFormat(item.total)}</span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       ) : (
+        // DESKTOP VIEW
         <div className="rounded-md border">
           <Table className="table-fixed">
             <SaleHistoryColGroup />

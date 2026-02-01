@@ -65,12 +65,16 @@ import { getPublicUrl } from '@/utils/file'
 import { normalizeFloatString } from '@/utils/normalize-text'
 import { getCatalogBySupplier, getSupplierDetails } from '@/api/price-sync'
 import { Loader2 } from 'lucide-react'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 
 const UpdateProductDialog = ({
   product,
   open,
+
   onOpenChange,
   showTrigger = true,
+  contentClassName,
+  overlayClassName,
   ...props
 }) => {
   const loading = useSelector((state) => state.product.loading)
@@ -80,6 +84,7 @@ const UpdateProductDialog = ({
   const attributes = useSelector((state) => state.attribute.attributes)
   const categories = useSelector((state) => state.category.categories)
   const suppliers = useSelector((state) => state.supplier.suppliers)
+  const isMobile = useMediaQuery('(max-width: 768px)')
 
   const [selectedFile, setSelectedFile] = useState(null)
   const [showCreateSupplierDialog, setShowCreateSupplierDialog] =
@@ -501,15 +506,25 @@ const UpdateProductDialog = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className="md:h-auto md:max-w-7xl">
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          "md:h-auto md:max-w-7xl",
+          isMobile && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none translate-x-0 translate-y-0 flex flex-col",
+          contentClassName
+        )}
+        overlayClassName={overlayClassName}
+      >
+        <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
           <DialogTitle>Cập nhật sản phẩm: {product?.name}</DialogTitle>
           <DialogDescription>
             Điền vào chi tiết phía dưới để cập nhật sản phẩm
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[65vh] overflow-auto md:max-h-[75vh]">
+        <div className={cn(
+          "overflow-auto",
+          isMobile ? "h-full px-4 pb-4 flex-1" : "max-h-[65vh] md:max-h-[75vh]"
+        )}>
           <Form {...form}>
             <form id="update-product" onSubmit={form.handleSubmit(onSubmit)}>
               <div className="mb-3 grid gap-4 md:grid-cols-3">
@@ -1413,7 +1428,7 @@ const UpdateProductDialog = ({
           </Form>
         </div>
 
-        <DialogFooter className="flex gap-2 sm:space-x-0">
+        <DialogFooter className={cn("flex gap-2 sm:space-x-0", isMobile && "pb-4 px-4")}>
           <DialogClose asChild>
             <Button
               type="button"

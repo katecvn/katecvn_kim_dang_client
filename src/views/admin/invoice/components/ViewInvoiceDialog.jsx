@@ -18,9 +18,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, useMemo } from 'react'
 import { statuses, paymentStatuses } from '../data'
 import { statuses as contractStatuses } from '../../sales-contract/data'
 import { receiptStatus } from '../../receipt/data'
@@ -52,6 +59,7 @@ import { toast } from 'sonner'
 import ConfirmActionButton from '@/components/custom/ConfirmActionButton'
 import UpdateCreditNoteDialog from './UpdateCreditNoteDialog'
 import UpdateInvoiceStatusDialog from './UpdateInvoiceStatusDialog'
+import InvoiceDialog from './InvoiceDialog'
 import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components/DeleteWarehouseReceiptDialog'
 import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/components/UpdateWarehouseReceiptStatusDialog'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
@@ -76,7 +84,7 @@ import CreateSalesContractDialog from '../../sales-contract/components/CreateSal
 import { buildAgreementData } from '../helpers/BuildAgreementData'
 import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 
-const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
+const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, ...props }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const [invoice, setInvoice] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -88,6 +96,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
   const [openUpdateCN, setOpenUpdateCN] = useState(false)
   const [editingCN, setEditingCN] = useState(null)
   const isViewInvoiceDialog = true
+
+
 
   // State for updating invoice status
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
@@ -113,6 +123,43 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
   // State for deleting receipt
   const [showDeleteReceiptDialog, setShowDeleteReceiptDialog] = useState(false)
   const [receiptToDelete, setReceiptToDelete] = useState(null)
+
+  // -- LOGIC FOR MOBILE SELECT STATUS --
+  const isPaid = invoice?.paymentStatus === 'paid'
+  const isLocked = ['delivered', 'rejected'].includes(invoice?.status)
+  const isActionDisabled = isPaid || isLocked
+
+  const filteredStatuses = useMemo(() => {
+    if (!invoice) return []
+    const permissions = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
+    const canReject = permissions.includes('REJECT_INVOICE')
+    const canRevert = permissions.includes('REVERT_INVOICE')
+
+    return statuses.filter((s) => {
+      // Hide 'completed' status as it is automated
+      if (s.value === 'delivered') return false
+
+      // Permission check for 'rejected'
+      if (s.value === 'rejected') {
+        if (!canReject) return false
+        // Only allow switching to 'rejected' if current status is 'pending'
+        if (invoice.status !== 'pending') return false
+      }
+
+      // Permission check for 'pending' (revert)
+      if (s.value === 'pending') {
+        if (!canRevert) return false
+      }
+
+      return true
+    })
+  }, [invoice?.status])
+
+  const handleSelectStatusChange = (val) => {
+    if (invoice?.id) {
+      handleUpdateStatus(val, invoice.id)
+    }
+  }
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -382,7 +429,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
           isViewInvoiceDialog={isViewInvoiceDialog}
           className={cn(
             "md:h-screen md:max-w-full md:z-[10001] md:my-0 md:top-0 md:translate-y-0",
-            !isDesktop && isViewInvoiceDialog && "fixed inset-0 w-screen h-screen top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none z-[9999] translate-x-0 translate-y-0"
+            !isDesktop && isViewInvoiceDialog && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none z-[9999] translate-x-0 translate-y-0 flex flex-col"
           )}>
           <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
             <DialogTitle className={cn(!isDesktop && "text-base")}>
@@ -395,7 +442,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
 
           <div className={cn(
             "overflow-auto",
-            isDesktop ? "max-h-[75vh]" : "h-full px-4 pb-4"
+            isDesktop ? "max-h-[75vh]" : "h-full px-4 pb-4 flex-1"
           )}>
             {loading ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
@@ -645,31 +692,39 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                             </div>
                           </div>
 
-                          <div className="flex justify-start border-t py-2">
+                          <div className="flex justify-start border-t py-2 items-center">
                             <strong>Trạng thái hóa đơn: </strong>
                             {invoice?.status && (
-                              <div
-                                className="ml-2 cursor-pointer"
-                                onClick={() => setShowUpdateStatusDialog(true)}
-                              >
-                                <span
-                                  className={`flex items-center ${statuses.find(
-                                    (status) => status.value === invoice?.status,
-                                  )?.color || ''
-                                    }`}
+                              <div className="ml-2 w-[140px]">
+                                <Select
+                                  value={invoice.status}
+                                  onValueChange={handleSelectStatusChange}
+                                  disabled={isActionDisabled}
                                 >
-                                  {React.createElement(
-                                    statuses.find(
-                                      (status) => status.value === invoice?.status,
-                                    )?.icon,
-                                    { className: 'mr-1 h-4 w-4' },
-                                  )}
-                                  {
-                                    statuses.find(
-                                      (status) => status.value === invoice?.status,
-                                    )?.label
-                                  }
-                                </span>
+                                  <SelectTrigger className="h-7 text-xs px-2 bg-transparent border-input">
+                                    <SelectValue placeholder="Chọn trạng thái">
+                                      {(() => {
+                                        const sObj = statuses.find(s => s.value === invoice.status)
+                                        return sObj ? (
+                                          <span className={`flex items-center gap-1 ${sObj.color}`}>
+                                            {sObj.icon && React.createElement(sObj.icon, { className: 'h-3 w-3' })}
+                                            {sObj.label}
+                                          </span>
+                                        ) : null
+                                      })()}
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent position="popper" align="start" className="w-[140px] z-[100005]">
+                                    {filteredStatuses.map((s) => (
+                                      <SelectItem key={s.value} value={s.value} className="text-xs cursor-pointer">
+                                        <span className={`flex items-center gap-1 ${s.color}`}>
+                                          {s.icon && React.createElement(s.icon, { className: 'h-3 w-3' })}
+                                          {s.label}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </div>
                             )}
                           </div>
@@ -901,202 +956,6 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
 
 
 
-                      {/* ========== PHIẾU XUẤT KHO ========== */}
-                      <>
-                        <Separator className="my-4" />
-
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-semibold">Phiếu xuất kho</h3>
-                            {invoice?.status === 'accepted' ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 gap-1"
-                                onClick={handleCreateWarehouseReceipt}
-                              >
-                                <IconPlus className="h-4 w-4" />
-                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                  Tạo phiếu kho
-                                </span>
-                              </Button>
-                            ) : (
-                              <span className="text-[12px] text-gray-500">Đơn hàng chưa được duyệt</span>
-                            )}
-                          </div>
-
-                          {invoice?.warehouseReceipts && invoice.warehouseReceipts.length > 0 ? (
-                            isDesktop ? (
-                              <div className="overflow-x-auto rounded-lg border">
-                                <Table className="min-w-full">
-                                  <TableHeader>
-                                    <TableRow className="bg-secondary text-xs">
-                                      <TableHead className="w-12">STT</TableHead>
-                                      <TableHead className="min-w-32">Mã phiếu</TableHead>
-                                      <TableHead className="min-w-32">Loại phiếu</TableHead>
-                                      <TableHead className="min-w-32">Trạng thái</TableHead>
-                                      <TableHead className="min-w-32 text-right">Tổng tiền</TableHead>
-                                      <TableHead className="min-w-32">Ngày tạo</TableHead>
-                                      <TableHead className="w-10"></TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {invoice.warehouseReceipts.map((receipt, index) => (
-                                      <TableRow key={receipt.id}>
-                                        <TableCell>{index + 1}</TableCell>
-                                        <TableCell>
-                                          <span
-                                            className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
-                                            onClick={() => handleOpenWarehouseReceiptDetail(receipt.id)}
-                                          >
-                                            {receipt.code}
-                                          </span>
-                                        </TableCell>
-                                        <TableCell>
-                                          {receipt.receiptType === 1
-                                            ? 'Nhập kho'
-                                            : receipt.receiptType === 2
-                                              ? 'Xuất kho'
-                                              : receipt.receiptType === 3
-                                                ? 'Nhập trả hàng'
-                                                : receipt.receiptType}
-                                        </TableCell>
-                                        <TableCell>
-                                          <div
-                                            className="cursor-pointer"
-                                            onClick={() => {
-                                              setSelectedWarehouseReceipt(receipt)
-                                              setShowUpdateWarehouseReceiptStatus(true)
-                                            }}
-                                          >
-                                            <span
-                                              className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
-                                            >
-                                              {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
-                                              {receipt.status === 'draft'
-                                                ? 'Nháp'
-                                                : receipt.status === 'posted'
-                                                  ? 'Đã ghi sổ'
-                                                  : receipt.status}
-                                            </span>
-                                          </div>
-                                        </TableCell>
-                                        <TableCell className="text-right font-semibold">
-                                          {moneyFormat(receipt.totalAmount)}
-                                        </TableCell>
-                                        <TableCell>{dateFormat(receipt.receiptDate)}</TableCell>
-                                        <TableCell>
-                                          {/* Action buttons */}
-                                          <div className="flex items-center justify-end gap-1">
-                                            {receipt.status === 'draft' && (
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                                                onClick={(e) => {
-                                                  e.stopPropagation()
-                                                  setWarehouseReceiptToDelete(receipt)
-                                                  setShowDeleteWarehouseReceiptDialog(true)
-                                                }}
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </Button>
-                                            )}
-                                          </div>
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            ) : (
-                              <div className="space-y-4">
-                                {invoice.warehouseReceipts.map((receipt) => (
-                                  <div key={receipt.id} className="space-y-3 rounded-lg border p-4 text-sm">
-                                    <div className="flex justify-between">
-                                      <strong>Mã phiếu kho:</strong>
-                                      <span
-                                        className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
-                                        onClick={() => handleOpenWarehouseReceiptDetail(receipt.id)}
-                                      >
-                                        {receipt.code}
-                                      </span>
-                                    </div>
-
-                                    <div className="flex justify-between">
-                                      <strong>Loại phiếu:</strong>
-                                      <span className="font-medium">
-                                        {receipt.receiptType === 1
-                                          ? 'Nhập kho'
-                                          : receipt.receiptType === 2
-                                            ? 'Xuất kho'
-                                            : receipt.receiptType === 3
-                                              ? 'Nhập trả hàng'
-                                              : receipt.receiptType}
-                                      </span>
-                                    </div>
-
-                                    <div className="flex justify-between items-center">
-                                      <strong>Trạng thái:</strong>
-                                      <div className='flex items-center gap-2'>
-                                        <div
-                                          className="cursor-pointer"
-                                          onClick={() => {
-                                            setSelectedWarehouseReceipt(receipt)
-                                            setShowUpdateWarehouseReceiptStatus(true)
-                                          }}
-                                        >
-                                          <span
-                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
-                                          >
-                                            {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
-                                            {receipt.status === 'draft'
-                                              ? 'Nháp'
-                                              : receipt.status === 'posted'
-                                                ? 'Đã ghi sổ'
-                                                : receipt.status}
-                                          </span>
-                                        </div>
-                                        {receipt.status === 'draft' && (
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              setWarehouseReceiptToDelete(receipt)
-                                              setShowDeleteWarehouseReceiptDialog(true)
-                                            }}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    <div className="flex justify-between">
-                                      <strong>Ngày phiếu:</strong>
-                                      <span>{dateFormat(receipt.receiptDate)}</span>
-                                    </div>
-
-                                    <div className="flex justify-between border-t pt-2">
-                                      <strong>Tổng tiền:</strong>
-                                      <span className="font-bold text-primary">
-                                        {moneyFormat(receipt.totalAmount)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )
-                          ) : (
-                            <div className="text-center text-sm text-muted-foreground italic py-2">
-                              Chưa có dữ liệu phiếu xuất kho
-                            </div>
-                          )}
-                        </div>
-                      </>
-
                       {/* ========== PHIẾU THU ========== */}
                       <>
                         <Separator className="my-4" />
@@ -1105,14 +964,13 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                           <div className="flex items-center justify-between">
                             <h3 className="font-semibold">Phiếu thu</h3>
                             <Button
-                              variant="outline"
                               size="sm"
-                              className="h-8 gap-1"
+                              className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
                               onClick={handleCreateReceipt}
                             >
                               <IconPlus className="h-4 w-4" />
-                              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                Tạo phiếu thu
+                              <span>
+                                Thêm
                               </span>
                             </Button>
                           </div>
@@ -1297,6 +1155,201 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                           ) : (
                             <div className="text-center text-sm text-muted-foreground italic py-2">
                               Chưa có dữ liệu phiếu thu
+                            </div>
+                          )}
+                        </div>
+                      </>
+
+                      {/* ========== PHIẾU XUẤT KHO ========== */}
+                      <>
+                        <Separator className="my-4" />
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">Phiếu xuất kho</h3>
+                            {invoice?.status === 'accepted' ? (
+                              <Button
+                                size="sm"
+                                className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
+                                onClick={handleCreateWarehouseReceipt}
+                              >
+                                <IconPlus className="h-4 w-4" />
+                                <span>
+                                  Thêm
+                                </span>
+                              </Button>
+                            ) : (
+                              <span className="text-[12px] text-gray-500">Đơn hàng chưa được duyệt</span>
+                            )}
+                          </div>
+
+                          {invoice?.warehouseReceipts && invoice.warehouseReceipts.length > 0 ? (
+                            isDesktop ? (
+                              <div className="overflow-x-auto rounded-lg border">
+                                <Table className="min-w-full">
+                                  <TableHeader>
+                                    <TableRow className="bg-secondary text-xs">
+                                      <TableHead className="w-12">STT</TableHead>
+                                      <TableHead className="min-w-32">Mã phiếu</TableHead>
+                                      <TableHead className="min-w-32">Loại phiếu</TableHead>
+                                      <TableHead className="min-w-32">Trạng thái</TableHead>
+                                      <TableHead className="min-w-32 text-right">Tổng tiền</TableHead>
+                                      <TableHead className="min-w-32">Ngày tạo</TableHead>
+                                      <TableHead className="w-10"></TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {invoice.warehouseReceipts.map((receipt, index) => (
+                                      <TableRow key={receipt.id}>
+                                        <TableCell>{index + 1}</TableCell>
+                                        <TableCell>
+                                          <span
+                                            className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
+                                            onClick={() => handleOpenWarehouseReceiptDetail(receipt.id)}
+                                          >
+                                            {receipt.code}
+                                          </span>
+                                        </TableCell>
+                                        <TableCell>
+                                          {receipt.receiptType === 1
+                                            ? 'Nhập kho'
+                                            : receipt.receiptType === 2
+                                              ? 'Xuất kho'
+                                              : receipt.receiptType === 3
+                                                ? 'Nhập trả hàng'
+                                                : receipt.receiptType}
+                                        </TableCell>
+                                        <TableCell>
+                                          <div
+                                            className="cursor-pointer"
+                                            onClick={() => {
+                                              setSelectedWarehouseReceipt(receipt)
+                                              setShowUpdateWarehouseReceiptStatus(true)
+                                            }}
+                                          >
+                                            <span
+                                              className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
+                                            >
+                                              {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
+                                              {receipt.status === 'draft'
+                                                ? 'Nháp'
+                                                : receipt.status === 'posted'
+                                                  ? 'Đã ghi sổ'
+                                                  : receipt.status}
+                                            </span>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="text-right font-semibold">
+                                          {moneyFormat(receipt.totalAmount)}
+                                        </TableCell>
+                                        <TableCell>{dateFormat(receipt.receiptDate)}</TableCell>
+                                        <TableCell>
+                                          {/* Action buttons */}
+                                          <div className="flex items-center justify-end gap-1">
+                                            {receipt.status === 'draft' && (
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  setWarehouseReceiptToDelete(receipt)
+                                                  setShowDeleteWarehouseReceiptDialog(true)
+                                                }}
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            )}
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : (
+                              <div className="space-y-4">
+                                {invoice.warehouseReceipts.map((receipt) => (
+                                  <div key={receipt.id} className="space-y-3 rounded-lg border p-4 text-sm">
+                                    <div className="flex justify-between">
+                                      <strong>Mã phiếu kho:</strong>
+                                      <span
+                                        className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                        onClick={() => handleOpenWarehouseReceiptDetail(receipt.id)}
+                                      >
+                                        {receipt.code}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex justify-between">
+                                      <strong>Loại phiếu:</strong>
+                                      <span className="font-medium">
+                                        {receipt.receiptType === 1
+                                          ? 'Nhập kho'
+                                          : receipt.receiptType === 2
+                                            ? 'Xuất kho'
+                                            : receipt.receiptType === 3
+                                              ? 'Nhập trả hàng'
+                                              : receipt.receiptType}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex justify-between items-center">
+                                      <strong>Trạng thái:</strong>
+                                      <div className='flex items-center gap-2'>
+                                        <div
+                                          className="cursor-pointer"
+                                          onClick={() => {
+                                            setSelectedWarehouseReceipt(receipt)
+                                            setShowUpdateWarehouseReceiptStatus(true)
+                                          }}
+                                        >
+                                          <span
+                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
+                                          >
+                                            {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
+                                            {receipt.status === 'draft'
+                                              ? 'Nháp'
+                                              : receipt.status === 'posted'
+                                                ? 'Đã ghi sổ'
+                                                : receipt.status}
+                                          </span>
+                                        </div>
+                                        {receipt.status === 'draft' && (
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              setWarehouseReceiptToDelete(receipt)
+                                              setShowDeleteWarehouseReceiptDialog(true)
+                                            }}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex justify-between">
+                                      <strong>Ngày phiếu:</strong>
+                                      <span>{dateFormat(receipt.receiptDate)}</span>
+                                    </div>
+
+                                    <div className="flex justify-between border-t pt-2">
+                                      <strong>Tổng tiền:</strong>
+                                      <span className="font-bold text-primary">
+                                        {moneyFormat(receipt.totalAmount)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          ) : (
+                            <div className="text-center text-sm text-muted-foreground italic py-2">
+                              Chưa có dữ liệu phiếu xuất kho
                             </div>
                           )}
                         </div>
@@ -1720,7 +1773,10 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
             )}
           </div>
 
-          <DialogFooter className="flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0">
+          <DialogFooter className={cn(
+            "flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0",
+            !isDesktop && "pb-4 px-4"
+          )}>
             {invoice && (
               <>
                 <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handlePrintInvoice}>
@@ -1737,6 +1793,13 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
                     Tạo Hợp Đồng
                   </Button>
                 )}
+
+                <Button
+                  className="bg-blue-600 text-white hover:bg-blue-700"
+                  onClick={() => onEdit?.()}
+                >
+                  Sửa
+                </Button>
               </>
             )}
             <DialogClose asChild>
@@ -1746,46 +1809,50 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
             </DialogClose>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       {/* InstallmentPreviewDialog outside Dialog to avoid z-index issues on mobile */}
-      {installmentData && (
-        <InstallmentPreviewDialog
-          open={showInstallmentPreview}
-          onOpenChange={(open) => {
-            if (!open) setShowInstallmentPreview(false)
-          }}
-          initialData={installmentData}
-          onConfirm={async (finalData) => {
-            try {
-              setInstallmentExporting(true)
-              await exportInstallmentWord(finalData, installmentFileName)
-              toast.success('Đã xuất hợp đồng trả chậm thành công')
-              setShowInstallmentPreview(false)
-            } catch (error) {
-              console.error('Export installment error:', error)
-              toast.error('Xuất hợp đồng trả chậm thất bại')
-            } finally {
-              setInstallmentExporting(false)
-            }
-          }}
-          contentClassName="z-[100020]"
-          overlayClassName="z-[100019]"
-        />
-      )}
+      {
+        installmentData && (
+          <InstallmentPreviewDialog
+            open={showInstallmentPreview}
+            onOpenChange={(open) => {
+              if (!open) setShowInstallmentPreview(false)
+            }}
+            initialData={installmentData}
+            onConfirm={async (finalData) => {
+              try {
+                setInstallmentExporting(true)
+                await exportInstallmentWord(finalData, installmentFileName)
+                toast.success('Đã xuất hợp đồng trả chậm thành công')
+                setShowInstallmentPreview(false)
+              } catch (error) {
+                console.error('Export installment error:', error)
+                toast.error('Xuất hợp đồng trả chậm thất bại')
+              } finally {
+                setInstallmentExporting(false)
+              }
+            }}
+            contentClassName="z-[100020]"
+            overlayClassName="z-[100019]"
+          />
+        )
+      }
 
-      {selectedReceipt && (
-        <UpdateReceiptStatusDialog
-          open={showUpdateReceiptStatus}
-          onOpenChange={setShowUpdateReceiptStatus}
-          receiptId={selectedReceipt.code || selectedReceipt.id}
-          currentStatus={selectedReceipt.status}
-          statuses={receiptStatus}
-          onSubmit={(status) => handleUpdateReceiptStatus(status, selectedReceipt.id)}
-          contentClassName="z-[10003]"
-          overlayClassName="z-[10002]"
-        />
-      )}
+      {
+        selectedReceipt && (
+          <UpdateReceiptStatusDialog
+            open={showUpdateReceiptStatus}
+            onOpenChange={setShowUpdateReceiptStatus}
+            receiptId={selectedReceipt.code || selectedReceipt.id}
+            currentStatus={selectedReceipt.status}
+            statuses={receiptStatus}
+            onSubmit={(status) => handleUpdateReceiptStatus(status, selectedReceipt.id)}
+            contentClassName="z-[10003]"
+            overlayClassName="z-[10002]"
+          />
+        )
+      }
 
       {/* Sales Contract Detail Dialog (Nested) */}
       <ViewSalesContractDialog
@@ -1798,85 +1865,97 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
       />
 
       {/* Delete Receipt Dialog */}
-      {receiptToDelete && (
-        <DeleteReceiptDialog
-          open={showDeleteReceiptDialog}
-          onOpenChange={setShowDeleteReceiptDialog}
-          receipt={receiptToDelete}
-          showTrigger={false}
-          onSuccess={() => {
-            setShowDeleteReceiptDialog(false)
-            fetchData()
-          }}
-          contentClassName="z-[10003]"
-          overlayClassName="z-[10002]"
-        />
-      )}
+      {
+        receiptToDelete && (
+          <DeleteReceiptDialog
+            open={showDeleteReceiptDialog}
+            onOpenChange={setShowDeleteReceiptDialog}
+            receipt={receiptToDelete}
+            showTrigger={false}
+            onSuccess={() => {
+              setShowDeleteReceiptDialog(false)
+              fetchData()
+            }}
+            contentClassName="z-[10003]"
+            overlayClassName="z-[10002]"
+          />
+        )
+      }
 
 
       {/* Update Invoice Status Dialog */}
-      {showUpdateStatusDialog && (
-        <UpdateInvoiceStatusDialog
-          open={showUpdateStatusDialog}
-          onOpenChange={setShowUpdateStatusDialog}
-          invoiceId={invoice?.id}
-          currentStatus={invoice?.status}
-          paymentStatus={invoice?.paymentStatus}
-          statuses={statuses}
-          onSubmit={handleUpdateStatus}
-          className="z-[10003]"
-          overlayClassName="z-[10002]"
-        />
-      )}
+      {
+        showUpdateStatusDialog && (
+          <UpdateInvoiceStatusDialog
+            open={showUpdateStatusDialog}
+            onOpenChange={setShowUpdateStatusDialog}
+            invoiceId={invoice?.id}
+            currentStatus={invoice?.status}
+            paymentStatus={invoice?.paymentStatus}
+            statuses={statuses}
+            onSubmit={handleUpdateStatus}
+            className="z-[10003]"
+            overlayClassName="z-[10002]"
+          />
+        )
+      }
 
       {/* View Warehouse Receipt Detail Dialog */}
-      {showWarehouseReceiptDetailDialog && (
-        <ViewWarehouseReceiptDialog
-          open={showWarehouseReceiptDetailDialog}
-          onOpenChange={setShowWarehouseReceiptDetailDialog}
-          receiptId={selectedWarehouseReceiptDetailId}
-          contentClassName="!z-[10005]"
-          overlayClassName="z-[10004]"
-        />
-      )}
+      {
+        showWarehouseReceiptDetailDialog && (
+          <ViewWarehouseReceiptDialog
+            open={showWarehouseReceiptDetailDialog}
+            onOpenChange={setShowWarehouseReceiptDetailDialog}
+            receiptId={selectedWarehouseReceiptDetailId}
+            contentClassName="!z-[10005]"
+            overlayClassName="z-[10004]"
+          />
+        )
+      }
 
       {/* View Receipt Detail Dialog */}
-      {showReceiptDetailDialog && (
-        <ViewReceiptDialog
-          open={showReceiptDetailDialog}
-          onOpenChange={setShowReceiptDetailDialog}
-          receipt={selectedReceiptDetail}
-          contentClassName="z-[10005]"
-          overlayClassName="z-[10004]"
-        />
-      )}
+      {
+        showReceiptDetailDialog && (
+          <ViewReceiptDialog
+            open={showReceiptDetailDialog}
+            onOpenChange={setShowReceiptDetailDialog}
+            receipt={selectedReceiptDetail}
+            contentClassName="z-[10005]"
+            overlayClassName="z-[10004]"
+          />
+        )
+      }
 
-      {selectedWarehouseReceipt && (
-        <UpdateWarehouseReceiptStatusDialog
-          open={showUpdateWarehouseReceiptStatus}
-          onOpenChange={setShowUpdateWarehouseReceiptStatus}
-          receiptId={selectedWarehouseReceipt.id}
-          receiptCode={selectedWarehouseReceipt.code}
-          currentStatus={selectedWarehouseReceipt.status}
-          statuses={warehouseReceiptStatuses}
-          onSubmit={handleUpdateWarehouseReceiptStatus}
-          contentClassName="z-[10003]"
-          overlayClassName="z-[10002]"
-        />
-      )}
+      {
+        selectedWarehouseReceipt && (
+          <UpdateWarehouseReceiptStatusDialog
+            open={showUpdateWarehouseReceiptStatus}
+            onOpenChange={setShowUpdateWarehouseReceiptStatus}
+            receiptId={selectedWarehouseReceipt.id}
+            receiptCode={selectedWarehouseReceipt.code}
+            currentStatus={selectedWarehouseReceipt.status}
+            statuses={warehouseReceiptStatuses}
+            onSubmit={handleUpdateWarehouseReceiptStatus}
+            contentClassName="z-[10003]"
+            overlayClassName="z-[10002]"
+          />
+        )
+      }
 
-      {warehouseReceiptToDelete && (
-        <DeleteWarehouseReceiptDialog
-          open={showDeleteWarehouseReceiptDialog}
-          onOpenChange={setShowDeleteWarehouseReceiptDialog}
-          receipt={warehouseReceiptToDelete}
-          showTrigger={false}
-          onSuccess={() => {
-            setShowDeleteWarehouseReceiptDialog(false)
-            fetchData()
-          }}
-        />
-      )}
+      {
+        warehouseReceiptToDelete && (
+          <DeleteWarehouseReceiptDialog
+            open={showDeleteWarehouseReceiptDialog}
+            onOpenChange={setShowDeleteWarehouseReceiptDialog}
+            receipt={warehouseReceiptToDelete}
+            showTrigger={false}
+            onSuccess={() => {
+              setShowDeleteWarehouseReceiptDialog(false)
+              fetchData()
+            }}
+          />
+        )
+      }
 
       {/* Create Warehouse Receipt Confirm Dialog */}
       <ConfirmWarehouseReceiptDialog
@@ -1906,60 +1985,69 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, ...props }) => {
 
 
       {/* Print Invoice View */}
-      {printInvoice && setting && (
-        <PrintInvoiceView invoice={printInvoice} setting={setting} />
-      )}
+      {
+        printInvoice && setting && (
+          <PrintInvoiceView invoice={printInvoice} setting={setting} />
+        )
+      }
 
       {/* Agreement Preview Dialog */}
-      {agreementData && (
-        <AgreementPreviewDialog
-          open={showAgreementPreview}
-          onOpenChange={(open) => {
-            if (!open) setShowAgreementPreview(false)
-          }}
-          initialData={agreementData}
-          onConfirm={async (finalData) => {
-            try {
-              setAgreementExporting(true)
-              await exportAgreementPdf(finalData, agreementFileName)
-              toast.success('Đã in thỏa thuận mua bán thành công')
-              setShowAgreementPreview(false)
-            } catch (error) {
-              console.error('Export agreement error:', error)
-              toast.error('In thỏa thuận mua bán thất bại')
-            } finally {
-              setAgreementExporting(false)
-            }
-          }}
-          contentClassName="z-[100020]"
-          overlayClassName="z-[100019]"
-        />
-      )}
+      {
+        agreementData && (
+          <AgreementPreviewDialog
+            open={showAgreementPreview}
+            onOpenChange={(open) => {
+              if (!open) setShowAgreementPreview(false)
+            }}
+            initialData={agreementData}
+            onConfirm={async (finalData) => {
+              try {
+                setAgreementExporting(true)
+                await exportAgreementPdf(finalData, agreementFileName)
+                toast.success('Đã in thỏa thuận mua bán thành công')
+                setShowAgreementPreview(false)
+              } catch (error) {
+                console.error('Export agreement error:', error)
+                toast.error('In thỏa thuận mua bán thất bại')
+              } finally {
+                setAgreementExporting(false)
+              }
+            }}
+            contentClassName="z-[100020]"
+            overlayClassName="z-[100019]"
+          />
+        )
+      }
 
       {/* Create Sales Contract Dialog */}
-      {showCreateSalesContractDialog && (
-        <CreateSalesContractDialog
-          invoiceIds={[invoice?.id]}
-          open={showCreateSalesContractDialog}
-          onOpenChange={setShowCreateSalesContractDialog}
-          showTrigger={false}
-          table={{ resetRowSelection: () => { } }}
-          contentClassName="z-[100020]"
-          overlayClassName="z-[100019]"
-        />
-      )}
+      {
+        showCreateSalesContractDialog && (
+          <CreateSalesContractDialog
+            invoiceIds={[invoice?.id]}
+            open={showCreateSalesContractDialog}
+            onOpenChange={setShowCreateSalesContractDialog}
+            showTrigger={false}
+            table={{ resetRowSelection: () => { } }}
+            contentClassName="z-[100020]"
+            overlayClassName="z-[100019]"
+          />
+        )
+      }
 
       {/* View Product Dialog */}
-      {selectedProductId && (
-        <ViewProductDialog
-          open={showViewProductDialog}
-          onOpenChange={setShowViewProductDialog}
-          productId={selectedProductId}
-          showTrigger={false}
-          contentClassName="z-[100020]"
-          overlayClassName="z-[100019]"
-        />
-      )}
+      {
+        selectedProductId && (
+          <ViewProductDialog
+            open={showViewProductDialog}
+            onOpenChange={setShowViewProductDialog}
+            productId={selectedProductId}
+            showTrigger={false}
+            contentClassName="z-[100020]"
+            overlayClassName="z-[100019]"
+          />
+        )
+      }
+
     </>
   )
 }

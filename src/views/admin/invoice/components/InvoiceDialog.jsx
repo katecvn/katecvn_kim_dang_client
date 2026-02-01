@@ -1355,7 +1355,7 @@ const InvoiceDialog = ({
   if (!isDesktop && open) {
     return (
       <>
-        <div className="fixed inset-0 top-14 bottom-16 bg-background z-40 flex flex-col pt-0">
+        <div className={cn("fixed inset-0 top-14 bottom-16 bg-background z-40 flex flex-col pt-0", props.contentClassName)}>
           {/* Mobile Header */}
           <div className="px-4 py-3 border-b flex items-center justify-between bg-background">
             <div className="flex items-center gap-2">
@@ -1639,54 +1639,62 @@ const InvoiceDialog = ({
             customer={selectedCustomer}
           />
         )}
-        {showCreateCustomerDialog && (
-          <CreateCustomerDialog
-            open={showCreateCustomerDialog}
-            onOpenChange={setShowCreateCustomerDialog}
-          />
-        )}
-        {showCreateProductDialog && (
-          <CreateProductDialog
-            open={showCreateProductDialog}
-            onOpenChange={setShowCreateProductDialog}
-          />
-        )}
+        {
+          showCreateCustomerDialog && (
+            <CreateCustomerDialog
+              open={showCreateCustomerDialog}
+              onOpenChange={setShowCreateCustomerDialog}
+            />
+          )
+        }
+        {
+          showCreateProductDialog && (
+            <CreateProductDialog
+              open={showCreateProductDialog}
+              onOpenChange={setShowCreateProductDialog}
+            />
+          )
+        }
 
-        {invoice && generalInformation && (
-          <PrintInvoiceView invoice={invoice} setting={generalInformation} />
-        )}
+        {
+          invoice && generalInformation && (
+            <PrintInvoiceView invoice={invoice} setting={generalInformation} />
+          )
+        }
 
-        {agreementData && (
-          <AgreementPreviewDialog
-            open={showAgreementPreview}
-            onOpenChange={(open) => {
-              if (!open) {
-                setShowAgreementPreview(false)
-                setIsPrintContract(false) // Reset flag
-                form.reset()
-                onOpenChange?.(false)
-              }
-            }}
-            initialData={agreementData}
-            overlayClassName="z-[10001]"
-            contentClassName="z-[10002]"
-            onConfirm={async (finalData) => {
-              try {
-                // setAgreementExporting(true) // Helper state not strictly needed if handle in component or ignore
-                await exportAgreementPdf(finalData, agreementFileName)
-                toast.success('Đã in thỏa thuận mua bán thành công')
+        {
+          agreementData && (
+            <AgreementPreviewDialog
+              open={showAgreementPreview}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setShowAgreementPreview(false)
+                  setIsPrintContract(false) // Reset flag
+                  form.reset()
+                  onOpenChange?.(false)
+                }
+              }}
+              initialData={agreementData}
+              overlayClassName="z-[10001]"
+              contentClassName="z-[10002]"
+              onConfirm={async (finalData) => {
+                try {
+                  // setAgreementExporting(true) // Helper state not strictly needed if handle in component or ignore
+                  await exportAgreementPdf(finalData, agreementFileName)
+                  toast.success('Đã in thỏa thuận mua bán thành công')
 
-                setShowAgreementPreview(false)
-                setIsPrintContract(false)
-                form.reset()
-                onOpenChange?.(false)
-              } catch (error) {
-                console.error('Export agreement error:', error)
-                toast.error('In thỏa thuận mua bán thất bại')
-              }
-            }}
-          />
-        )}
+                  setShowAgreementPreview(false)
+                  setIsPrintContract(false)
+                  form.reset()
+                  onOpenChange?.(false)
+                } catch (error) {
+                  console.error('Export agreement error:', error)
+                  toast.error('In thỏa thuận mua bán thất bại')
+                }
+              }}
+            />
+          )
+        }
       </>
     )
   }

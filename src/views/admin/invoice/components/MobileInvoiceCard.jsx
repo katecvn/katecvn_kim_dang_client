@@ -365,6 +365,10 @@ const MobileInvoiceCard = ({
           onOpenChange={setShowViewDialog}
           invoiceId={invoice.id}
           showTrigger={false}
+          onEdit={() => {
+            setShowViewDialog(false)
+            setTimeout(() => setShowUpdateDialog(true), 100)
+          }}
         />
       )}
 

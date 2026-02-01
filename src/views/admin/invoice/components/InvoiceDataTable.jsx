@@ -67,9 +67,29 @@ const InvoiceDataTable = ({
     getFacetedUniqueValues: getFacetedUniqueValues(),
     globalFilterFn: (row, columnId, filterValue) => {
       if (!filterValue) return true
+
+      const filterNorm = normalizeText(filterValue)
+
+      // 1. Check Customer attributes (Name, Phone, TaxCode)
+      // We check this for every column iteration to ensure that if the customer matches,
+      // the row is included regardless of which column is being processed.
+      const customer = row.original.customer
+      if (customer) {
+        const customerText = normalizeText(
+          `${customer.name || ''} ${customer.taxCode || ''} ${customer.phone || ''}`
+        )
+        if (customerText.includes(filterNorm)) {
+          return true
+        }
+      }
+
+      // 2. Check the specific column value
       const value = row.getValue(columnId)
-      if (value == null) return false
-      return value.toString().includes(normalizeText(filterValue))
+      if (value != null && typeof value !== 'object') {
+        return normalizeText(String(value)).includes(filterNorm)
+      }
+
+      return false
     },
   })
 

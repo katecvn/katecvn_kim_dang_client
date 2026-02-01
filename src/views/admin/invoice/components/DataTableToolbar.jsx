@@ -77,10 +77,10 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
       <div className="space-y-2">
         {/* Search section */}
         <Input
-          placeholder="Tìm mã HĐ hoặc tên KH"
-          value={table.getColumn('code')?.getFilterValue() || ''}
+          placeholder="Tìm mã ĐB hoặc tên KH"
+          value={table.getState().globalFilter || ''}
           onChange={(e) => {
-            table.getColumn('code')?.setFilterValue(e.target.value)
+            table.setGlobalFilter(e.target.value)
           }}
           className="h-8 w-full text-sm"
         />

@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { useDispatch } from 'react-redux'
 import { updateInvoiceStatus } from '@/stores/InvoiceSlice'
 import UpdateInvoiceStatusDialog from './UpdateInvoiceStatusDialog'
+import InvoiceDialog from './InvoiceDialog'
 
 export const columns = [
   {
@@ -48,6 +49,7 @@ export const columns = [
     ),
     cell: function Cell({ row }) {
       const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false)
+      const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
       const credit = row.original?.creditNotes || []
 
       return (
@@ -57,6 +59,21 @@ export const columns = [
               <ViewInvoiceDialog
                 open={showViewInvoiceDialog}
                 onOpenChange={setShowViewInvoiceDialog}
+                invoiceId={row.original.id}
+                showTrigger={false}
+                onEdit={() => {
+                  setShowViewInvoiceDialog(false)
+                  setTimeout(() => {
+                    setShowUpdateInvoiceDialog(true)
+                  }, 100)
+                }}
+              />
+            )}
+
+            {showUpdateInvoiceDialog && (
+              <InvoiceDialog
+                open={showUpdateInvoiceDialog}
+                onOpenChange={setShowUpdateInvoiceDialog}
                 invoiceId={row.original.id}
                 showTrigger={false}
               />

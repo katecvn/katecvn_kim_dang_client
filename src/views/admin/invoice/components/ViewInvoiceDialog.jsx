@@ -49,7 +49,7 @@ import {
   getCreditNotesByInvoiceId,
   updateCreditNoteStatus,
 } from '@/stores/CreditNoteSlice'
-import { updateInvoiceStatus } from '@/stores/InvoiceSlice'
+import { updateInvoiceStatus, deleteInvoice } from '@/stores/InvoiceSlice'
 import {
   deleteWarehouseReceipt,
   updateWarehouseReceipt,
@@ -84,7 +84,7 @@ import CreateSalesContractDialog from '../../sales-contract/components/CreateSal
 import { buildAgreementData } from '../helpers/BuildAgreementData'
 import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 
-const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, ...props }) => {
+const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClassName, overlayClassName, ...props }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const [invoice, setInvoice] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -96,6 +96,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, ...props }) 
   const [openUpdateCN, setOpenUpdateCN] = useState(false)
   const [editingCN, setEditingCN] = useState(null)
   const isViewInvoiceDialog = true
+
+
 
 
 
@@ -129,6 +131,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, ...props }) 
   const isLocked = ['delivered', 'rejected'].includes(invoice?.status)
   const isActionDisabled = isPaid || isLocked
 
+  const permissions = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
+  const canDelete = permissions.includes('DELETE_INVOICE')
+
   const filteredStatuses = useMemo(() => {
     if (!invoice) return []
     const permissions = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
@@ -158,6 +163,17 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, ...props }) 
   const handleSelectStatusChange = (val) => {
     if (invoice?.id) {
       handleUpdateStatus(val, invoice.id)
+    }
+  }
+
+  const handleDeleteInvoice = async () => {
+    try {
+      await dispatch(deleteInvoice(invoiceId)).unwrap()
+      toast.success('Xóa hóa đơn thành công')
+      props.onOpenChange(false) // Close the ViewInvoiceDialog
+    } catch (error) {
+      console.error('Delete invoice error:', error)
+      toast.error('Xóa hóa đơn thất bại')
     }
   }
 
@@ -429,8 +445,11 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, ...props }) 
           isViewInvoiceDialog={isViewInvoiceDialog}
           className={cn(
             "md:h-screen md:max-w-full md:z-[10001] md:my-0 md:top-0 md:translate-y-0",
-            !isDesktop && isViewInvoiceDialog && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none z-[9999] translate-x-0 translate-y-0 flex flex-col"
-          )}>
+            !isDesktop && isViewInvoiceDialog && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none z-[9999] translate-x-0 translate-y-0 flex flex-col",
+            contentClassName
+          )}
+          overlayClassName={overlayClassName}
+        >
           <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
             <DialogTitle className={cn(!isDesktop && "text-base")}>
               Thông tin chi tiết hóa đơn: {invoice?.code}
@@ -1775,35 +1794,74 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, ...props }) 
 
           <DialogFooter className={cn(
             "flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0",
-            !isDesktop && "pb-4 px-4"
+            !isDesktop && "grid grid-cols-2 gap-2 pb-4 px-4"
           )}>
             {invoice && (
               <>
-                <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handlePrintInvoice}>
+                <Button
+                  size={!isDesktop ? "sm" : "default"}
+                  className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
+                  onClick={handlePrintInvoice}
+                >
                   In Hóa Đơn
                 </Button>
-                <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handlePrintAgreement}>
+                <Button
+                  size={!isDesktop ? "sm" : "default"}
+                  className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
+                  onClick={handlePrintAgreement}
+                >
                   In Thỏa Thuận
                 </Button>
-                <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handlePrintContract}>
+                <Button
+                  size={!isDesktop ? "sm" : "default"}
+                  className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
+                  onClick={handlePrintContract}
+                >
                   In Hợp Đồng
                 </Button>
                 {!invoice.salesContract && (
-                  <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handleCreateSalesContract}>
+                  <Button
+                    size={!isDesktop ? "sm" : "default"}
+                    className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
+                    onClick={handleCreateSalesContract}
+                  >
                     Tạo Hợp Đồng
                   </Button>
                 )}
 
                 <Button
-                  className="bg-blue-600 text-white hover:bg-blue-700"
+                  size={!isDesktop ? "sm" : "default"}
+                  className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
                   onClick={() => onEdit?.()}
                 >
                   Sửa
                 </Button>
+
+                {invoice.status === 'pending' && canDelete && (
+                  <ConfirmActionButton
+                    title="Xác nhận xóa"
+                    description="Bạn có chắc chắn muốn xóa hóa đơn này? Hành động này không thể hoàn tác."
+                    confirmText="Xóa"
+                    onConfirm={handleDeleteInvoice}
+                  >
+                    <Button
+                      variant="destructive"
+                      size={!isDesktop ? "sm" : "default"}
+                      className={cn(!isDesktop && "w-full")}
+                    >
+                      Xóa
+                    </Button>
+                  </ConfirmActionButton>
+                )}
               </>
             )}
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button
+                type="button"
+                variant="outline"
+                size={!isDesktop ? "sm" : "default"}
+                className={cn(!isDesktop && "w-full col-span-2")}
+              >
                 Đóng
               </Button>
             </DialogClose>

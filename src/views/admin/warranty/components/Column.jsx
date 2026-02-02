@@ -5,6 +5,7 @@ import { dateFormat } from '@/utils/date-format'
 import { normalizeText } from '@/utils/normalize-text'
 import { statuses } from '../data'
 import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
+import InvoiceDialog from '../../invoice/components/InvoiceDialog'
 import Can from '@/utils/can'
 import { useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -42,6 +43,7 @@ export const columns = [
     ),
     cell: function Cell({ row }) {
       const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false)
+      const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
       const code = row.original.invoice?.code
 
       return (
@@ -51,6 +53,21 @@ export const columns = [
               <ViewInvoiceDialog
                 open={showViewInvoiceDialog}
                 onOpenChange={setShowViewInvoiceDialog}
+                invoiceId={row.original.invoiceId}
+                showTrigger={false}
+                onEdit={() => {
+                  setShowViewInvoiceDialog(false)
+                  setTimeout(() => {
+                    setShowUpdateInvoiceDialog(true)
+                  }, 100)
+                }}
+              />
+            )}
+
+            {showUpdateInvoiceDialog && (
+              <InvoiceDialog
+                open={showUpdateInvoiceDialog}
+                onOpenChange={setShowUpdateInvoiceDialog}
                 invoiceId={row.original.invoiceId}
                 showTrigger={false}
               />

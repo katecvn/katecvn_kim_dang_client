@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom'
 import { columns } from './components/Column'
 import InvoiceDataTable from './components/InvoiceDataTable'
 import ViewInvoiceDialog from './components/ViewInvoiceDialog'
+import InvoiceDialog from './components/InvoiceDialog'
 import {
   addHours,
   endOfDay,
@@ -23,6 +24,8 @@ const InvoicePage = () => {
 
   const [searchParams, setSearchParams] = useSearchParams()
   const [viewInvoiceId, setViewInvoiceId] = useState(null)
+  const [updateInvoiceId, setUpdateInvoiceId] = useState(null)
+  const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
 
   const [filters, setFilters] = useState({
     fromDate: addHours(startOfDay(startOfMonth(current)), 12),
@@ -97,6 +100,25 @@ const InvoicePage = () => {
               }
             }}
             invoiceId={viewInvoiceId}
+            showTrigger={false}
+            onEdit={() => {
+              setUpdateInvoiceId(viewInvoiceId)
+              setViewInvoiceId(null)
+              searchParams.delete('view')
+              setSearchParams(searchParams)
+              setTimeout(() => {
+                setShowUpdateInvoiceDialog(true)
+              }, 100)
+            }}
+          />
+        )}
+
+        {/* Update Invoice Dialog */}
+        {showUpdateInvoiceDialog && updateInvoiceId && (
+          <InvoiceDialog
+            open={showUpdateInvoiceDialog}
+            onOpenChange={setShowUpdateInvoiceDialog}
+            invoiceId={updateInvoiceId}
             showTrigger={false}
           />
         )}

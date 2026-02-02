@@ -12,6 +12,7 @@ import { CustomerDetailPagination } from './CustomerDetailPagination'
 import { getCustomerInvoices } from '@/api/customer'
 import { statuses, invoiceTypes } from '../data'
 import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
+import InvoiceDialog from '../../invoice/components/InvoiceDialog'
 import Can from '@/utils/can'
 
 const InvoiceHistoryTab = ({ customerId, dateFrom, dateTo, status }) => {
@@ -21,6 +22,7 @@ const InvoiceHistoryTab = ({ customerId, dateFrom, dateTo, status }) => {
   const [totalItems, setTotalItems] = useState(0)
   const [summary, setSummary] = useState({ subTotal: 0, amount: 0 })
   const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false)
+  const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
 
   useEffect(() => {
@@ -163,6 +165,21 @@ const InvoiceHistoryTab = ({ customerId, dateFrom, dateTo, status }) => {
           <ViewInvoiceDialog
             open={showViewInvoiceDialog}
             onOpenChange={setShowViewInvoiceDialog}
+            invoiceId={selectedInvoiceId}
+            showTrigger={false}
+            onEdit={() => {
+              setShowViewInvoiceDialog(false)
+              setTimeout(() => {
+                setShowUpdateInvoiceDialog(true)
+              }, 100)
+            }}
+          />
+        )}
+
+        {showUpdateInvoiceDialog && selectedInvoiceId && (
+          <InvoiceDialog
+            open={showUpdateInvoiceDialog}
+            onOpenChange={setShowUpdateInvoiceDialog}
             invoiceId={selectedInvoiceId}
             showTrigger={false}
           />

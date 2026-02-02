@@ -312,6 +312,12 @@ const DataTableRowActions = ({ row }) => {
           onOpenChange={setShowViewInvoiceDialog}
           invoiceId={row.original.id}
           showTrigger={false}
+          onEdit={() => {
+            setShowViewInvoiceDialog(false)
+            setTimeout(() => {
+              setShowUpdatePendingInvoiceDialog(true)
+            }, 100)
+          }}
         />
       )}
 

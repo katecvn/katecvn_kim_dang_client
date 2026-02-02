@@ -33,6 +33,7 @@ import { Mail, MapPin, CreditCard, Printer } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import React from 'react'
 import ViewInvoiceDialog from '@/views/admin/invoice/components/ViewInvoiceDialog'
+import InvoiceDialog from '@/views/admin/invoice/components/InvoiceDialog'
 import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
 import InstallmentPreviewDialog from '../../invoice/components/InstallmentPreviewDialog'
 import LiquidateContractDialog from './LiquidateContractDialog'
@@ -40,6 +41,14 @@ import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWo
 import { Package } from 'lucide-react'
 import { getPublicUrl } from '@/utils/file'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { updateInvoiceStatus } from '@/stores/InvoiceSlice'
 
 const ViewSalesContractDialog = ({
   open,
@@ -56,6 +65,8 @@ const ViewSalesContractDialog = ({
   const [loading, setLoading] = useState(false)
   const [viewInvoiceOpen, setViewInvoiceOpen] = useState(false)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
+  const [selectedInvoiceIdForUpdate, setSelectedInvoiceIdForUpdate] = useState(null)
+  const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
 
   // Liquidation State
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
@@ -101,11 +112,49 @@ const ViewSalesContractDialog = ({
     }
   }
 
+  // Invoice status update logic
+  const handleUpdateStatus = async (status, invoiceId) => {
+    try {
+      await dispatch(updateInvoiceStatus({ id: invoiceId, status })).unwrap()
+      toast.success('Cập nhật trạng thái hóa đơn thành công')
+      fetchContractDetail() // Refresh data
+    } catch (error) {
+      console.log('Update status error: ', error)
+      toast.error('Cập nhật trạng thái thất bại')
+    }
+  }
+
+  const getFilteredStatuses = (invoice) => {
+    if (!invoice) return []
+    const permissions = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
+    const canReject = permissions.includes('REJECT_INVOICE')
+    const canRevert = permissions.includes('REVERT_INVOICE')
+
+    return invoiceStatuses.filter((s) => {
+      // Hide 'completed' status as it is automated
+      if (s.value === 'delivered') return false
+
+      // Permission check for 'rejected'
+      if (s.value === 'rejected') {
+        if (!canReject) return false
+        // Only allow switching to 'rejected' if current status is 'pending'
+        if (invoice.status !== 'pending') return false
+      }
+
+      // Permission check for 'pending' (revert)
+      if (s.value === 'pending') {
+        if (!canRevert) return false
+      }
+
+      return true
+    })
+  }
+
   useEffect(() => {
-    if (open && contractId) {
+    if (contractId && open) {
       fetchContractDetail()
     }
-  }, [open, contractId])
+  }, [contractId, open])
 
   const fetchContractDetail = async () => {
     setLoading(true)
@@ -136,6 +185,27 @@ const ViewSalesContractDialog = ({
           open={!!selectedInvoiceId}
           onOpenChange={(open) => !open && setSelectedInvoiceId(null)}
           showTrigger={false}
+          contentClassName="z-[100020] md:z-[100020]"
+          overlayClassName="z-[100019] md:z-[100019]"
+          onEdit={() => {
+            const invoiceId = selectedInvoiceId
+            setSelectedInvoiceId(null)
+            setTimeout(() => {
+              setSelectedInvoiceIdForUpdate(invoiceId)
+              setShowUpdateInvoiceDialog(true)
+            }, 100)
+          }}
+        />
+      )}
+
+      {showUpdateInvoiceDialog && selectedInvoiceIdForUpdate && (
+        <InvoiceDialog
+          open={showUpdateInvoiceDialog}
+          onOpenChange={setShowUpdateInvoiceDialog}
+          invoiceId={selectedInvoiceIdForUpdate}
+          showTrigger={false}
+          contentClassName="z-[100020] md:z-[100020]"
+          overlayClassName="z-[100019] md:z-[100019]"
         />
       )}
       <Dialog open={open} onOpenChange={onOpenChange} {...props}>
@@ -150,7 +220,7 @@ const ViewSalesContractDialog = ({
         <DialogContent
           className={cn(
             'md:h-auto md:max-w-full',
-            !isDesktop && 'h-screen max-h-screen w-screen max-w-none m-0 p-0 rounded-none',
+            !isDesktop && 'fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none translate-x-0 translate-y-0 flex flex-col',
             contentClassName
           )}
           overlayClassName={overlayClassName}
@@ -167,7 +237,7 @@ const ViewSalesContractDialog = ({
           <div
             className={cn(
               'overflow-auto',
-              isDesktop ? 'max-h-[75vh]' : 'h-full px-4 pb-4',
+              isDesktop ? 'max-h-[75vh]' : 'h-full px-4 pb-4 flex-1',
             )}
           >
             {loading ? (
@@ -358,9 +428,9 @@ const ViewSalesContractDialog = ({
                                   }
                                 }}
                               >
-                                {item.image ? (
+                                {item.product.image ? (
                                   <div className="size-16 rounded-md border overflow-hidden">
-                                    <img src={getPublicUrl(item.image)} alt={item.productName} className="h-full w-full object-cover" />
+                                    <img src={getPublicUrl(item.product.image)} alt={item.productName} className="h-full w-full object-cover" />
                                   </div>
                                 ) : (
                                   <div className="size-16 rounded-md border bg-secondary flex items-center justify-center">
@@ -522,16 +592,43 @@ const ViewSalesContractDialog = ({
                                             {moneyFormat(invoice.paidAmount || 0)}
                                           </TableCell>
                                           <TableCell>
-                                            {invoiceStatus && (
-                                              <div
-                                                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${invoiceStatus.color}`}
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                              <Select
+                                                value={invoice.status}
+                                                onValueChange={(val) => handleUpdateStatus(val, invoice.id)}
+                                                disabled={['delivered', 'rejected'].includes(invoice.status) || invoice.paymentStatus === 'paid'}
                                               >
-                                                {React.createElement(invoiceStatus.icon, {
-                                                  className: 'h-3 w-3',
-                                                })}
-                                                {invoiceStatus.label}
-                                              </div>
-                                            )}
+                                                <SelectTrigger className="h-7 w-[140px] text-xs px-2 bg-transparent border-input focus:ring-0">
+                                                  <SelectValue placeholder="Chọn trạng thái">
+                                                    {(() => {
+                                                      const sObj = invoiceStatuses.find(s => s.value === invoice.status)
+                                                      return sObj ? (
+                                                        <div className={`flex items-center gap-2 ${sObj.color}`}>
+                                                          {sObj.icon && React.createElement(sObj.icon, { className: "h-3 w-3" })}
+                                                          <span className="truncate text-xs font-medium">
+                                                            {sObj.label}
+                                                          </span>
+                                                        </div>
+                                                      ) : invoice.status
+                                                    })()}
+                                                  </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent position="popper" align="start" className="w-[140px] z-[100005]">
+                                                  {getFilteredStatuses(invoice).map((status) => (
+                                                    <SelectItem
+                                                      key={status.value}
+                                                      value={status.value}
+                                                      className="text-xs cursor-pointer"
+                                                    >
+                                                      <div className={`flex items-center gap-2 ${status.color}`}>
+                                                        {status.icon && React.createElement(status.icon, { className: "h-3 w-3" })}
+                                                        <span>{status.label}</span>
+                                                      </div>
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
                                           </TableCell>
                                           <TableCell>
                                             {invoicePaymentStatus && (
@@ -588,7 +685,7 @@ const ViewSalesContractDialog = ({
                                         </div>
                                         <div>
                                           <span className="text-muted-foreground">
-                                            Đã TT:{' '}
+                                            Đã Thanh Toán:{' '}
                                           </span>
                                           <span className="font-medium text-green-600">
                                             {moneyFormat(invoice.paidAmount || 0)}
@@ -601,22 +698,47 @@ const ViewSalesContractDialog = ({
                                             <span className="text-muted-foreground">
                                               Trạng thái:
                                             </span>
-                                            <div
-                                              className={`inline-flex items-center gap-0.5 ${invoiceStatus.color}`}
-                                            >
-                                              {React.createElement(invoiceStatus.icon, {
-                                                className: 'h-3 w-3',
-                                              })}
-                                              <span className="text-xs">
-                                                {invoiceStatus.label}
-                                              </span>
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                              <Select
+                                                value={invoice.status}
+                                                onValueChange={(val) => handleUpdateStatus(val, invoice.id)}
+                                                disabled={['delivered', 'rejected'].includes(invoice.status) || invoice.paymentStatus === 'paid'}
+                                              >
+                                                <SelectTrigger
+                                                  className={`h-6 w-auto p-0 border-none bg-transparent shadow-none focus:ring-0 ${invoiceStatus?.color?.replace('bg-', 'text-').replace('text-', 'bg-opacity-10 bg-') || ''
+                                                    }`}
+                                                >
+                                                  <div className={`flex items-center gap-1 ${invoiceStatus?.color}`}>
+                                                    {invoiceStatus?.icon && React.createElement(invoiceStatus.icon, {
+                                                      className: "h-3 w-3"
+                                                    })}
+                                                    <span className="truncate text-xs font-medium">
+                                                      {invoiceStatus?.label || invoice.status}
+                                                    </span>
+                                                  </div>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {getFilteredStatuses(invoice).map((status) => (
+                                                    <SelectItem
+                                                      key={status.value}
+                                                      value={status.value}
+                                                      className="text-xs"
+                                                    >
+                                                      <div className={`flex items-center gap-2 ${status.color}`}>
+                                                        {status.icon && React.createElement(status.icon, { className: "h-3 w-3" })}
+                                                        <span>{status.label}</span>
+                                                      </div>
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
                                             </div>
                                           </div>
                                         )}
                                         {invoicePaymentStatus && (
                                           <div className="flex items-center gap-1">
                                             <span className="text-muted-foreground">
-                                              TT:
+                                              Thanh Toán:
                                             </span>
                                             <div
                                               className={`inline-flex items-center gap-0.5 ${invoicePaymentStatus.color}`}
@@ -906,18 +1028,18 @@ const ViewSalesContractDialog = ({
             )}
           </div>
 
-          <DialogFooter className="flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0">
+          <DialogFooter className={cn(!isDesktop && "pb-4 px-4 flex flex-row gap-2")}>
             {contract?.status === 'confirmed' && (
-              <Button size="sm" onClick={() => setShowLiquidationDialog(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
+              <Button size="sm" onClick={() => setShowLiquidationDialog(true)} className={cn("bg-orange-600 hover:bg-orange-700 text-white", !isDesktop && "flex-1")}>
                 Thanh lý
               </Button>
             )}
-            <Button size="sm" onClick={handlePrintContract} loading={installmentExporting} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button size="sm" onClick={handlePrintContract} loading={installmentExporting} className={cn("bg-blue-600 hover:bg-blue-700 text-white", !isDesktop && "flex-1")}>
               <Printer className="mr-2 h-4 w-4" />
               In Hợp Đồng
             </Button>
             <DialogClose asChild>
-              <Button type="button" variant="outline" size="sm">
+              <Button type="button" variant="outline" size="sm" className={cn(!isDesktop && "flex-1")}>
                 Đóng
               </Button>
             </DialogClose>
@@ -932,6 +1054,8 @@ const ViewSalesContractDialog = ({
                 }
               }}
               initialData={installmentData}
+              contentClassName="z-[100030]"
+              overlayClassName="z-[100029]"
               onConfirm={async (finalData) => {
                 try {
                   setInstallmentExporting(true)

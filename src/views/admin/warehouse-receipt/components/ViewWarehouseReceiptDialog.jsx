@@ -28,6 +28,7 @@ import { exportWarehouseReceiptToExcel } from '@/utils/export-warehouse-receipt'
 import { UpdateWarehouseReceiptStatusDialog } from './UpdateWarehouseReceiptStatusDialog'
 import { toast } from 'sonner'
 import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
+import InvoiceDialog from '../../invoice/components/InvoiceDialog'
 
 const ViewWarehouseReceiptDialog = ({
   receiptId,
@@ -48,6 +49,7 @@ const ViewWarehouseReceiptDialog = ({
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
 
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
+  const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
   const [details, setDetails] = useState([])
 
   const handleUpdateStatus = async (newStatus, id) => {
@@ -550,6 +552,21 @@ const ViewWarehouseReceiptDialog = ({
           invoiceId={receipt.invoice.id}
           open={showInvoiceDialog}
           onOpenChange={setShowInvoiceDialog}
+          showTrigger={false}
+          onEdit={() => {
+            setShowInvoiceDialog(false)
+            setTimeout(() => {
+              setShowUpdateInvoiceDialog(true)
+            }, 100)
+          }}
+        />
+      )}
+
+      {showUpdateInvoiceDialog && receipt?.invoice && (
+        <InvoiceDialog
+          open={showUpdateInvoiceDialog}
+          onOpenChange={setShowUpdateInvoiceDialog}
+          invoiceId={receipt.invoice.id}
           showTrigger={false}
         />
       )}

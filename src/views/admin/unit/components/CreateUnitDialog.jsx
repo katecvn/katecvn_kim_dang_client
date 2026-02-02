@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { PlusIcon } from '@radix-ui/react-icons'
+import { cn } from '@/lib/utils'
 
 import {
   Form,
@@ -31,6 +32,8 @@ const CreateUnitDialog = ({
   open,
   onOpenChange,
   showTrigger = true,
+  contentClassName,
+  overlayClassName,
   ...props
 }) => {
   const loading = useSelector((state) => state.unit.loading)
@@ -64,7 +67,10 @@ const CreateUnitDialog = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className="md:h-auto">
+      <DialogContent
+        className={cn("md:h-auto", contentClassName)}
+        overlayClassName={overlayClassName}
+      >
         <DialogHeader>
           <DialogTitle>Thêm đơn vị tính mới</DialogTitle>
           <DialogDescription>

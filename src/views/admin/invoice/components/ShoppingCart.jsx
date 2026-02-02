@@ -279,53 +279,6 @@ const ShoppingCart = ({
 
                     {/* Group 2: Quantity & Tax */}
                     <div className="flex flex-1 gap-2">
-                      {/* Quantity Controls */}
-                      <div className="flex-1">
-                        <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Số lượng
-                        </label>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              onQuantityChange(
-                                product.id,
-                                Math.max(1, currentQuantity - 1),
-                              )
-                            }
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={currentQuantity}
-                            onChange={(e) =>
-                              onQuantityChange(
-                                product.id,
-                                Number(e.target.value),
-                              )
-                            }
-                            onFocus={(e) => e.target.select()}
-                            className="h-8 w-full min-w-0 p-0 text-center text-sm"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              onQuantityChange(product.id, currentQuantity + 1)
-                            }
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-
                       {/* Tax Selection */}
                       <div className="flex-1">
                         <label className="mb-1 block text-[10px] text-muted-foreground">
@@ -383,6 +336,53 @@ const ShoppingCart = ({
                             </Command>
                           </PopoverContent>
                         </Popover>
+                      </div>
+
+                      {/* Quantity Controls */}
+                      <div className="flex-1">
+                        <label className="mb-1 block text-[10px] text-muted-foreground">
+                          Số lượng
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              onQuantityChange(
+                                product.id,
+                                Math.max(1, currentQuantity - 1),
+                              )
+                            }
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={currentQuantity}
+                            onChange={(e) =>
+                              onQuantityChange(
+                                product.id,
+                                Number(e.target.value),
+                              )
+                            }
+                            onFocus={(e) => e.target.select()}
+                            className="h-8 w-full min-w-0 p-0 text-center text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              onQuantityChange(product.id, currentQuantity + 1)
+                            }
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>

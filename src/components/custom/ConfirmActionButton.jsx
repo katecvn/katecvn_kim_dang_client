@@ -16,20 +16,27 @@ const ConfirmActionButton = ({
   description = 'Bạn có chắc chắn muốn thực hiện hành động này?',
   cancelText = 'Hủy',
   confirmText = 'Xác nhận',
-  onConfirm = () => {},
+  onConfirm = () => { },
+  contentClassName = '',
+  overlayClassName = '',
   loading = false,
+  confirmBtnVariant = 'default', // 'default' | 'destructive'
 }) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className={contentClassName} overlayClassName={overlayClassName}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction disabled={loading} onClick={onConfirm}>
+          <AlertDialogAction
+            disabled={loading}
+            onClick={onConfirm}
+            className={confirmBtnVariant === 'destructive' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+          >
             {confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>

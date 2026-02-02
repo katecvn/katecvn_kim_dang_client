@@ -51,7 +51,14 @@ const formSchema = z.object({
   expiryDate: z.date({ required_error: 'Vui lòng chọn hạn sử dụng' }),
 })
 
-export default function CreateLotDialog({ open, onOpenChange }) {
+export default function CreateLotDialog({
+  open,
+  onOpenChange,
+  defaultProductId,
+  onSuccess,
+  contentClassName,
+  overlayClassName,
+}) {
   const dispatch = useDispatch()
   const { products } = useSelector((state) => state.product)
   const [loading, setLoading] = useState(false)
@@ -60,7 +67,7 @@ export default function CreateLotDialog({ open, onOpenChange }) {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      productId: undefined,
+      productId: defaultProductId,
       code: '',
       initialQuantity: 0,
       unitCost: 0,
@@ -82,6 +89,7 @@ export default function CreateLotDialog({ open, onOpenChange }) {
       toast.success('Tạo lô hàng thành công')
       onOpenChange(false)
       form.reset()
+      onSuccess?.()
       dispatch(getLots())
     } catch (error) {
       toast.error(error || 'Có lỗi xảy ra')
@@ -92,7 +100,7 @@ export default function CreateLotDialog({ open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-[500px]'>
+      <DialogContent className={cn('sm:max-w-[500px]', contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Thêm mới lô hàng</DialogTitle>
         </DialogHeader>

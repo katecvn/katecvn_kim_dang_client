@@ -82,6 +82,9 @@ export default function InstallmentPreviewDialog({
           Hợp đồng đang ở trạng thái <strong>{statusLabel}</strong>, không thể chỉnh sửa.
         </div>
       )}
+      <div className="flex items-center justify-between rounded-md bg-blue-50 p-3 text-sm text-blue-800 border border-blue-200">
+        <span>Số lần in: <strong>{formData.printCount || 0}</strong></span>
+      </div>
       <div>
         <h3 className="mb-2 text-sm font-semibold">Thông tin hợp đồng</h3>
         <div className="space-y-2">

@@ -25,7 +25,13 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { InfoCircledIcon } from '@radix-ui/react-icons'
+import { Package } from 'lucide-react'
+import { getPublicUrl } from '@/utils/file'
 import { cn } from '@/lib/utils'
+
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
+import { toast } from 'sonner'
 
 const ConfirmWarehouseReceiptDialog = ({
   open,
@@ -37,7 +43,42 @@ const ConfirmWarehouseReceiptDialog = ({
   contentClassName,
   overlayClassName,
 }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const [selectedItems, setSelectedItems] = useState({})
+  const [detailInvoice, setDetailInvoice] = useState(null)
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false)
+
+  // Determine which invoice object to use: the fetched detail or the passed prop
+  const activeInvoice = detailInvoice || invoice
+
+  // Fetch full details when opened
+  useEffect(() => {
+    if (open && invoice?.id) {
+      const fetchInvoiceDetails = async () => {
+        setIsLoadingDetails(true)
+        try {
+          const permissionCodes = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
+          const isAdmin = permissionCodes.includes('GET_INVOICE')
+
+          const data = isAdmin
+            ? await getInvoiceDetail(invoice.id)
+            : await getInvoiceDetailByUser(invoice.id)
+
+          setDetailInvoice(data)
+        } catch (error) {
+          console.error('Failed to fetch invoice details:', error)
+          toast.error('Không thể tải chi tiết hóa đơn')
+        } finally {
+          setIsLoadingDetails(false)
+        }
+      }
+
+      fetchInvoiceDetails()
+    } else if (!open) {
+      // Reset when closed
+      setDetailInvoice(null)
+    }
+  }, [open, invoice?.id])
 
   // Helper to check if item is selectable
   const isItemSelectable = (item) => {
@@ -51,16 +92,16 @@ const ConfirmWarehouseReceiptDialog = ({
   }
 
   useEffect(() => {
-    if (invoice?.invoiceItems) {
+    if (activeInvoice?.invoiceItems) {
       const initialSelection = {}
-      invoice.invoiceItems.forEach((item) => {
+      activeInvoice.invoiceItems.forEach((item) => {
         if (isItemSelectable(item)) {
           initialSelection[item.id] = true
         }
       })
       setSelectedItems(initialSelection)
     }
-  }, [invoice, type])
+  }, [activeInvoice, type])
 
   if (!invoice) return null
 
@@ -89,37 +130,47 @@ const ConfirmWarehouseReceiptDialog = ({
     setSelectedItems(newSelection)
   }
 
-  const validItemsCount = invoice.invoiceItems?.filter(isItemSelectable).length
+  const validItemsCount = activeInvoice.invoiceItems?.filter(isItemSelectable).length
 
   const selectedCount = Object.values(selectedItems).filter(Boolean).length
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("max-w-3xl", contentClassName)} overlayClassName={overlayClassName}>
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          "max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0", // Fixed height, flex col, reset default padding to handle scroll better
+          isMobile && "fixed inset-0 w-screen h-[100dvh] max-h-[100dvh] top-0 left-0 right-0 max-w-none m-0 rounded-none translate-x-0 translate-y-0",
+          contentClassName
+        )}
+        overlayClassName={overlayClassName}
+      >
+        <DialogHeader className="px-6 py-4 border-b shrink-0">
           <DialogTitle>Xác nhận tạo phiếu xuất kho</DialogTitle>
           <DialogDescription>
             Chọn sản phẩm cần xuất kho từ hóa đơn này
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className={cn(
+          "space-y-4 flex-1 overflow-y-auto p-6", // content scrollable
+          isMobile && "h-full px-4 pb-4"
+        )}>
           {/* Invoice Info */}
           <div className="rounded-lg border bg-muted/50 p-3 text-sm">
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <span className="text-muted-foreground">Khách hàng:</span>
-                <div className="font-medium">{invoice.customer?.name}</div>
+                <div className="font-medium">{activeInvoice.customer?.name}</div>
               </div>
               <div>
                 <span className="text-muted-foreground">Mã hóa đơn:</span>
-                <div className="font-medium">{invoice.code}</div>
+                <div className="font-medium">{activeInvoice.code}</div>
               </div>
             </div>
           </div>
 
           {/* Warning for existing receipts */}
-          {(invoice.warehouseReceiptId || (invoice.warehouseReceipts && invoice.warehouseReceipts.length > 0)) && (
+          {(activeInvoice.warehouseReceiptId || (activeInvoice.warehouseReceipts && activeInvoice.warehouseReceipts.length > 0)) && (
             <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-200">
               <p className="font-medium flex items-center">
                 <InfoCircledIcon className="mr-2 h-4 w-4" />
@@ -139,94 +190,230 @@ const ConfirmWarehouseReceiptDialog = ({
                 Đã chọn: {selectedCount}/{validItemsCount}
               </span>
             </div>
-            <div className="max-h-[400px] overflow-auto rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={
-                          selectedCount === validItemsCount &&
-                          validItemsCount > 0
-                        }
-                        onCheckedChange={toggleAll}
-                        disabled={validItemsCount === 0}
-                      />
-                    </TableHead>
-                    <TableHead className="w-12">STT</TableHead>
-                    <TableHead>Sản phẩm</TableHead>
-                    <TableHead className="text-right">Số lượng</TableHead>
-                    <TableHead>Đơn vị</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoice.invoiceItems?.map((item, index) => {
-                    const selectable = isItemSelectable(item)
-                    const isContractItem = !!item.salesContractItemId
-
-                    // If not selectable (Retail mode + Contract Item), show disabled/tooltip
-                    // If selectable, show checkbox and normal status
-
-                    return (
-                      <TableRow
-                        key={item.id}
-                        className={!selectable ? 'bg-muted/30' : ''}
-                      >
-                        <TableCell>
-                          <Checkbox
-                            checked={!!selectedItems[item.id]}
-                            onCheckedChange={() => toggleItem(item.id)}
-                            disabled={!selectable}
-                          />
-                        </TableCell>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>
-                          <div className="font-medium">{item.productName}</div>
-                          {isContractItem && type === 'retail' && (
-                            <span className="text-xs text-orange-600">
-                              (Thuộc hợp đồng)
-                            </span>
-                          )}
-                          {isContractItem && type === 'contract' && (
-                            <span className="text-xs text-blue-600">
-                              (Theo hợp đồng)
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-blue-600">
-                          {item.quantity}
-                        </TableCell>
-                        <TableCell>{item.unitName || 'N/A'}</TableCell>
-                        <TableCell>
-                          {!selectable ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <InfoCircledIcon className="h-3 w-3" />
-                                    Không thể xuất
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>
-                                    Sản phẩm này nằm trong hợp đồng <br /> không
-                                    thể xuất tại đây
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ) : (
-                            <span className="text-xs text-green-600">
-                              Có thể xuất
-                            </span>
-                          )}
+            <div className={cn("overflow-auto rounded-lg border", isMobile && "border-0 h-full")}>
+              {!isMobile ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={
+                            selectedCount === validItemsCount &&
+                            validItemsCount > 0
+                          }
+                          onCheckedChange={toggleAll}
+                          disabled={validItemsCount === 0}
+                        />
+                      </TableHead>
+                      <TableHead className="w-12">STT</TableHead>
+                      <TableHead>Sản phẩm</TableHead>
+                      <TableHead className="text-right">Số lượng</TableHead>
+                      <TableHead>Đơn vị</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingDetails ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">
+                          Đang s-tải thông tin sản phẩm...
                         </TableCell>
                       </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+                    ) : (
+                      activeInvoice.invoiceItems?.map((item, index) => {
+                        const selectable = isItemSelectable(item)
+                        const isContractItem = !!item.salesContractItemId
+
+                        return (
+                          <TableRow
+                            key={item.id}
+                            className={!selectable ? 'bg-muted/30' : ''}
+                          >
+                            <TableCell>
+                              <Checkbox
+                                checked={!!selectedItems[item.id]}
+                                onCheckedChange={() => toggleItem(item.id)}
+                                disabled={!selectable}
+                              />
+                            </TableCell>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border">
+                                  {item?.image ? (
+                                    <img
+                                      src={getPublicUrl(item.image)}
+                                      alt={item.productName}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                      <Package className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="text-[10px] font-bold text-muted-foreground leading-none mb-1">
+                                    {item.product?.code || item.productCode || '—'}
+                                  </div>
+                                  <div className="font-medium">{item.productName}</div>
+                                  {isContractItem && type === 'retail' && (
+                                    <span className="text-xs text-orange-600 block">
+                                      (Thuộc hợp đồng)
+                                    </span>
+                                  )}
+                                  {isContractItem && type === 'contract' && (
+                                    <span className="text-xs text-blue-600 block">
+                                      (Theo hợp đồng)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-semibold text-blue-600">
+                              {item.quantity}
+                            </TableCell>
+                            <TableCell>{item.unitName || 'N/A'}</TableCell>
+                            <TableCell>
+                              {!selectable ? (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <InfoCircledIcon className="h-3 w-3" />
+                                        Không thể xuất
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>
+                                        Sản phẩm này nằm trong hợp đồng <br /> không
+                                        thể xuất tại đây
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : (
+                                <span className="text-xs text-green-600">
+                                  Có thể xuất
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="space-y-3">
+                  {/* Mobile Select All Header */}
+                  <div className="flex items-center gap-2 p-3 bg-secondary/30 rounded-lg">
+                    <Checkbox
+                      checked={
+                        selectedCount === validItemsCount &&
+                        validItemsCount > 0
+                      }
+                      onCheckedChange={toggleAll}
+                      disabled={validItemsCount === 0}
+                      id="select-all-mobile"
+                    />
+                    <label
+                      htmlFor="select-all-mobile"
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Chọn tất cả ({validItemsCount} sản phẩm)
+                    </label>
+                  </div>
+
+                  {/* Mobile Cards List */}
+                  {isLoadingDetails ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      Đang tải thông tin...
+                    </div>
+                  ) : (
+                    activeInvoice.invoiceItems?.map((item, index) => {
+                      const selectable = isItemSelectable(item)
+                      const isContractItem = !!item.salesContractItemId
+
+                      return (
+                        <div
+                          key={item.id}
+                          className={cn(
+                            "flex gap-3 rounded-lg border p-3 shadow-sm",
+                            !selectable ? "bg-muted/30 opacity-80" : "bg-card"
+                          )}
+                          onClick={() => selectable && toggleItem(item.id)}
+                        >
+                          <div className="flex pt-1">
+                            <Checkbox
+                              checked={!!selectedItems[item.id]}
+                              onCheckedChange={() => toggleItem(item.id)}
+                              disabled={!selectable}
+                              onClick={(e) => e.stopPropagation()} // Prevent double toggle
+                            />
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-start gap-3">
+                              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-muted/50">
+                                {item?.image ? (
+                                  <img
+                                    src={getPublicUrl(item.image)}
+                                    alt={item.productName}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                    <Package className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[10px] font-bold text-muted-foreground leading-none mb-1">
+                                  {item.product?.code || item.productCode || '—'}
+                                </div>
+                                <div className="font-medium text-sm leading-tight">
+                                  {item.productName}
+                                </div>
+                                {isContractItem && type === 'retail' && (
+                                  <div className="text-xs text-orange-600 mt-0.5">
+                                    (Thuộc hợp đồng)
+                                  </div>
+                                )}
+                                {isContractItem && type === 'contract' && (
+                                  <div className="text-xs text-blue-600 mt-0.5">
+                                    (Theo hợp đồng)
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="flex flex-col">
+                                <span className="text-muted-foreground">Số lượng</span>
+                                <span className="font-semibold text-blue-600 text-sm">
+                                  {item.quantity} {item.unitName}
+                                </span>
+                              </div>
+                              <div className="flex flex-col text-right">
+                                <span className="text-muted-foreground">Trạng thái</span>
+                                {!selectable ? (
+                                  <span className="text-muted-foreground italic flex items-center justify-end gap-1">
+                                    <InfoCircledIcon className="h-3 w-3" />
+                                    Không thể xuất
+                                  </span>
+                                ) : (
+                                  <span className="text-green-600 font-medium">
+                                    Có thể xuất
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    }))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -258,12 +445,13 @@ const ConfirmWarehouseReceiptDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className={cn("px-6 py-4 border-t gap-2 shrink-0 bg-background", isMobile ? "pb-4 px-4 flex-row" : "")}>
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={loading}
+            className={cn(isMobile && "flex-1")}
           >
             Hủy
           </Button>
@@ -272,6 +460,7 @@ const ConfirmWarehouseReceiptDialog = ({
             onClick={handleConfirm}
             disabled={loading || selectedCount === 0}
             loading={loading}
+            className={cn(isMobile && "flex-1")}
           >
             <IconPackageExport className="mr-2 h-4 w-4" />
             Tạo phiếu xuất kho ({selectedCount})

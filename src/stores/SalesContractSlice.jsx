@@ -201,6 +201,30 @@ export const liquidateSalesContract = createAsyncThunk(
   },
 )
 
+export const increasePrintAttempt = createAsyncThunk(
+  'salesContract/increase-print-attempt',
+  async (id, { rejectWithValue }) => {
+    try {
+      await api.put(`/sales-contracts/${id}/print-attempt`)
+      return id
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  }
+)
+
+export const increasePrintSuccess = createAsyncThunk(
+  'salesContract/increase-print-success',
+  async (id, { rejectWithValue }) => {
+    try {
+      await api.put(`/sales-contracts/${id}/print-success`)
+      return id
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  }
+)
+
 const salesContractSlice = createSlice({
   name: 'salesContract',
   initialState: {

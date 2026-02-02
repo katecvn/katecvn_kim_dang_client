@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { Button } from '@/components/custom/Button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -15,6 +16,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { React } from 'react'
+import {
   Table,
   TableBody,
   TableCell,
@@ -22,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Separator } from '@radix-ui/react-separator'
+import { Separator } from '@/components/ui/separator'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 import { Mail, MapPin, CreditCard, Package } from 'lucide-react'
 import { dateFormat } from '@/utils/date-format'
@@ -30,11 +39,10 @@ import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { getPublicUrl } from '@/utils/file'
 import { getReceiptById, updateReceiptStatus } from '@/stores/ReceiptSlice'
 import UpdateReceiptStatusDialog from './UpdateReceiptStatusDialog'
-import { debts, paymentMethods, paymentStatus, receiptStatus } from '../data'
+import { receiptStatus } from '../data'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 const ViewReceiptDialog = ({
-  receipt: initialReceipt,
   receiptId,
   open,
   onOpenChange,
@@ -43,11 +51,10 @@ const ViewReceiptDialog = ({
   overlayClassName,
   ...props
 }) => {
-  const [fetchedReceipt, setFetchedReceipt] = useState(null)
+  const isMobile = useMediaQuery('(max-width: 768px)')
+  const [receipt, setReceipt] = useState(null)
   const [loading, setLoading] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
-
-  const receipt = fetchedReceipt || initialReceipt
 
   const invoiceItems = receipt?.invoice?.items || []
 
@@ -59,19 +66,35 @@ const ViewReceiptDialog = ({
       setShowUpdateStatusDialog(false)
       // Refetch receipt to update view
       const result = await dispatch(getReceiptById(receiptId)).unwrap()
-      setFetchedReceipt(result)
+      setReceipt(result)
+      toast.success('Cập nhật trạng thái thành công')
     } catch (error) {
       console.error(error)
+      // Toast is handled in slice usually, but adding success here
+    }
+  }
+
+  const getReceiptStatusObj = (statusValue) => {
+    return receiptStatus.find(s => s.value === statusValue)
+  }
+
+  const getReceiptStatusColor = (statusValue) => {
+    switch (statusValue) {
+      case 'draft': return 'bg-yellow-100 text-yellow-700'
+      case 'completed': return 'bg-green-100 text-green-700'
+      case 'canceled':
+      case 'cancelled': return 'bg-red-100 text-red-700'
+      default: return 'bg-gray-100 text-gray-700'
     }
   }
 
   useEffect(() => {
-    if (open && receiptId && !initialReceipt) {
+    if (open && receiptId) {
       const fetchReceipt = async () => {
         setLoading(true)
         try {
           const result = await dispatch(getReceiptById(receiptId)).unwrap()
-          setFetchedReceipt(result)
+          setReceipt(result)
         } catch (error) {
           console.error("Failed to fetch receipt", error)
           toast.error("Không thể tải thông tin phiếu thu")
@@ -80,10 +103,10 @@ const ViewReceiptDialog = ({
         }
       }
       fetchReceipt()
-    } else if (open && initialReceipt) {
-      setFetchedReceipt(null) // Reset if initialReceipt provided explicitly
+    } else {
+      setReceipt(null)
     }
-  }, [open, receiptId, initialReceipt, dispatch])
+  }, [open, receiptId, dispatch])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
@@ -95,17 +118,25 @@ const ViewReceiptDialog = ({
         </DialogTrigger>
       ) : null}
 
-      <DialogContent className={cn("md:h-auto md:max-w-7xl", contentClassName)} overlayClassName={overlayClassName}>
-        <DialogHeader>
-          <DialogTitle>
-            Thông tin chi tiết phiếu thu: {receipt?.code}
+      <DialogContent
+        className={cn(
+          "md:h-auto md:max-w-7xl",
+          isMobile && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none translate-x-0 translate-y-0 flex flex-col",
+          contentClassName
+        )}
+        overlayClassName={overlayClassName}
+      >
+        <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
+          <DialogTitle className={cn(isMobile && "flex flex-col items-start gap-1 items-center")}>
+            <span>Thông tin chi tiết phiếu thu</span>
+            <span>{receipt?.code}</span>
           </DialogTitle>
-          <DialogDescription>
-            Dưới đây là thông tin chi tiết phiếu thu: {receipt?.code}
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[75vh] overflow-auto">
+        <div className={cn(
+          "overflow-auto",
+          isMobile ? "h-full px-4 pb-4 flex-1" : "max-h-[75vh]"
+        )}>
           {loading ? (
             <div className="space-y-4 p-4">
               <Skeleton className="h-8 w-1/3" />
@@ -118,10 +149,10 @@ const ViewReceiptDialog = ({
             <div className="flex flex-col gap-2 lg:flex-row">
               {/* ===== Left: Phiếu + bảng hàng hoá ===== */}
               <div className="flex-1 space-y-6 rounded-lg border p-4">
-                <h2 className="text-lg font-semibold">
+                <h2 className={cn("text-lg font-semibold flex", isMobile ? "flex-col items-start gap-1" : "items-center")}>
                   Thông tin phiếu thu
                   {receipt?.invoice && (
-                    <span className="ml-2 text-sm text-muted-foreground">
+                    <span className={cn("text-sm text-muted-foreground", isMobile ? "ml-0" : "ml-2")}>
                       (Hóa đơn: {receipt.invoice.code})
                     </span>
                   )}
@@ -134,78 +165,190 @@ const ViewReceiptDialog = ({
 
                 <div className="space-y-6">
                   {/* Bảng sản phẩm */}
-                  <div className="overflow-x-auto rounded-lg border">
-                    <Table className="min-w-full">
-                      <TableHeader>
-                        <TableRow className="bg-secondary text-xs">
-                          <TableHead className="w-8">TT</TableHead>
-                          <TableHead className="min-w-40">Sản phẩm</TableHead>
-                          <TableHead className="min-w-20">SL</TableHead>
-                          <TableHead className="min-w-16">ĐVT</TableHead>
-                          <TableHead className="min-w-20">Giá</TableHead>
-                          <TableHead className="min-w-16">Thuế</TableHead>
-                          <TableHead className="min-w-28 md:w-16">
-                            Giảm giá
-                          </TableHead>
-                          <TableHead className="min-w-28">Tổng cộng</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {invoiceItems.map((product, index) => (
-                          <TableRow key={product.id || index}>
-                            <TableCell>{index + 1}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border">
-                                  {product.product?.image ? (
-                                    <img
-                                      src={getPublicUrl(product.product.image)}
-                                      alt={product.productName}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="flex h-full w-full items-center justify-center bg-secondary">
-                                      <Package className="h-5 w-5 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                </div>
-                                <div>
-                                  <div className="font-medium">
-                                    {product.productName}
-                                  </div>
-                                  {product?.options && (
-                                    <div className="break-words text-sm text-muted-foreground">
-                                      {product.options
-                                        ?.map(
-                                          (option) =>
-                                            `${option.name}: ${option.pivot.value}`,
-                                        )
-                                        .join(', ')}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{product.quantity}</TableCell>
-                            <TableCell>
-                              {product.unitName || 'Không có'}
-                            </TableCell>
-                            <TableCell className="text-end">
-                              {moneyFormat(product.price)}
-                            </TableCell>
-                            <TableCell className="text-end">
-                              {moneyFormat(product.taxAmount)}
-                            </TableCell>
-                            <TableCell className="text-end">
-                              {moneyFormat(product.discount)}
-                            </TableCell>
-                            <TableCell className="text-end">
-                              {moneyFormat(product.total)}
-                            </TableCell>
+                  <div className={cn("rounded-lg border", isMobile && "border-0")}>
+                    {!isMobile ? (
+                      <Table className="min-w-full">
+                        <TableHeader>
+                          <TableRow className="bg-secondary text-xs">
+                            <TableHead className="w-8">TT</TableHead>
+                            <TableHead className="min-w-40">Sản phẩm</TableHead>
+                            <TableHead className="min-w-20">SL</TableHead>
+                            <TableHead className="min-w-16">ĐVT</TableHead>
+                            <TableHead className="min-w-20">Giá</TableHead>
+                            <TableHead className="min-w-16">Thuế</TableHead>
+                            <TableHead className="min-w-28 md:w-16">
+                              Giảm giá
+                            </TableHead>
+                            <TableHead className="min-w-28">Tổng cộng</TableHead>
                           </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {invoiceItems.map((product, index) => (
+                            <TableRow key={product.id || index}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border">
+                                    {product?.image ? (
+                                      <img
+                                        src={getPublicUrl(product.image)}
+                                        alt={product.productName}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                        <Package className="h-5 w-5 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="font-medium">
+                                      {product.productName}
+                                    </div>
+                                    {product?.options && (
+                                      <div className="break-words text-sm text-muted-foreground">
+                                        {product.options
+                                          ?.map(
+                                            (option) =>
+                                              `${option.name}: ${option.pivot.value}`,
+                                          )
+                                          .join(', ')}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{product.quantity}</TableCell>
+                              <TableCell>
+                                {product.unitName || 'Không có'}
+                              </TableCell>
+                              <TableCell className="text-end">
+                                {moneyFormat(product.price)}
+                              </TableCell>
+                              <TableCell className="text-end">
+                                {moneyFormat(product.taxAmount)}
+                              </TableCell>
+                              <TableCell className="text-end">
+                                {moneyFormat(product.discount)}
+                              </TableCell>
+                              <TableCell className="text-end">
+                                {moneyFormat(product.total)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="space-y-4">
+                        {invoiceItems.map((product, index) => (
+                          <div
+                            key={product.id || index}
+                            className="rounded-lg border p-3 shadow-sm bg-card text-card-foreground"
+                          >
+                            {/* Header: Image + Name + Code */}
+                            <div className="flex items-start gap-3 mb-3">
+                              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border bg-muted/50">
+                                {product?.image ? (
+                                  <img
+                                    src={getPublicUrl(product.image)}
+                                    alt={product.productName}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                    <Package className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[10px] font-bold text-muted-foreground leading-none mb-1">
+                                  {product.product?.code || product.productCode || '—'}
+                                </div>
+                                <div className="font-medium text-sm leading-tight line-clamp-2">
+                                  {product.productName}
+                                </div>
+                                {product?.options && (
+                                  <div className="break-words text-xs text-muted-foreground mt-1">
+                                    {product.options
+                                      ?.map(
+                                        (option) =>
+                                          `${option.name}: ${option.pivot.value}`,
+                                      )
+                                      .join(', ')}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <Separator className="my-2" />
+
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div className="flex flex-col">
+                                <span className="text-muted-foreground text-xs">
+                                  Số lượng
+                                </span>
+                                <span className="font-medium">
+                                  {product.quantity} {product.unitName}
+                                </span>
+                              </div>
+                              <div className="flex flex-col text-right">
+                                <span className="text-muted-foreground text-xs">
+                                  Đơn giá
+                                </span>
+                                <span className="font-medium">
+                                  {moneyFormat(product.price)}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-col">
+                                <span className="text-muted-foreground text-xs">
+                                  Giảm giá
+                                </span>
+                                <span className="font-medium">
+                                  {moneyFormat(product.discount)}
+                                </span>
+                              </div>
+                              <div className="flex flex-col text-right">
+                                <span className="text-muted-foreground text-xs">
+                                  Thuế
+                                </span>
+                                <span className="font-medium">
+                                  {moneyFormat(product.taxAmount)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="mt-2 flex justify-between items-end bg-secondary/30 p-2 rounded">
+                              <span className="font-semibold text-sm">
+                                Thành tiền
+                              </span>
+                              <span className="font-bold text-primary">
+                                {moneyFormat(product.total)}
+                              </span>
+                            </div>
+
+                            {/* Note/Warranty if exists */}
+                            {(product.note || product.warranty) && (
+                              <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                                {product.warranty && (
+                                  <div className="flex gap-1">
+                                    <span className="font-semibold">BH:</span>{' '}
+                                    {product.warranty}
+                                  </div>
+                                )}
+                                {product.note && (
+                                  <div className="flex gap-1">
+                                    <span className="font-semibold">GC:</span>{' '}
+                                    {product.note}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         ))}
-                      </TableBody>
-                    </Table>
+                      </div>
+                    )}
                   </div>
 
                   {/* Tổng hợp & công nợ */}
@@ -233,15 +376,78 @@ const ViewReceiptDialog = ({
                       <Separator className="my-4" />
                       <div className="flex justify-between">
                         <strong>Trạng thái:</strong>
-                        <Badge
-                          className={cn(
-                            "cursor-pointer hover:opacity-80",
-                            receipt?.status === 'completed' ? 'bg-green-500' : (receipt?.status === 'canceled' || receipt?.status === 'cancelled') ? 'bg-red-500' : 'bg-yellow-500'
-                          )}
-                          onClick={() => setShowUpdateStatusDialog(true)}
-                        >
-                          {receipt?.status === 'completed' ? 'Hoàn thành' : receipt?.status === 'draft' ? 'Nháp' : receipt?.status === 'cancelled' ? 'Đã hủy' : receipt?.status || 'Không xác định'}
-                        </Badge>
+                        {isMobile ? (
+                          <div className='flex items-center justify-end'>
+                            <Select
+                              value={receipt?.status === 'cancelled' ? 'canceled' : receipt?.status}
+                              onValueChange={(val) => handleUpdateStatus(val, receipt.id)}
+                            >
+                              <SelectTrigger className="h-auto border-none bg-transparent p-0 text-xs focus:ring-0 focus:ring-offset-0">
+                                <SelectValue>
+                                  <span
+                                    className={cn(
+                                      "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
+                                      getReceiptStatusColor(receipt?.status)
+                                    )}
+                                  >
+                                    {getReceiptStatusObj(receipt?.status === 'cancelled' ? 'canceled' : receipt?.status)?.icon &&
+                                      // Using standard icon rendering if available in data, or fallback
+                                      // actually data.js has icons as components
+                                      ((Icon) => Icon && <Icon className="h-3 w-3" />)(getReceiptStatusObj(receipt?.status === 'cancelled' ? 'canceled' : receipt?.status)?.icon)
+                                    }
+                                    {getReceiptStatusObj(receipt?.status === 'cancelled' ? 'canceled' : receipt?.status)?.label || receipt?.status}
+                                  </span>
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent align="end" className="w-[140px] z-[100060]">
+                                {receiptStatus
+                                  .filter((s) => {
+                                    const currentStatus = receipt?.status === 'cancelled' ? 'canceled' : receipt?.status
+                                    if (
+                                      currentStatus === 'canceled' ||
+                                      currentStatus === 'cancelled'
+                                    ) {
+                                      return (
+                                        s.value === 'canceled' ||
+                                        s.value === 'cancelled'
+                                      )
+                                    }
+                                    if (currentStatus === 'completed') {
+                                      return s.value !== 'draft'
+                                    }
+                                    return true
+                                  })
+                                  .map((s) => (
+                                    <SelectItem
+                                      key={s.value}
+                                      value={s.value}
+                                      className="text-xs"
+                                    >
+                                      <div
+                                        className={cn(
+                                          "flex items-center gap-1 rounded-full px-2 py-1",
+                                          getReceiptStatusColor(s.value)
+                                        )}
+                                      >
+                                        {s.icon && <s.icon className="h-3 w-3" />}
+                                        <span>{s.label}</span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <Badge
+                            className={cn(
+                              "cursor-pointer hover:opacity-80",
+                              receipt?.status === 'completed' ? 'bg-green-500' : (receipt?.status === 'canceled' || receipt?.status === 'cancelled') ? 'bg-red-500' : 'bg-yellow-500'
+                            )}
+                            onClick={() => setShowUpdateStatusDialog(true)}
+                          >
+                            {receipt?.status === 'completed' ? 'Đã thu' : receipt?.status === 'draft' ? 'Nháp' : receipt?.status === 'cancelled' ? 'Đã hủy' : receipt?.status || 'Không xác định'}
+                          </Badge>
+                        )}
                       </div>
 
                       {showUpdateStatusDialog && (
@@ -434,7 +640,7 @@ const ViewReceiptDialog = ({
           )}
         </div>
 
-        <DialogFooter className="flex gap-2 sm:space-x-0">
+        <DialogFooter className={cn("flex gap-2 sm:space-x-0", isMobile && "pb-4 px-4")}>
           <DialogClose asChild>
             <Button type="button" variant="outline">
               Đóng

@@ -51,8 +51,15 @@ import {
 } from '@/stores/CreditNoteSlice'
 import { updateInvoiceStatus, deleteInvoice } from '@/stores/InvoiceSlice'
 import {
+  updateSalesContract,
+  increasePrintAttempt,
+  increasePrintSuccess
+} from '@/stores/SalesContractSlice'
+import {
   deleteWarehouseReceipt,
   updateWarehouseReceipt,
+  postWarehouseReceipt,
+  cancelWarehouseReceipt,
   generateWarehouseReceiptFromInvoice,
 } from '@/stores/WarehouseReceiptSlice'
 import { toast } from 'sonner'
@@ -169,11 +176,11 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
   const handleDeleteInvoice = async () => {
     try {
       await dispatch(deleteInvoice(invoiceId)).unwrap()
-      toast.success('Xóa hóa đơn thành công')
+      toast.success('Xóa đơn bán thành công')
       props.onOpenChange(false) // Close the ViewInvoiceDialog
     } catch (error) {
       console.error('Delete invoice error:', error)
-      toast.error('Xóa hóa đơn thất bại')
+      toast.error('Xóa đơn bán thất bại')
     }
   }
 
@@ -205,7 +212,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
 
   const handleApproveCreditNote = async (creditNote) => {
     if (creditNote.status === 'accepted') {
-      toast.warning('Hóa đơn đã được duyệt')
+      toast.warning('Đơn bán đã được duyệt')
       return
     }
 
@@ -216,10 +223,10 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
 
     try {
       await dispatch(updateCreditNoteStatus(dataToSend)).unwrap()
-      toast.success(`Đã duyệt hóa đơn âm ${creditNote.code}`)
+      toast.success(`Đã duyệt đơn bán âm ${creditNote.code}`)
       await dispatch(getCreditNotesByInvoiceId(invoiceId)).unwrap()
     } catch (err) {
-      toast.error('Không thể duyệt hóa đơn. Vui lòng thử lại.')
+      toast.error('Không thể duyệt đơn bán. Vui lòng thử lại.')
     }
   }
 
@@ -231,10 +238,29 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
   const handleDeleteCreditNote = async (creditNote) => {
     try {
       await dispatch(deleteCreditNoteById(creditNote.id)).unwrap()
-      toast.success(`Đã xóa hóa đơn điều chỉnh ${creditNote.code}`)
+      toast.success(`Đã xóa đơn bán điều chỉnh ${creditNote.code}`)
       await dispatch(getCreditNotesByInvoiceId(invoiceId)).unwrap()
     } catch (err) {
       toast.error('Xóa thất bại. Vui lòng thử lại.')
+    }
+  }
+
+  // Handle update warehouse receipt status (Mobile)
+  const handleUpdateWarehouseReceiptStatus = async (newStatus, id) => {
+    try {
+      if (newStatus === 'cancelled') {
+        await dispatch(cancelWarehouseReceipt(id)).unwrap()
+      } else if (newStatus === 'posted') {
+        await dispatch(postWarehouseReceipt(id)).unwrap()
+      } else {
+        await dispatch(updateWarehouseReceipt({ id, data: { status: newStatus } })).unwrap()
+      }
+
+      toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
+      fetchData()
+    } catch (error) {
+      console.error(error)
+      // Toast error is usually handled in the slice
     }
   }
 
@@ -263,7 +289,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
       setTimeout(() => setPrintInvoice(null), 0)
     } catch (error) {
       console.log('Print invoice error: ', error)
-      toast.error('Lỗi in hóa đơn')
+      toast.error('Lỗi in đơn bán')
     }
   }
 
@@ -295,7 +321,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
   const handleUpdateStatus = async (status, id) => {
     try {
       await dispatch(updateInvoiceStatus({ id, status })).unwrap()
-      toast.success('Cập nhật trạng thái hóa đơn thành công')
+      toast.success('Cập nhật trạng thái đơn bán thành công')
       setShowUpdateStatusDialog(false)
       fetchData()
     } catch (error) {
@@ -406,21 +432,13 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
 
   const handleCreateReceipt = () => {
     if (invoice?.status === 'paid' || invoice?.status === 'rejected') {
-      toast.warning('Không thể tạo phiếu thu cho hóa đơn đã thanh toán hoặc bị từ chối')
+      toast.warning('Không thể tạo phiếu thu cho đơn bán đã thanh toán hoặc bị từ chối')
       return
     }
     setShowCreateReceiptDialog(true)
   }
 
-  const handleUpdateWarehouseReceiptStatus = async (status, id) => {
-    try {
-      await dispatch(updateWarehouseReceipt({ id, data: { status } })).unwrap()
-      setShowUpdateWarehouseReceiptStatus(false)
-      fetchData()
-    } catch (error) {
-      console.error('Update warehouse receipt status error:', error)
-    }
-  }
+
 
   const getWarehouseReceiptStatusColor = (statusValue) => {
     switch (statusValue) {
@@ -452,11 +470,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
         >
           <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
             <DialogTitle className={cn(!isDesktop && "text-base")}>
-              Thông tin chi tiết hóa đơn: {invoice?.code}
+              Thông tin chi tiết đơn bán: {invoice?.code}
             </DialogTitle>
-            <DialogDescription className={cn(!isDesktop && "text-xs")}>
-              Dưới đây là thông tin chi tiết hóa đơn: {invoice?.code}.
-            </DialogDescription>
           </DialogHeader>
 
           <div className={cn(
@@ -712,7 +727,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                           </div>
 
                           <div className="flex justify-start border-t py-2 items-center">
-                            <strong>Trạng thái hóa đơn: </strong>
+                            <strong>Trạng thái đơn bán: </strong>
                             {invoice?.status && (
                               <div className="ml-2 w-[140px]">
                                 <Select
@@ -1063,7 +1078,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                         <TableCell>
                                           {voucher.createdByUser?.fullName || '—'}
                                         </TableCell>
-                                        <TableCell>{dateFormat(voucher.createdAt)}</TableCell>
+                                        <TableCell>{dateFormat(voucher.createdAt, true)}</TableCell>
                                         <TableCell>
                                           {voucher.status === 'draft' && (
                                             <Button
@@ -1089,14 +1104,30 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                               <div className="space-y-3">
                                 {invoice.paymentVouchers.map((voucher) => (
                                   <div key={voucher.id} className="space-y-2 rounded-lg border p-3 text-sm">
-                                    <div className="flex justify-between">
+                                    <div className="flex justify-between items-center">
                                       <strong>Mã phiếu:</strong>
-                                      <span
-                                        className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
-                                        onClick={() => handleOpenReceiptDetail(voucher)}
-                                      >
-                                        {voucher.code}
-                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <span
+                                          className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                          onClick={() => handleOpenReceiptDetail(voucher)}
+                                        >
+                                          {voucher.code}
+                                        </span>
+                                        {voucher.status === 'draft' && (
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              setReceiptToDelete(voucher)
+                                              setShowDeleteReceiptDialog(true)
+                                            }}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        )}
+                                      </div>
                                     </div>
                                     <div className="flex justify-between">
                                       <strong>Số tiền:</strong>
@@ -1114,37 +1145,61 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                     </div>
                                     <div className="flex justify-between items-center">
                                       <strong>Trạng thái:</strong>
-                                      <div className="flex items-center gap-2">
-                                        <div
-                                          className="cursor-pointer"
-                                          onClick={() => {
-                                            setSelectedReceipt(voucher)
-                                            setShowUpdateReceiptStatus(true)
-                                          }}
+                                      <div className='flex items-center justify-end'>
+                                        <Select
+                                          value={voucher.status}
+                                          onValueChange={(val) => handleUpdateReceiptStatus(val, voucher.id)}
                                         >
-                                          <span
-                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}
-                                          >
-                                            {getReceiptStatusObj(voucher.status)?.icon &&
-                                              React.createElement(getReceiptStatusObj(voucher.status).icon, { className: "h-3 w-3" })
-                                            }
-                                            {getReceiptStatusObj(voucher.status)?.label || voucher.status}
-                                          </span>
-                                        </div>
-                                        {voucher.status === 'draft' && (
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              setReceiptToDelete(voucher)
-                                              setShowDeleteReceiptDialog(true)
-                                            }}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        )}
+                                          <SelectTrigger className="h-auto border-none bg-transparent p-0 text-xs focus:ring-0 focus:ring-offset-0">
+                                            <SelectValue>
+                                              <span
+                                                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}
+                                              >
+                                                {getReceiptStatusObj(voucher.status)?.icon &&
+                                                  React.createElement(getReceiptStatusObj(voucher.status).icon, { className: "h-3 w-3" })
+                                                }
+                                                {getReceiptStatusObj(voucher.status)?.label || voucher.status}
+                                              </span>
+                                            </SelectValue>
+                                          </SelectTrigger>
+                                          <SelectContent align="end" className="w-[140px]">
+                                            {receiptStatus
+                                              .filter((s) => {
+                                                const currentStatus = voucher.status
+                                                if (
+                                                  currentStatus === 'canceled' ||
+                                                  currentStatus === 'cancelled'
+                                                ) {
+                                                  return (
+                                                    s.value === 'canceled' ||
+                                                    s.value === 'cancelled'
+                                                  )
+                                                }
+                                                if (currentStatus === 'completed') {
+                                                  return s.value !== 'draft'
+                                                }
+                                                return true
+                                              })
+                                              .map((s) => (
+                                                <SelectItem
+                                                  key={s.value}
+                                                  value={s.value}
+                                                  className="text-xs"
+                                                >
+                                                  <div
+                                                    className={`flex items-center gap-1 rounded-full px-2 py-1 ${getReceiptStatusColor(s.value)}`}
+                                                  >
+                                                    {s.icon &&
+                                                      React.createElement(
+                                                        s.icon,
+                                                        { className: 'h-3 w-3' },
+                                                      )}
+                                                    <span>{s.label}</span>
+                                                  </div>
+                                                </SelectItem>
+                                              ))}
+                                          </SelectContent>
+                                        </Select>
                                       </div>
                                     </div>
                                     <div className="flex justify-between">
@@ -1165,7 +1220,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                     </div>
                                     <div className="flex justify-between">
                                       <strong>Ngày tạo:</strong>
-                                      <span>{dateFormat(voucher.createdAt)}</span>
+                                      <span>{dateFormat(voucher.createdAt, true)}</span>
                                     </div>
                                   </div>
                                 ))}
@@ -1290,14 +1345,30 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                               <div className="space-y-4">
                                 {invoice.warehouseReceipts.map((receipt) => (
                                   <div key={receipt.id} className="space-y-3 rounded-lg border p-4 text-sm">
-                                    <div className="flex justify-between">
+                                    <div className="flex justify-between items-center">
                                       <strong>Mã phiếu kho:</strong>
-                                      <span
-                                        className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
-                                        onClick={() => handleOpenWarehouseReceiptDetail(receipt.id)}
-                                      >
-                                        {receipt.code}
-                                      </span>
+                                      <div className='flex items-center gap-2'>
+                                        <span
+                                          className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                          onClick={() => handleOpenWarehouseReceiptDetail(receipt.id)}
+                                        >
+                                          {receipt.code}
+                                        </span>
+                                        {receipt.status === 'draft' && (
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              setWarehouseReceiptToDelete(receipt)
+                                              setShowDeleteWarehouseReceiptDialog(true)
+                                            }}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        )}
+                                      </div>
                                     </div>
 
                                     <div className="flex justify-between">
@@ -1315,39 +1386,48 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
 
                                     <div className="flex justify-between items-center">
                                       <strong>Trạng thái:</strong>
-                                      <div className='flex items-center gap-2'>
-                                        <div
-                                          className="cursor-pointer"
-                                          onClick={() => {
-                                            setSelectedWarehouseReceipt(receipt)
-                                            setShowUpdateWarehouseReceiptStatus(true)
-                                          }}
+                                      <div className='flex items-center justify-end'>
+                                        <Select
+                                          value={receipt.status}
+                                          onValueChange={(val) => handleUpdateWarehouseReceiptStatus(val, receipt.id)}
                                         >
-                                          <span
-                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
-                                          >
-                                            {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
-                                            {receipt.status === 'draft'
-                                              ? 'Nháp'
-                                              : receipt.status === 'posted'
-                                                ? 'Đã ghi sổ'
-                                                : receipt.status}
-                                          </span>
-                                        </div>
-                                        {receipt.status === 'draft' && (
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              setWarehouseReceiptToDelete(receipt)
-                                              setShowDeleteWarehouseReceiptDialog(true)
-                                            }}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        )}
+                                          <SelectTrigger className="h-auto border-none bg-transparent p-0 text-xs focus:ring-0 focus:ring-offset-0">
+                                            <SelectValue>
+                                              <span
+                                                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
+                                              >
+                                                {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
+                                                {receipt.status === 'draft'
+                                                  ? 'Nháp'
+                                                  : receipt.status === 'posted'
+                                                    ? 'Đã ghi sổ'
+                                                    : receipt.status}
+                                              </span>
+                                            </SelectValue>
+                                          </SelectTrigger>
+                                          <SelectContent align="end" className="w-[140px]">
+                                            {warehouseReceiptStatuses
+                                              .filter((s) => {
+                                                // Should possibly filter transitions here if needed
+                                                // For now showing all options similar to UpdateWarehouseReceiptStatusDialog
+                                                return true
+                                              })
+                                              .map((s) => (
+                                                <SelectItem
+                                                  key={s.value}
+                                                  value={s.value}
+                                                  className="text-xs"
+                                                >
+                                                  <div
+                                                    className={cn("flex items-center gap-1 rounded-full px-2 py-1 font-medium", getWarehouseReceiptStatusColor(s.value))}
+                                                  >
+                                                    {s.icon && <s.icon className="h-3 w-3" />}
+                                                    <span>{s.label}</span>
+                                                  </div>
+                                                </SelectItem>
+                                              ))}
+                                          </SelectContent>
+                                        </Select>
                                       </div>
                                     </div>
 
@@ -1405,13 +1485,13 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                           </ol>
                         </div>
 
-                        {/* Cột phải: Hóa đơn âm (Credit notes) */}
+                        {/* Cột phải: Đơn bán âm (Credit notes) */}
                         <div>
                           <div className="mb-2 flex items-center justify-between">
                             <h3 className={cn(
                               "font-semibold",
                               isDesktop ? "text-base" : "text-sm"
-                            )}>Hóa đơn điều chỉnh</h3>
+                            )}>Đơn bán điều chỉnh</h3>
                           </div>
 
                           <div className="overflow-x-auto rounded-lg border">
@@ -1475,8 +1555,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                         <TableCell>
                                           {statusMeta ? (
                                             <ConfirmActionButton
-                                              title="Xác nhận duyệt hóa đơn điều chỉnh"
-                                              description={`Bạn có chắc muốn duyệt hóa đơn điều chỉnh ${cn.code}?`}
+                                              title="Xác nhận duyệt đơn điều chỉnh"
+                                              description={`Bạn có chắc muốn duyệt đơn điều chỉnh ${cn.code}?`}
                                               confirmText="Duyệt"
                                               onConfirm={() =>
                                                 handleApproveCreditNote(cn)
@@ -1553,11 +1633,14 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                             {/* Delete (confirm) */}
                                             <ConfirmActionButton
                                               title="Xác nhận xóa"
-                                              description={`Bạn có chắc muốn xóa hóa đơn điều chỉnh ${cn.code}? Hành động này không thể hoàn tác.`}
+                                              description={`Bạn có chắc muốn xóa đơn điều chỉnh ${cn.code}? Hành động này không thể hoàn tác.`}
                                               confirmText="Xóa"
                                               onConfirm={() =>
                                                 handleDeleteCreditNote(cn)
                                               }
+                                              contentClassName="z-[100020]"
+                                              overlayClassName="z-[100019]"
+                                              confirmBtnVariant="destructive"
                                             >
                                               <button
                                                 type="button"
@@ -1578,7 +1661,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                       colSpan={4}
                                       className="text-center text-muted-foreground"
                                     >
-                                      Không có hóa đơn điều chỉnh
+                                      Không có đơn điều chỉnh
                                     </TableCell>
                                   </TableRow>
                                 )}
@@ -1664,7 +1747,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
 
                     <div className="flex items-center justify-between">
                       <h2 className="py-2 text-lg font-semibold">
-                        Người lập hóa đơn
+                        Người lập đơn bán
                       </h2>
                     </div>
 
@@ -1819,30 +1902,26 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                 >
                   In Hợp Đồng
                 </Button>
-                {!invoice.salesContract && (
+
+                {invoice.status === 'pending' && (
                   <Button
                     size={!isDesktop ? "sm" : "default"}
                     className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
-                    onClick={handleCreateSalesContract}
+                    onClick={() => onEdit?.()}
                   >
-                    Tạo Hợp Đồng
+                    Sửa
                   </Button>
                 )}
-
-                <Button
-                  size={!isDesktop ? "sm" : "default"}
-                  className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
-                  onClick={() => onEdit?.()}
-                >
-                  Sửa
-                </Button>
 
                 {invoice.status === 'pending' && canDelete && (
                   <ConfirmActionButton
                     title="Xác nhận xóa"
-                    description="Bạn có chắc chắn muốn xóa hóa đơn này? Hành động này không thể hoàn tác."
+                    description="Bạn có chắc chắn muốn xóa đơn bán này? Hành động này không thể hoàn tác."
                     confirmText="Xóa"
                     onConfirm={handleDeleteInvoice}
+                    contentClassName="z-[100020]"
+                    overlayClassName="z-[100019]"
+                    confirmBtnVariant="destructive"
                   >
                     <Button
                       variant="destructive"
@@ -1860,7 +1939,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                 type="button"
                 variant="outline"
                 size={!isDesktop ? "sm" : "default"}
-                className={cn(!isDesktop && "w-full col-span-2")}
+                className={cn(!isDesktop && (invoice?.status === 'pending' && canDelete ? "w-full" : "w-full col-span-2"))}
               >
                 Đóng
               </Button>
@@ -1880,8 +1959,22 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
             initialData={installmentData}
             onConfirm={async (finalData) => {
               try {
+                // 1. Ghi nhận print attempt
+                if (finalData.salesContractId) {
+                  dispatch(increasePrintAttempt(finalData.salesContractId))
+                }
+
                 setInstallmentExporting(true)
                 await exportInstallmentWord(finalData, installmentFileName)
+
+                // 2. Ghi nhận print success sau khi export thành công
+                if (finalData.salesContractId) {
+                  await dispatch(increasePrintSuccess(finalData.salesContractId)).unwrap()
+
+                  // Refresh invoice data to get updated contract info (print count)
+                  fetchData()
+                }
+
                 toast.success('Đã xuất hợp đồng trả chậm thành công')
                 setShowInstallmentPreview(false)
               } catch (error) {
@@ -1977,7 +2070,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
           <ViewReceiptDialog
             open={showReceiptDetailDialog}
             onOpenChange={setShowReceiptDetailDialog}
-            receipt={selectedReceiptDetail}
+            receiptId={selectedReceiptDetail?.id}
             contentClassName="z-[10005]"
             overlayClassName="z-[10004]"
           />

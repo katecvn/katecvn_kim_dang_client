@@ -9,6 +9,13 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   IconArrowLeft,
@@ -27,6 +34,58 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useNavigate } from 'react-router-dom'
 import { useFieldArray } from 'react-hook-form'
 import { IconTrash } from '@tabler/icons-react'
+
+const BANK_MAPPING = {
+  // Big 4
+  vietinbank: 'ICB',
+  vietcombank: 'VCB',
+  bidv: 'BIDV',
+  agribank: 'VBA',
+
+  // Popular banks
+  techcombank: 'TCB',
+  mbbank: 'MB',
+  mb: 'MB',
+  acb: 'ACB',
+  tpbank: 'TPB',
+  vpbank: 'VPB',
+  sacombank: 'STB',
+  hdbank: 'HDB',
+  ocb: 'OCB',
+  shb: 'SHB',
+  eximbank: 'EIB',
+  msb: 'MSB',
+  seabank: 'SSB',
+  lienvietpostbank: 'LPB',
+  pvcombank: 'PVCB',
+  vib: 'VIB',
+  baoviet: 'BVBANK',
+  ncb: 'NCB',
+  abbank: 'ABB',
+  bacabank: 'BAB',
+  kienlongbank: 'KLB',
+  namabank: 'NAB',
+  pgbank: 'PGB',
+  saigonbank: 'SGB',
+  vietabank: 'VAB',
+  vieta: 'VAB',
+  vietbank: 'VBB',
+  vietcapital: 'BVB',
+
+  // Foreign banks
+  woori: 'WVN',
+  shinhan: 'SHBVN',
+  uob: 'UOB',
+  hsbc: 'HSBC',
+  scb: 'SCVN',
+  cimb: 'CIMB',
+  public: 'PBVN',
+
+  // E-wallets
+  momo: 'MOMO',
+  vnpay: 'VNPAY',
+  zalopay: 'ZALO',
+}
 
 const GeneralSettingPage = () => {
   const loading = useSelector((state) => state.setting.loading)
@@ -78,13 +137,13 @@ const GeneralSettingPage = () => {
             setting.payload.banks?.length > 0
               ? setting.payload.banks
               : [
-                  {
-                    accountNumber: '',
-                    accountName: '',
-                    bankName: '',
-                    bankBranch: '',
-                  },
-                ],
+                {
+                  accountNumber: '',
+                  accountName: '',
+                  bankName: '',
+                  bankBranch: '',
+                },
+              ],
         },
       })
     }
@@ -325,12 +384,26 @@ const GeneralSettingPage = () => {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Ngân hàng</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="VD: Vietcombank"
-                                    {...field}
-                                  />
-                                </FormControl>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                  value={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Chọn ngân hàng" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="h-96">
+                                    {Object.keys(BANK_MAPPING).map((bankKey) => (
+                                      <SelectItem key={bankKey} value={bankKey}>
+                                        <span className="capitalize">
+                                          {bankKey} ({BANK_MAPPING[bankKey]})
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                                 <FormMessage />
                               </FormItem>
                             )}

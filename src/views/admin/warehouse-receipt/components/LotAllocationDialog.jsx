@@ -18,6 +18,7 @@ import { getAvailableLots, allocateLots, clearAvailableLots } from '@/stores/Lot
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
 import { IconAlertCircle, IconCheck } from '@tabler/icons-react'
+import { cn } from '@/lib/utils'
 
 /**
  * Dialog to select lots for a warehouse receipt detail line
@@ -39,6 +40,9 @@ const LotAllocationDialog = ({
   qtyRequired,
   existingAllocations = [],
   onSuccess,
+  contentClassName,
+  overlayClassName,
+  onCreateLot,
 }) => {
   const dispatch = useDispatch()
   const { availableLots, loading, error } = useSelector((state) => state.lot)
@@ -150,12 +154,24 @@ const LotAllocationDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
+      <DialogContent className={cn("max-w-3xl max-h-[90vh]", contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
-          <DialogTitle>Chọn Lô Cho: {productName}</DialogTitle>
-          <DialogDescription>
-            Cần xuất: <strong>{qtyRequired}</strong> cái
-          </DialogDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <DialogTitle>Chọn Lô Cho: {productName}</DialogTitle>
+              <DialogDescription>
+                Cần xuất: <strong>{qtyRequired}</strong> cái
+              </DialogDescription>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 gap-1 bg-green-600 hover:bg-green-700 text-white"
+              onClick={onCreateLot}
+            >
+              + Tạo Lô Mới
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="overflow-auto max-h-[60vh] space-y-3">

@@ -9,7 +9,7 @@ import {
   DialogTrigger,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
+import { IdCardIcon, MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -54,6 +54,9 @@ import { Input } from '@/components/ui/input'
 import { useNavigate } from 'react-router-dom'
 import { getSetting } from '@/stores/SettingSlice'
 import { cn } from '@/lib/utils'
+import { getPublicUrl } from '@/utils/file'
+
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 
 const CreateReceiptDialog = ({
   invoices,
@@ -66,6 +69,7 @@ const CreateReceiptDialog = ({
   onSuccess,
   ...props
 }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const dispatch = useDispatch()
   const [loading, setLoading] = useState(false)
   const [invoiceData, setInvoiceData] = useState([])
@@ -232,15 +236,25 @@ const CreateReceiptDialog = ({
           </DialogTrigger>
         )}
 
-        <DialogContent className={cn("md:h-auto md:max-w-full", contentClassName)} overlayClassName={overlayClassName}>
-          <DialogHeader>
+        <DialogContent
+          className={cn(
+            "md:h-auto md:max-w-full",
+            isMobile && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none translate-x-0 translate-y-0 flex flex-col",
+            contentClassName
+          )}
+          overlayClassName={overlayClassName}
+        >
+          <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
             <DialogTitle>Thêm phiếu thu mới</DialogTitle>
             <DialogDescription>
               Kiểm tra và hoàn thành thông tin bên dưới để thêm phiếu thu mới
             </DialogDescription>
           </DialogHeader>
 
-          <div className="max-h-[65vh] overflow-auto md:max-h-[75vh]">
+          <div className={cn(
+            "overflow-auto",
+            isMobile ? "h-full px-4 pb-4 flex-1" : "max-h-[65vh] md:max-h-[75vh]"
+          )}>
             <Form {...form}>
               <form id="create-receipt" onSubmit={form.handleSubmit(onSubmit)}>
                 {loading ? (
@@ -260,43 +274,123 @@ const CreateReceiptDialog = ({
                         </h2>
 
                         <div className="space-y-6">
-                          <div className="overflow-x-auto rounded-lg border">
-                            <Table className="min-w-full">
-                              <TableHeader>
-                                <TableRow className="bg-secondary text-xs">
-                                  <TableHead className="w-8">TT</TableHead>
-                                  <TableHead className="min-w-40">
-                                    Sản phẩm
-                                  </TableHead>
-                                  <TableHead className="min-w-20">SL</TableHead>
-                                  <TableHead className="min-w-16">ĐVT</TableHead>
-                                  <TableHead className="min-w-20">Giá</TableHead>
-                                  <TableHead className="min-w-16">Thuế</TableHead>
-                                  <TableHead className="min-w-28 md:w-16">
-                                    Giảm giá
-                                  </TableHead>
-                                  <TableHead className="min-w-28">
-                                    Tổng cộng
-                                  </TableHead>
-                                  <TableHead className="min-w-28 md:w-20">
-                                    BH
-                                  </TableHead>
-                                  <TableHead className="min-w-28">
-                                    Ghi chú
-                                  </TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
+                          <div className={cn("overflow-x-auto rounded-lg border", isMobile && "border-0 overflow-visible")}>
+                            {!isMobile ? (
+                              <Table className="min-w-full">
+                                <TableHeader>
+                                  <TableRow className="bg-secondary text-xs">
+                                    <TableHead className="w-8">TT</TableHead>
+                                    <TableHead className="min-w-[250px]">
+                                      Sản phẩm
+                                    </TableHead>
+                                    <TableHead className="min-w-20">SL</TableHead>
+                                    <TableHead className="min-w-16">ĐVT</TableHead>
+                                    <TableHead className="min-w-20">Giá</TableHead>
+                                    <TableHead className="min-w-16">Thuế</TableHead>
+                                    <TableHead className="min-w-28 md:w-16">
+                                      Giảm giá
+                                    </TableHead>
+                                    <TableHead className="min-w-28">
+                                      Tổng cộng
+                                    </TableHead>
+                                    <TableHead className="min-w-28 md:w-20">
+                                      BH
+                                    </TableHead>
+                                    <TableHead className="min-w-28">
+                                      Ghi chú
+                                    </TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {invoiceItems.map((product, index) => (
+                                    <TableRow key={product.id}>
+                                      <TableCell>{index + 1}</TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-3">
+                                          <Avatar className="h-10 w-10 rounded-lg border bg-muted/50">
+                                            <AvatarImage
+                                              src={getPublicUrl(product?.image)}
+                                              alt={product.productName}
+                                              className="object-cover"
+                                            />
+                                            <AvatarFallback className="rounded-lg text-xs">
+                                              {product.productName?.substring(0, 2).toUpperCase()}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[10px] font-bold text-muted-foreground leading-none">
+                                              {product.product?.code || product.productCode || '—'}
+                                            </span>
+                                            <span className="font-medium text-sm leading-tight line-clamp-2">
+                                              {product.productName}
+                                            </span>
+                                            {product?.options && (
+                                              <div className="break-words text-xs text-muted-foreground">
+                                                {product?.options
+                                                  ?.map(
+                                                    (option) =>
+                                                      `${option.name}: ${option.pivot.value}`,
+                                                  )
+                                                  .join(', ')}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>{product.quantity}</TableCell>
+                                      <TableCell>
+                                        {product.unitName || 'Không có'}
+                                      </TableCell>
+                                      <TableCell className="text-end">
+                                        {moneyFormat(product.price)}
+                                      </TableCell>
+                                      <TableCell className="text-end">
+                                        {moneyFormat(product.taxAmount)}
+                                      </TableCell>
+                                      <TableCell className="text-end">
+                                        {moneyFormat(product.discount)}
+                                      </TableCell>
+                                      <TableCell className="text-end">
+                                        {moneyFormat(product.total)}
+                                      </TableCell>
+                                      <TableCell>
+                                        {product.warranty || 'Không có'}
+                                      </TableCell>
+                                      <TableCell>
+                                        {product.note || 'Không có'}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            ) : (
+                              <div className="space-y-4">
                                 {invoiceItems.map((product, index) => (
-                                  <TableRow key={product.id}>
-                                    <TableCell>{index + 1}</TableCell>
-                                    <TableCell>
-                                      <div>
-                                        <div className="font-medium">
+                                  <div
+                                    key={product.id}
+                                    className="rounded-lg border p-3 shadow-sm bg-card text-card-foreground"
+                                  >
+                                    {/* Header: Image + Name + Code */}
+                                    <div className="flex items-start gap-3 mb-3">
+                                      <Avatar className="h-12 w-12 rounded-lg border bg-muted/50 shrink-0">
+                                        <AvatarImage
+                                          src={getPublicUrl(product?.image)}
+                                          alt={product.productName}
+                                          className="object-cover"
+                                        />
+                                        <AvatarFallback className="rounded-lg text-xs">
+                                          {product.productName?.substring(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-[10px] font-bold text-muted-foreground leading-none mb-1">
+                                          {product.product?.code || product.productCode || '—'}
+                                        </div>
+                                        <div className="font-medium text-sm leading-tight line-clamp-2">
                                           {product.productName}
                                         </div>
                                         {product?.options && (
-                                          <div className="break-words text-sm text-muted-foreground">
+                                          <div className="break-words text-xs text-muted-foreground mt-1">
                                             {product?.options
                                               ?.map(
                                                 (option) =>
@@ -306,33 +400,77 @@ const CreateReceiptDialog = ({
                                           </div>
                                         )}
                                       </div>
-                                    </TableCell>
-                                    <TableCell>{product.quantity}</TableCell>
-                                    <TableCell>
-                                      {product.unitName || 'Không có'}
-                                    </TableCell>
-                                    <TableCell className="text-end">
-                                      {moneyFormat(product.price)}
-                                    </TableCell>
-                                    <TableCell className="text-end">
-                                      {moneyFormat(product.taxAmount)}
-                                    </TableCell>
-                                    <TableCell className="text-end">
-                                      {moneyFormat(product.discount)}
-                                    </TableCell>
-                                    <TableCell className="text-end">
-                                      {moneyFormat(product.total)}
-                                    </TableCell>
-                                    <TableCell>
-                                      {product.warranty || 'Không có'}
-                                    </TableCell>
-                                    <TableCell>
-                                      {product.note || 'Không có'}
-                                    </TableCell>
-                                  </TableRow>
+                                    </div>
+
+                                    <Separator className="my-2" />
+
+                                    {/* Details Grid */}
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                      <div className="flex flex-col">
+                                        <span className="text-muted-foreground text-xs">
+                                          Số lượng
+                                        </span>
+                                        <span className="font-medium">
+                                          {product.quantity} {product.unitName}
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-col text-right">
+                                        <span className="text-muted-foreground text-xs">
+                                          Đơn giá
+                                        </span>
+                                        <span className="font-medium">
+                                          {moneyFormat(product.price)}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex flex-col">
+                                        <span className="text-muted-foreground text-xs">
+                                          Giảm giá
+                                        </span>
+                                        <span className="font-medium">
+                                          {moneyFormat(product.discount)}
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-col text-right">
+                                        <span className="text-muted-foreground text-xs">
+                                          Thuế
+                                        </span>
+                                        <span className="font-medium">
+                                          {moneyFormat(product.taxAmount)}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-2 flex justify-between items-end bg-secondary/30 p-2 rounded">
+                                      <span className="font-semibold text-sm">
+                                        Thành tiền
+                                      </span>
+                                      <span className="font-bold text-primary">
+                                        {moneyFormat(product.total)}
+                                      </span>
+                                    </div>
+
+                                    {/* Note/Warranty if exists */}
+                                    {(product.note || product.warranty) && (
+                                      <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                                        {product.warranty && (
+                                          <div className="flex gap-1">
+                                            <span className="font-semibold">BH:</span>{' '}
+                                            {product.warranty}
+                                          </div>
+                                        )}
+                                        {product.note && (
+                                          <div className="flex gap-1">
+                                            <span className="font-semibold">GC:</span>{' '}
+                                            {product.note}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 ))}
-                              </TableBody>
-                            </Table>
+                              </div>
+                            )}
                           </div>
                           <div className="grid gap-4 md:grid-cols-[2fr,1fr]">
                             <FormField
@@ -397,6 +535,7 @@ const CreateReceiptDialog = ({
                                           value={moneyFormat(field.value)}
                                           placeholder="0"
                                           className="w-full text-end"
+                                          onFocus={(e) => isMobile && e.target.select()}
                                           onChange={(e) => {
                                             const rawValue =
                                               e.target.value.replace(/\D/g, '')
@@ -482,7 +621,7 @@ const CreateReceiptDialog = ({
                                           <Select
                                             onValueChange={(value) => {
                                               const selectedBank = banks.find(
-                                                (b) => b.accountNumber === value,
+                                                (b) => String(b.accountNumber) === value,
                                               )
                                               field.onChange(selectedBank)
                                             }}
@@ -497,8 +636,8 @@ const CreateReceiptDialog = ({
                                               <SelectGroup>
                                                 {banks.map((bank, index) => (
                                                   <SelectItem
-                                                    key={index}
-                                                    value={bank.accountNumber}
+                                                    key={`${index}-${bank.accountNumber}`}
+                                                    value={String(bank.accountNumber)}
                                                   >
                                                     <div className="flex flex-col">
                                                       <span className="font-medium">
@@ -550,7 +689,7 @@ const CreateReceiptDialog = ({
                         </div>
                       </div>
 
-                      <div className="w-full rounded-lg border p-4 lg:w-72">
+                      <div className="w-full rounded-lg border p-4 lg:w-72 lg:sticky lg:top-0 lg:h-fit">
                         <div className="flex items-center justify-between">
                           <h2 className="py-2 text-lg font-semibold">
                             Khách hàng
@@ -590,6 +729,13 @@ const CreateReceiptDialog = ({
 
                               <div className="flex items-center text-muted-foreground">
                                 <div className="mr-2 h-4 w-4 ">
+                                  <IdCardIcon className="h-4 w-4" />
+                                </div>
+                                {customer?.identityCard || 'Chưa cập nhật'}
+                              </div>
+
+                              <div className="flex items-center text-muted-foreground">
+                                <div className="mr-2 h-4 w-4 ">
                                   <Mail className="h-4 w-4" />
                                 </div>
                                 <a href={`mailto:${customer?.email}`}>
@@ -614,7 +760,8 @@ const CreateReceiptDialog = ({
             </Form>
           </div>
 
-          <DialogFooter className="flex gap-2 sm:space-x-0">
+
+          <DialogFooter className={cn("flex gap-2 sm:space-x-0", isMobile && "pb-4 px-4 flex-row")}>
             <DialogClose asChild>
               <Button
                 type="button"
@@ -622,12 +769,13 @@ const CreateReceiptDialog = ({
                 onClick={() => {
                   form.reset()
                 }}
+                className={cn(isMobile && "flex-1")}
               >
                 Hủy
               </Button>
             </DialogClose>
 
-            <Button form="create-receipt" loading={loading}>
+            <Button form="create-receipt" loading={loading} className={cn(isMobile && "flex-1")}>
               Thêm mới
             </Button>
           </DialogFooter>

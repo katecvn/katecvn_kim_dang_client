@@ -40,6 +40,7 @@ import {
   postWarehouseReceipt,
 } from '@/stores/WarehouseReceiptSlice'
 import { getInvoices, updateInvoiceStatus } from '@/stores/InvoiceSlice'
+import { increasePrintAttempt, increasePrintSuccess } from '@/stores/SalesContractSlice'
 import {
   getEndOfCurrentMonth,
   getStartOfCurrentMonth,
@@ -671,8 +672,20 @@ const DataTableRowActions = ({ row }) => {
           initialData={installmentData}
           onConfirm={async (finalData) => {
             try {
+              // 1. Ghi nhận print attempt
+              if (finalData.salesContractId) {
+                dispatch(increasePrintAttempt(finalData.salesContractId))
+              }
+
               setInstallmentExporting(true)
               await exportInstallmentWord(finalData, installmentFileName)
+
+              // 2. Ghi nhận print success sau khi export thành công
+              if (finalData.salesContractId) {
+                await dispatch(increasePrintSuccess(finalData.salesContractId)).unwrap()
+                // Không cần refresh invoice list ở đây vì print count chỉ hiện trong dialog chi tiết
+              }
+
               toast.success('Đã xuất hợp đồng trả chậm thành công')
               setShowInstallmentPreview(false)
             } catch (error) {

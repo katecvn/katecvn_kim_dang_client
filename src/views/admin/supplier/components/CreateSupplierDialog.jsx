@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { PlusIcon } from '@radix-ui/react-icons'
+import { cn } from '@/lib/utils'
 
 import {
   Form,
@@ -32,6 +33,8 @@ const CreateSupplierDialog = ({
   open,
   onOpenChange,
   showTrigger = true,
+  contentClassName,
+  overlayClassName,
   ...props
 }) => {
   const loading = useSelector((state) => state.supplier.loading)
@@ -71,7 +74,10 @@ const CreateSupplierDialog = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className="md:h-auto md:max-w-2xl">
+      <DialogContent
+        className={cn("md:h-auto md:max-w-2xl", contentClassName)}
+        overlayClassName={overlayClassName}
+      >
         <DialogHeader>
           <DialogTitle>Thêm nhà cung cấp mới</DialogTitle>
           <DialogDescription>

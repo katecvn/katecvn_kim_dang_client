@@ -51,7 +51,7 @@ const DateFilterPicker = ({ value, onChange, placeholder, disabled }) => {
           {value ? dateFormat(value) : placeholder}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto p-0 z-[100021]" align="start">
         <DatePicker
           mode="single"
           selected={value ? new Date(value) : undefined}

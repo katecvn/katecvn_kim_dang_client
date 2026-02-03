@@ -13,12 +13,12 @@ import {
 const DataTableViewOptions = ({ table }) => {
   const options = {
     code: 'Mã phiếu',
-    date: 'Ngày lập',
-    customer: 'Khách hàng',
-    user: 'Người tạo',
-    totalAmount: 'Tổng tiền',
-    paidAmount: 'Đã thanh toán',
-    debt: 'Nợ',
+    receiverType: 'Loại',
+    reason: 'Lý do',
+    paymentDate: 'Ngày thanh toán',
+    amount: 'Số tiền',
+    paymentMethod: 'Phương thức',
+    status: 'Trạng thái',
     updatedAt: 'Cập nhật',
   }
 

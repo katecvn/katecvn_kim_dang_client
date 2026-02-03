@@ -21,6 +21,8 @@ import {
 import { DataTableToolbar } from './DataTableToolbar'
 import { DataTablePagination } from './DataTablePagination'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import MobilePaymentCard from './MobilePaymentCard'
 
 const PaymentDataTable = ({
   columns,
@@ -30,6 +32,7 @@ const PaymentDataTable = ({
   onPageChange,
   onPageSizeChange
 }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
   const [columnFilters, setColumnFilters] = useState([])
@@ -77,6 +80,44 @@ const PaymentDataTable = ({
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
+
+  // Mobile View
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
+        <DataTableToolbar table={table} />
+
+        <div className="space-y-2">
+          {loading ? (
+            <>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="border rounded-lg p-3 space-y-2">
+                  <Skeleton className="h-[20px] w-1/3 rounded-md" />
+                  <Skeleton className="h-[16px] w-2/3 rounded-md" />
+                  <Skeleton className="h-[16px] w-1/2 rounded-md" />
+                </div>
+              ))}
+            </>
+          ) : table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <MobilePaymentCard
+                key={row.id}
+                payment={row.original}
+                isSelected={row.getIsSelected()}
+                onSelectChange={(checked) => row.toggleSelected(checked)}
+              />
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Không có kết quả nào
+            </div>
+          )}
+        </div>
+
+        <DataTablePagination table={table} />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">

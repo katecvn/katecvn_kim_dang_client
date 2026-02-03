@@ -20,7 +20,7 @@ export function DataTableViewOptions({ table }) {
           className="ml-auto hidden h-8 lg:flex"
         >
           <MixerHorizontalIcon className="mr-2 h-4 w-4" />
-          Hiển thị
+          Xem
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[150px]">

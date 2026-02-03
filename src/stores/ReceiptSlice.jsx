@@ -20,9 +20,17 @@ export const createReceipt = createAsyncThunk(
 
 export const getReceipts = createAsyncThunk(
   'receipt/get-receipts',
-  async (_, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 20 } = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get('/payment-vouchers')
+      const response = await api.get('/payment-vouchers', {
+        params: {
+          voucherType: 'receipt_in',
+          fromDate: fromDate ?? undefined,
+          toDate: toDate ?? undefined,
+          page,
+          limit,
+        },
+      })
       // API returns: { data: { data: [...], pagination: {...} } }
       // We need to extract the data array
       return response.data.data || response.data
@@ -37,7 +45,11 @@ export const getMyReceipts = createAsyncThunk(
   'receipt/get-my-receipts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/payment-vouchers/my-receipt')
+      const response = await api.get('/payment-vouchers/my-payment-vouchers', {
+        params: {
+          voucherType: 'receipt_in',
+        },
+      })
       // API returns: { data: { data: [...], pagination: {...} } }
       // We need to extract the data array
       return response.data.data || response.data
@@ -148,7 +160,13 @@ export const receiptSlice = createSlice({
       })
       .addCase(getReceipts.fulfilled, (state, action) => {
         state.loading = false
-        state.receipts = action.payload
+        if (action.payload?.data && Array.isArray(action.payload.data)) {
+          state.receipts = action.payload.data
+        } else if (Array.isArray(action.payload)) {
+          state.receipts = action.payload
+        } else {
+          state.receipts = []
+        }
       })
       .addCase(getReceipts.rejected, (state, action) => {
         state.loading = false
@@ -160,7 +178,13 @@ export const receiptSlice = createSlice({
       })
       .addCase(getMyReceipts.fulfilled, (state, action) => {
         state.loading = false
-        state.receipts = action.payload
+        if (action.payload?.data && Array.isArray(action.payload.data)) {
+          state.receipts = action.payload.data
+        } else if (Array.isArray(action.payload)) {
+          state.receipts = action.payload
+        } else {
+          state.receipts = []
+        }
       })
       .addCase(getMyReceipts.rejected, (state, action) => {
         state.loading = false

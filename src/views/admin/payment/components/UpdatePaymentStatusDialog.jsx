@@ -27,6 +27,8 @@ const UpdatePaymentStatusDialog = ({
   onSubmit, // Handler function to call on save
   contentClassName,
   overlayClassName,
+  targetStatus, // New prop to pre-select status
+  selectContentClassName,
 }) => {
   // Normalize status to handle both single and double 'l' from backend/frontend mismatch
   const normalizedStatus = useMemo(() => {
@@ -39,7 +41,7 @@ const UpdatePaymentStatusDialog = ({
     [statuses, normalizedStatus],
   )
 
-  const [status, setStatus] = useState(normalizedStatus || '')
+  const [status, setStatus] = useState(targetStatus || normalizedStatus || '')
   const [loading, setLoading] = useState(false)
 
   // Explicit color mapping since data might not have it
@@ -55,8 +57,8 @@ const UpdatePaymentStatusDialog = ({
 
   useEffect(() => {
     if (!open) return
-    setStatus(normalizedStatus || '')
-  }, [open, normalizedStatus])
+    setStatus(targetStatus || normalizedStatus || '')
+  }, [open, normalizedStatus, targetStatus])
 
   const selectedStatusObj = useMemo(
     () => statuses.find((s) => s.value === status),
@@ -132,7 +134,7 @@ const UpdatePaymentStatusDialog = ({
               </SelectValue>
             </SelectTrigger>
 
-            <SelectContent position="popper" className="z-[10010]">
+            <SelectContent position="popper" className={cn("z-[10010]", selectContentClassName)}>
               {filteredStatuses.map((s) => (
                 <SelectItem
                   key={s.value}

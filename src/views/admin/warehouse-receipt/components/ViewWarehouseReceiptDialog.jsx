@@ -16,19 +16,21 @@ import { receiptTypes, warehouseReceiptStatuses } from '../data'
 import { cn } from '@/lib/utils'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { useState, useEffect, useCallback } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { getWarehouseReceiptById, updateWarehouseReceipt, postWarehouseReceipt, cancelWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import LotAllocationDialog from './LotAllocationDialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { MobileIcon } from '@radix-ui/react-icons'
 import { Mail, MapPin, CreditCard, Package, Printer, FileSpreadsheet } from 'lucide-react'
+import PrintWarehouseReceiptView from './PrintWarehouseReceiptView'
 import { getPublicUrl } from '@/utils/file'
 import { exportWarehouseReceiptToExcel } from '@/utils/export-warehouse-receipt'
 import { UpdateWarehouseReceiptStatusDialog } from './UpdateWarehouseReceiptStatusDialog'
 import { toast } from 'sonner'
 import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
 import InvoiceDialog from '../../invoice/components/InvoiceDialog'
+import ViewProductDialog from '../../product/components/ViewProductDialog'
 
 const ViewWarehouseReceiptDialog = ({
   receiptId,
@@ -50,6 +52,13 @@ const ViewWarehouseReceiptDialog = ({
 
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
   const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
+  const [showCreateLotDialog, setShowCreateLotDialog] = useState(false)
+  const [printData, setPrintData] = useState(null)
+
+  // View Product
+  const [selectedProductId, setSelectedProductId] = useState(null)
+  const [showViewProductDialog, setShowViewProductDialog] = useState(false)
+  const setting = useSelector((state) => state.setting.setting)
   const [details, setDetails] = useState([])
 
   const handleUpdateStatus = async (newStatus, id) => {
@@ -150,25 +159,38 @@ const ViewWarehouseReceiptDialog = ({
     setLotDialogOpen(false)
   }
 
+  const handlePrintWarehouseReceipt = () => {
+    if (!receipt) return
+    setPrintData(receipt)
+    setTimeout(() => setPrintData(null), 100)
+  }
+
+  const isMobile = useMediaQuery('(max-width: 768px)')
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
       <DialogContent
         className={cn(
           'bg-background md:h-auto md:max-w-7xl',
+          isMobile && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none translate-x-0 translate-y-0 flex flex-col z-[10002]",
           contentClassName
         )}
         overlayClassName={overlayClassName}
       >
-        <DialogHeader>
-          <DialogTitle>
-            Thông tin chi tiết phiếu kho: {receipt?.code}
+        <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
+          <DialogTitle className={cn(isMobile && "flex flex-col items-start gap-1 items-center")}>
+            <span>Thông tin chi tiết phiếu kho</span>
+            <span>{receipt?.code}</span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="sr-only">
             Dưới đây là thông tin chi tiết phiếu kho: {receipt?.code}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[75vh] overflow-auto">
+        <div className={cn(
+          "overflow-auto",
+          isMobile ? "h-full px-4 pb-4 flex-1" : "max-h-[75vh]"
+        )}>
           {loading ? (
             <div className="space-y-4 p-4">
               <Skeleton className="h-8 w-1/3" />
@@ -255,7 +277,13 @@ const ViewWarehouseReceiptDialog = ({
                               </div>
 
                               <div className="flex-1">
-                                <div className="font-medium">{detail.productName}</div>
+                                <div
+                                  className="font-medium cursor-pointer text-primary hover:underline hover:text-blue-600"
+                                  onClick={() => {
+                                    setSelectedProductId(detail.productId)
+                                    setShowViewProductDialog(true)
+                                  }}
+                                >{detail.productName}</div>
                                 <div className="text-sm text-muted-foreground">
                                   Mã: {detail.productCode}
                                 </div>
@@ -269,9 +297,9 @@ const ViewWarehouseReceiptDialog = ({
                                       <label className="text-xs text-muted-foreground">SL Chứng từ:</label>
                                       <input
                                         type="number"
-                                        className="w-20 h-8 rounded-md border px-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary"
+                                        className="w-20 h-8 rounded-md border px-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary bg-muted"
                                         value={detail.qtyDocument || 0}
-                                        onChange={(e) => handleDetailChange(index, 'qtyDocument', e.target.value)}
+                                        readOnly
                                       />
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -279,7 +307,7 @@ const ViewWarehouseReceiptDialog = ({
                                       <input
                                         type="number"
                                         className="w-20 h-8 rounded-md border px-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary"
-                                        value={detail.qtyActual || 0}
+                                        value={detail.qtyActual}
                                         onChange={(e) => handleDetailChange(index, 'qtyActual', e.target.value)}
                                       />
                                     </div>
@@ -309,8 +337,8 @@ const ViewWarehouseReceiptDialog = ({
                                 {receipt.status === 'draft' && (
                                   <Button
                                     type="button"
-                                    variant="outline"
                                     size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
                                     onClick={() => handleOpenLotDialog(detail)}
                                   >
                                     {detail.lotAllocations && detail.lotAllocations.length > 0
@@ -374,7 +402,7 @@ const ViewWarehouseReceiptDialog = ({
               </div>
 
               {/* ===== Right: Thông tin đối tác ===== */}
-              <div className="w-full rounded-lg border p-4 lg:w-80 h-fit">
+              <div className="w-full rounded-lg border p-4 lg:w-80 h-fit sticky top-0">
                 <div className="flex items-center justify-between">
                   <h2 className="py-2 text-lg font-semibold">
                     {receipt?.receiptType === 1 ? 'Nhà cung cấp' : 'Khách hàng'}
@@ -488,7 +516,7 @@ const ViewWarehouseReceiptDialog = ({
             contentClassName
           )}
         >
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
             {receipt?.status === 'draft' && (
               <Button
                 className="gap-2 bg-green-600 hover:bg-green-700 text-white"
@@ -505,7 +533,10 @@ const ViewWarehouseReceiptDialog = ({
               <FileSpreadsheet className="h-4 w-4" />
               Xuất Excel
             </Button>
-            <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+            <Button
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={handlePrintWarehouseReceipt}
+            >
               <Printer className="h-4 w-4" />
               In phiếu
             </Button>
@@ -527,8 +558,11 @@ const ViewWarehouseReceiptDialog = ({
           productId={selectedDetail.productId}
           productName={selectedDetail.productName}
           qtyRequired={parseFloat(selectedDetail.qtyActual)}
+          receiptType={receipt?.receiptType}
           existingAllocations={selectedDetail.lotAllocations || []}
           onSuccess={handleLotAllocationSuccess}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
         />
       )}
       {/* Update Status Dialog */}
@@ -570,6 +604,28 @@ const ViewWarehouseReceiptDialog = ({
           showTrigger={false}
         />
       )}
+
+      {/* Print View */}
+      {printData && (
+        <PrintWarehouseReceiptView
+          receipt={printData}
+          setting={setting}
+        />
+
+      )}
+
+      {
+        selectedProductId && (
+          <ViewProductDialog
+            open={showViewProductDialog}
+            onOpenChange={setShowViewProductDialog}
+            productId={selectedProductId}
+            showTrigger={false}
+            contentClassName="z-[100020]"
+            overlayClassName="z-[100019]"
+          />
+        )
+      }
     </Dialog>
   )
 }

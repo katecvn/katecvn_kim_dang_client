@@ -293,10 +293,10 @@ const CreateProductDialog = ({
         note: data.note,
         type: data.type,
         salaryCoefficient: {
-          coefficient: data.salaryCoefficient.coefficient,
-          type: data.salaryCoefficient.type,
+          coefficient: data.salaryCoefficient?.coefficient || 0,
+          type: data.salaryCoefficient?.type || 'multiplier',
           effectiveDate: formatDateToYYYYMMDD(
-            data.salaryCoefficient.effectiveDate,
+            data.salaryCoefficient?.effectiveDate || new Date(),
           ),
         },
         image: selectedFile,
@@ -714,7 +714,7 @@ const CreateProductDialog = ({
                   )}
                 />
 
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="salaryCoefficient.coefficient"
                   render={({ field }) => (
@@ -726,7 +726,7 @@ const CreateProductDialog = ({
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                /> */}
 
                 <FormField
                   control={form.control}
@@ -1025,7 +1025,7 @@ const CreateProductDialog = ({
                   )}
                 />
 
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="hasExpiry"
                   render={({ field }) => (
@@ -1077,7 +1077,7 @@ const CreateProductDialog = ({
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                /> */}
 
                 <FormField
                   control={form.control}

@@ -45,9 +45,6 @@ const PaymentPage = () => {
             <h2 className="text-2xl font-bold tracking-tight">
               Danh sách phiếu chi
             </h2>
-            <p className="text-muted-foreground">
-              Quản lý các khoản chi tiêu, thanh toán cho nhà cung cấp
-            </p>
           </div>
           <div>
             <DateRange

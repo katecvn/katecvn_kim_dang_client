@@ -66,16 +66,16 @@ const baseCreateSchema = z.object({
   type: z.string().nonempty('Loại là bắt buộc'),
   // source: z.string().nonempty('Nguồn là bắt buộc'),
 
-  salaryCoefficient: z.object({
-    coefficient: z
-      .union([z.string(), z.number()])
-      .transform((val) => parseNumber(val))
-      .refine((val) => !isNaN(val) && val >= 0, {
-        message: 'Hệ số phải là số và lớn hơn hoặc bằng 0',
-      }),
-    type: z.string().nonempty('Loại lương là bắt buộc'),
-    effectiveDate: dateString,
-  }),
+  // salaryCoefficient: z.object({
+  //   coefficient: z
+  //     .union([z.string(), z.number()])
+  //     .transform((val) => parseNumber(val))
+  //     .refine((val) => !isNaN(val) && val >= 0, {
+  //       message: 'Hệ số phải là số và lớn hơn hoặc bằng 0',
+  //     }),
+  //   type: z.string().nonempty('Loại lương là bắt buộc'),
+  //   effectiveDate: dateString,
+  // }),
 
   image: z.instanceof(File),
   hasExpiry: z.boolean().optional(),

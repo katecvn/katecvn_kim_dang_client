@@ -1,4 +1,12 @@
 import { Cross2Icon } from '@radix-ui/react-icons'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { EllipsisVertical } from 'lucide-react'
 
 import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +36,7 @@ const DataTableToolbar = ({ table }) => {
   const [qrCodeData, setQrCodeData] = useState(null)
   const [qrLoading, setQrLoading] = useState(false)
   const dispatch = useDispatch()
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const canRemind = selectedRows.length === 1
 
   const handleGenerateQR = async () => {
@@ -54,6 +63,98 @@ const DataTableToolbar = ({ table }) => {
     } finally {
       setQrLoading(false)
     }
+  }
+
+  // Mobile View
+  if (isMobile) {
+    return (
+      <div className="space-y-2">
+        <Input
+          placeholder="Tìm kiếm theo mã phiếu thu..."
+          value={table.getState().globalFilter || ''}
+          onChange={(e) => table.setGlobalFilter(e.target.value)}
+          className="h-8 w-full text-sm"
+        />
+
+        <div className="flex justify-end gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 px-2">
+                <EllipsisVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem
+                disabled={!canRemind}
+                onClick={() => setOpenReminder(true)}
+                className="text-xs"
+              >
+                <BellIcon className="mr-2 h-3 w-3" />
+                Nhắc hạn thanh toán
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                disabled={selectedRows.length !== 1 || selectedRows[0]?.original?.status !== 'draft'}
+                onClick={handleGenerateQR}
+                className="text-xs"
+              >
+                <QrCode className="mr-2 h-3 w-3" />
+                Tạo QR thanh toán
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {canRemind && (
+          <PaymentReminderDialog
+            open={openReminder}
+            onOpenChange={setOpenReminder}
+            receipt={selectedRows[0].original}
+          />
+        )}
+
+        <Dialog open={openQrDialog} onOpenChange={setOpenQrDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Mã QR Thanh Toán</DialogTitle>
+              <DialogDescription>
+                Quét mã QR để thanh toán {qrCodeData?.voucherCode}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-col items-center space-y-4 py-4">
+              {qrCodeData?.qrLink ? (
+                <>
+                  <img
+                    src={qrCodeData.qrLink}
+                    alt="QR Code"
+                    className="w-64 h-64 border rounded-lg"
+                  />
+                  <div className="text-center space-y-2">
+                    <p className="text-lg font-semibold text-primary">
+                      {moneyFormat(qrCodeData.amount)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {qrCodeData.description}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  Đang tải mã QR...
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="sm:justify-center">
+              <Button onClick={() => setOpenQrDialog(false)} className="w-full sm:w-auto">
+                Đóng
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    )
   }
 
   return (

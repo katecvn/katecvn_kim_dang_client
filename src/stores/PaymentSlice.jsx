@@ -9,6 +9,7 @@ export const getPayments = createAsyncThunk(
     try {
       const response = await api.get('/payment-vouchers', {
         params: {
+          voucherType: 'payment_out',
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
           page,
@@ -27,8 +28,9 @@ export const getMyPayments = createAsyncThunk(
   'payment/get-my-payments',
   async ({ fromDate = null, toDate = null, page = 1, limit = 20 } = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get('/payment-vouchers/my-payment', {
+      const response = await api.get('/payment-vouchers/my-payment-vouchers', {
         params: {
+          voucherType: 'payment_out',
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
           page,

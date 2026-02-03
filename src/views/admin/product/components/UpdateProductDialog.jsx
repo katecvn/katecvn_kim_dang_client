@@ -885,7 +885,7 @@ const UpdateProductDialog = ({
                   )}
                 />
 
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="salaryCoefficient.coefficient"
                   render={({ field }) => (
@@ -897,7 +897,7 @@ const UpdateProductDialog = ({
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                /> */}
 
                 <FormField
                   control={form.control}
@@ -1258,7 +1258,7 @@ const UpdateProductDialog = ({
                   )}
                 />
 
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="hasExpiry"
                   render={({ field }) => (
@@ -1281,9 +1281,9 @@ const UpdateProductDialog = ({
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                /> */}
 
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="manageSerial"
                   render={({ field }) => (
@@ -1310,7 +1310,7 @@ const UpdateProductDialog = ({
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                /> */}
 
                 <FormField
                   control={form.control}

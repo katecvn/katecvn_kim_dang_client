@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { Button } from '@/components/custom/Button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -22,6 +23,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@radix-ui/react-separator'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 import { Mail, MapPin, CreditCard, Package } from 'lucide-react'
@@ -31,12 +39,14 @@ import { getPublicUrl } from '@/utils/file'
 import { getPaymentById, updatePaymentStatus } from '@/stores/PaymentSlice'
 import UpdatePaymentStatusDialog from './UpdatePaymentStatusDialog'
 import { paymentMethods } from '../../receipt/data'
+import { paymentStatus } from '../data'
 import { purchaseOrderPaymentStatuses } from '../../purchase-order/data'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import ViewProductDialog from '../../product/components/ViewProductDialog'
+import ViewSalesContractDialog from '../../sales-contract/components/ViewSalesContractDialog'
 
 const ViewPaymentDialog = ({
-  payment: initialPayment,
   paymentId,
   open,
   onOpenChange,
@@ -45,15 +55,51 @@ const ViewPaymentDialog = ({
   overlayClassName,
   ...props
 }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const [fetchedPayment, setFetchedPayment] = useState(null)
+
   const [loading, setLoading] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
 
-  const payment = fetchedPayment || initialPayment
+  // View Product
+  const [selectedProductId, setSelectedProductId] = useState(null)
+  const [showViewProductDialog, setShowViewProductDialog] = useState(false)
 
-  // Payment Vouchers usually relate to a Purchase Order
-  const purchaseOrder = payment?.purchaseOrder || {}
-  const items = purchaseOrder?.items || []
+  // View Sales Contract
+  const [selectedContractId, setSelectedContractId] = useState(null)
+  const [showViewContractDialog, setShowViewContractDialog] = useState(false)
+
+  const payment = fetchedPayment
+
+  // Determine source of items: PO -> Sales Contract -> Direct Products
+  const purchaseOrder = payment?.purchaseOrder
+  const salesContract = payment?.salesContract
+
+  // Filter statuses logic matching UpdatePaymentStatusDialog
+  const filteredStatuses = (status) => {
+    const normalizedStatus = status === 'cancelled' ? 'cancelled' : status
+
+    if (normalizedStatus === 'cancelled') {
+      return paymentStatus.filter(
+        (s) => s.value === 'cancelled',
+      )
+    }
+    if (normalizedStatus === 'completed') {
+      return paymentStatus.filter((s) => s.value !== 'draft')
+    }
+    return paymentStatus
+  }
+
+  const selectedStatusObj = paymentStatus.find((s) => s.value === payment?.status)
+
+  let items = []
+  if (purchaseOrder?.items?.length > 0) {
+    items = purchaseOrder.items
+  } else if (salesContract?.items?.length > 0) {
+    items = salesContract.items
+  } else if (payment?.products?.length > 0) {
+    items = payment.products
+  }
 
   const dispatch = useDispatch()
 
@@ -65,12 +111,6 @@ const ViewPaymentDialog = ({
       if (paymentId) {
         const result = await dispatch(getPaymentById(paymentId)).unwrap()
         setFetchedPayment(result)
-      } else if (open && initialPayment) {
-        // If generic usage without ID, maybe can't refresh easily unless ID is known
-        if (initialPayment.id) {
-          const result = await dispatch(getPaymentById(initialPayment.id)).unwrap()
-          setFetchedPayment(result)
-        }
       }
     } catch (error) {
       console.error(error)
@@ -78,7 +118,7 @@ const ViewPaymentDialog = ({
   }
 
   useEffect(() => {
-    if (open && paymentId && !initialPayment) {
+    if (open && paymentId) {
       const fetchPayment = async () => {
         setLoading(true)
         try {
@@ -92,11 +132,31 @@ const ViewPaymentDialog = ({
         }
       }
       fetchPayment()
-    } else if (open && initialPayment) {
-      setFetchedPayment(initialPayment)
-      // Optional: Refetch specific details if initialPayment is partial
+    } else if (!open) {
+      // Reset state when closed
+      setFetchedPayment(null)
     }
-  }, [open, paymentId, initialPayment, dispatch])
+  }, [open, paymentId, dispatch])
+
+  // Helper to determine display name for receiver type
+  const getReceiverLabel = () => {
+    if (payment?.receiverType === 'customer') return 'Khách hàng'
+    if (payment?.receiverType === 'supplier') return 'Nhà cung cấp'
+    if (payment?.receiverType === 'employee') return 'Nhân viên'
+    return 'Người nhận'
+  }
+
+  // Helper to get receiver data
+  const getReceiverData = () => {
+    if (payment?.receiver) return payment.receiver
+    if (purchaseOrder?.supplier) return purchaseOrder.supplier
+    // Add other cases if needed
+    return {}
+  }
+
+  const receiverData = getReceiverData()
+  const receiverLabel = getReceiverLabel()
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
@@ -108,17 +168,30 @@ const ViewPaymentDialog = ({
         </DialogTrigger>
       ) : null}
 
-      <DialogContent className={cn("md:h-auto md:max-w-7xl", contentClassName)} overlayClassName={overlayClassName}>
-        <DialogHeader>
-          <DialogTitle>
-            Thông tin chi tiết phiếu chi: {payment?.code}
+      <DialogContent
+        className={cn(
+          "md:h-auto md:max-w-7xl",
+          isMobile && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none translate-x-0 translate-y-0 flex flex-col",
+          contentClassName
+        )}
+        overlayClassName={overlayClassName}
+      >
+        <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
+          <DialogTitle className={cn(isMobile && "flex flex-col items-center gap-1")}>
+            <span>Thông tin chi tiết phiếu chi: </span>
+            <span>{payment?.code}</span>
           </DialogTitle>
-          <DialogDescription>
-            Dưới đây là thông tin chi tiết phiếu chi: {payment?.code}
-          </DialogDescription>
+          {!isMobile && (
+            <DialogDescription>
+              Dưới đây là thông tin chi tiết phiếu chi: {payment?.code}
+            </DialogDescription>
+          )}
         </DialogHeader>
 
-        <div className="max-h-[75vh] overflow-auto">
+        <div className={cn(
+          "overflow-auto",
+          isMobile ? "h-full px-4 pb-4 flex-1" : "max-h-[75vh]"
+        )}>
           {loading ? (
             <div className="space-y-4 p-4">
               <Skeleton className="h-8 w-1/3" />
@@ -131,11 +204,22 @@ const ViewPaymentDialog = ({
             <div className="flex flex-col gap-2 lg:flex-row">
               {/* ===== Left: Phiếu + bảng hàng hoá ===== */}
               <div className="flex-1 space-y-6 rounded-lg border p-4">
-                <h2 className="text-lg font-semibold">
+                <h2 className={cn("text-lg font-semibold", isMobile && "flex flex-col gap-1")}>
                   Thông tin phiếu chi
                   {payment?.purchaseOrder && (
                     <span className="ml-2 text-sm text-muted-foreground">
                       (Đơn hàng: {payment.purchaseOrder.code})
+                    </span>
+                  )}
+                  {payment?.salesContract && (
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      (Hợp đồng: <span
+                        className="cursor-pointer text-primary hover:underline hover:text-blue-600"
+                        onClick={() => {
+                          setSelectedContractId(payment.salesContract.id)
+                          setShowViewContractDialog(true)
+                        }}
+                      >{payment.salesContract.code}</span>)
                     </span>
                   )}
                 </h2>
@@ -143,69 +227,132 @@ const ViewPaymentDialog = ({
                 <div className="space-y-6">
                   {/* Bảng sản phẩm (Nếu có thông tin đơn hàng đi kèm) */}
                   {items.length > 0 ? (
-                    <div className="overflow-x-auto rounded-lg border">
-                      <Table className="min-w-full">
-                        <TableHeader>
-                          <TableRow className="bg-secondary text-xs">
-                            <TableHead className="w-8">TT</TableHead>
-                            <TableHead className="min-w-40">Sản phẩm</TableHead>
-                            <TableHead className="min-w-20">SL</TableHead>
-                            <TableHead className="min-w-16">ĐVT</TableHead>
-                            <TableHead className="min-w-20">Giá nhập</TableHead>
-                            <TableHead className="min-w-16">Thuế</TableHead>
-                            <TableHead className="min-w-28 md:w-16">
-                              Giảm giá
-                            </TableHead>
-                            <TableHead className="min-w-28">Tổng cộng</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {items.map((item, index) => (
-                            <TableRow key={item.id || index}>
-                              <TableCell>{index + 1}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border">
-                                    {item.product?.image ? (
-                                      <img
-                                        src={getPublicUrl(item.product.image)}
-                                        alt={item.productName}
-                                        className="h-full w-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="flex h-full w-full items-center justify-center bg-secondary">
-                                        <Package className="h-5 w-5 text-muted-foreground" />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div>
-                                    <div className="font-medium">
-                                      {item.productName}
+                    <div className={cn("rounded-lg border", isMobile && "border-0")}>
+                      {!isMobile ? (
+                        <Table className="min-w-full">
+                          <TableHeader>
+                            <TableRow className="bg-secondary text-xs">
+                              <TableHead className="w-8">TT</TableHead>
+                              <TableHead className="min-w-40">Sản phẩm</TableHead>
+                              <TableHead className="min-w-20">SL</TableHead>
+                              <TableHead className="min-w-16">ĐVT</TableHead>
+                              <TableHead className="min-w-20">Giá</TableHead>
+                              {/* <TableHead className="min-w-16">Thuế</TableHead> */}
+                              {/* <TableHead className="min-w-28 md:w-16">
+                                Giảm giá
+                              </TableHead> */}
+                              <TableHead className="min-w-28 text-right">Tổng cộng</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {items.map((item, index) => (
+                              <TableRow key={item.id || index}>
+                                <TableCell>{index + 1}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border">
+                                      {item.product?.image ? (
+                                        <img
+                                          src={getPublicUrl(item.product.image)}
+                                          alt={item.productName || item.name}
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                          <Package className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+                                      )}
                                     </div>
-                                    <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                                    <div>
+                                      <div
+                                        className="font-medium cursor-pointer text-primary hover:underline hover:text-blue-600"
+                                        onClick={() => {
+                                          setSelectedProductId(item.productId || item.product?.id)
+                                          setShowViewProductDialog(true)
+                                        }}
+                                      >
+                                        {item.productName || item.name}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">{item.productCode || item.code}</div>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>{item.quantity}</TableCell>
+                                <TableCell>
+                                  {item.unitName || item.unit || '—'}
+                                </TableCell>
+                                <TableCell>
+                                  {moneyFormat(item.unitPrice || item.price)}
+                                </TableCell>
+                                {/* <TableCell className="text-end">
+                                  {moneyFormat(item.taxAmount || 0)}
+                                </TableCell>
+                                <TableCell className="text-end">
+                                  {moneyFormat(item.discountAmount || item.discount || 0)}
+                                </TableCell> */}
+                                <TableCell className="text-end">
+                                  {moneyFormat(item.totalAmount || item.total)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <div className="space-y-4">
+                          {items.map((item, index) => (
+                            <div
+                              key={item.id || index}
+                              className="rounded-lg border p-3 shadow-sm bg-card text-card-foreground"
+                            >
+                              <div className="flex items-start gap-3 mb-3">
+                                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border bg-muted/50">
+                                  {item.product?.image ? (
+                                    <img
+                                      src={getPublicUrl(item.product.image)}
+                                      alt={item.productName || item.name}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                      <Package className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-sm leading-tight line-clamp-2 cursor-pointer text-primary hover:underline hover:text-blue-600"
+                                    onClick={() => {
+                                      setSelectedProductId(item.productId || item.product?.id)
+                                      setShowViewProductDialog(true)
+                                    }}
+                                  >
+                                    {item.productName || item.name}
+                                  </div>
+                                  <div className="text-[10px] font-bold text-muted-foreground mt-1">
+                                    {item.productCode || item.code}
                                   </div>
                                 </div>
-                              </TableCell>
-                              <TableCell>{item.quantity}</TableCell>
-                              <TableCell>
-                                {item.unitName || '—'}
-                              </TableCell>
-                              <TableCell className="text-end">
-                                {moneyFormat(item.unitPrice)}
-                              </TableCell>
-                              <TableCell className="text-end">
-                                {moneyFormat(item.taxAmount)}
-                              </TableCell>
-                              <TableCell className="text-end">
-                                {moneyFormat(item.discountAmount || item.discount)}
-                              </TableCell>
-                              <TableCell className="text-end">
-                                {moneyFormat(item.totalAmount || item.total)}
-                              </TableCell>
-                            </TableRow>
+                              </div>
+
+                              <Separator className="my-2" />
+
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="flex flex-col">
+                                  <span className="text-muted-foreground text-xs">Số lượng</span>
+                                  <span className="font-medium">{item.quantity} {item.unitName || item.unit}</span>
+                                </div>
+                                <div className="flex flex-col text-right">
+                                  <span className="text-muted-foreground text-xs">Đơn giá</span>
+                                  <span className="font-medium">{moneyFormat(item.unitPrice || item.price)}</span>
+                                </div>
+                              </div>
+                              <div className="mt-2 flex justify-between items-end bg-secondary/30 p-2 rounded">
+                                <span className="font-semibold text-sm">Thành tiền</span>
+                                <span className="font-bold text-primary">{moneyFormat(item.totalAmount || item.total)}</span>
+                              </div>
+                            </div>
                           ))}
-                        </TableBody>
-                      </Table>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center text-muted-foreground py-4 border rounded bg-secondary/20">
@@ -243,39 +390,85 @@ const ViewPaymentDialog = ({
                       <Separator className="my-4" />
                       <div className="flex justify-between items-center">
                         <strong>Trạng thái:</strong>
-                        <Badge
-                          className={cn(
-                            "cursor-pointer hover:opacity-80",
-                            payment?.status === 'completed' ? 'bg-green-500' : (payment?.status === 'canceled' || payment?.status === 'cancelled') ? 'bg-red-500' : 'bg-yellow-500'
-                          )}
-                          onClick={() => setShowUpdateStatusDialog(true)}
-                        >
-                          {payment?.status === 'completed' ? 'Đã chi' : payment?.status === 'draft' ? 'Nháp' : payment?.status === 'canceled' ? 'Đã hủy' : payment?.status || 'Không xác định'}
-                        </Badge>
+                        {isMobile ? (
+                          <div className='flex items-center justify-end'>
+                            <Select
+                              value={payment?.status}
+                              onValueChange={(val) => handleUpdateStatus(val, payment.id)}
+                            >
+                              <SelectTrigger className="h-auto border-none bg-transparent p-0 text-xs focus:ring-0 focus:ring-offset-0">
+                                <SelectValue placeholder="Chọn trạng thái">
+                                  <span
+                                    className={cn(
+                                      "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
+                                      payment?.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                        payment?.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                          'bg-yellow-100 text-yellow-700'
+                                    )}
+                                  >
+                                    {selectedStatusObj?.label || payment?.status}
+                                  </span>
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent position="popper" align="end" className="w-[140px] z-[100070]">
+                                {filteredStatuses(payment?.status).map((s) => (
+                                  <SelectItem
+                                    key={s.value}
+                                    value={s.value}
+                                    className="cursor-pointer text-xs"
+                                  >
+                                    <span
+                                      className={cn(
+                                        "inline-flex items-center gap-1 font-medium",
+                                        s.value === 'completed' ? 'text-green-600' :
+                                          s.value === 'cancelled' ? 'text-red-600' :
+                                            'text-yellow-600'
+                                      )}
+                                    >
+                                      {s.label}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <Badge
+                            className={cn(
+                              "cursor-pointer hover:opacity-80",
+                              payment?.status === 'completed' ? 'bg-green-500' : (payment?.status === 'canceled' || payment?.status === 'cancelled') ? 'bg-red-500' : 'bg-yellow-500'
+                            )}
+                            onClick={() => setShowUpdateStatusDialog(true)}
+                          >
+                            {payment?.status === 'completed' ? 'Đã chi' : payment?.status === 'draft' ? 'Nháp' : payment?.status === 'canceled' ? 'Đã hủy' : payment?.status || 'Không xác định'}
+                          </Badge>
+                        )}
                       </div>
 
                       {showUpdateStatusDialog && (
                         <UpdatePaymentStatusDialog
                           open={showUpdateStatusDialog}
                           onOpenChange={setShowUpdateStatusDialog}
-                          payment={payment}
-                          onSuccess={() => {
-                            setShowUpdateStatusDialog(false)
-                            if (paymentId) dispatch(getPaymentById(paymentId)).then(res => setFetchedPayment(res.payload))
-                            else if (initialPayment?.id) dispatch(getPaymentById(initialPayment.id)).then(res => setFetchedPayment(res.payload))
-                          }}
+                          paymentId={payment?.id}
+                          currentStatus={payment?.status}
+                          statuses={paymentStatus}
+                          onSubmit={handleUpdateStatus}
+                          contentClassName="z-[100060]"
+                          overlayClassName="z-[100059]"
+                          selectContentClassName="z-[100070]"
                         />
                       )}
 
-                      {purchaseOrder && (
+                      {/* Financial summary from related source */}
+                      {(purchaseOrder || salesContract) && (
                         <>
                           <div className="flex justify-between mt-2">
                             <strong>Tổng đơn hàng:</strong>
-                            <div>{moneyFormat(purchaseOrder.totalAmount)}</div>
+                            <div>{moneyFormat(purchaseOrder?.totalAmount || salesContract?.totalAmount)}</div>
                           </div>
                           <div className="flex justify-between">
                             <strong>Đã thanh toán:</strong>
-                            <div>{moneyFormat(purchaseOrder.paidAmount)}</div>
+                            <div>{moneyFormat(purchaseOrder?.paidAmount || salesContract?.paidAmount)}</div>
                           </div>
                         </>
                       )}
@@ -315,24 +508,25 @@ const ViewPaymentDialog = ({
               </div>
 
               {/* ===== Right: Nhà cung cấp & Nhân viên ===== */}
-              <div className="w-full rounded-lg border p-4 lg:w-80 h-fit bg-card">
+              <div className="w-full rounded-lg border p-4 lg:w-80 h-fit bg-card lg:sticky lg:top-0">
                 <div className="flex items-center justify-between">
-                  <h2 className="py-2 text-lg font-semibold">Nhà cung cấp</h2>
+                  <h2 className="py-2 text-lg font-semibold">{receiverLabel}</h2>
                 </div>
 
                 <div className="space-y-6">
-                  {purchaseOrder?.supplier || payment?.receiverId ? (
+                  {receiverData?.name || payment?.receiverId ? (
                     <>
                       <div className="flex items-center gap-4">
                         <Avatar className="h-8 w-8">
                           <AvatarImage
-                            src={`https://ui-avatars.com/api/?bold=true&background=random&name=${purchaseOrder?.supplier?.name || 'NCC'}`}
-                            alt={purchaseOrder?.supplier?.name}
+                            src={`https://ui-avatars.com/api/?bold=true&background=random&name=${receiverData?.name || 'User'}`}
+                            alt={receiverData?.name}
                           />
-                          <AvatarFallback>NCC</AvatarFallback>
+                          <AvatarFallback>U</AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-medium">{purchaseOrder?.supplier?.name || 'Nhà cung cấp'}</div>
+                          <div className="font-medium">{receiverData?.name || 'Người nhận'}</div>
+                          {receiverData?.code && <div className="text-xs text-muted-foreground">{receiverData.code}</div>}
                         </div>
                       </div>
 
@@ -346,17 +540,24 @@ const ViewPaymentDialog = ({
                             <div className="mr-2 h-4 w-4 ">
                               <MobileIcon className="h-4 w-4" />
                             </div>
-                            <a href={`tel:${purchaseOrder?.supplier?.phone}`}>
-                              {purchaseOrder?.supplier?.phone || 'Chưa cập nhật'}
+                            <a href={`tel:${receiverData?.phone}`}>
+                              {receiverData?.phone || 'Chưa cập nhật'}
                             </a>
+                          </div>
+
+                          <div className="flex items-center text-muted-foreground">
+                            <div className="mr-2 h-4 w-4 ">
+                              <CreditCard className="h-4 w-4" />
+                            </div>
+                            {receiverData?.identityCard || 'Chưa cập nhật'}
                           </div>
 
                           <div className="flex items-center text-muted-foreground">
                             <div className="mr-2 h-4 w-4 ">
                               <Mail className="h-4 w-4" />
                             </div>
-                            <a href={`mailto:${purchaseOrder?.supplier?.email}`}>
-                              {purchaseOrder?.supplier?.email || 'Chưa cập nhật'}
+                            <a href={`mailto:${receiverData?.email}`}>
+                              {receiverData?.email || 'Chưa cập nhật'}
                             </a>
                           </div>
 
@@ -364,13 +565,13 @@ const ViewPaymentDialog = ({
                             <div className="mr-2 h-4 w-4 ">
                               <MapPin className="h-4 w-4" />
                             </div>
-                            {purchaseOrder?.supplier?.address || 'Chưa cập nhật'}
+                            {receiverData?.address || 'Chưa cập nhật'}
                           </div>
                         </div>
                       </div>
                     </>
                   ) : (
-                    <div className="text-sm text-muted-foreground">Không có thông tin nhà cung cấp</div>
+                    <div className="text-sm text-muted-foreground">Không có thông tin người nhận</div>
                   )}
                 </div>
 
@@ -428,21 +629,42 @@ const ViewPaymentDialog = ({
                   </div>
                 </div>
               </div>
+
               {/* ===== End right ===== */}
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex gap-2 sm:space-x-0">
+        <DialogFooter className={cn("flex gap-2 sm:space-x-0", isMobile && "px-4 pb-4")}>
           <DialogClose asChild>
-            <Button type="button" variant="outline">
+            <Button type="button" variant="outline" className={cn(isMobile && "w-full")}>
               Đóng
             </Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
 
+      {selectedProductId && (
+        <ViewProductDialog
+          open={showViewProductDialog}
+          onOpenChange={setShowViewProductDialog}
+          productId={selectedProductId}
+          showTrigger={false}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
 
+      {selectedContractId && (
+        <ViewSalesContractDialog
+          open={showViewContractDialog}
+          onOpenChange={setShowViewContractDialog}
+          contractId={selectedContractId}
+          showTrigger={false}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
     </Dialog>
   )
 }

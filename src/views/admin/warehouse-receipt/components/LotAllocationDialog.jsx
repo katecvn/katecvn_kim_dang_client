@@ -19,6 +19,8 @@ import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
 import { IconAlertCircle, IconCheck } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
+import CreateLotForAllocationDialog from './CreateLotForAllocationDialog'
+import { Trash2 } from 'lucide-react'
 
 /**
  * Dialog to select lots for a warehouse receipt detail line
@@ -43,6 +45,7 @@ const LotAllocationDialog = ({
   contentClassName,
   overlayClassName,
   onCreateLot,
+  receiptType,
 }) => {
   const dispatch = useDispatch()
   const { availableLots, loading, error } = useSelector((state) => state.lot)
@@ -51,6 +54,10 @@ const LotAllocationDialog = ({
   const [selections, setSelections] = useState({})
   const [saving, setSaving] = useState(false)
   const [validationError, setValidationError] = useState(null)
+
+  // New lots created during this session
+  const [newLots, setNewLots] = useState([])
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
 
   // Fetch available lots when dialog opens
   useEffect(() => {
@@ -79,20 +86,33 @@ const LotAllocationDialog = ({
     }
   }, [open, productId, dispatch, existingAllocations])
 
-  // Calculate total selected quantity
+  // Calculate total selected quantity (including new lots)
   const totalSelected = Object.values(selections).reduce((sum, sel) => {
     return sum + (sel.selected ? parseFloat(sel.quantity || 0) : 0)
-  }, 0)
+  }, 0) + newLots.reduce((sum, lot) => sum + parseFloat(lot.quantity || 0), 0)
 
-  // Handle lot checkbox toggle
+  // Handle new lot creation success
+  const handleCreateLotSuccess = (data) => {
+    setNewLots([...newLots, { ...data, tempId: Date.now() }])
+    setValidationError(null)
+  }
+
+  const handleRemoveNewLot = (tempId) => {
+    setNewLots(newLots.filter(l => l.tempId !== tempId))
+    setValidationError(null)
+  }
+
+  // Handle lot selection toggle
   const handleLotToggle = (lotId, checked) => {
-    setSelections((prev) => ({
-      ...prev,
-      [lotId]: {
-        selected: checked,
-        quantity: checked ? (prev[lotId]?.quantity || 0) : 0,
-      },
-    }))
+    setSelections((prev) => {
+      const newSelections = { ...prev }
+      if (checked) {
+        newSelections[lotId] = { selected: true, quantity: 0 }
+      } else {
+        delete newSelections[lotId]
+      }
+      return newSelections
+    })
     setValidationError(null)
   }
 
@@ -101,9 +121,9 @@ const LotAllocationDialog = ({
     const quantity = parseFloat(value) || 0
     const lot = availableLots.find((l) => l.id === lotId)
 
-    // Validate against lot's available quantity
-    if (lot && quantity > lot.currentQuantity) {
-      setValidationError(`Lô ${lot.code} chỉ còn ${lot.currentQuantity} ${lot.unit?.name || 'cái'}`)
+    // Validate against lot's available quantity ONLY if not Import (1)
+    if (receiptType !== 1 && lot && quantity > Number(lot.currentQuantity)) {
+      setValidationError(`Lô ${lot.code} chỉ còn ${Number(lot.currentQuantity)} ${lot.unit?.name || 'cái'}`)
       return
     }
 
@@ -111,7 +131,7 @@ const LotAllocationDialog = ({
       ...prev,
       [lotId]: {
         ...prev[lotId],
-        quantity,
+        quantity: quantity,
       },
     }))
     setValidationError(null)
@@ -120,7 +140,8 @@ const LotAllocationDialog = ({
   // Handle save allocations
   const handleSave = async () => {
     // Validate total quantity
-    if (totalSelected !== qtyRequired) {
+    // Using a small epsilon for float comparison
+    if (Math.abs(totalSelected - qtyRequired) > 0.001) {
       setValidationError(
         `Tổng số lượng phân bổ (${totalSelected}) phải bằng số lượng cần xuất (${qtyRequired})`
       )
@@ -128,15 +149,27 @@ const LotAllocationDialog = ({
     }
 
     // Build allocations array
-    const allocations = Object.entries(selections)
+    const existingAllocations = Object.entries(selections)
       .filter(([_, sel]) => sel.selected && sel.quantity > 0)
       .map(([lotId, sel]) => ({
         lotId: parseInt(lotId),
         quantity: sel.quantity,
       }))
 
+    const newLotAllocations = newLots.map(lot => ({
+      quantity: parseFloat(lot.quantity),
+      newLotData: {
+        batchNumber: lot.batchNumber,
+        code: lot.code,
+        name: lot.name,
+        note: lot.note
+      }
+    }))
+
+    const allocations = [...existingAllocations, ...newLotAllocations]
+
     if (allocations.length === 0) {
-      setValidationError('Vui lòng chọn ít nhất một lô')
+      setValidationError('Vui lòng chọn ít nhất một lô hoặc tạo lô mới')
       return
     }
 
@@ -166,8 +199,8 @@ const LotAllocationDialog = ({
             <Button
               type="button"
               size="sm"
-              className="h-8 gap-1 bg-green-600 hover:bg-green-700 text-white"
-              onClick={onCreateLot}
+              className="h-8 gap-1 bg-green-600 hover:bg-green-700 text-white mr-5"
+              onClick={() => setShowCreateDialog(true)}
             >
               + Tạo Lô Mới
             </Button>
@@ -175,17 +208,43 @@ const LotAllocationDialog = ({
         </DialogHeader>
 
         <div className="overflow-auto max-h-[60vh] space-y-3">
+
+          {/* List New Lots */}
+          {newLots.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-semibold text-primary">Lô mới tạo (Chưa lưu):</div>
+              {newLots.map((lot) => (
+                <div key={lot.tempId} className="border border-dashed border-green-500 bg-green-50 rounded-lg p-3 relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6 text-red-500 hover:bg-red-100"
+                    onClick={() => handleRemoveNewLot(lot.tempId)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="font-medium">SL:</span> {lot.quantity}</div>
+                    <div><span className="font-medium">Batch:</span> {lot.batchNumber || '---'}</div>
+                    <div><span className="font-medium">Mã:</span> {lot.code || '(Tự sinh)'}</div>
+                    <div><span className="font-medium">Tên:</span> {lot.name || '(Tự sinh)'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {loading ? (
             <div className="space-y-2">
               {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-24 w-full" />
               ))}
             </div>
-          ) : availableLots.length === 0 ? (
+          ) : availableLots.length === 0 && newLots.length === 0 ? (
             <Alert>
               <IconAlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Không tìm thấy lô khả dụng cho sản phẩm này
+                Không tìm thấy lô khả dụng cho sản phẩm này. Hãy tạo lô mới.
               </AlertDescription>
             </Alert>
           ) : (
@@ -218,7 +277,7 @@ const LotAllocationDialog = ({
                           )}
                         </div>
                         <Badge variant="outline">
-                          Tồn: {lot.currentQuantity} {lot.unit?.name || 'cái'}
+                          Tồn: {Number(lot.currentQuantity)} {lot.unit?.name || 'cái'}
                         </Badge>
                       </div>
 
@@ -241,7 +300,7 @@ const LotAllocationDialog = ({
                         {lot.unitCost && (
                           <div>
                             <span className="text-muted-foreground">Giá vốn: </span>
-                            {moneyFormat(lot.unitCost)}
+                            {moneyFormat(Number(lot.unitCost))}
                           </div>
                         )}
                       </div>
@@ -306,12 +365,18 @@ const LotAllocationDialog = ({
           <Button
             type="button"
             onClick={handleSave}
-            disabled={saving || loading || totalSelected !== qtyRequired}
+            disabled={saving || loading || Math.abs(totalSelected - qtyRequired) > 0.001}
           >
             {saving ? 'Đang lưu...' : 'Lưu'}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <CreateLotForAllocationDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSuccess={handleCreateLotSuccess}
+      />
     </Dialog>
   )
 }

@@ -27,6 +27,7 @@ const UpdateReceiptStatusDialog = ({
   onSubmit, // Handler function to call on save
   contentClassName,
   overlayClassName,
+  targetStatus, // New prop to pre-select status
 }) => {
   // Normalize status to handle both single and double 'l' from backend/frontend mismatch
   const normalizedStatus = useMemo(() => {
@@ -39,7 +40,7 @@ const UpdateReceiptStatusDialog = ({
     [statuses, normalizedStatus],
   )
 
-  const [status, setStatus] = useState(normalizedStatus || '')
+  const [status, setStatus] = useState(targetStatus || normalizedStatus || '')
   const [loading, setLoading] = useState(false)
 
   // Explicit color mapping since data might not have it
@@ -55,8 +56,8 @@ const UpdateReceiptStatusDialog = ({
 
   useEffect(() => {
     if (!open) return
-    setStatus(normalizedStatus || '')
-  }, [open, normalizedStatus])
+    setStatus(targetStatus || normalizedStatus || '')
+  }, [open, normalizedStatus, targetStatus])
 
   const selectedStatusObj = useMemo(
     () => statuses.find((s) => s.value === status),

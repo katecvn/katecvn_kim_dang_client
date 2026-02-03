@@ -843,7 +843,7 @@ const ViewPurchaseOrderDialog = ({
           open={showPaymentDetail}
           onOpenChange={setShowPaymentDetail}
           paymentId={selectedPaymentDetail?.id}
-          payment={selectedPaymentDetail}
+
           contentClassName="z-[100030]"
           overlayClassName="z-[100029]"
         />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
@@ -34,6 +34,9 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 import { Mail, MapPin, CreditCard, Package } from 'lucide-react'
+import ViewProductDialog from '../../product/components/ViewProductDialog'
+import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
+import { Printer } from 'lucide-react'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { getPublicUrl } from '@/utils/file'
@@ -42,6 +45,7 @@ import UpdateReceiptStatusDialog from './UpdateReceiptStatusDialog'
 import { receiptStatus } from '../data'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import PrintReceiptView from './PrintReceiptView'
 const ViewReceiptDialog = ({
   receiptId,
   open,
@@ -55,6 +59,17 @@ const ViewReceiptDialog = ({
   const [receipt, setReceipt] = useState(null)
   const [loading, setLoading] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+  const [printData, setPrintData] = useState(null)
+
+  // View Product
+  const [selectedProductId, setSelectedProductId] = useState(null)
+  const [showViewProductDialog, setShowViewProductDialog] = useState(false)
+
+  // View Invoice
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
+  const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false)
+
+  const setting = useSelector((state) => state.setting.setting)
 
   const invoiceItems = receipt?.invoice?.items || []
 
@@ -108,6 +123,13 @@ const ViewReceiptDialog = ({
     }
   }, [open, receiptId, dispatch])
 
+  const handlePrintReceipt = () => {
+    if (!receipt) return
+    setPrintData(receipt)
+    // small timeout to clear print data if needed, but react-to-print handles ref logic
+    setTimeout(() => setPrintData(null), 100)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
       {showTrigger ? (
@@ -128,7 +150,7 @@ const ViewReceiptDialog = ({
       >
         <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
           <DialogTitle className={cn(isMobile && "flex flex-col items-start gap-1 items-center")}>
-            <span>Thông tin chi tiết phiếu thu</span>
+            <span>Thông tin chi tiết phiếu thu: </span>
             <span>{receipt?.code}</span>
           </DialogTitle>
         </DialogHeader>
@@ -153,7 +175,15 @@ const ViewReceiptDialog = ({
                   Thông tin phiếu thu
                   {receipt?.invoice && (
                     <span className={cn("text-sm text-muted-foreground", isMobile ? "ml-0" : "ml-2")}>
-                      (Hóa đơn: {receipt.invoice.code})
+                      (Hóa đơn: <div
+                        className="inline cursor-pointer text-primary hover:underline hover:text-blue-600"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setSelectedInvoiceId(receipt.invoice.id)
+                          setShowViewInvoiceDialog(true)
+                        }}
+                      >{receipt.invoice.code}</div>)
                     </span>
                   )}
                   {/* {receipt?.salesContract && (
@@ -202,7 +232,16 @@ const ViewReceiptDialog = ({
                                     )}
                                   </div>
                                   <div>
-                                    <div className="font-medium">
+                                    <div className="text-[10px] font-bold text-muted-foreground leading-none mb-1">
+                                      {product.product?.code || product.productCode || '—'}
+                                    </div>
+                                    <div
+                                      className="font-medium cursor-pointer text-primary hover:underline hover:text-blue-600"
+                                      onClick={() => {
+                                        setSelectedProductId(product.productId)
+                                        setShowViewProductDialog(true)
+                                      }}
+                                    >
                                       {product.productName}
                                     </div>
                                     {product?.options && (
@@ -264,7 +303,13 @@ const ViewReceiptDialog = ({
                                 <div className="text-[10px] font-bold text-muted-foreground leading-none mb-1">
                                   {product.product?.code || product.productCode || '—'}
                                 </div>
-                                <div className="font-medium text-sm leading-tight line-clamp-2">
+                                <div
+                                  className="font-medium text-sm leading-tight line-clamp-2 cursor-pointer text-primary hover:underline hover:text-blue-600"
+                                  onClick={() => {
+                                    setSelectedProductId(product.productId)
+                                    setShowViewProductDialog(true)
+                                  }}
+                                >
                                   {product.productName}
                                 </div>
                                 {product?.options && (
@@ -518,7 +563,7 @@ const ViewReceiptDialog = ({
               </div>
 
               {/* ===== Right: Khách hàng & Nhân viên ===== */}
-              <div className="w-full rounded-lg border p-4 lg:w-80">
+              <div className="w-full rounded-lg border p-4 lg:w-80 h-fit sticky top-0">
                 <div className="flex items-center justify-between">
                   <h2 className="py-2 text-lg font-semibold">Khách hàng</h2>
                 </div>
@@ -640,16 +685,57 @@ const ViewReceiptDialog = ({
           )}
         </div>
 
-        <DialogFooter className={cn("flex gap-2 sm:space-x-0", isMobile && "pb-4 px-4")}>
-          <DialogClose asChild>
-            <Button type="button" variant="outline">
-              Đóng
+        <DialogFooter className={cn("sm:space-x-0", isMobile && "pb-4 px-4")}>
+          <div className={cn("w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end")}>
+            <Button
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+              onClick={handlePrintReceipt}
+            >
+              <Printer className="h-4 w-4" />
+              In phiếu
             </Button>
-          </DialogClose>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="w-full sm:w-auto">
+                Đóng
+              </Button>
+            </DialogClose>
+          </div>
         </DialogFooter>
       </DialogContent>
 
+      {/* Print View */}
+      {printData && (
+        <PrintReceiptView
+          receipt={printData}
+          setting={setting}
+        />
+      )}
 
+      {
+        selectedProductId && (
+          <ViewProductDialog
+            open={showViewProductDialog}
+            onOpenChange={setShowViewProductDialog}
+            productId={selectedProductId}
+            showTrigger={false}
+            contentClassName="z-[100020]"
+            overlayClassName="z-[100019]"
+          />
+        )
+      }
+
+      {
+        selectedInvoiceId && (
+          <ViewInvoiceDialog
+            open={showViewInvoiceDialog}
+            onOpenChange={setShowViewInvoiceDialog}
+            invoiceId={selectedInvoiceId}
+            showTrigger={false}
+            contentClassName="!z-[100060]"
+            overlayClassName="!z-[100059]"
+          />
+        )
+      }
     </Dialog>
   )
 }

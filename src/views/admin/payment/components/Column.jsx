@@ -11,6 +11,7 @@ import { updatePaymentStatus, getPayments } from '@/stores/PaymentSlice'
 import UpdatePaymentStatusDialog from './UpdatePaymentStatusDialog'
 import { paymentStatus } from '../data'
 import { toast } from 'sonner'
+import ViewPaymentDialog from './ViewPaymentDialog'
 
 export const columns = [
   {
@@ -42,11 +43,29 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Mã PC" />
     ),
-    cell: ({ row }) => {
+    cell: function Cell({ row }) {
+      const [showViewPaymentDialog, setShowViewPaymentDialog] = useState(false)
+      const handleViewPayment = () => {
+        setShowViewPaymentDialog(true)
+      }
+
       return (
-        <div className={cn("w-28 font-medium")}>
-          {row.getValue('code')}
-        </div>
+        <>
+          {showViewPaymentDialog && (
+            <ViewPaymentDialog
+              open={showViewPaymentDialog}
+              onOpenChange={setShowViewPaymentDialog}
+              paymentId={row.original.id}
+              showTrigger={false}
+            />
+          )}
+          <div
+            className={cn("w-28 font-medium cursor-pointer text-primary hover:underline")}
+            onClick={handleViewPayment}
+          >
+            {row.getValue('code')}
+          </div>
+        </>
       )
     },
     enableSorting: true,
@@ -118,7 +137,7 @@ export const columns = [
       return (
         <div className="w-28">
           <Badge variant="outline">
-            {method === 'cash' ? 'Tiền mặt' : method === 'transfer' ? 'Chuyển khoản' : method}
+            {method === 'cash' ? 'Tiền mặt' : (method === 'transfer' || method === 'bank_transfer') ? 'Chuyển khoản' : method}
           </Badge>
         </div>
       )

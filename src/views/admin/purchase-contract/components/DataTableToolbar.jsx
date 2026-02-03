@@ -5,6 +5,10 @@ import { DataTableViewOptions } from './DataTableViewOption'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { purchaseOrderStatuses } from '../data'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import { TruckIcon } from 'lucide-react'
+import { toast } from 'sonner'
+import { useState } from 'react'
+import ContractReminderDialog from './ContractReminderDialog'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -12,6 +16,7 @@ const DataTableToolbar = ({ table }) => {
   // Mobile layout in SalesContract was explicit but here we might just want responsive flex. 
   // The user asked to make it "like sales contract". Sales contract has explicit mobile check.
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const [showReminderDialog, setShowReminderDialog] = useState(false)
 
   // Sales Contract Mobile Layout
   if (isMobile) {
@@ -78,7 +83,30 @@ const DataTableToolbar = ({ table }) => {
       </div>
 
       <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const selectedRows = table.getSelectedRowModel().rows
+            if (selectedRows.length === 0) {
+              toast.warning('Vui lòng chọn ít nhất 1 hợp đồng')
+              return
+            }
+            setShowReminderDialog(true)
+          }}
+        >
+          <TruckIcon className="mr-2 size-4" aria-hidden="true" />
+          Gửi nhắc hàng
+        </Button>
         <DataTableViewOptions table={table} />
+
+        {showReminderDialog && (
+          <ContractReminderDialog
+            open={showReminderDialog}
+            onOpenChange={setShowReminderDialog}
+            selectedContracts={table.getSelectedRowModel().rows.map(r => r.original)}
+          />
+        )}
       </div>
     </div>
   )

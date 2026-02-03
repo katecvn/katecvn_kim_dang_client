@@ -45,9 +45,6 @@ const PurchaseContractPage = () => {
             <h2 className="text-2xl font-bold tracking-tight">
               Danh sách hợp đồng mua hàng
             </h2>
-            <p className="text-muted-foreground">
-              Quản lý các hợp đồng mua hàng với nhà cung cấp
-            </p>
           </div>
           <div>
             <DateRange

@@ -27,6 +27,7 @@ import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/Co
 import { IconFileTypePdf } from '@tabler/icons-react'
 import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
 import InstallmentPreviewDialog from '../../invoice/components/InstallmentPreviewDialog'
+import { getInvoiceDetail } from '@/api/invoice'
 import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWord'
 
 const DataTableRowActions = ({ row }) => {
@@ -53,8 +54,6 @@ const DataTableRowActions = ({ row }) => {
   const [installmentExporting, setInstallmentExporting] = useState(false)
 
   const handlePrintContract = async () => {
-
-
     try {
       // Get first invoice from the selected contract
       if (!contract.invoices || contract.invoices.length === 0) {
@@ -62,13 +61,11 @@ const DataTableRowActions = ({ row }) => {
         return
       }
 
-      // Use the first invoice data to build installment data
-      const invoiceData = {
-        ...contract.invoices[0],
-        salesContract: contract
-      }
+      // Fetch full invoice detail to ensure all data is present
+      const invoiceId = contract.invoices[0].id
+      const fullInvoiceData = await getInvoiceDetail(invoiceId)
 
-      const baseInstallmentData = await buildInstallmentData(invoiceData)
+      const baseInstallmentData = await buildInstallmentData(fullInvoiceData)
 
       setInstallmentData(baseInstallmentData)
       setInstallmentFileName(`hop-dong-ban-hang-${contract.code || 'contract'}.docx`)

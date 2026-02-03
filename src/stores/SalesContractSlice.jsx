@@ -48,7 +48,7 @@ export const createSalesContract = createAsyncThunk(
       return response.data
     } catch (error) {
       const message = handleError(error)
-      toast.error(message)
+      toast.error(message?.message || 'Có lỗi xảy ra')
       return rejectWithValue(message)
     }
   },
@@ -64,7 +64,7 @@ export const updateSalesContract = createAsyncThunk(
       return response.data
     } catch (error) {
       const message = handleError(error)
-      toast.error(message)
+      toast.error(message?.message || 'Có lỗi xảy ra')
       return rejectWithValue(message)
     }
   },
@@ -80,7 +80,7 @@ export const deleteSalesContract = createAsyncThunk(
       return id
     } catch (error) {
       const message = handleError(error)
-      toast.error(message)
+      toast.error(message?.message || 'Có lỗi xảy ra')
       return rejectWithValue(message)
     }
   },
@@ -96,7 +96,7 @@ export const updateSalesContractStatus = createAsyncThunk(
       return response.data
     } catch (error) {
       const message = handleError(error)
-      toast.error(message)
+      toast.error(message?.message || 'Có lỗi xảy ra')
       return rejectWithValue(message)
     }
   },
@@ -112,7 +112,7 @@ export const confirmSalesContract = createAsyncThunk(
       return response.data
     } catch (error) {
       const message = handleError(error)
-      toast.error(message)
+      toast.error(message?.message || 'Có lỗi xảy ra')
       return rejectWithValue(message)
     }
   },
@@ -128,7 +128,7 @@ export const cancelSalesContract = createAsyncThunk(
       return response.data
     } catch (error) {
       const message = handleError(error)
-      toast.error(message)
+      toast.error(message?.message || 'Có lỗi xảy ra')
       return rejectWithValue(message)
     }
   },
@@ -195,7 +195,7 @@ export const liquidateSalesContract = createAsyncThunk(
       return response.data
     } catch (error) {
       const message = handleError(error)
-      toast.error(message)
+      toast.error(message?.message || 'Có lỗi xảy ra')
       return rejectWithValue(message)
     }
   },

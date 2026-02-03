@@ -18,7 +18,9 @@ import {
 } from '@/stores/PurchaseOrderSlice'
 import { Badge } from '@/components/ui/badge'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
-import { Phone, CreditCard } from 'lucide-react'
+import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
+import UpdatePurchaseOrderDialog from './UpdatePurchaseOrderDialog'
+import { Phone, CreditCard, Pencil } from 'lucide-react'
 
 export const columns = [
   {
@@ -51,23 +53,48 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Mã ĐĐH" />
     ),
-    cell: function Cell({ row, table }) {
+    cell: function Cell({ row }) {
+      const [showViewDialog, setShowViewDialog] = useState(false)
+      const [showUpdateDialog, setShowUpdateDialog] = useState(false)
+
       return (
         <>
           <Can permission={'GET_PURCHASE_ORDER'}>
-            <span
-              className="cursor-pointer hover:text-primary hover:underline"
-              onClick={() => table.options.meta?.onViewPurchaseOrder?.(row.original.id)}
-            >
-              {row.original.code}
-            </span>
+            {showViewDialog && (
+              <ViewPurchaseOrderDialog
+                open={showViewDialog}
+                onOpenChange={setShowViewDialog}
+                purchaseOrderId={row.original.id}
+                showTrigger={false}
+                onEdit={() => {
+                  setShowViewDialog(false)
+                  setTimeout(() => {
+                    setShowUpdateDialog(true)
+                  }, 100)
+                }}
+              />
+            )}
+
+            {showUpdateDialog && (
+              <UpdatePurchaseOrderDialog
+                open={showUpdateDialog}
+                onOpenChange={setShowUpdateDialog}
+                purchaseOrderId={row.original.id}
+                showTrigger={false}
+              />
+            )}
           </Can>
+
+          <span
+            className="cursor-pointer hover:text-primary"
+            onClick={() => setShowViewDialog(true)}
+          >
+            {row.original.code}
+          </span>
         </>
       )
     },
   },
-  // ... (unchanged)
-
   {
     accessorKey: 'supplier',
     header: ({ column }) => (
@@ -84,15 +111,14 @@ export const columns = [
           <span className="font-semibold">{supplier?.name}</span>
 
           {supplier?.taxCode && (
-            <span className="flex items-center text-xs text-muted-foreground">
-              <CreditCard className="mr-1 h-3 w-3" />
-              {supplier?.taxCode}
+            <span className="text-xs text-muted-foreground">
+              MST: {supplier?.taxCode}
             </span>
           )}
 
           {supplier?.phone && (
-            <span className="flex items-center text-primary underline hover:text-secondary-foreground">
-              <Phone className="mr-1 h-3 w-3" />
+            <span className="flex items-center gap-1 text-primary underline hover:text-secondary-foreground">
+              <Phone className="h-3 w-3" />
               <a href={`tel:${supplier.phone}`}>{supplier.phone}</a>
             </span>
           )}
@@ -111,7 +137,6 @@ export const columns = [
     },
   },
   {
-    // Use totalAmount as the source of truth for "Total Money"
     accessorKey: 'totalAmount',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Tổng tiền" />
@@ -135,7 +160,6 @@ export const columns = [
     enableSorting: true,
     enableHiding: true,
   },
-
   {
     accessorKey: 'taxAmount',
     header: ({ column }) => (
@@ -190,7 +214,8 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'status',
+    id: 'status',
+    accessorFn: (row) => row.status,
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Trạng thái" />
     ),
@@ -221,14 +246,13 @@ export const columns = [
           setOpenUpdateStatus(false)
         } catch (error) {
           console.log('Submit error: ', error)
-          // toast handled in slice for specific actions or here if generic failed
         }
       }
 
       const isTerminalStatus = ['cancelled', 'completed'].includes(currentStatus)
 
       return (
-        <div className="flex flex-col gap-2">
+        <>
           {openUpdateStatus && (
             <UpdatePurchaseOrderStatusDialog
               open={openUpdateStatus}
@@ -240,43 +264,33 @@ export const columns = [
             />
           )}
 
-          <Badge
-            variant="outline"
-            className={`select-none ${statusObj?.color || ''} ${!isTerminalStatus ? 'cursor-pointer' : 'cursor-default opacity-80'
-              }`}
-            onClick={() => !isTerminalStatus && setOpenUpdateStatus(true)}
-            title={!isTerminalStatus ? 'Bấm để cập nhật trạng thái' : ''}
-          >
-            <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
-              {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
-            </span>
-            {statusObj?.label || 'Không xác định'}
-          </Badge>
-          <Badge
-            variant="outline"
-            className={`cursor-default select-none ${paymentStatusObj?.color || 'text-gray-500'
-              }`}
-          >
-            <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
-              {paymentStatusObj?.icon ? (
-                <paymentStatusObj.icon className="h-4 w-4" />
-              ) : null}
-            </span>
-            {paymentStatusObj?.label || 'Không xác định'}
-          </Badge>
-        </div>
+          <div className="flex flex-col gap-2">
+            <Badge
+              variant="outline"
+              className={`cursor-pointer select-none flex ${statusObj?.color || ''} ${isTerminalStatus ? 'opacity-80 cursor-default' : ''}`}
+              onClick={() => !isTerminalStatus && setOpenUpdateStatus(true)}
+              title={!isTerminalStatus ? 'Bấm để cập nhật trạng thái' : ''}
+            >
+              <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
+                {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
+              </span>
+              {statusObj?.label || 'Không xác định'}
+              <Pencil className="ml-2 h-3 w-3 text-muted-foreground" />
+            </Badge>
+            <Badge
+              variant="outline"
+              className={`cursor-default select-none ${paymentStatusObj?.color || 'text-gray-500'}`}
+            >
+              <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
+                {paymentStatusObj?.icon ? (
+                  <paymentStatusObj.icon className="h-4 w-4" />
+                ) : null}
+              </span>
+              {paymentStatusObj?.label || 'Không xác định'}
+            </Badge>
+          </div>
+        </>
       )
-    },
-    enableSorting: true,
-    enableHiding: true,
-  },
-  {
-    accessorKey: 'orderDate',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Ngày đặt" />
-    ),
-    cell: ({ row }) => {
-      return <span>{dateFormat(row.original.orderDate)}</span>
     },
     enableSorting: true,
     enableHiding: true,
@@ -290,7 +304,7 @@ export const columns = [
       const deliveryDate = row.original.expectedDeliveryDate
       const status = row.original.status
 
-      if (!deliveryDate) return <span>—</span>
+      if (!deliveryDate) return <span className="text-muted-foreground italic">—</span>
 
       const date = new Date(deliveryDate)
       const today = new Date()
@@ -312,7 +326,6 @@ export const columns = [
     enableHiding: true,
   },
   {
-    // Fix: use createdByUser object as per user feedback
     accessorKey: 'createdByUser',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Người tạo" />
@@ -352,6 +365,6 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Thao tác" />
     ),
-    cell: ({ row, table }) => <DataTableRowActions row={row} table={table} />,
+    cell: ({ row }) => <DataTableRowActions row={row} />,
   },
 ]

@@ -13,7 +13,7 @@ import { updateWarehouseReceipt, getWarehouseReceipts, cancelWarehouseReceipt, p
 import { UpdateWarehouseReceiptStatusDialog } from './UpdateWarehouseReceiptStatusDialog'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { CreditCard, Phone } from 'lucide-react'
+import { CreditCard, Phone, Pencil } from 'lucide-react'
 
 export const columns = [
   {
@@ -207,15 +207,19 @@ export const columns = [
       return (
         <>
           <div className="w-28">
-            <Badge
-              className={cn(
-                "cursor-pointer hover:underline",
-                getStatus?.color || 'bg-gray-500'
-              )}
+            <div
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80"
               onClick={() => setShowUpdateStatusDialog(true)}
             >
-              {getStatus?.label || 'Không xác định'}
-            </Badge>
+              <Badge
+                className={cn(
+                  getStatus?.color || 'bg-gray-500'
+                )}
+              >
+                {getStatus?.label || 'Không xác định'}
+              </Badge>
+              <Pencil className="h-3 w-3 text-muted-foreground" />
+            </div>
           </div>
           {showUpdateStatusDialog && (
             <UpdateWarehouseReceiptStatusDialog

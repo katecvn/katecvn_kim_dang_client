@@ -32,7 +32,7 @@ const ReceiptPage = () => {
   return (
     <Layout>
       <LayoutBody className="flex flex-col" fixedHeight>
-        <div className="mb-2 flex items-center justify-between space-y-2">
+        <div className="mb-2 -mx-4 px-1 flex flex-col sm:mx-0 sm:px-0 sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
               Danh sách phiếu thu
@@ -58,7 +58,7 @@ const ReceiptPage = () => {
             />
           </div>
         </div>
-        <div className="-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
+        <div className="-mx-4 flex-1 overflow-auto px-1 sm:px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
           {receipts && (
             <ReceiptDataTable
               data={Array.isArray(receipts) ? receipts : receipts.data || []}

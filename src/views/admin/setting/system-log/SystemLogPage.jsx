@@ -249,7 +249,7 @@ const SystemLogPage = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <span className='font-medium'>{log.entity}</span>
+                      <span className='font-medium'>{log.entityNameVi}</span>
                       {log.entityId && <span className='text-muted-foreground text-xs ml-1'>#{log.entityId}</span>}
                     </TableCell>
                     <TableCell>{log.ipAddress}</TableCell>

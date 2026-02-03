@@ -1,9 +1,17 @@
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { getWarehouseReceipts } from '@/stores/WarehouseReceiptSlice'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { WarehouseReceiptDataTable } from './components/WarehouseReceiptDataTable'
 import { columns } from './components/Column'
+import {
+  addHours,
+  endOfDay,
+  endOfMonth,
+  startOfDay,
+  startOfMonth,
+} from 'date-fns'
+import { DateRange } from '@/components/custom/DateRange.jsx'
 
 const WarehouseOutPage = () => {
   const dispatch = useDispatch()
@@ -11,6 +19,13 @@ const WarehouseOutPage = () => {
     (state) => state.warehouseReceipt.warehouseReceipts,
   )
   const loading = useSelector((state) => state.warehouseReceipt.loading)
+
+  const current = new Date()
+
+  const [filters, setFilters] = useState({
+    fromDate: addHours(startOfDay(startOfMonth(current)), 12),
+    toDate: addHours(endOfDay(endOfMonth(current)), 0),
+  })
 
   // Filter only warehouse-out receipts (receiptType = 2)
   const warehouseOutReceipts = Array.isArray(warehouseReceipts)
@@ -21,13 +36,13 @@ const WarehouseOutPage = () => {
 
   useEffect(() => {
     document.title = 'Danh sách phiếu xuất kho'
-    dispatch(getWarehouseReceipts())
-  }, [dispatch])
+    dispatch(getWarehouseReceipts(filters))
+  }, [dispatch, filters])
 
   return (
     <Layout>
       <LayoutBody className="flex flex-col" fixedHeight>
-        <div className="mb-2 flex items-center justify-between space-y-2">
+        <div className="mb-2 -mx-4 px-1 flex flex-col sm:mx-0 sm:px-0 sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0 gap-2">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
               Danh sách phiếu xuất kho
@@ -36,8 +51,27 @@ const WarehouseOutPage = () => {
               Quản lý phiếu xuất kho cho khách hàng
             </p>
           </div>
+          <div>
+            <DateRange
+              defaultValue={{
+                from: filters?.fromDate,
+                to: filters?.toDate,
+              }}
+              onChange={(range) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  fromDate: range?.from
+                    ? addHours(startOfDay(range.from), 12)
+                    : addHours(startOfDay(startOfMonth(current)), 12),
+                  toDate: range?.to
+                    ? addHours(endOfDay(range.to), 0)
+                    : addHours(endOfDay(endOfMonth(current)), 0),
+                }))
+              }}
+            />
+          </div>
         </div>
-        <div className="-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
+        <div className="-mx-4 flex-1 overflow-auto px-1 sm:px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
           {warehouseOutReceipts && (
             <WarehouseReceiptDataTable
               data={warehouseOutReceipts}

@@ -13,8 +13,7 @@ import {
   IconPencil,
   IconTrash,
   IconCircleX,
-  IconPrinter,
-
+  IconFileTypePdf,
   IconPackageImport,
   IconCreditCard,
   IconCheck,
@@ -24,6 +23,7 @@ import Can from '@/utils/can'
 import { useState } from 'react'
 import DeletePurchaseOrderDialog from './DeletePurchaseOrderDialog'
 import UpdatePurchaseOrderDialog from './UpdatePurchaseOrderDialog'
+import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
 
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
 import { useDispatch, useSelector } from 'react-redux'
@@ -46,6 +46,7 @@ const DataTableRowActions = ({ row, table }) => {
   const setting = useSelector((state) => state.setting.setting)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
+  const [showViewDialog, setShowViewDialog] = useState(false)
 
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
 
@@ -136,6 +137,14 @@ const DataTableRowActions = ({ row, table }) => {
 
   return (
     <>
+      {showViewDialog && (
+        <ViewPurchaseOrderDialog
+          open={showViewDialog}
+          onOpenChange={setShowViewDialog}
+          purchaseOrderId={purchaseOrder.id}
+          showTrigger={false}
+        />
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -149,7 +158,7 @@ const DataTableRowActions = ({ row, table }) => {
         <DropdownMenuContent align="end" className="w-48">
           <Can permission="GET_PURCHASE_ORDER">
             <DropdownMenuItem
-              onClick={() => table?.options?.meta?.onViewPurchaseOrder?.(purchaseOrder.id)}
+              onClick={() => setShowViewDialog(true)}
               className="text-slate-600"
             >
               Xem
@@ -161,10 +170,10 @@ const DataTableRowActions = ({ row, table }) => {
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem onClick={() => setShowPrintOrder(true)}>
+          <DropdownMenuItem onClick={() => setShowPrintOrder(true)} className="text-purple-600">
             In đơn hàng
             <DropdownMenuShortcut>
-              <IconPrinter className="h-4 w-4" />
+              <IconFileTypePdf className="h-4 w-4" />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 

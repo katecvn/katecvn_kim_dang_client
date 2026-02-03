@@ -83,9 +83,8 @@ const ConfirmWarehouseReceiptDialog = ({
   // Helper to check if item is selectable
   const isItemSelectable = (item) => {
     if (type === 'contract') {
-      // In contract mode, we WANT to select contract items
-      // We essentially select EVERYTHING in the invoice because the invoice is linked to the contract
-      return true
+      // In contract mode, ONLY select contract items
+      return !!item.salesContractItemId
     }
     // In retail mode, only select items NOT in a contract
     return !item.salesContractItemId

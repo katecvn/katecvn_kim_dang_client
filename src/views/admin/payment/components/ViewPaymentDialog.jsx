@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@radix-ui/react-separator'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
-import { Mail, MapPin, CreditCard, Package } from 'lucide-react'
+import { Mail, MapPin, CreditCard, Package, Pencil } from 'lucide-react'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { getPublicUrl } from '@/utils/file'
@@ -433,15 +433,19 @@ const ViewPaymentDialog = ({
                             </Select>
                           </div>
                         ) : (
-                          <Badge
-                            className={cn(
-                              "cursor-pointer hover:opacity-80",
-                              payment?.status === 'completed' ? 'bg-green-500' : (payment?.status === 'canceled' || payment?.status === 'cancelled') ? 'bg-red-500' : 'bg-yellow-500'
-                            )}
+                          <div
+                            className="flex items-center gap-2 cursor-pointer hover:opacity-80"
                             onClick={() => setShowUpdateStatusDialog(true)}
                           >
-                            {payment?.status === 'completed' ? 'Đã chi' : payment?.status === 'draft' ? 'Nháp' : payment?.status === 'canceled' ? 'Đã hủy' : payment?.status || 'Không xác định'}
-                          </Badge>
+                            <Badge
+                              className={cn(
+                                payment?.status === 'completed' ? 'bg-green-500' : (payment?.status === 'canceled' || payment?.status === 'cancelled') ? 'bg-red-500' : 'bg-yellow-500'
+                              )}
+                            >
+                              {payment?.status === 'completed' ? 'Đã chi' : payment?.status === 'draft' ? 'Nháp' : payment?.status === 'canceled' ? 'Đã hủy' : payment?.status || 'Không xác định'}
+                            </Badge>
+                            <Pencil className="h-3 w-3 text-muted-foreground" />
+                          </div>
                         )}
                       </div>
 
@@ -483,7 +487,7 @@ const ViewPaymentDialog = ({
                     <div className="flex items-center justify-between">
                       <strong>Phương thức:</strong>
                       <Badge variant="outline">
-                        {payment?.paymentMethod === 'cash' ? 'Tiền mặt' : payment?.paymentMethod === 'transfer' ? 'Chuyển khoản' : payment?.paymentMethod || 'Không xác định'}
+                        {payment?.paymentMethod === 'cash' ? 'Tiền mặt' : (payment?.paymentMethod === 'transfer' || payment?.paymentMethod === 'bank_transfer') ? 'Chuyển khoản' : payment?.paymentMethod || 'Không xác định'}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">

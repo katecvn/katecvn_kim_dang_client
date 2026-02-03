@@ -22,8 +22,8 @@ const AdminLayout = () => {
   return (
     <div className="relative h-full overflow-hidden bg-background">
       <Notification />
-      <Sidebar 
-        isCollapsed={isCollapsed} 
+      <Sidebar
+        isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
       />
       <main
@@ -33,8 +33,10 @@ const AdminLayout = () => {
         <Layout>
           <LayoutHeader>
             <div className="ml-auto flex items-center space-x-4">
-              <NotificationBell />
-              <ThemeSwitch />
+              <div className="hidden md:flex items-center space-x-4">
+                <NotificationBell />
+                <ThemeSwitch />
+              </div>
               <UserNav />
             </div>
           </LayoutHeader>

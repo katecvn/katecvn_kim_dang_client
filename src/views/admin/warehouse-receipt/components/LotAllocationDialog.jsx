@@ -19,7 +19,6 @@ import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
 import { IconAlertCircle, IconCheck } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
-import CreateLotForAllocationDialog from './CreateLotForAllocationDialog'
 import { Trash2 } from 'lucide-react'
 
 /**
@@ -57,7 +56,6 @@ const LotAllocationDialog = ({
 
   // New lots created during this session
   const [newLots, setNewLots] = useState([])
-  const [showCreateDialog, setShowCreateDialog] = useState(false)
 
   // Fetch available lots when dialog opens
   useEffect(() => {
@@ -90,12 +88,6 @@ const LotAllocationDialog = ({
   const totalSelected = Object.values(selections).reduce((sum, sel) => {
     return sum + (sel.selected ? parseFloat(sel.quantity || 0) : 0)
   }, 0) + newLots.reduce((sum, lot) => sum + parseFloat(lot.quantity || 0), 0)
-
-  // Handle new lot creation success
-  const handleCreateLotSuccess = (data) => {
-    setNewLots([...newLots, { ...data, tempId: Date.now() }])
-    setValidationError(null)
-  }
 
   const handleRemoveNewLot = (tempId) => {
     setNewLots(newLots.filter(l => l.tempId !== tempId))
@@ -137,6 +129,26 @@ const LotAllocationDialog = ({
     setValidationError(null)
   }
 
+  const handleAddRow = () => {
+    setNewLots([...newLots, {
+      tempId: Date.now(),
+      quantity: '',
+      code: '',
+      batchNumber: '',
+      name: '',
+      note: ''
+    }])
+  }
+
+  const handleUpdateNewLot = (tempId, field, value) => {
+    setNewLots(newLots.map(lot => {
+      if (lot.tempId === tempId) {
+        return { ...lot, [field]: value }
+      }
+      return lot
+    }))
+  }
+
   // Handle save allocations
   const handleSave = async () => {
     // Validate total quantity
@@ -155,6 +167,12 @@ const LotAllocationDialog = ({
         lotId: parseInt(lotId),
         quantity: sel.quantity,
       }))
+
+    // Validate new lots
+    if (newLots.some(lot => !lot.quantity || parseFloat(lot.quantity) <= 0)) {
+      setValidationError('Vui lòng nhập số lượng hợp lệ cho các lô mới')
+      return
+    }
 
     const newLotAllocations = newLots.map(lot => ({
       quantity: parseFloat(lot.quantity),
@@ -200,7 +218,7 @@ const LotAllocationDialog = ({
               type="button"
               size="sm"
               className="h-8 gap-1 bg-green-600 hover:bg-green-700 text-white mr-5"
-              onClick={() => setShowCreateDialog(true)}
+              onClick={handleAddRow}
             >
               + Tạo Lô Mới
             </Button>
@@ -212,22 +230,80 @@ const LotAllocationDialog = ({
           {/* List New Lots */}
           {newLots.length > 0 && (
             <div className="space-y-2">
-              <div className="text-sm font-semibold text-primary">Lô mới tạo (Chưa lưu):</div>
+              <div className="text-sm font-semibold text-primary">Lô mới tạo:</div>
               {newLots.map((lot) => (
-                <div key={lot.tempId} className="border border-dashed border-green-500 bg-green-50 rounded-lg p-3 relative">
+                <div key={lot.tempId} className="border border-green-200 bg-green-50/50 rounded-lg p-4 relative">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute top-2 right-2 h-6 w-6 text-red-500 hover:bg-red-100"
+                    className="absolute top-2 right-2 h-6 w-6 text-red-500 hover:bg-red-100 hover:text-red-600 z-10"
                     onClick={() => handleRemoveNewLot(lot.tempId)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="font-medium">SL:</span> {lot.quantity}</div>
-                    <div><span className="font-medium">Batch:</span> {lot.batchNumber || '---'}</div>
-                    <div><span className="font-medium">Mã:</span> {lot.code || '(Tự sinh)'}</div>
-                    <div><span className="font-medium">Tên:</span> {lot.name || '(Tự sinh)'}</div>
+
+                  <div className="flex items-start gap-3">
+                    <Checkbox checked={true} disabled className="mt-1" />
+
+                    <div className="flex-1 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-8">
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">Mã lô (Batch)</label>
+                          <Input
+                            placeholder="Nhập mã lô từ NCC"
+                            value={lot.batchNumber}
+                            onChange={(e) => handleUpdateNewLot(lot.tempId, 'batchNumber', e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">Mã quản lý</label>
+                          <Input
+                            placeholder="Tự động sinh nếu trống"
+                            value={lot.code}
+                            onChange={(e) => handleUpdateNewLot(lot.tempId, 'code', e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-8">
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">Tên lô</label>
+                          <Input
+                            placeholder="Tự động sinh nếu trống"
+                            value={lot.name}
+                            onChange={(e) => handleUpdateNewLot(lot.tempId, 'name', e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground mb-1 block">Ghi chú</label>
+                          <Input
+                            placeholder="Ghi chú thêm..."
+                            value={lot.note}
+                            onChange={(e) => handleUpdateNewLot(lot.tempId, 'note', e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 justify-end pt-2 border-t border-green-200/50">
+                        <label className="text-sm font-medium">Số lượng:</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={lot.quantity}
+                          onChange={(e) => handleUpdateNewLot(lot.tempId, 'quantity', e.target.value)}
+                          className="w-32 h-9 font-bold text-primary"
+                          placeholder="0"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          (Mới)
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -372,11 +448,6 @@ const LotAllocationDialog = ({
         </DialogFooter>
       </DialogContent>
 
-      <CreateLotForAllocationDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        onSuccess={handleCreateLotSuccess}
-      />
     </Dialog>
   )
 }

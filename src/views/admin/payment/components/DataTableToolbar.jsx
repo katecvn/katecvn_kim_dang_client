@@ -8,7 +8,7 @@ const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
 
   return (
-    <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-1">
+    <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-0 sm:p-1">
       <div className="flex flex-1 items-center space-x-2">
         <Input
           placeholder="Tìm kiếm theo mã phiếu chi..."
@@ -16,7 +16,7 @@ const DataTableToolbar = ({ table }) => {
           onChange={(event) =>
             table.getColumn('code')?.setFilterValue(event.target.value)
           }
-          className="h-8 w-[150px] lg:w-[250px]"
+          className="h-8 flex-1 lg:flex-none lg:w-[250px]"
         />
 
         {isFiltered && (

@@ -151,6 +151,7 @@ const LiquidateContractDialog = ({
       if (onSuccess) onSuccess()
     } catch (error) {
       console.error('Liquidate error:', error)
+      // toast.error(error?.message || (typeof error === 'string' ? error : 'Có lỗi xảy ra khi thanh lý hợp đồng'))
     } finally {
       setSubmitting(false)
     }

@@ -22,7 +22,7 @@ const DataTableToolbar = ({ table }) => {
   // Mobile Toolbar
   if (isMobile) {
     return (
-      <div className="flex items-center gap-2 p-1">
+      <div className="flex items-center gap-2">
         <Input
           placeholder="Tìm kiếm..."
           value={table.getColumn('code')?.getFilterValue() || ''}

@@ -16,11 +16,50 @@ export const getLots = createAsyncThunk(
   }
 )
 
+export const getLotById = createAsyncThunk(
+  'lot/getLotById',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/lots/${id}`)
+      return response.data.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  }
+)
+
 export const createLot = createAsyncThunk(
   'lot/create',
   async (data, { rejectWithValue }) => {
     try {
       const response = await api.post('/lots', data)
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  }
+)
+
+export const updateLot = createAsyncThunk(
+  'lot/update',
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/lots/${id}`, data)
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  }
+)
+
+export const deleteLot = createAsyncThunk(
+  'lot/delete',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/lots/${id}`)
       return response.data
     } catch (error) {
       const message = handleError(error)
@@ -75,9 +114,11 @@ export const getLotAllocations = createAsyncThunk(
 
 const initialState = {
   lots: [],
+  lot: null,
   availableLots: [],
   allocations: {},
   loading: false,
+  detailLoading: false,
   error: null,
 }
 
@@ -90,6 +131,9 @@ export const lotSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null
+    },
+    clearLotDetail: (state) => {
+      state.lot = null
     },
   },
   extraReducers: (builder) => {
@@ -105,6 +149,20 @@ export const lotSlice = createSlice({
       })
       .addCase(getLots.rejected, (state, action) => {
         state.loading = false
+        state.error = action.payload
+      })
+      // Get lot by id
+      .addCase(getLotById.pending, (state) => {
+        state.detailLoading = true
+        state.error = null
+        state.lot = null
+      })
+      .addCase(getLotById.fulfilled, (state, action) => {
+        state.detailLoading = false
+        state.lot = action.payload
+      })
+      .addCase(getLotById.rejected, (state, action) => {
+        state.detailLoading = false
         state.error = action.payload
       })
       // Get available lots
@@ -160,6 +218,30 @@ export const lotSlice = createSlice({
         state.loading = false
       })
       .addCase(createLot.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Update lot
+      .addCase(updateLot.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(updateLot.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(updateLot.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Delete lot
+      .addCase(deleteLot.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(deleteLot.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(deleteLot.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })

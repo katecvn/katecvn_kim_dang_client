@@ -2,7 +2,7 @@ import { DataTableRowActions } from './DataTableRowAction'
 import { DataTableColumnHeader } from './DataTableColumnHeader'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Phone, CreditCard } from 'lucide-react'
+import { Phone, CreditCard, Pencil } from 'lucide-react'
 import { normalizeText } from '@/utils/normalize-text'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
@@ -339,6 +339,7 @@ export const columns = [
                 {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
               </span>
               {statusObj?.label || 'Không xác định'}
+              <Pencil className="ml-2 h-3 w-3 text-muted-foreground" />
             </Badge>
             <Badge
               variant="outline"

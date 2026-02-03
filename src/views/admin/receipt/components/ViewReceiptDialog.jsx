@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/table'
 import { Separator } from '@/components/ui/separator'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
-import { Mail, MapPin, CreditCard, Package } from 'lucide-react'
+import { Mail, MapPin, CreditCard, Package, Pencil } from 'lucide-react'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
 import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
 import { Printer } from 'lucide-react'
@@ -483,15 +483,19 @@ const ViewReceiptDialog = ({
                             </Select>
                           </div>
                         ) : (
-                          <Badge
-                            className={cn(
-                              "cursor-pointer hover:opacity-80",
-                              receipt?.status === 'completed' ? 'bg-green-500' : (receipt?.status === 'canceled' || receipt?.status === 'cancelled') ? 'bg-red-500' : 'bg-yellow-500'
-                            )}
+                          <div
+                            className="flex items-center gap-2 cursor-pointer hover:opacity-80"
                             onClick={() => setShowUpdateStatusDialog(true)}
                           >
-                            {receipt?.status === 'completed' ? 'Đã thu' : receipt?.status === 'draft' ? 'Nháp' : receipt?.status === 'cancelled' ? 'Đã hủy' : receipt?.status || 'Không xác định'}
-                          </Badge>
+                            <Badge
+                              className={cn(
+                                receipt?.status === 'completed' ? 'bg-green-500' : (receipt?.status === 'canceled' || receipt?.status === 'cancelled') ? 'bg-red-500' : 'bg-yellow-500'
+                              )}
+                            >
+                              {receipt?.status === 'completed' ? 'Đã thu' : receipt?.status === 'draft' ? 'Nháp' : receipt?.status === 'cancelled' ? 'Đã hủy' : receipt?.status || 'Không xác định'}
+                            </Badge>
+                            <Pencil className="h-3 w-3 text-muted-foreground" />
+                          </div>
                         )}
                       </div>
 

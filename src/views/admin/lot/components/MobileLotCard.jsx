@@ -15,7 +15,7 @@ const MobileLotCard = ({ lot, isSelected, onSelectChange }) => {
         <ViewLotDialog
           open={showViewDialog}
           onOpenChange={setShowViewDialog}
-          lot={lot}
+          lotId={lot.id}
         />
       )}
 

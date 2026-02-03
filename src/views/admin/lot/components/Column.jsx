@@ -3,6 +3,30 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { DataTableColumnHeader } from '@/components/datatable/DataTableColumnHeader'
 import { DataTableRowAction } from './DataTableRowAction'
 import { dateFormat } from '@/utils/date-format'
+import { useState } from 'react'
+import ViewLotDialog from './ViewLotDialog'
+
+const LotCodeCell = ({ lot }) => {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      {open && (
+        <ViewLotDialog
+          open={open}
+          onOpenChange={setOpen}
+          lotId={lot.id}
+        />
+      )}
+      <div
+        className="w-[120px] font-medium text-blue-600 cursor-pointer hover:underline"
+        onClick={() => setOpen(true)}
+      >
+        {lot.code}
+      </div>
+    </>
+  )
+}
 
 export const columns = [
   {
@@ -34,7 +58,7 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Mã lô' />
     ),
-    cell: ({ row }) => <div className='w-[80px]'>{row.getValue('code')}</div>,
+    cell: ({ row }) => <LotCodeCell lot={row.original} />,
     enableSorting: false,
     enableHiding: false,
   },
@@ -109,7 +133,7 @@ export const columns = [
       const status = row.getValue('status')
       return (
         <Badge variant={status === 'active' ? 'default' : 'secondary'}>
-          {status === 'active' ? 'Hoạt động' : status}
+          {status === 'active' ? 'Hoạt động' : 'Cạn kiệt'}
         </Badge>
       )
     },

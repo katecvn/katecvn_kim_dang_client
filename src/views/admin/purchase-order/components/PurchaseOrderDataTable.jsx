@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import {
   flexRender,
   getCoreRowModel,
@@ -22,9 +23,7 @@ import { DataTableToolbar } from './DataTableToolbar'
 import { DataTablePagination } from './DataTablePagination'
 import { Skeleton } from '@/components/ui/skeleton'
 import MobilePurchaseOrderCard from './MobilePurchaseOrderCard'
-import { useMediaQuery } from '@/hooks/UseMediaQuery'
-
-import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
+import { normalizeText } from '@/utils/normalize-text'
 
 const PurchaseOrderDataTable = ({
   columns,
@@ -33,7 +32,6 @@ const PurchaseOrderDataTable = ({
   isMyPurchaseOrder = false,
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
-  const [viewId, setViewId] = useState(null)
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
   const [columnFilters, setColumnFilters] = useState([])
@@ -45,11 +43,8 @@ const PurchaseOrderDataTable = ({
     columns,
     initialState: {
       pagination: {
-        pageSize: 30, //custom default page size
+        pageSize: isMobile ? 15 : 30,
       },
-    },
-    meta: {
-      onViewPurchaseOrder: (id) => setViewId(id),
     },
     state: {
       sorting,
@@ -72,9 +67,27 @@ const PurchaseOrderDataTable = ({
     getFacetedUniqueValues: getFacetedUniqueValues(),
     globalFilterFn: (row, columnId, filterValue) => {
       if (!filterValue) return true
+
+      const filterNorm = normalizeText(filterValue)
+
+      // 1. Check Supplier attributes
+      const supplier = row.original.supplier
+      if (supplier) {
+        const supplierText = normalizeText(
+          `${supplier.name || ''} ${supplier.taxCode || ''} ${supplier.phone || ''}`
+        )
+        if (supplierText.includes(filterNorm)) {
+          return true
+        }
+      }
+
+      // 2. Check the specific column value
       const value = row.getValue(columnId)
-      if (value == null) return false
-      return value.toString().includes(filterValue.toLowerCase())
+      if (value != null && typeof value !== 'object') {
+        return normalizeText(String(value)).includes(filterNorm)
+      }
+
+      return false
     },
   })
 
@@ -102,7 +115,7 @@ const PurchaseOrderDataTable = ({
                 purchaseOrder={row.original}
                 isSelected={row.getIsSelected()}
                 onSelectChange={(checked) => row.toggleSelected(checked)}
-                onRowAction={() => setViewId(row.original.id)}
+                onRowAction={() => { }}
               />
             ))
           ) : (
@@ -113,18 +126,6 @@ const PurchaseOrderDataTable = ({
         </div>
 
         <DataTablePagination table={table} />
-
-        {/* View Dialog Mobile */}
-        {viewId && (
-          <ViewPurchaseOrderDialog
-            open={!!viewId}
-            onOpenChange={(open) => {
-              if (!open) setViewId(null)
-            }}
-            purchaseOrderId={viewId}
-            showTrigger={false}
-          />
-        )}
       </div>
     )
   }
@@ -198,18 +199,6 @@ const PurchaseOrderDataTable = ({
       </div>
 
       <DataTablePagination table={table} />
-
-      {/* View Dialog Desktop */}
-      {viewId && (
-        <ViewPurchaseOrderDialog
-          open={!!viewId}
-          onOpenChange={(open) => {
-            if (!open) setViewId(null)
-          }}
-          purchaseOrderId={viewId}
-          showTrigger={false}
-        />
-      )}
     </div>
   )
 }

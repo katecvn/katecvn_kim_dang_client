@@ -68,42 +68,40 @@ const DataTableToolbar = ({ table }) => {
   // Mobile View
   if (isMobile) {
     return (
-      <div className="space-y-2">
+      <div className="flex items-center gap-2">
         <Input
           placeholder="Tìm kiếm theo mã phiếu thu..."
           value={table.getState().globalFilter || ''}
           onChange={(e) => table.setGlobalFilter(e.target.value)}
-          className="h-8 w-full text-sm"
+          className="h-8 flex-1 text-sm"
         />
 
-        <div className="flex justify-end gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 px-2">
-                <EllipsisVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem
-                disabled={!canRemind}
-                onClick={() => setOpenReminder(true)}
-                className="text-xs"
-              >
-                <BellIcon className="mr-2 h-3 w-3" />
-                Nhắc hạn thanh toán
-              </DropdownMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 px-2">
+              <EllipsisVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem
+              disabled={!canRemind}
+              onClick={() => setOpenReminder(true)}
+              className="text-xs"
+            >
+              <BellIcon className="mr-2 h-3 w-3" />
+              Nhắc hạn thanh toán
+            </DropdownMenuItem>
 
-              <DropdownMenuItem
-                disabled={selectedRows.length !== 1 || selectedRows[0]?.original?.status !== 'draft'}
-                onClick={handleGenerateQR}
-                className="text-xs"
-              >
-                <QrCode className="mr-2 h-3 w-3" />
-                Tạo QR thanh toán
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+            <DropdownMenuItem
+              disabled={selectedRows.length !== 1 || selectedRows[0]?.original?.status !== 'draft'}
+              onClick={handleGenerateQR}
+              className="text-xs"
+            >
+              <QrCode className="mr-2 h-3 w-3" />
+              Tạo QR thanh toán
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {canRemind && (
           <PaymentReminderDialog

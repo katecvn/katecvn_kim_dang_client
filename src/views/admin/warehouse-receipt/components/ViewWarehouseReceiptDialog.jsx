@@ -22,15 +22,23 @@ import LotAllocationDialog from './LotAllocationDialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { MobileIcon } from '@radix-ui/react-icons'
-import { Mail, MapPin, CreditCard, Package, Printer, FileSpreadsheet } from 'lucide-react'
+import { Mail, MapPin, CreditCard, Package, Printer, FileSpreadsheet, Pencil } from 'lucide-react'
 import PrintWarehouseReceiptView from './PrintWarehouseReceiptView'
 import { getPublicUrl } from '@/utils/file'
 import { exportWarehouseReceiptToExcel } from '@/utils/export-warehouse-receipt'
 import { UpdateWarehouseReceiptStatusDialog } from './UpdateWarehouseReceiptStatusDialog'
+import ExportWarehouseReceiptPreview from './ExportWarehouseReceiptPreview'
 import { toast } from 'sonner'
 import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
 import InvoiceDialog from '../../invoice/components/InvoiceDialog'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const ViewWarehouseReceiptDialog = ({
   receiptId,
@@ -49,9 +57,12 @@ const ViewWarehouseReceiptDialog = ({
   const [lotDialogOpen, setLotDialogOpen] = useState(false)
   const [selectedDetail, setSelectedDetail] = useState(null)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+  const [targetStatus, setTargetStatus] = useState(null)
+  const [showExportPreview, setShowExportPreview] = useState(false)
 
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
   const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
+
   const [showCreateLotDialog, setShowCreateLotDialog] = useState(false)
   const [printData, setPrintData] = useState(null)
 
@@ -77,6 +88,11 @@ const ViewWarehouseReceiptDialog = ({
     } catch (error) {
       console.error(error)
     }
+  }
+
+  const handleStatusChange = (newStatus) => {
+    setTargetStatus(newStatus)
+    setShowUpdateStatusDialog(true)
   }
 
   const fetchData = useCallback(async () => {
@@ -179,7 +195,7 @@ const ViewWarehouseReceiptDialog = ({
       >
         <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
           <DialogTitle className={cn(isMobile && "flex flex-col items-start gap-1 items-center")}>
-            <span>Thông tin chi tiết phiếu kho</span>
+            <span>Thông tin chi tiết phiếu kho: </span>
             <span>{receipt?.code}</span>
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -234,14 +250,69 @@ const ViewWarehouseReceiptDialog = ({
                     )}
                     <div>
                       <span className="text-sm text-muted-foreground">Trạng thái:</span>
-                      <div className="mt-1">
-                        <Badge
-                          className={cn("cursor-pointer hover:opacity-80", status?.color)}
+                      {isMobile ? (
+                        <div className="mt-1 w-[140px]">
+                          <Select
+                            value={receipt?.status}
+                            onValueChange={handleStatusChange}
+                          >
+                            <SelectTrigger className="h-7 text-xs px-2">
+                              <SelectValue placeholder="Chọn trạng thái">
+                                {status ? (
+                                  <span
+                                    className={cn(
+                                      'inline-flex items-center gap-1 font-medium',
+                                      status.value === 'posted' ? 'text-green-600' :
+                                        status.value === 'confirmed' ? 'text-blue-600' :
+                                          status.value === 'cancelled' ? 'text-red-600' : 'text-yellow-600'
+                                    )}
+                                  >
+                                    {status.label}
+                                  </span>
+                                ) : null}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent position="popper" align="start" className="w-[140px] z-[10005]">
+                              {warehouseReceiptStatuses.filter((s) => {
+                                if (receipt?.status === 'posted') {
+                                  return s.value === 'cancelled'
+                                }
+                                if (receipt?.status === 'cancelled') {
+                                  return false
+                                }
+                                return true
+                              }).map((s) => (
+                                <SelectItem
+                                  key={s.value}
+                                  value={s.value}
+                                  className="cursor-pointer text-xs"
+                                >
+                                  <span
+                                    className={cn(
+                                      'inline-flex items-center gap-1 font-medium',
+                                      s.value === 'posted' ? 'text-green-600' :
+                                        s.value === 'confirmed' ? 'text-blue-600' :
+                                          s.value === 'cancelled' ? 'text-red-600' : 'text-yellow-600'
+                                    )}
+                                  >
+                                    {s.label}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <div
+                          className="mt-1 flex items-center gap-2 cursor-pointer hover:opacity-80 w-fit"
                           onClick={() => setShowUpdateStatusDialog(true)}
                         >
-                          {status?.label}
-                        </Badge>
-                      </div>
+                          <Badge className={status?.color}>
+                            {status?.label}
+                          </Badge>
+                          <Pencil className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Lý do:</span>
@@ -517,7 +588,7 @@ const ViewWarehouseReceiptDialog = ({
           )}
         >
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
-            {receipt?.status === 'draft' && (
+            {/* {receipt?.status === 'draft' && (
               <Button
                 className="gap-2 bg-green-600 hover:bg-green-700 text-white"
                 onClick={handleSaveChanges}
@@ -525,10 +596,10 @@ const ViewWarehouseReceiptDialog = ({
               >
                 Lưu thay đổi
               </Button>
-            )}
+            )} */}
             <Button
               className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => exportWarehouseReceiptToExcel(receipt)}
+              onClick={() => setShowExportPreview(true)}
             >
               <FileSpreadsheet className="h-4 w-4" />
               Xuất Excel
@@ -569,10 +640,14 @@ const ViewWarehouseReceiptDialog = ({
       {showUpdateStatusDialog && (
         <UpdateWarehouseReceiptStatusDialog
           open={showUpdateStatusDialog}
-          onOpenChange={setShowUpdateStatusDialog}
+          onOpenChange={(open) => {
+            setShowUpdateStatusDialog(open)
+            if (!open) setTargetStatus(null)
+          }}
           receiptId={receipt.id}
           receiptCode={receipt.code}
           currentStatus={receipt.status}
+          targetStatus={targetStatus}
           statuses={warehouseReceiptStatuses}
           onSubmit={handleUpdateStatus}
           contentClassName="z-[10006]"
@@ -626,6 +701,17 @@ const ViewWarehouseReceiptDialog = ({
           />
         )
       }
+
+      {/* Export Preview Dialog */}
+      {showExportPreview && (
+        <ExportWarehouseReceiptPreview
+          open={showExportPreview}
+          onOpenChange={setShowExportPreview}
+          receipt={receipt}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
     </Dialog>
   )
 }

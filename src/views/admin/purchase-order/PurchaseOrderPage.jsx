@@ -32,13 +32,13 @@ const PurchaseOrderPage = () => {
   return (
     <Layout>
       <LayoutBody className="flex flex-col" fixedHeight>
-        <div className="mb-2 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
-          <div>
+        <div className="mb-2 -mx-4 px-1 flex flex-col sm:mx-0 sm:px-0 sm:flex-row sm:items-center justify-between gap-2">
+          <div className="w-full sm:w-auto">
             <h2 className="text-2xl font-bold tracking-tight">
               Danh sách đơn đặt hàng
             </h2>
           </div>
-          <div>
+          <div className="w-full sm:w-auto">
             <DateRange
               defaultValue={{
                 from: filters?.fromDate,
@@ -58,7 +58,7 @@ const PurchaseOrderPage = () => {
             />
           </div>
         </div>
-        <div className="-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
+        <div className="-mx-4 flex-1 overflow-auto px-1 sm:px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
           {purchaseOrders && (
             <PurchaseOrderDataTable
               data={purchaseOrders}

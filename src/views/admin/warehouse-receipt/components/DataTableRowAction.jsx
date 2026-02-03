@@ -137,7 +137,7 @@ export function DataTableRowActions({ row }) {
             </>
           )}
 
-          {receipt.status === 'posted' && (
+          {/* {receipt.status === 'posted' && (
             <DropdownMenuItem
               onClick={() => setShowCancelDialog(true)}
               className="text-destructive focus:text-destructive"
@@ -147,7 +147,7 @@ export function DataTableRowActions({ row }) {
                 <IconCircleX className="h-4 w-4" />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
-          )}
+          )} */}
 
         </DropdownMenuContent>
       </DropdownMenu>

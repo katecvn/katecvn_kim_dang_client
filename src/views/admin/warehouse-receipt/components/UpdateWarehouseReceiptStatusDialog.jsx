@@ -25,6 +25,7 @@ const UpdateWarehouseReceiptStatusDialog = ({
   receiptId,
   receiptCode,
   currentStatus,
+  targetStatus, // Add targetStatus prop
   statuses = [],
   onSubmit, // Handler function to call on save
   contentClassName,
@@ -35,7 +36,8 @@ const UpdateWarehouseReceiptStatusDialog = ({
     [statuses, currentStatus],
   )
 
-  const [status, setStatus] = useState(currentStatus || '')
+  // Initialize with targetStatus if present, else currentStatus
+  const [status, setStatus] = useState(targetStatus || currentStatus || '')
   const [loading, setLoading] = useState(false)
 
   const getColor = (statusValue) => {
@@ -50,8 +52,8 @@ const UpdateWarehouseReceiptStatusDialog = ({
 
   useEffect(() => {
     if (!open) return
-    setStatus(currentStatus || '')
-  }, [open, currentStatus])
+    setStatus(targetStatus || currentStatus || '')
+  }, [open, currentStatus, targetStatus])
 
   const selectedStatusObj = useMemo(
     () => statuses.find((s) => s.value === status),
@@ -117,7 +119,17 @@ const UpdateWarehouseReceiptStatusDialog = ({
             </SelectTrigger>
 
             <SelectContent position="popper" className="z-[10010]">
-              {statuses.map((s) => (
+              {statuses.filter(s => {
+                if (currentStatus === 'posted') {
+                  // Nếu ở trạng thái post thì chì có thể hủy
+                  return s.value === 'cancelled'
+                }
+                if (currentStatus === 'cancelled') {
+                  // khi hủy rồi thì không hiện gì
+                  return false
+                }
+                return true
+              }).map((s) => (
                 <SelectItem
                   key={s.value}
                   value={s.value}

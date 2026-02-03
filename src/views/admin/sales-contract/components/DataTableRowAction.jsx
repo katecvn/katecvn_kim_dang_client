@@ -53,11 +53,7 @@ const DataTableRowActions = ({ row }) => {
   const [installmentExporting, setInstallmentExporting] = useState(false)
 
   const handlePrintContract = async () => {
-    // Chỉ cho phép in khi status = 'confirmed' (Đã xác nhận)
-    if (contract.status !== 'confirmed') {
-      toast.warning('Chỉ có thể in hợp đồng khi trạng thái là "Đã xác nhận"')
-      return
-    }
+
 
     try {
       // Get first invoice from the selected contract

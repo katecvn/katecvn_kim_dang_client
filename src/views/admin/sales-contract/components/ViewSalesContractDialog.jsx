@@ -49,6 +49,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { updateInvoiceStatus } from '@/stores/InvoiceSlice'
+import ViewWarehouseReceiptDialog from '../../warehouse-receipt/components/ViewWarehouseReceiptDialog'
 
 const ViewSalesContractDialog = ({
   open,
@@ -67,6 +68,10 @@ const ViewSalesContractDialog = ({
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
   const [selectedInvoiceIdForUpdate, setSelectedInvoiceIdForUpdate] = useState(null)
   const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
+
+  // View Warehouse Receipt Logic
+  const [showViewWarehouseReceiptDialog, setShowViewWarehouseReceiptDialog] = useState(false)
+  const [selectedWarehouseReceiptId, setSelectedWarehouseReceiptId] = useState(null)
 
   // Liquidation State
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
@@ -226,12 +231,10 @@ const ViewSalesContractDialog = ({
           overlayClassName={overlayClassName}
         >
           <DialogHeader className={cn(!isDesktop && 'px-4 pt-4')}>
-            <DialogTitle className={cn(!isDesktop && 'text-base')}>
-              Chi tiết hợp đồng bán hàng: {contract?.code}
+            <DialogTitle className={cn(!isDesktop && 'text-base flex flex-col gap-1')}>
+              <span>Chi tiết hợp đồng bán hàng:</span>
+              <span>{contract?.code}</span>
             </DialogTitle>
-            <DialogDescription className={cn(!isDesktop && 'text-xs')}>
-              Dưới đây là thông tin chi tiết hợp đồng bán hàng: {contract?.code}
-            </DialogDescription>
           </DialogHeader>
 
           <div
@@ -815,7 +818,13 @@ const ViewSalesContractDialog = ({
 
                                       return (
                                         <TableRow key={receipt.id || index}>
-                                          <TableCell className="font-medium text-primary">
+                                          <TableCell
+                                            className="font-medium text-primary cursor-pointer hover:underline text-blue-600"
+                                            onClick={() => {
+                                              setSelectedWarehouseReceiptId(receipt.id)
+                                              setShowViewWarehouseReceiptDialog(true)
+                                            }}
+                                          >
                                             {receipt.code}
                                           </TableCell>
                                           <TableCell className="text-right">
@@ -853,7 +862,13 @@ const ViewSalesContractDialog = ({
                                       key={receipt.id || index}
                                       className="border rounded-lg p-3 space-y-2 bg-card text-xs"
                                     >
-                                      <div className="font-medium text-primary">
+                                      <div
+                                        className="font-medium text-primary cursor-pointer hover:underline text-blue-600"
+                                        onClick={() => {
+                                          setSelectedWarehouseReceiptId(receipt.id)
+                                          setShowViewWarehouseReceiptDialog(true)
+                                        }}
+                                      >
                                         {receipt.code}
                                       </div>
                                       <div className="grid grid-cols-2 gap-2">
@@ -1094,6 +1109,18 @@ const ViewSalesContractDialog = ({
               showTrigger={false}
               contentClassName="z-[100020]"
               overlayClassName="z-[100019]"
+            />
+          )}
+
+          {/* View Warehouse Receipt Dialog */}
+          {selectedWarehouseReceiptId && (
+            <ViewWarehouseReceiptDialog
+              open={showViewWarehouseReceiptDialog}
+              onOpenChange={setShowViewWarehouseReceiptDialog}
+              receiptId={selectedWarehouseReceiptId}
+              showTrigger={false}
+              contentClassName="z-[100020] md:z-[100020]"
+              overlayClassName="z-[100019] md:z-[100019]"
             />
           )}
         </DialogContent>

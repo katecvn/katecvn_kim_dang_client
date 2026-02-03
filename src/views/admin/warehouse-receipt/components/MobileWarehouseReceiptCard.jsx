@@ -21,6 +21,13 @@ import PrintWarehouseReceiptView from './PrintWarehouseReceiptView'
 import { DeleteWarehouseReceiptDialog } from './DeleteWarehouseReceiptDialog'
 import { UpdateWarehouseReceiptStatusDialog } from './UpdateWarehouseReceiptStatusDialog'
 import { updateWarehouseReceipt, getWarehouseReceipts, cancelWarehouseReceipt, postWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const MobileWarehouseReceiptCard = ({
   receipt,
@@ -32,6 +39,7 @@ const MobileWarehouseReceiptCard = ({
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [targetStatus, setTargetStatus] = useState(null)
 
   // Print state
   const setting = useSelector((state) => state.setting.setting)
@@ -59,25 +67,18 @@ const MobileWarehouseReceiptCard = ({
     }
   }
 
+  const handleStatusChange = (newStatus) => {
+    setTargetStatus(newStatus)
+    setShowUpdateStatusDialog(true)
+  }
+
   const handlePrintReceipt = () => {
     setPrintData(receipt)
     setTimeout(() => setPrintData(null), 100)
   }
 
-  const getStatusBadge = (statusValue) => {
-    const statusObj = warehouseReceiptStatuses.find((s) => s.value === statusValue)
-    // Fallback colors if not defined in data
-    const colorClass = statusObj?.color || 'bg-gray-500'
-
-    return (
-      <Badge
-        className={`cursor-pointer hover:underline ${colorClass}`}
-        onClick={() => setShowUpdateStatusDialog(true)}
-      >
-        {statusObj?.label || statusValue}
-      </Badge>
-    )
-  }
+  // Helper for select display
+  const selectedStatusObj = warehouseReceiptStatuses.find((s) => s.value === status)
 
   const partnerName = receiptType === 1 ? supplier?.name : customer?.name
   const partnerLabel = receiptType === 1 ? 'Nhà cung cấp' : 'Khách hàng'
@@ -96,10 +97,14 @@ const MobileWarehouseReceiptCard = ({
       {showUpdateStatusDialog && (
         <UpdateWarehouseReceiptStatusDialog
           open={showUpdateStatusDialog}
-          onOpenChange={setShowUpdateStatusDialog}
+          onOpenChange={(open) => {
+            setShowUpdateStatusDialog(open)
+            if (!open) setTargetStatus(null)
+          }}
           receiptId={receipt.id}
           receiptCode={code}
           currentStatus={status}
+          targetStatus={targetStatus}
           statuses={warehouseReceiptStatuses}
           onSubmit={handleUpdateStatus}
           contentClassName="z-[10002]"
@@ -196,7 +201,57 @@ const MobileWarehouseReceiptCard = ({
 
           <div className="flex justify-between items-center">
             <span className="text-xs text-muted-foreground">Trạng thái:</span>
-            {getStatusBadge(status)}
+            <div className="w-[140px]">
+              <Select
+                value={status}
+                onValueChange={handleStatusChange}
+              >
+                <SelectTrigger className="h-7 text-xs px-2">
+                  <SelectValue placeholder="Chọn trạng thái">
+                    {selectedStatusObj ? (
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 font-medium',
+                          selectedStatusObj.value === 'posted' ? 'text-green-600' :
+                            selectedStatusObj.value === 'confirmed' ? 'text-blue-600' :
+                              selectedStatusObj.value === 'cancelled' ? 'text-red-600' : 'text-yellow-600'
+                        )}
+                      >
+                        {selectedStatusObj.label}
+                      </span>
+                    ) : null}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent position="popper" align="end" className="w-[140px] z-[10005]">
+                  {warehouseReceiptStatuses.filter((s) => {
+                    if (status === 'posted') {
+                      return s.value === 'cancelled'
+                    }
+                    if (status === 'cancelled') {
+                      return false
+                    }
+                    return true
+                  }).map((s) => (
+                    <SelectItem
+                      key={s.value}
+                      value={s.value}
+                      className="cursor-pointer text-xs"
+                    >
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 font-medium',
+                          s.value === 'posted' ? 'text-green-600' :
+                            s.value === 'confirmed' ? 'text-blue-600' :
+                              s.value === 'cancelled' ? 'text-red-600' : 'text-yellow-600'
+                        )}
+                      >
+                        {s.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 

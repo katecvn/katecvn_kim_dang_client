@@ -7,7 +7,7 @@ import { dateFormat } from '@/utils/date-format'
 import { cn } from '@/lib/utils'
 import { ChevronDown, MoreVertical, Eye, Pencil, Trash2, Phone, CreditCard } from 'lucide-react'
 import { IconPrinter, IconFileText, IconPackageImport, IconCreditCard, IconCircleX } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { purchaseOrderStatuses, purchaseOrderPaymentStatuses } from '../data'
 import Can from '@/utils/can'
 import DeletePurchaseOrderDialog from './DeletePurchaseOrderDialog'
@@ -39,6 +46,12 @@ const MobilePurchaseOrderCard = ({
 }) => {
   const dispatch = useDispatch()
   const setting = useSelector((state) => state.setting.setting)
+
+  const filteredStatuses = useMemo(
+    () => purchaseOrderStatuses.filter((s) => s.value !== 'completed'),
+    []
+  )
+
   const [expanded, setExpanded] = useState(false)
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
@@ -56,25 +69,7 @@ const MobilePurchaseOrderCard = ({
 
   const { supplier, totalAmount, paidAmount, status, paymentStatus, code, orderDate, items } = purchaseOrder
 
-  const getStatusBadge = (statusValue) => {
-    const statusObj = purchaseOrderStatuses.find((s) => s.value === statusValue)
-    return (
-      <Badge
-        variant="outline"
-        className={`cursor-pointer ${statusObj?.color}`}
-        onClick={() => {
-          if (!['draft', 'cancelled', 'completed'].includes(statusValue)) {
-            setShowUpdateStatusDialog(true)
-          }
-        }}
-      >
-        <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
-          {statusObj?.icon ? <statusObj.icon className="h-3 w-3" /> : null}
-        </span>
-        {statusObj?.label || 'Không xác định'}
-      </Badge>
-    )
-  }
+
 
   const getPaymentStatusBadge = (paymentStatusValue) => {
     const paymentStatusObj = purchaseOrderPaymentStatuses.find(
@@ -121,20 +116,26 @@ const MobilePurchaseOrderCard = ({
     return <span className="text-xs text-muted-foreground">Chưa thanh toán</span>
   }
 
-  const handleUpdateStatus = async (nextStatus, id) => {
+  const selectedStatusObj = purchaseOrderStatuses.find((s) => s.value === status)
+
+  const handleStatusChange = async (nextStatus) => {
     try {
       if (nextStatus === 'ordered') {
-        await dispatch(confirmPurchaseOrder(id)).unwrap()
+        await dispatch(confirmPurchaseOrder(purchaseOrder.id)).unwrap()
       } else if (nextStatus === 'cancelled') {
-        await dispatch(cancelPurchaseOrder(id)).unwrap()
+        await dispatch(cancelPurchaseOrder(purchaseOrder.id)).unwrap()
       } else if (nextStatus === 'draft' && purchaseOrder.status === 'ordered') {
-        await dispatch(revertPurchaseOrder(id)).unwrap()
+        await dispatch(revertPurchaseOrder(purchaseOrder.id)).unwrap()
       } else {
-        await dispatch(updatePurchaseOrderStatus({ id, status: nextStatus })).unwrap()
+        await dispatch(
+          updatePurchaseOrderStatus({ id: purchaseOrder.id, status: nextStatus }),
+        ).unwrap()
       }
+      toast.success('Cập nhật trạng thái đơn đặt hàng thành công')
       setShowUpdateStatusDialog(false)
     } catch (error) {
-      // handled in slice
+      console.log('Update status error:', error)
+      toast.error('Cập nhật trạng thái thất bại')
     }
   }
 
@@ -214,7 +215,7 @@ const MobilePurchaseOrderCard = ({
           purchaseOrderId={purchaseOrder.id}
           currentStatus={status}
           statuses={purchaseOrderStatuses}
-          onSubmit={handleUpdateStatus}
+          onSubmit={handleStatusChange}
         />
       )}
 
@@ -270,6 +271,15 @@ const MobilePurchaseOrderCard = ({
             </div>
             <div className="text-xs text-muted-foreground">{dateFormat(orderDate)}</div>
           </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setExpanded(!expanded)}
+          >
+            <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
+          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -351,15 +361,6 @@ const MobilePurchaseOrderCard = ({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => setExpanded(!expanded)}
-          >
-            <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
-          </Button>
         </div>
 
         {/* Supplier Section */}
@@ -388,7 +389,47 @@ const MobilePurchaseOrderCard = ({
         <div className="p-3 border-b bg-background/30 space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-xs text-muted-foreground">Trạng thái:</span>
-            {getStatusBadge(status)}
+
+            <div className="w-[140px]">
+              <Select
+                value={status}
+                onValueChange={handleStatusChange}
+                disabled={['cancelled', 'completed'].includes(status)}
+              >
+                <SelectTrigger className="h-7 text-xs px-2">
+                  <SelectValue placeholder="Chọn trạng thái">
+                    {selectedStatusObj ? (
+                      <span
+                        className={`inline-flex items-center gap-1 font-medium ${selectedStatusObj.color || ''
+                          }`}
+                      >
+                        {selectedStatusObj.icon ? (
+                          <selectedStatusObj.icon className="h-3 w-3" />
+                        ) : null}
+                        {selectedStatusObj.label}
+                      </span>
+                    ) : null}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent position="popper" align="end" className="w-[140px] z-[10005]">
+                  {filteredStatuses.map((s) => (
+                    <SelectItem
+                      key={s.value}
+                      value={s.value}
+                      className="cursor-pointer text-xs"
+                    >
+                      <span
+                        className={`inline-flex items-center gap-1 font-medium ${s.color || ''
+                          }`}
+                      >
+                        {s.icon ? <s.icon className="h-3 w-3" /> : null}
+                        {s.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-xs text-muted-foreground">Thanh toán:</span>

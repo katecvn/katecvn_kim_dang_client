@@ -17,10 +17,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 import React, { useEffect, useState } from 'react'
 import { purchaseOrderStatuses, purchaseOrderPaymentStatuses } from '../data'
+import { paymentStatus } from '../../payment/data'
 import { Separator } from '@/components/ui/separator'
 import { dateFormat } from '@/utils/date-format'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -30,7 +38,7 @@ import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { getPublicUrl } from '@/utils/file'
-import { Mail, MapPin, Pencil } from 'lucide-react'
+import { Mail, MapPin, Pencil, Trash2 } from 'lucide-react'
 import { IconPlus, IconPencil, IconCheck } from '@tabler/icons-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
@@ -521,37 +529,103 @@ const ViewPurchaseOrderDialog = ({
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold">Phiếu chi</h3>
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="h-8 gap-1"
+                          className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
                           onClick={handleCreatePayment}
                         >
                           <IconPlus className="h-4 w-4" />
-                          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                            Tạo phiếu chi
+                          <span>
+                            Thêm
                           </span>
                         </Button>
                       </div>
 
                       {purchaseOrder?.paymentVouchers && purchaseOrder.paymentVouchers.length > 0 ? (
-                        <div className="overflow-x-auto rounded-lg border">
-                          <Table className="min-w-full">
-                            <TableHeader>
-                              <TableRow className="bg-secondary text-xs">
-                                <TableHead className="w-12">STT</TableHead>
-                                <TableHead className="min-w-32">Mã phiếu</TableHead>
-                                <TableHead className="min-w-32 text-right">Số tiền</TableHead>
-                                <TableHead className="min-w-32">PT thanh toán</TableHead>
-                                {/* <TableHead className="min-w-24">Loại phiếu</TableHead> */}
-                                <TableHead className="min-w-32">Trạng thái</TableHead>
-                                <TableHead className="min-w-32">Ngày tạo</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {purchaseOrder.paymentVouchers.map((voucher, index) => (
-                                <TableRow key={voucher.id}>
-                                  <TableCell>{index + 1}</TableCell>
-                                  <TableCell>
+                        isDesktop ? (
+                          <div className="overflow-x-auto rounded-lg border">
+                            <Table className="min-w-full">
+                              <TableHeader>
+                                <TableRow className="bg-secondary text-xs">
+                                  <TableHead className="w-12">STT</TableHead>
+                                  <TableHead className="min-w-32">Mã phiếu</TableHead>
+                                  <TableHead className="min-w-28 text-right">Số tiền</TableHead>
+                                  <TableHead className="min-w-24">PT thanh toán</TableHead>
+                                  <TableHead className="min-w-20">Trạng thái</TableHead>
+                                  {/* <TableHead className="min-w-20">Loại GD</TableHead> */}
+                                  {/* <TableHead className="min-w-32">Người tạo</TableHead> */}
+                                  <TableHead className="min-w-32">Ngày tạo</TableHead>
+                                  <TableHead className="w-10"></TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {purchaseOrder.paymentVouchers.map((voucher, index) => (
+                                  <TableRow key={voucher.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>
+                                      <span
+                                        className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                        onClick={() => {
+                                          setSelectedPaymentDetail(voucher)
+                                          setShowPaymentDetail(true)
+                                        }}
+                                      >
+                                        {voucher.code}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-right font-semibold">{moneyFormat(voucher.amount)}</TableCell>
+                                    <TableCell>
+                                      {voucher.paymentMethod === 'cash' ? 'Tiền mặt' : voucher.paymentMethod === 'transfer' ? 'Chuyển khoản' : voucher.paymentMethod}
+                                    </TableCell>
+                                    <TableCell>
+                                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}>
+                                        {(() => {
+                                          const statusObj = paymentStatus.find(s => s.value === voucher.status)
+                                          return statusObj?.icon ? <statusObj.icon className="h-3 w-3" /> : (voucher.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (voucher.status === 'completed' ? <IconCheck className="h-3 w-3" /> : null))
+                                        })()}
+                                        {(() => {
+                                          const statusObj = paymentStatus.find(s => s.value === voucher.status)
+                                          return statusObj?.label || (voucher.status === 'draft' ? 'Nháp' : voucher.status === 'completed' ? 'Đã chi' : voucher.status === 'cancelled' ? 'Đã hủy' : voucher.status)
+                                        })()}
+                                      </span>
+                                    </TableCell>
+                                    {/* <TableCell>
+                                      {voucher.voucherType === 'payment_out' ? 'Phiếu chi' : voucher.voucherType}
+                                    </TableCell> */}
+                                    {/* <TableCell>
+                                      {voucher.createdByUser?.fullName || '—'}
+                                    </TableCell> */}
+                                    <TableCell>{dateFormat(voucher.paymentDate, true)}</TableCell>
+                                    <TableCell>
+                                      {voucher.status === 'draft' && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                          onClick={(e) => {
+                                            // TODO: Implement delete logic or wire up delete dialog
+                                            // For now, just visually show the button matching UI
+                                            // setSelectedPaymentDetail(voucher)
+                                            // setShowDeletePaymentDialog(true) 
+                                            e.stopPropagation()
+                                            toast.info("Tính năng xóa đang phát triển")
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {purchaseOrder.paymentVouchers.map((voucher) => (
+                              <div key={voucher.id} className="space-y-2 rounded-lg border p-3 text-sm">
+                                <div className="flex justify-between items-center">
+                                  <strong>Mã phiếu:</strong>
+                                  <div className="flex items-center gap-2">
                                     <span
                                       className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
                                       onClick={() => {
@@ -561,33 +635,58 @@ const ViewPurchaseOrderDialog = ({
                                     >
                                       {voucher.code}
                                     </span>
-                                  </TableCell>
-                                  <TableCell className="text-right font-semibold">{moneyFormat(voucher.amount)}</TableCell>
-                                  <TableCell>
+                                    {voucher.status === 'draft' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          toast.info("Tính năng xóa đang phát triển")
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex justify-between">
+                                  <strong>Số tiền:</strong>
+                                  <span className="font-semibold">{moneyFormat(voucher.amount)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <strong>PT thanh toán:</strong>
+                                  <span>
                                     {voucher.paymentMethod === 'cash' ? 'Tiền mặt' : voucher.paymentMethod === 'transfer' ? 'Chuyển khoản' : voucher.paymentMethod}
-                                  </TableCell>
-                                  {/* <TableCell>
-                                    {voucher.voucherType === 'payment_out' ? 'Phiếu chi' : voucher.voucherType}
-                                    {voucher.transactionType && <span className="text-xs text-muted-foreground block">({voucher.transactionType})</span>}
-                                  </TableCell> */}
-                                  <TableCell>
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <strong>Trạng thái:</strong>
+                                  <div className='flex items-center justify-end'>
+                                    {/* Note: Update status logic not fully implemented in ViewPurchaseOrderDialog for Payment Vouchers directly, 
+                                         usually done via ViewPaymentDialog. Showing status as badge/select for consistency. 
+                                         Using Select but disabled or just display for now to match UI unless we implement handleUpdatePaymentStatus 
+                                     */}
                                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}>
-                                      {voucher.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (voucher.status === 'completed' ? <IconCheck className="h-3 w-3" /> : null)}
-                                      {voucher.status === 'draft'
-                                        ? 'Nháp'
-                                        : voucher.status === 'completed'
-                                          ? 'Đã thanh toán'
-                                          : voucher.status === 'canceled'
-                                            ? 'Đã hủy'
-                                            : voucher.status}
+                                      {(() => {
+                                        const statusObj = paymentStatus.find(s => s.value === voucher.status)
+                                        return statusObj?.icon ? <statusObj.icon className="h-3 w-3" /> : (voucher.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (voucher.status === 'completed' ? <IconCheck className="h-3 w-3" /> : null))
+                                      })()}
+                                      {(() => {
+                                        const statusObj = paymentStatus.find(s => s.value === voucher.status)
+                                        return statusObj?.label || (voucher.status === 'draft' ? 'Nháp' : voucher.status === 'completed' ? 'Đã chi' : voucher.status === 'cancelled' ? 'Đã hủy' : voucher.status)
+                                      })()}
                                     </span>
-                                  </TableCell>
-                                  <TableCell>{dateFormat(voucher.paymentDate, true)}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between">
+                                  <strong>Ngày tạo:</strong>
+                                  <span>{dateFormat(voucher.paymentDate, true)}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )
                       ) : (
                         <div className="text-center text-sm text-muted-foreground italic py-2">
                           Chưa có dữ liệu phiếu chi

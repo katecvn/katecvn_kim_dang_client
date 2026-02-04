@@ -11,6 +11,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,7 +39,7 @@ import { statuses, paymentStatuses } from '../data'
 import { statuses as contractStatuses } from '../../sales-contract/data'
 import { receiptStatus } from '../../receipt/data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { CreditCard, Mail, MapPin, Pencil, Trash2 } from 'lucide-react'
+import { CreditCard, Mail, MapPin, Pencil, Trash2, QrCode } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { IconInfoCircle, IconEye, IconCheck, IconPencil, IconPlus } from '@tabler/icons-react'
 import {
@@ -80,7 +87,7 @@ import { getPublicUrl } from '@/utils/file'
 import InstallmentPreviewDialog from './InstallmentPreviewDialog'
 import { buildInstallmentData } from '../helpers/BuildInstallmentData'
 import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
-import { updateReceiptStatus } from '@/stores/ReceiptSlice'
+import { updateReceiptStatus, getReceiptQRCode } from '@/stores/ReceiptSlice'
 import UpdateReceiptStatusDialog from '../../receipt/components/UpdateReceiptStatusDialog'
 import { DeleteReceiptDialog } from '../../receipt/components/DeleteReceiptDialog'
 import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
@@ -90,10 +97,35 @@ import AgreementPreviewDialog from './AgreementPreviewDialog'
 import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
 import { buildAgreementData } from '../helpers/BuildAgreementData'
 import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
+import MobileInvoiceActions from './MobileInvoiceActions'
 
 const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClassName, overlayClassName, ...props }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const [invoice, setInvoice] = useState(null)
+
+  // QR Display State
+  const [openQrDisplayDialog, setOpenQrDisplayDialog] = useState(false)
+  const [qrCodeData, setQrCodeData] = useState(null)
+  const [qrLoading, setQrLoading] = useState(false)
+
+  const handleGenerateQR = async (receipt) => {
+    if (receipt.status !== 'draft') {
+      toast.warning('Chỉ có thể tạo mã QR cho phiếu thu nháp')
+      return
+    }
+
+    try {
+      setQrLoading(true)
+      const qrData = await dispatch(getReceiptQRCode(receipt.id)).unwrap()
+      setQrCodeData(qrData)
+      setOpenQrDisplayDialog(true)
+    } catch (error) {
+      console.error('Failed to fetch QR code:', error)
+      toast.error('Không lấy được mã QR thanh toán')
+    } finally {
+      setQrLoading(false)
+    }
+  }
   const [loading, setLoading] = useState(false)
   const creditNotes = useSelector(
     (state) => state.creditNote.creditNotesByInvoiceId,
@@ -322,7 +354,6 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
     try {
       await dispatch(updateInvoiceStatus({ id, status })).unwrap()
       toast.success('Cập nhật trạng thái đơn bán thành công')
-      setShowUpdateStatusDialog(false)
       fetchData()
     } catch (error) {
       console.log('Update status error: ', error)
@@ -349,7 +380,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
     switch (statusValue) {
       case 'draft': return 'bg-yellow-100 text-yellow-700'
       case 'completed': return 'bg-green-100 text-green-700'
-      case 'canceled': return 'bg-red-100 text-red-700'
+      case 'cancelled': return 'bg-red-100 text-red-700'
       default: return 'bg-gray-100 text-gray-700'
     }
   }
@@ -431,10 +462,18 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
   }
 
   const handleCreateReceipt = () => {
-    if (invoice?.status === 'paid' || invoice?.status === 'rejected') {
-      toast.warning('Không thể tạo phiếu thu cho đơn bán đã thanh toán hoặc bị từ chối')
+    // Only allow for accepted invoices
+    if (invoice?.status !== 'accepted') {
+      toast.warning('Chỉ có thể tạo phiếu thu cho đơn hàng đã được duyệt')
       return
     }
+
+    // Check payment status or amount
+    if (invoice?.paymentStatus === 'paid' || (invoice?.paidAmount >= invoice?.amount)) {
+      toast.warning('Đơn hàng này đã thu đủ tiền')
+      return
+    }
+
     setShowCreateReceiptDialog(true)
   }
 
@@ -748,7 +787,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                       })()}
                                     </SelectValue>
                                   </SelectTrigger>
-                                  <SelectContent position="popper" align="start" className="w-[140px] z-[100005]">
+                                  <SelectContent position="popper" align="start" className="w-[140px] z-[100005]" modal={false}>
                                     {filteredStatuses.map((s) => (
                                       <SelectItem key={s.value} value={s.value} className="text-xs cursor-pointer">
                                         <span className={`flex items-center gap-1 ${s.color}`}>
@@ -1084,6 +1123,20 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                             <Button
                                               variant="ghost"
                                               size="icon"
+                                              className="h-8 w-8 text-primary hover:text-primary/90 hover:bg-primary/10"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleGenerateQR(voucher)
+                                              }}
+                                              title="Tạo mã QR"
+                                            >
+                                              <QrCode className="h-4 w-4" />
+                                            </Button>
+                                          )}
+                                          {(voucher.status === 'draft' || voucher.status === 'cancelled' || voucher.status === 'canceled') && (
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
                                               className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                                               onClick={(e) => {
                                                 e.stopPropagation()
@@ -1114,6 +1167,20 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                           {voucher.code}
                                         </span>
                                         {voucher.status === 'draft' && (
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-primary hover:text-primary/90 hover:bg-primary/10 -mr-2"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              handleGenerateQR(voucher)
+                                            }}
+                                            title="Tạo mã QR"
+                                          >
+                                            <QrCode className="h-4 w-4" />
+                                          </Button>
+                                        )}
+                                        {(voucher.status === 'draft' || voucher.status === 'cancelled' || voucher.status === 'canceled') && (
                                           <Button
                                             variant="ghost"
                                             size="icon"
@@ -1309,7 +1376,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                                 ? 'Nháp'
                                                 : receipt.status === 'posted'
                                                   ? 'Đã ghi sổ'
-                                                  : receipt.status}
+                                                  : (receipt.status === 'cancelled' || receipt.status === 'canceled')
+                                                    ? 'Đã hủy'
+                                                    : receipt.status}
                                             </span>
                                           </div>
                                         </TableCell>
@@ -1876,61 +1945,92 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
           </div>
 
           <DialogFooter className={cn(
-            "flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0",
-            !isDesktop && "grid grid-cols-2 gap-2 pb-4 px-4"
+            "hidden md:flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0"
           )}>
             {invoice && (
               <>
+                <>
+                  <Button
+                    size="sm"
+                    className={cn("bg-green-600 text-white hover:bg-green-700", !isDesktop && "w-full")}
+                    onClick={handleCreateReceipt}
+                  >
+                    Tạo Phiếu Thu
+                  </Button>
+                  <Button
+                    size="sm"
+                    className={cn("bg-orange-600 text-white hover:bg-orange-700", !isDesktop && "w-full")}
+                    onClick={handleCreateWarehouseReceipt}
+                  >
+                    Tạo Phiếu xuất kho
+                  </Button>
+                </>
+
                 <Button
-                  size={!isDesktop ? "sm" : "default"}
+                  size="sm"
                   className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
                   onClick={handlePrintInvoice}
                 >
                   In Hóa Đơn
                 </Button>
                 <Button
-                  size={!isDesktop ? "sm" : "default"}
+                  size="sm"
                   className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
                   onClick={handlePrintAgreement}
                 >
                   In Thỏa Thuận
                 </Button>
                 <Button
-                  size={!isDesktop ? "sm" : "default"}
+                  size="sm"
                   className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
                   onClick={handlePrintContract}
                 >
                   In Hợp Đồng
                 </Button>
 
-                {invoice.status === 'pending' && (
-                  <Button
-                    size={!isDesktop ? "sm" : "default"}
-                    className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
-                    onClick={() => onEdit?.()}
-                  >
-                    Sửa
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
+                  onClick={() => {
+                    if (invoice.status !== 'pending') {
+                      toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái chờ duyệt')
+                      return
+                    }
+                    onEdit?.()
+                  }}
+                >
+                  Sửa
+                </Button>
 
-                {invoice.status === 'pending' && canDelete && (
-                  <ConfirmActionButton
-                    title="Xác nhận xóa"
-                    description="Bạn có chắc chắn muốn xóa đơn bán này? Hành động này không thể hoàn tác."
-                    confirmText="Xóa"
-                    onConfirm={handleDeleteInvoice}
-                    contentClassName="z-[100020]"
-                    overlayClassName="z-[100019]"
-                    confirmBtnVariant="destructive"
-                  >
+                {canDelete && (
+                  invoice.status === 'pending' ? (
+                    <ConfirmActionButton
+                      title="Xác nhận xóa"
+                      description="Bạn có chắc chắn muốn xóa đơn bán này? Hành động này không thể hoàn tác."
+                      confirmText="Xóa"
+                      onConfirm={handleDeleteInvoice}
+                      contentClassName="z-[100020]"
+                      overlayClassName="z-[100019]"
+                      confirmBtnVariant="destructive"
+                    >
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className={cn(!isDesktop && "w-full")}
+                      >
+                        Xóa
+                      </Button>
+                    </ConfirmActionButton>
+                  ) : (
                     <Button
                       variant="destructive"
-                      size={!isDesktop ? "sm" : "default"}
+                      size="sm"
                       className={cn(!isDesktop && "w-full")}
+                      onClick={() => toast.warning('Chỉ có thể xóa đơn hàng ở trạng thái chờ duyệt')}
                     >
                       Xóa
                     </Button>
-                  </ConfirmActionButton>
+                  )
                 )}
               </>
             )}
@@ -1938,13 +2038,25 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
               <Button
                 type="button"
                 variant="outline"
-                size={!isDesktop ? "sm" : "default"}
+                size="sm"
                 className={cn(!isDesktop && (invoice?.status === 'pending' && canDelete ? "w-full" : "w-full col-span-2"))}
               >
                 Đóng
               </Button>
             </DialogClose>
           </DialogFooter>
+          <MobileInvoiceActions
+            invoice={invoice}
+            isDesktop={isDesktop}
+            canDelete={canDelete}
+            onEdit={onEdit}
+            handleCreateReceipt={handleCreateReceipt}
+            handleCreateWarehouseReceipt={handleCreateWarehouseReceipt}
+            handlePrintInvoice={handlePrintInvoice}
+            handlePrintAgreement={handlePrintAgreement}
+            handlePrintContract={handlePrintContract}
+            handleDeleteInvoice={handleDeleteInvoice}
+          />
         </DialogContent>
       </Dialog >
 
@@ -2004,6 +2116,48 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
           />
         )
       }
+
+      {/* QR Code Display Dialog */}
+      <Dialog open={openQrDisplayDialog} onOpenChange={setOpenQrDisplayDialog}>
+        <DialogContent className="sm:max-w-md z-[100020]" overlayClassName="z-[100019]">
+          <DialogHeader>
+            <DialogTitle>Mã QR Thanh Toán</DialogTitle>
+            <DialogDescription>
+              Quét mã QR để thanh toán {qrCodeData?.voucherCode}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center space-y-4 py-4">
+            {qrCodeData?.qrLink ? (
+              <>
+                <img
+                  src={qrCodeData.qrLink}
+                  alt="QR Code"
+                  className="w-64 h-64 border rounded-lg"
+                />
+                <div className="text-center space-y-2">
+                  <p className="text-lg font-semibold text-primary">
+                    {moneyFormat(qrCodeData.amount)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {qrCodeData.description}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="text-center text-muted-foreground">
+                Đang tải mã QR...
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="sm:justify-center">
+            <Button onClick={() => setOpenQrDisplayDialog(false)} className="w-full sm:w-auto">
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Sales Contract Detail Dialog (Nested) */}
       <ViewSalesContractDialog
@@ -2104,6 +2258,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
               setShowDeleteWarehouseReceiptDialog(false)
               fetchData()
             }}
+            contentClassName="z-[10003]"
+            overlayClassName="z-[10002]"
           />
         )
       }
@@ -2132,6 +2288,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
         }}
         contentClassName="z-[100010]"
         overlayClassName="z-[100009]"
+        qrContentClassName="z-[100020]"
+        qrOverlayClassName="z-[100019]"
       />
 
 

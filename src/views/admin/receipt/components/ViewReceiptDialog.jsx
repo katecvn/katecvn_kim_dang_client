@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/table'
 import { Separator } from '@/components/ui/separator'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
-import { Mail, MapPin, CreditCard, Package, Pencil } from 'lucide-react'
+import { Mail, MapPin, CreditCard, Package, Pencil, Trash2 } from 'lucide-react'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
 import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
 import { Printer } from 'lucide-react'
@@ -42,6 +42,7 @@ import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { getPublicUrl } from '@/utils/file'
 import { getReceiptById, updateReceiptStatus } from '@/stores/ReceiptSlice'
 import UpdateReceiptStatusDialog from './UpdateReceiptStatusDialog'
+import { DeleteReceiptDialog } from './DeleteReceiptDialog'
 import { receiptStatus } from '../data'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
@@ -68,6 +69,7 @@ const ViewReceiptDialog = ({
   // View Invoice
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
   const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const setting = useSelector((state) => state.setting.setting)
 
@@ -691,6 +693,16 @@ const ViewReceiptDialog = ({
 
         <DialogFooter className={cn("sm:space-x-0", isMobile && "pb-4 px-4")}>
           <div className={cn("w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end")}>
+            {(receipt?.status === 'draft' || receipt?.status === 'cancelled' || receipt?.status === 'canceled') && (
+              <Button
+                variant="destructive"
+                className="gap-2 w-full sm:w-auto mr-auto"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Xóa
+              </Button>
+            )}
             <Button
               className="gap-2 bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
               onClick={handlePrintReceipt}
@@ -737,6 +749,22 @@ const ViewReceiptDialog = ({
             showTrigger={false}
             contentClassName="!z-[100060]"
             overlayClassName="!z-[100059]"
+          />
+        )
+      }
+      {
+        receipt && (
+          <DeleteReceiptDialog
+            open={showDeleteDialog}
+            onOpenChange={setShowDeleteDialog}
+            receipt={receipt}
+            showTrigger={false}
+            onSuccess={() => {
+              setShowDeleteDialog(false)
+              onOpenChange(false)
+            }}
+            contentClassName="z-[100060]"
+            overlayClassName="z-[100059]"
           />
         )
       }

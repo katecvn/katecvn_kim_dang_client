@@ -137,7 +137,7 @@ const MobileInvoiceCard = ({
       (s) => s.value === paymentStatusValue
     )
     return (
-      <Badge variant="outline" className={paymentStatusObj?.color}>
+      <Badge variant="outline" className={`${paymentStatusObj?.color} border-0`}>
         <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
           {paymentStatusObj?.icon ? (
             <paymentStatusObj.icon className="h-3 w-3" />

@@ -19,7 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
 import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
-import UpdatePurchaseOrderDialog from './UpdatePurchaseOrderDialog'
+import PurchaseOrderDialog from './PurchaseOrderDialog'
 import { Phone, CreditCard, Pencil } from 'lucide-react'
 
 export const columns = [
@@ -76,7 +76,7 @@ export const columns = [
             )}
 
             {showUpdateDialog && (
-              <UpdatePurchaseOrderDialog
+              <PurchaseOrderDialog
                 open={showUpdateDialog}
                 onOpenChange={setShowUpdateDialog}
                 purchaseOrderId={row.original.id}
@@ -279,7 +279,7 @@ export const columns = [
             </Badge>
             <Badge
               variant="outline"
-              className={`cursor-default select-none ${paymentStatusObj?.color || 'text-gray-500'}`}
+              className={`cursor-default select-none border-0 ${paymentStatusObj?.color || 'text-gray-500'}`}
             >
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
                 {paymentStatusObj?.icon ? (

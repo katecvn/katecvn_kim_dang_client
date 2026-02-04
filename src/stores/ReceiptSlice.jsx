@@ -116,7 +116,7 @@ export const updateReceiptStatus = createAsyncThunk(
       let response
       if (status === 'completed') {
         response = await api.post(`/payment-vouchers/${id}/complete`)
-      } else if (status === 'canceled') {
+      } else if (status === 'canceled' || status === 'cancelled') {
         response = await api.post(`/payment-vouchers/${id}/cancel`)
       } else {
         response = await api.put(`/payment-vouchers/${id}`, { status })

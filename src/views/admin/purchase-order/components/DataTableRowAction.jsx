@@ -22,7 +22,7 @@ import {
 import Can from '@/utils/can'
 import { useState } from 'react'
 import DeletePurchaseOrderDialog from './DeletePurchaseOrderDialog'
-import UpdatePurchaseOrderDialog from './UpdatePurchaseOrderDialog'
+import PurchaseOrderDialog from './PurchaseOrderDialog'
 import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
 
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
@@ -129,7 +129,7 @@ const DataTableRowActions = ({ row, table }) => {
   }
 
   const canEdit = purchaseOrder?.status === 'draft'
-  const canDelete = purchaseOrder?.status === 'draft'
+  const canDelete = ['draft', 'cancelled', 'canceled'].includes(purchaseOrder?.status)
   const canCancel = !['draft', 'cancelled', 'completed'].includes(purchaseOrder?.status)
 
   const canImportWarehouse = ['ordered', 'confirmed', 'partial'].includes(purchaseOrder?.status)
@@ -284,7 +284,7 @@ const DataTableRowActions = ({ row, table }) => {
       )}
 
       {showUpdateDialog && (
-        <UpdatePurchaseOrderDialog
+        <PurchaseOrderDialog
           open={showUpdateDialog}
           onOpenChange={setShowUpdateDialog}
           purchaseOrderId={purchaseOrder.id}

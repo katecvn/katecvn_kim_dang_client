@@ -31,7 +31,7 @@ const UpdateReceiptStatusDialog = ({
 }) => {
   // Normalize status to handle both single and double 'l' from backend/frontend mismatch
   const normalizedStatus = useMemo(() => {
-    if (currentStatus === 'cancelled') return 'canceled'
+    if (currentStatus === 'canceled') return 'cancelled'
     return currentStatus
   }, [currentStatus])
 

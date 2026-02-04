@@ -66,6 +66,8 @@ const CreateReceiptDialog = ({
   table,
   contentClassName,
   overlayClassName,
+  qrContentClassName, // New prop
+  qrOverlayClassName, // New prop
   onSuccess,
   ...props
 }) => {
@@ -784,7 +786,7 @@ const CreateReceiptDialog = ({
 
       {/* QR Code Dialog */}
       <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={cn("sm:max-w-md", qrContentClassName)} overlayClassName={qrOverlayClassName}>
           <DialogHeader>
             <DialogTitle>Mã QR Thanh Toán</DialogTitle>
             <DialogDescription>

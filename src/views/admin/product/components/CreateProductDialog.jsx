@@ -432,7 +432,7 @@ const CreateProductDialog = ({
                             <SelectValue placeholder="Chọn loại sản phẩm" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="z-[10007]">
                           <SelectGroup>
                             {categories
                               ?.filter(
@@ -481,7 +481,7 @@ const CreateProductDialog = ({
                             <SelectValue placeholder="Chọn đơn vị tính" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="z-[10007]">
                           <SelectGroup>
                             {units?.map((unit) => (
                               <SelectItem
@@ -524,7 +524,7 @@ const CreateProductDialog = ({
                             <SelectValue placeholder="Chọn nhà cung cấp" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="z-[10007]">
                           <SelectGroup>
                             {suppliers
                               ?.filter(
@@ -617,7 +617,7 @@ const CreateProductDialog = ({
                                         <SelectValue placeholder="Chọn sản phẩm tham chiếu" />
                                       </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent>
+                                    <SelectContent className="z-[10007]">
                                       <SelectGroup>
                                         {externalCatalog.map((product) => (
                                           <SelectItem
@@ -696,7 +696,7 @@ const CreateProductDialog = ({
                             <SelectValue placeholder="Chọn loại sản phẩm" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="z-[10007]">
                           <SelectGroup>
                             {PRODUCT_TYPE?.map((type) => (
                               <SelectItem
@@ -754,7 +754,7 @@ const CreateProductDialog = ({
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent
-                          className="w-auto min-w-[fit-content] p-0"
+                          className="w-auto min-w-[fit-content] p-0 z-[10007]"
                           align="start"
                         >
                           <DatePicker
@@ -841,7 +841,7 @@ const CreateProductDialog = ({
                                     <SelectValue placeholder="Chọn đơn vị" />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent>
+                                <SelectContent className="z-[10007]">
                                   <SelectGroup>
                                     {units
                                       ?.filter(
@@ -928,7 +928,7 @@ const CreateProductDialog = ({
                                   <SelectValue placeholder="Chọn thuộc tính" />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
+                              <SelectContent className="z-[10007]">
                                 <SelectGroup>
                                   {attributes.map((attribute) => (
                                     <SelectItem
@@ -1175,7 +1175,7 @@ const CreateProductDialog = ({
                                 <SelectValue placeholder="Chọn trạng thái" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent className="z-[10007]">
                               <SelectItem value="active">Hoạt động</SelectItem>
                               <SelectItem value="inactive">Tạm dừng</SelectItem>
                             </SelectContent>
@@ -1213,6 +1213,8 @@ const CreateProductDialog = ({
           open={showCreateSupplierDialog}
           onOpenChange={setShowCreateSupplierDialog}
           showTrigger={false}
+          contentClassName="z-[10020]"
+          overlayClassName="z-[10019]"
         />
       )}
 
@@ -1221,6 +1223,8 @@ const CreateProductDialog = ({
           open={showCreateCategoryDialog}
           onOpenChange={setShowCreateCategoryDialog}
           showTrigger={false}
+          contentClassName="z-[10020]"
+          overlayClassName="z-[10019]"
         />
       )}
 
@@ -1229,6 +1233,8 @@ const CreateProductDialog = ({
           open={showCreateUnitDialog}
           onOpenChange={setShowCreateUnitDialog}
           showTrigger={false}
+          contentClassName="z-[10020]"
+          overlayClassName="z-[10019]"
         />
       )}
     </Dialog>

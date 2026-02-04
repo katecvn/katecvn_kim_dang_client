@@ -30,6 +30,8 @@ const InvoiceDataTable = ({
   data,
   loading = false,
   isMyInvoice = false,
+  onCreated,
+  onView,
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -53,6 +55,9 @@ const InvoiceDataTable = ({
       columnFilters,
       globalFilter,
     },
+    meta: {
+      onView,
+    },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
@@ -70,20 +75,26 @@ const InvoiceDataTable = ({
 
       const filterNorm = normalizeText(filterValue)
 
-      // 1. Check Customer attributes (Name, Phone, TaxCode)
-      // We check this for every column iteration to ensure that if the customer matches,
-      // the row is included regardless of which column is being processed.
-      const customer = row.original.customer
+      const original = row.original
+
+      // 1. Check Invoice Code
+      if (normalizeText(original.code || '').includes(filterNorm)) return true
+
+      // 2. Check Customer attributes (Name, Phone, TaxCode, IdentityCard)
+      const customer = original.customer
       if (customer) {
         const customerText = normalizeText(
-          `${customer.name || ''} ${customer.taxCode || ''} ${customer.phone || ''}`
+          `${customer.name || ''} ${customer.taxCode || ''} ${customer.phone || ''} ${customer.identityCard || ''}`
         )
-        if (customerText.includes(filterNorm)) {
-          return true
-        }
+        if (customerText.includes(filterNorm)) return true
       }
 
-      // 2. Check the specific column value
+      // 3. Check Sales Contract Code
+      if (original.salesContract?.code) {
+        if (normalizeText(original.salesContract.code).includes(filterNorm)) return true
+      }
+
+      // 4. Check the specific column value (fallback)
       const value = row.getValue(columnId)
       if (value != null && typeof value !== 'object') {
         return normalizeText(String(value)).includes(filterNorm)
@@ -97,7 +108,7 @@ const InvoiceDataTable = ({
   if (isMobile) {
     return (
       <div className="space-y-4">
-        <DataTableToolbar table={table} isMyInvoice={isMyInvoice} />
+        <DataTableToolbar table={table} isMyInvoice={isMyInvoice} onCreated={onCreated} />
 
         <div className="space-y-2">
           {loading ? (
@@ -135,7 +146,7 @@ const InvoiceDataTable = ({
   // Desktop View - Table
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} isMyInvoice={isMyInvoice} />
+      <DataTableToolbar table={table} isMyInvoice={isMyInvoice} onCreated={onCreated} />
 
       <div className="rounded-md border">
         <Table>

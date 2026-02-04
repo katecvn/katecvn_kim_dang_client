@@ -29,6 +29,7 @@ import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 import React, { useEffect, useState } from 'react'
 import { purchaseOrderStatuses, purchaseOrderPaymentStatuses } from '../data'
 import { paymentStatus } from '../../payment/data'
+import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
 import { Separator } from '@/components/ui/separator'
 import { dateFormat } from '@/utils/date-format'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -702,36 +703,92 @@ const ViewPurchaseOrderDialog = ({
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold">Phiếu nhập kho</h3>
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="h-8 gap-1"
+                          className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
                           onClick={handleCreateImport}
                         >
                           <IconPlus className="h-4 w-4" />
-                          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                            Tạo phiếu nhập
+                          <span>
+                            Thêm
                           </span>
                         </Button>
                       </div>
 
                       {purchaseOrder?.warehouseReceipts && purchaseOrder.warehouseReceipts.length > 0 ? (
-                        <div className="overflow-x-auto rounded-lg border">
-                          <Table className="min-w-full">
-                            <TableHeader>
-                              <TableRow className="bg-secondary text-xs">
-                                <TableHead className="w-12">STT</TableHead>
-                                <TableHead className="min-w-32">Mã phiếu</TableHead>
-                                <TableHead className="min-w-32">Loại phiếu</TableHead>
-                                <TableHead className="min-w-32">Trạng thái</TableHead>
-                                <TableHead className="min-w-32 text-right">Tổng tiền</TableHead>
-                                <TableHead className="min-w-32">Ngày tạo</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {purchaseOrder.warehouseReceipts.map((receipt, index) => (
-                                <TableRow key={receipt.id}>
-                                  <TableCell>{index + 1}</TableCell>
-                                  <TableCell>
+                        isDesktop ? (
+                          <div className="overflow-x-auto rounded-lg border">
+                            <Table className="min-w-full">
+                              <TableHeader>
+                                <TableRow className="bg-secondary text-xs">
+                                  <TableHead className="w-12">STT</TableHead>
+                                  <TableHead className="min-w-32">Mã phiếu</TableHead>
+                                  <TableHead className="min-w-32">Loại phiếu</TableHead>
+                                  <TableHead className="min-w-32">Trạng thái</TableHead>
+                                  <TableHead className="min-w-32 text-right">Tổng tiền</TableHead>
+                                  <TableHead className="min-w-32">Ngày tạo</TableHead>
+                                  <TableHead className="w-10"></TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {purchaseOrder.warehouseReceipts.map((receipt, index) => (
+                                  <TableRow key={receipt.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>
+                                      <span
+                                        className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                                        onClick={() => {
+                                          setSelectedReceiptDetail(receipt)
+                                          setShowWarehouseReceiptDetail(true)
+                                        }}
+                                      >
+                                        {receipt.code}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell>
+                                      {receipt.receiptType === 1 ? 'Nhập kho' : receipt.receiptType}
+                                    </TableCell>
+                                    <TableCell>
+                                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}>
+                                        {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
+                                        {receipt.status === 'draft'
+                                          ? 'Nháp'
+                                          : receipt.status === 'posted'
+                                            ? 'Đã ghi sổ'
+                                            : receipt.status}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-right font-semibold">
+                                      {moneyFormat(receipt.totalAmount)}
+                                    </TableCell>
+                                    <TableCell>{dateFormat(receipt.receiptDate, true)}</TableCell>
+                                    <TableCell>
+                                      {receipt.status === 'draft' && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            // TODO: Implement delete logic
+                                            toast.info("Tính năng xóa đang phát triển")
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {purchaseOrder.warehouseReceipts.map((receipt) => (
+                              <div key={receipt.id} className="space-y-2 rounded-lg border p-3 text-sm">
+                                <div className="flex justify-between items-center">
+                                  <strong>Mã phiếu:</strong>
+                                  <div className="flex items-center gap-2">
                                     <span
                                       className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
                                       onClick={() => {
@@ -741,11 +798,28 @@ const ViewPurchaseOrderDialog = ({
                                     >
                                       {receipt.code}
                                     </span>
-                                  </TableCell>
-                                  <TableCell>
-                                    {receipt.receiptType === 1 ? 'Nhập kho' : receipt.receiptType}
-                                  </TableCell>
-                                  <TableCell>
+                                    {receipt.status === 'draft' && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          toast.info("Tính năng xóa đang phát triển")
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex justify-between">
+                                  <strong>Loại phiếu:</strong>
+                                  <span>{receipt.receiptType === 1 ? 'Nhập kho' : receipt.receiptType}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <strong>Trạng thái:</strong>
+                                  <div className='flex items-center justify-end'>
                                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}>
                                       {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
                                       {receipt.status === 'draft'
@@ -754,16 +828,20 @@ const ViewPurchaseOrderDialog = ({
                                           ? 'Đã ghi sổ'
                                           : receipt.status}
                                     </span>
-                                  </TableCell>
-                                  <TableCell className="text-right font-semibold">
-                                    {moneyFormat(receipt.totalAmount)}
-                                  </TableCell>
-                                  <TableCell>{dateFormat(receipt.receiptDate, true)}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
+                                  </div>
+                                </div>
+                                <div className="flex justify-between">
+                                  <strong>Tổng tiền:</strong>
+                                  <span className="font-bold text-primary">{moneyFormat(receipt.totalAmount)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <strong>Ngày tạo:</strong>
+                                  <span>{dateFormat(receipt.receiptDate, true)}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )
                       ) : (
                         <div className="text-center text-sm text-muted-foreground italic py-2">
                           Chưa có dữ liệu phiếu nhập kho

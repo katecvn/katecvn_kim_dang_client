@@ -56,7 +56,7 @@ import { buildInstallmentData } from '../helpers/BuildInstallmentData'
 import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
 
-const DataTableRowActions = ({ row }) => {
+const DataTableRowActions = ({ row, table }) => {
   const invoice = row?.original || {}
   const dispatch = useDispatch()
   const loading = useSelector((state) => state.setting.loading)
@@ -67,7 +67,6 @@ const DataTableRowActions = ({ row }) => {
     useState(false)
   const [showCreateCreditNoteDialog, setShowCreateCreditNoteDialog] =
     useState(false)
-  const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false)
   const [showEInvoiceDialog, setShowEInvoiceDialog] = useState(false)
   const [eInvoicePreviewData, setEInvoicePreviewData] = useState(null)
   const [eInvoiceLoading, setEInvoiceLoading] = useState(false)
@@ -289,6 +288,12 @@ const DataTableRowActions = ({ row }) => {
     setShowCreateSalesContractDialog(true)
   }
 
+  const handleView = () => {
+    if (table?.options?.meta?.onView) {
+      table.options.meta.onView(invoice.id)
+    }
+  }
+
   return (
     <>
       {showDeleteInvoiceDialog && (
@@ -305,20 +310,6 @@ const DataTableRowActions = ({ row }) => {
           onOpenChange={setShowRejectInvoiceDialog}
           invoice={row.original}
           showTrigger={false}
-        />
-      )}
-      {showViewInvoiceDialog && (
-        <ViewInvoiceDialog
-          open={showViewInvoiceDialog}
-          onOpenChange={setShowViewInvoiceDialog}
-          invoiceId={row.original.id}
-          showTrigger={false}
-          onEdit={() => {
-            setShowViewInvoiceDialog(false)
-            setTimeout(() => {
-              setShowUpdatePendingInvoiceDialog(true)
-            }, 100)
-          }}
         />
       )}
 
@@ -365,7 +356,7 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem
-            onClick={() => setShowViewInvoiceDialog(true)}
+            onClick={handleView}
             className="text-slate-600"
           >
             Xem

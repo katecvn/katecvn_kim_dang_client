@@ -37,6 +37,12 @@ const InvoicePage = () => {
     dispatch(getInvoices(filters))
   }, [dispatch, filters])
 
+  const handleInvoiceCreated = (newInvoice) => {
+    if (newInvoice?.id) {
+      setViewInvoiceId(newInvoice.id)
+    }
+  }
+
   // Handle ?view=invoiceId query parameter
   useEffect(() => {
     const viewParam = searchParams.get('view')
@@ -83,6 +89,8 @@ const InvoicePage = () => {
               data={invoices}
               columns={columns}
               loading={loading}
+              onCreated={handleInvoiceCreated}
+              onView={(id) => setViewInvoiceId(id)}
             />
           )}
         </div>

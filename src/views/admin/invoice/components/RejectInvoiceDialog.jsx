@@ -45,10 +45,10 @@ const RejectInvoiceDialog = ({ invoice, showTrigger = true, open, onOpenChange }
       ) : null}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Xác nhận hủy hóa đơn</DialogTitle>
+          <DialogTitle>Xác nhận hủy đơn bán</DialogTitle>
           <DialogDescription>
-            Hành động này sẽ chuyển trạng thái hóa đơn <strong>{invoice?.code}</strong> sang{' '}
-            <span className="font-bold text-red-600">Đã hủy (Rejected)</span>.
+            Hành động này sẽ chuyển trạng thái đơn bán <strong>{invoice?.code}</strong> sang{' '}
+            <span className="font-bold text-red-600">Đã hủy</span>.
             <br />
             Bạn có chắc chắn muốn tiếp tục?
           </DialogDescription>

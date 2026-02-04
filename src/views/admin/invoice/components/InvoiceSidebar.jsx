@@ -492,11 +492,11 @@ const InvoiceSidebar = ({
                               <CommandList>
                                 {customers.map((customer) => (
                                   <CommandItem
-                                    value={customer.id}
+                                    value={`${customer.name || ''} ${customer.phone || ''} ${customer.identityCard || ''}`.trim()}
                                     key={customer.id}
                                     onSelect={() => onSelectCustomer(customer)}
                                   >
-                                    {customer.name} - {customer.phone}
+                                    {customer.name} - {customer.identityCard}
                                     <CheckIcon
                                       className={cn(
                                         'ml-auto h-4 w-4',

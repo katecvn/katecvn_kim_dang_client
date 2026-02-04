@@ -13,14 +13,14 @@ import {
 } from '@/components/ui/form'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Search, ShoppingCart as CartIcon, LayoutGrid } from 'lucide-react'
+import { Plus, Search, ShoppingCart as CartIcon, LayoutGrid, Edit } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getProducts } from '@/stores/ProductSlice'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { getSuppliers } from '@/stores/SupplierSlice'
 import { createPurchaseOrderSchema } from '../schema'
-import { createPurchaseOrder } from '@/stores/PurchaseOrderSlice'
+import { createPurchaseOrder, updatePurchaseOrder, getPurchaseOrderDetail } from '@/stores/PurchaseOrderSlice'
 import { toast } from 'sonner'
 import { paymentMethods } from '../../receipt/data'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
@@ -32,13 +32,14 @@ import PurchaseOrderSidebar from './PurchaseOrderSidebar'
 import PurchaseOrderCart from './PurchaseOrderCart'
 import CreateOtherExpenses from '../../invoice/components/CreateOtherExpenses'
 import PurchaseContractPreviewDialog from './PurchaseContractPreviewDialog'
-import { buildPurchaseContractData } from '../helpers/BuildPurchaseContractData'
 import CreateProductDialog from '../../product/components/CreateProductDialog'
 
-const CreatePurchaseOrderDialog = ({
+const PurchaseOrderDialog = ({
   open,
   onOpenChange,
   showTrigger = true,
+  purchaseOrderId, // If present, acts as Update mode
+  purchaseOrder, // Initial data for Update mode (optional)
   onSuccess,
   ...props
 }) => {
@@ -50,15 +51,17 @@ const CreatePurchaseOrderDialog = ({
     useSelector((state) => state.auth.authUserWithRoleHasPermissions) || {}
 
   const isDesktop = useMediaQuery('(min-width: 768px)')
+  const isUpdateMode = !!purchaseOrderId
 
   // UI States
   const [mobileView, setMobileView] = useState('products') // 'products' | 'cart'
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredProducts, setFilteredProducts] = useState([])
 
   // Data States
+  const [fetchedOrder, setFetchedOrder] = useState(null)
+
   const [selectedSupplier, setSelectedSupplier] = useState(null)
   const [supplierEditData, setSupplierEditData] = useState(null)
 
@@ -105,7 +108,24 @@ const CreatePurchaseOrderDialog = ({
     },
   })
 
-  // Fetch Data
+  // Start Update Mode: Fetch Detail if needed
+  useEffect(() => {
+    if (open && purchaseOrderId) {
+      const fetchDetail = async () => {
+        try {
+          const result = await dispatch(getPurchaseOrderDetail(purchaseOrderId)).unwrap()
+          setFetchedOrder(result)
+        } catch (error) {
+          console.error("Failed to fetch order detail", error)
+        }
+      }
+      fetchDetail()
+    }
+  }, [open, purchaseOrderId, dispatch])
+
+  const targetOrder = isUpdateMode ? (fetchedOrder || purchaseOrder) : null
+
+  // Fetch Products & Suppliers
   useEffect(() => {
     if (open) {
       dispatch(getProducts())
@@ -113,9 +133,85 @@ const CreatePurchaseOrderDialog = ({
     }
   }, [dispatch, open])
 
+  // Populate Data for Update
+  useEffect(() => {
+    if (open && isUpdateMode && targetOrder && products.length > 0) {
+      // 1. Set Form Values
+      form.reset({
+        supplierId: targetOrder.supplierId?.toString() || '',
+        orderDate: targetOrder.orderDate ? new Date(targetOrder.orderDate) : new Date(),
+        status: targetOrder.status || 'draft',
+        note: targetOrder.note || '',
+        paymentMethod: targetOrder.paymentMethod || 'transfer',
+        paymentNote: targetOrder.paymentNote || '',
+        contractNumber: targetOrder.externalOrderCode || '',
+        paymentTerms: targetOrder.terms || '',
+        expectedDeliveryDate: targetOrder.expectedDeliveryDate ? new Date(targetOrder.expectedDeliveryDate) : null,
+        isAutoApprove: true, // Keep default even for update or map if backend provides
+      })
+
+      setContractNumber(targetOrder.externalOrderCode || '')
+      setExpectedDeliveryDate(targetOrder.expectedDeliveryDate ? new Date(targetOrder.expectedDeliveryDate) : null)
+
+      // 2. Set Supplier
+      if (targetOrder.supplier) {
+        setSelectedSupplier(targetOrder.supplier)
+        setSupplierEditData({
+          name: targetOrder.supplier.name,
+          phone: targetOrder.supplier.phone,
+          email: targetOrder.supplier.email,
+          address: targetOrder.supplier.address,
+          taxCode: targetOrder.supplier.taxCode,
+        })
+      }
+
+      // 3. Set Items
+      const items = targetOrder.items || []
+      const productList = []
+      const nextQuantities = {}
+      const nextUnitIds = {}
+      const nextPriceOverrides = {}
+      const nextDiscounts = {}
+      const nextNotes = {}
+      const nextBasePrices = {}
+      // Taxes reconstruction skipped as per Update logic
+
+      items.forEach(item => {
+        const product = products.find(p => p.id === item.productId)
+        if (product) {
+          productList.push(product)
+          const pid = product.id
+
+          nextQuantities[pid] = item.quantity
+          nextUnitIds[pid] = item.unitId
+          nextDiscounts[pid] = item.discount || 0
+          nextNotes[pid] = item.note || ''
+          nextPriceOverrides[pid] = item.unitPrice
+
+          nextBasePrices[pid] = product.price
+        }
+      })
+
+      setSelectedProducts(productList)
+      setQuantities(nextQuantities)
+      setSelectedUnitIds(nextUnitIds)
+      setPriceOverrides(nextPriceOverrides)
+      setDiscounts(nextDiscounts)
+      setNotes(nextNotes)
+      setBaseUnitPrices(nextBasePrices)
+
+      // 4. Other Expenses
+      setOtherExpenses({
+        price: targetOrder.otherCosts || 0,
+        description: '',
+      })
+    }
+  }, [open, isUpdateMode, targetOrder, products, form])
+
   // Reset States on Close
   useEffect(() => {
     if (open) return
+
     setSelectedProducts([])
     setSelectedUnitIds({})
     setBaseUnitPrices({})
@@ -134,7 +230,22 @@ const CreatePurchaseOrderDialog = ({
     setContractNumber('')
     setShowContractPreview(false)
     setContractPreviewData(null)
-    form.reset()
+    setFetchedOrder(null)
+    setOtherExpenses({ price: 0, description: '' })
+
+    // Reset form to default values for CREATE mode mostly
+    form.reset({
+      supplierId: '',
+      orderDate: new Date(),
+      status: 'draft',
+      note: '',
+      paymentMethod: paymentMethods[0].value,
+      paymentNote: '',
+      contractNumber: '',
+      paymentTerms: '',
+      expectedDeliveryDate: null,
+      isAutoApprove: true,
+    })
   }, [open, form])
 
   // ====== CATEGORY LOGIC ======
@@ -171,12 +282,10 @@ const CreatePurchaseOrderDialog = ({
   useEffect(() => {
     let filtered = products
 
-    // Filter by category
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(p => (p.categoryId || 'uncategorized') === selectedCategory)
     }
 
-    // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(p =>
@@ -187,7 +296,6 @@ const CreatePurchaseOrderDialog = ({
 
     setFilteredProducts(filtered)
   }, [selectedCategory, products, searchQuery])
-
 
   // ====== UNIT HELPERS ======
   const getBaseUnitId = (product) =>
@@ -264,12 +372,10 @@ const CreatePurchaseOrderDialog = ({
   // ====== HANDLERS ======
   const handleAddProduct = (product) => {
     const isAlreadySelected = selectedProducts.some(p => p.id === product.id)
-
     if (isAlreadySelected) {
       handleRemoveProduct(product.id)
     } else {
       setSelectedProducts(prev => [...prev, product])
-      // Initialize states
       setQuantities(prev => ({ ...prev, [product.id]: 1 }))
       setBaseUnitPrices(prev => ({ ...prev, [product.id]: product.price }))
 
@@ -282,8 +388,6 @@ const CreatePurchaseOrderDialog = ({
 
   const handleRemoveProduct = (productId) => {
     setSelectedProducts(prev => prev.filter(p => p.id !== productId))
-
-    // Cleanup
     const cleanup = (setter) => {
       setter(prev => {
         const next = { ...prev }
@@ -291,7 +395,6 @@ const CreatePurchaseOrderDialog = ({
         return next
       })
     }
-
     cleanup(setSelectedUnitIds)
     cleanup(setBaseUnitPrices)
     cleanup(setPriceOverrides)
@@ -360,10 +463,8 @@ const CreatePurchaseOrderDialog = ({
   // ====== CALCULATIONS ======
   const calculateSubTotal = (productId) => {
     if (!productId) {
-      // Calculate Total Subtotal of ALL products
       return selectedProducts.reduce((sum, p) => sum + calculateSubTotal(p.id), 0)
     }
-
     const quantity = quantities[productId] || 1
     const product = selectedProducts.find((prod) => prod.id === productId)
     if (!product) return 0
@@ -405,7 +506,7 @@ const CreatePurchaseOrderDialog = ({
   }
 
   const calculateTotalAmount = () => {
-    const subTotal = calculateSubTotal() // This is actually Total Subtotal after discount
+    const subTotal = calculateSubTotal()
     const tax = calculateTotalTax()
     const expenses = calculateExpenses()
     return subTotal + tax + expenses
@@ -416,14 +517,11 @@ const CreatePurchaseOrderDialog = ({
   }
 
   const calculateExpenses = () => {
-    const totalExpenses = otherExpenses.price
-    return totalExpenses
+    return otherExpenses.price
   }
-
 
   // ====== SUBMIT ======
   const onSubmit = async (data) => {
-    // Validations
     if (selectedProducts.length === 0) {
       toast.error('Vui lòng chọn ít nhất 1 sản phẩm')
       return
@@ -445,6 +543,11 @@ const CreatePurchaseOrderDialog = ({
       const qtyBase = factor > 0 ? qtyUnit / factor : qtyUnit
       const priceUnit = getDisplayPrice(product)
 
+      // Only basic fields needed for simple implementation
+      // Logic from existing Create and Update dialogs merged:
+      const subTotal = calculateSubTotal(product.id)
+      const taxAmt = calculateTaxForProduct(product.id)
+
       return {
         lineNo: index + 1,
         productId: product.id,
@@ -459,10 +562,10 @@ const CreatePurchaseOrderDialog = ({
         baseQuantity: qtyBase,
         conversionFactor: factor,
         unitPrice: priceUnit,
-        taxAmount: calculateTaxForProduct(product.id),
-        subTotal: calculateSubTotal(product.id),
+        taxAmount: taxAmt,
+        subTotal: subTotal,
         discount: discounts[product.id] || 0,
-        total: calculateSubTotal(product.id) + calculateTaxForProduct(product.id),
+        total: subTotal + taxAmt,
         note: notes[product.id] || '',
       }
     })
@@ -471,34 +574,25 @@ const CreatePurchaseOrderDialog = ({
       ? (expectedDeliveryDate instanceof Date ? expectedDeliveryDate.toISOString().split('T')[0] : expectedDeliveryDate)
       : (data.expectedDeliveryDate ? new Date(data.expectedDeliveryDate).toISOString().split('T')[0] : null)
 
-    const dataToSend = {
-      supplierId: data.supplierId || null,
+
+    const commonPayload = {
+      supplierId: data.supplierId || (isUpdateMode ? targetOrder?.supplierId : null),
       orderDate: data.orderDate ? new Date(data.orderDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      expectedDeliveryDate: formattedDate, // Ngày nhận hàng
-      expectedReturnDate: formattedDate,   // [MỚI] Ngày trả vỏ/két (Map theo yêu cầu user)
-      externalOrderCode: contractNumber,   // [MỚI] Mã đơn bên NCC (Số hợp đồng)
-      terms: data.paymentTerms,            // [MỚI] Điều khoản
-      otherCosts: otherExpenses.price,     // [MỚI] Chi phí khác
-      isPrintContract: false,              // [MỚI] Không in hợp đồng theo yêu cầu
+      expectedDeliveryDate: formattedDate,
+      expectedReturnDate: formattedDate,
+      externalOrderCode: contractNumber,
+      terms: data.paymentTerms,
+      otherCosts: otherExpenses.price,
+      isPrintContract: false,
       isAutoApprove: data.isAutoApprove,
 
       note: data.note,
-      taxAmount: calculateTotalTax(),
-      amount: calculateTotalAmount(), // Total amount
-      discount: calculateTotalDiscount(),
-      subTotal: handleCalculateSubTotalInvoice(), // Gross Subtotal
-      totalAmount: calculateTotalAmount(),
       status: data.status,
-      paymentStatus: 'unpaid',
-      paidAmount: 0,
-      items,
       paymentMethod: data.paymentMethod,
       paymentNote: data.paymentNote,
-      paymentTerms: data.paymentTerms, // Keep for backward compatibility if needed
-      createdBy: authUserWithRoleHasPermissions.id,
+      paymentTerms: data.paymentTerms,
       updatedBy: authUserWithRoleHasPermissions.id,
 
-      // New Supplier Data
       ...((!data.supplierId && supplierEditData) && {
         newSupplier: {
           name: supplierEditData.name,
@@ -511,23 +605,48 @@ const CreatePurchaseOrderDialog = ({
     }
 
     try {
-      const newOrder = await dispatch(createPurchaseOrder(dataToSend)).unwrap()
-      toast.success('Tạo đơn hàng thành công')
-      onOpenChange(false) // Close the creation dialog
-      if (onSuccess) {
-        onSuccess(newOrder)
+      if (isUpdateMode) {
+        // UPDATE PAYLOAD
+        const updatePayload = {
+          ...commonPayload,
+          purchaseOrderId: targetOrder.id,
+          items: items.map(item => ({
+            productId: item.productId,
+            unitId: item.unitId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            note: item.note
+          })),
+        }
+        await dispatch(updatePurchaseOrder(updatePayload)).unwrap()
+        toast.success('Cập nhật đơn hàng thành công')
+      } else {
+        // CREATE PAYLOAD
+        const createPayload = {
+          ...commonPayload,
+          taxAmount: calculateTotalTax(),
+          amount: calculateTotalAmount(),
+          discount: calculateTotalDiscount(),
+          subTotal: handleCalculateSubTotalInvoice(),
+          totalAmount: calculateTotalAmount(),
+          paymentStatus: 'unpaid',
+          paidAmount: 0,
+          items: items,
+          createdBy: authUserWithRoleHasPermissions.id,
+        }
+        const newOrder = await dispatch(createPurchaseOrder(createPayload)).unwrap()
+        toast.success('Tạo đơn hàng thành công')
+        if (onSuccess) onSuccess(newOrder)
       }
 
-      // Disabled auto print contract
-      // if (isPrintContract) { ... }
-
+      onOpenChange(false)
     } catch (error) {
       console.log('Submit error:', error)
-      toast.error('Có lỗi xảy ra khi tạo đơn hàng')
+      toast.error(isUpdateMode ? 'Có lỗi xảy ra khi cập nhật đơn hàng' : 'Có lỗi xảy ra khi tạo đơn hàng')
     }
   }
 
-  // Expose dialog state to window for mobile navigation
+  // Expose dialog state for mobile nav
   useEffect(() => {
     if (!isDesktop && open) {
       window.__purchaseOrderDialog = {
@@ -541,12 +660,11 @@ const CreatePurchaseOrderDialog = ({
     }
   }, [isDesktop, open, setMobileView, selectedProducts.length, mobileView])
 
-  // Mobile: Render as full page
+  // Mobile Render
   if (!isDesktop && open) {
     return (
       <>
         <div className="fixed inset-0 top-14 bottom-16 bg-background z-40 flex flex-col pt-0">
-          {/* Mobile Header */}
           <div className="px-4 py-3 border-b flex items-center justify-between bg-background">
             <div className="flex items-center gap-2">
               {mobileView === 'cart' && (
@@ -564,9 +682,9 @@ const CreatePurchaseOrderDialog = ({
                   {mobileView === 'products' ? 'Chọn sản phẩm' : 'Đơn hàng'}
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  {mobileView === 'products'
-                    ? `${selectedProducts.length} sản phẩm đã chọn`
-                    : 'Hoàn tất đơn hàng'
+                  {mobileView === 'products' ?
+                    (isUpdateMode ? 'Cập nhật đơn hàng' : `${selectedProducts.length} sản phẩm đã chọn`) :
+                    (isUpdateMode ? 'Cập nhật đơn hàng' : 'Hoàn tất đơn hàng')
                   }
                 </p>
               </div>
@@ -581,13 +699,10 @@ const CreatePurchaseOrderDialog = ({
             </Button>
           </div>
 
-          {/* Form Content */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
               {mobileView === 'products' ? (
-                /* View 1: Product Selection */
                 <div className="flex-1 flex flex-col overflow-hidden">
-                  {/* Search Bar */}
                   <div className="p-4 border-b bg-background/80 backdrop-blur-sm">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -603,7 +718,6 @@ const CreatePurchaseOrderDialog = ({
                     </div>
                   </div>
 
-                  {/* Add Product Button (Mobile) */}
                   <div className="px-4 py-2 border-b flex justify-end bg-background">
                     <Button
                       size="sm"
@@ -619,64 +733,26 @@ const CreatePurchaseOrderDialog = ({
                     </Button>
                   </div>
 
-                  {/* Category + Product Grid */}
                   <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full">
-                    {/* Category Sidebar - Horizontal scroll with filter */}
+                    {/* Category Sidebar */}
                     <div className="border-b p-2 flex items-center gap-2">
                       <div className="flex-1 overflow-x-auto">
                         <div className="flex gap-2">
-                          {/* All Categories Option */}
-                          <button
-                            type="button"
-                            onClick={() => setSelectedCategory('all')}
-                            className={cn(
-                              "px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all",
-                              selectedCategory === 'all'
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted/50 text-muted-foreground hover:bg-muted/80"
-                            )}
-                          >
-                            Tất cả
-                          </button>
-
-                          {categories.map((category) => {
-                            const isActive = selectedCategory === category.id
-                            return (
-                              <button
-                                key={category.id}
-                                type="button"
-                                onClick={() => setSelectedCategory(category.id)}
-                                className={cn(
-                                  "px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all",
-                                  isActive
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-muted/50 text-muted-foreground hover:bg-muted/80"
-                                )}
-                              >
-                                {category.name}
-                              </button>
-                            )
-                          })}
+                          <button type="button" onClick={() => setSelectedCategory('all')} className={cn("px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all", selectedCategory === 'all' ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted/80")}>Tất cả</button>
+                          {categories.map((category) => (
+                            <button key={category.id} type="button" onClick={() => setSelectedCategory(category.id)} className={cn("px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all", selectedCategory === category.id ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted/80")}>{category.name}</button>
+                          ))}
                         </div>
                       </div>
                     </div>
-
-                    {/* Product Grid - Vertical scroll */}
                     <div className="flex-1 overflow-y-auto min-w-0 w-full">
-                      <ProductGrid
-                        products={filteredProducts}
-                        onAddProduct={handleAddProduct}
-                        selectedProductIds={selectedProducts.map(p => p.id)}
-                        loading={false}
-                      />
+                      <ProductGrid products={filteredProducts} onAddProduct={handleAddProduct} selectedProductIds={selectedProducts.map(p => p.id)} loading={false} />
                     </div>
                   </div>
                 </div>
               ) : (
-                /* View 2: Cart & Checkout */
                 <div className="flex-1 overflow-y-auto">
                   <div className="flex flex-col">
-                    {/* Shopping Cart */}
                     <div className="[&>div]:!w-full [&>div]:border-0 [&>div]:!bg-transparent [&>div]:shadow-none">
                       <PurchaseOrderCart
                         selectedProducts={selectedProducts}
@@ -699,8 +775,6 @@ const CreatePurchaseOrderDialog = ({
                         calculateTaxForProduct={calculateTaxForProduct}
                       />
                     </div>
-
-                    {/* Sidebar */}
                     <div className="border-t [&>div]:!w-full [&>div]:!max-w-full">
                       <PurchaseOrderSidebar
                         form={form}
@@ -722,6 +796,10 @@ const CreatePurchaseOrderDialog = ({
                         setIsPrintContract={setIsPrintContract}
                         contractNumber={contractNumber}
                         setContractNumber={setContractNumber}
+                        otherExpenses={otherExpenses}
+                        calculateExpenses={calculateExpenses}
+                        onEditExpenses={() => setShowOtherExpenses(true)}
+                        isUpdate={isUpdateMode}
                       />
                     </div>
                   </div>
@@ -747,35 +825,30 @@ const CreatePurchaseOrderDialog = ({
     )
   }
 
-  // Don't render desktop dialog on mobile to prevent state loss
-  if (!isDesktop) {
-    return null
-  }
+  // Prevent render if desktop view closed or not open
+  if (!isDesktop) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={isDesktop} {...props}>
       {showTrigger && (
         <DialogTrigger asChild>
           <Button className="mx-2" variant="outline" size="sm">
-            <Plus className="mr-2 size-4" aria-hidden="true" />
-            Thêm mới
+            {isUpdateMode ? <Edit className="mr-2 size-4" /> : <Plus className="mr-2 size-4" />}
+            {isUpdateMode ? 'Cập nhật' : 'Thêm mới'}
           </Button>
         </DialogTrigger>
       )}
 
       <DialogContent className="max-w-screen w-screen p-0 m-0 h-[calc(100vh-64px)] md:max-h-screen md:h-screen">
         <DialogHeader className="px-6 pt-4">
-          <DialogTitle>Tạo đơn đặt hàng mới</DialogTitle>
-          <DialogDescription>Chọn sản phẩm và điền thông tin để tạo đơn đặt hàng</DialogDescription>
+          <DialogTitle>{isUpdateMode ? 'Cập nhật đơn đặt hàng' : 'Tạo đơn đặt hàng mới'}</DialogTitle>
+          <DialogDescription>{isUpdateMode ? 'Chỉnh sửa thông tin đơn đặt hàng' : 'Chọn sản phẩm và điền thông tin để tạo đơn đặt hàng'}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden border-t">
-            {/* 4-COLUMN LAYOUT */}
             <div className="flex flex-1 overflow-hidden">
-              {/* LEFT SECTION: Category + Products */}
               <div className="flex flex-col flex-1">
-                {/* UNIFIED SEARCH BAR spanning columns 1 & 2 */}
                 <div className="p-4 border-b bg-background/80 backdrop-blur-sm">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -791,7 +864,6 @@ const CreatePurchaseOrderDialog = ({
                   </div>
                 </div>
 
-                {/* Add Product Button */}
                 <div className="ml-auto">
                   <Button
                     size="sm"
@@ -807,16 +879,13 @@ const CreatePurchaseOrderDialog = ({
                   </Button>
                 </div>
 
-                {/* Category + Product Grid Row */}
                 <div className="flex flex-1 overflow-hidden">
-                  {/* COLUMN 1: Category Sidebar */}
                   <CategorySidebar
                     categories={categories}
                     selectedCategory={selectedCategory}
                     onCategoryChange={setSelectedCategory}
                     productCounts={productCounts}
                   />
-
 
                   <ProductGrid
                     products={filteredProducts}
@@ -827,7 +896,6 @@ const CreatePurchaseOrderDialog = ({
                 </div>
               </div>
 
-              {/* COLUMN 3: Shopping Cart */}
               <PurchaseOrderCart
                 selectedProducts={selectedProducts}
                 quantities={quantities}
@@ -849,7 +917,6 @@ const CreatePurchaseOrderDialog = ({
                 calculateTaxForProduct={calculateTaxForProduct}
               />
 
-              {/* COLUMN 4: Sidebar */}
               <PurchaseOrderSidebar
                 form={form}
                 suppliers={suppliers}
@@ -870,10 +937,10 @@ const CreatePurchaseOrderDialog = ({
                 setIsPrintContract={setIsPrintContract}
                 contractNumber={contractNumber}
                 setContractNumber={setContractNumber}
-                // Expenses
                 otherExpenses={otherExpenses}
                 calculateExpenses={calculateExpenses}
                 onEditExpenses={() => setShowOtherExpenses(true)}
+                isUpdate={isUpdateMode}
               />
             </div>
           </form>
@@ -888,13 +955,12 @@ const CreatePurchaseOrderDialog = ({
         showTrigger={false}
       />
 
-      {/* Contract Preview Dialog */}
+      {/* Contract Preview Dialog - Only relevant for Create probably or if print needed, but logic kept */}
       <PurchaseContractPreviewDialog
         open={showContractPreview}
         onOpenChange={(open) => {
           setShowContractPreview(open)
           if (!open) {
-            // If closing preview, close the main dialog too as order is done
             onOpenChange?.(false)
             form.reset()
           }
@@ -920,4 +986,4 @@ const CreatePurchaseOrderDialog = ({
   )
 }
 
-export default CreatePurchaseOrderDialog
+export default PurchaseOrderDialog

@@ -18,7 +18,6 @@ import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { useState, useEffect, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getWarehouseReceiptById, updateWarehouseReceipt, postWarehouseReceipt, cancelWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
-import LotAllocationDialog from './LotAllocationDialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { MobileIcon } from '@radix-ui/react-icons'
@@ -54,16 +53,12 @@ const ViewWarehouseReceiptDialog = ({
   const dispatch = useDispatch()
   const [receipt, setReceipt] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [lotDialogOpen, setLotDialogOpen] = useState(false)
-  const [selectedDetail, setSelectedDetail] = useState(null)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
   const [targetStatus, setTargetStatus] = useState(null)
   const [showExportPreview, setShowExportPreview] = useState(false)
 
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
   const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
-
-  const [showCreateLotDialog, setShowCreateLotDialog] = useState(false)
   const [printData, setPrintData] = useState(null)
 
   // View Product
@@ -164,16 +159,7 @@ const ViewWarehouseReceiptDialog = ({
   const status = warehouseReceiptStatuses.find((s) => s.value === receipt?.status)
   const partner = receipt?.receiptType === 1 ? receipt?.supplier : receipt?.customer
 
-  const handleOpenLotDialog = (detail) => {
-    setSelectedDetail(detail)
-    setLotDialogOpen(true)
-  }
 
-  const handleLotAllocationSuccess = () => {
-    // Optionally refresh receipt data here
-    fetchData()
-    setLotDialogOpen(false)
-  }
 
   const handlePrintWarehouseReceipt = () => {
     if (!receipt) return
@@ -401,44 +387,7 @@ const ViewWarehouseReceiptDialog = ({
                               </div>
                             </div>
 
-                            {/* Lot Allocation Section */}
-                            <div className="mt-3 border-t pt-3">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Lô đã chọn:</span>
-                                {receipt.status === 'draft' && (
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                                    onClick={() => handleOpenLotDialog(detail)}
-                                  >
-                                    {detail.lotAllocations && detail.lotAllocations.length > 0
-                                      ? 'Sửa Lô'
-                                      : 'Chọn Lô'}
-                                  </Button>
-                                )}
-                              </div>
-
-                              {detail.lotAllocations && detail.lotAllocations.length > 0 ? (
-                                <div className="mt-2 space-y-1">
-                                  {detail.lotAllocations.map((alloc) => (
-                                    <div
-                                      key={alloc.id}
-                                      className="flex items-center justify-between text-sm"
-                                    >
-                                      <span>• Lô {alloc.lot?.code || alloc.lotId}</span>
-                                      <span className="font-medium">
-                                        {parseFloat(alloc.quantity).toLocaleString('vi-VN')} {detail.unitName}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="mt-2 text-sm text-muted-foreground italic">
-                                  Chưa phân bổ lô
-                                </div>
-                              )}
-                            </div>
+                            {/* Lot Allocation Removed */}
                           </div>
                         ))}
                       </div>
@@ -620,22 +569,6 @@ const ViewWarehouseReceiptDialog = ({
         </DialogFooter>
       </DialogContent>
 
-      {/* Lot Allocation Dialog */}
-      {selectedDetail && (
-        <LotAllocationDialog
-          open={lotDialogOpen}
-          onOpenChange={setLotDialogOpen}
-          detailId={selectedDetail.id}
-          productId={selectedDetail.productId}
-          productName={selectedDetail.productName}
-          qtyRequired={parseFloat(selectedDetail.qtyActual)}
-          receiptType={receipt?.receiptType}
-          existingAllocations={selectedDetail.lotAllocations || []}
-          onSuccess={handleLotAllocationSuccess}
-          contentClassName="z-[100020]"
-          overlayClassName="z-[100019]"
-        />
-      )}
       {/* Update Status Dialog */}
       {showUpdateStatusDialog && (
         <UpdateWarehouseReceiptStatusDialog

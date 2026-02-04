@@ -29,6 +29,7 @@ const PurchaseOrderDataTable = ({
   columns,
   data,
   loading = false,
+  onCreated,
   isMyPurchaseOrder = false,
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -95,7 +96,7 @@ const PurchaseOrderDataTable = ({
   if (isMobile) {
     return (
       <div className="space-y-4">
-        <DataTableToolbar table={table} isMyPurchaseOrder={isMyPurchaseOrder} />
+        <DataTableToolbar table={table} onCreated={onCreated} isMyPurchaseOrder={isMyPurchaseOrder} />
 
         <div className="space-y-2">
           {loading ? (
@@ -132,7 +133,7 @@ const PurchaseOrderDataTable = ({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} isMyPurchaseOrder={isMyPurchaseOrder} />
+      <DataTableToolbar table={table} onCreated={onCreated} isMyPurchaseOrder={isMyPurchaseOrder} />
 
       <div className="rounded-md border">
         <Table>

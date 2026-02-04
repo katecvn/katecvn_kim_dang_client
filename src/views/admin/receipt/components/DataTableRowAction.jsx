@@ -116,14 +116,17 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           {row.original.status === 'draft' && (
-            <>
-              <DropdownMenuItem onSelect={handleGenerateQR}>
-                Tạo QR
-                <DropdownMenuShortcut>
-                  <QrCode className="h-4 w-4" />
-                </DropdownMenuShortcut>
-              </DropdownMenuItem>
+            <DropdownMenuItem onSelect={handleGenerateQR}>
+              Tạo QR
+              <DropdownMenuShortcut>
+                <QrCode className="h-4 w-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
 
+          {(row.original.status === 'draft' ||
+            row.original.status === 'cancelled' ||
+            row.original.status === 'canceled') && (
               <DropdownMenuItem
                 onSelect={() => setShowDeleteReceiptDialog(true)}
                 className="text-destructive focus:text-destructive"
@@ -133,8 +136,7 @@ const DataTableRowActions = ({ row }) => {
                   <IconTrash className="h-4 w-4" />
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
-            </>
-          )}
+            )}
         </DropdownMenuContent>
       </DropdownMenu>
     </>

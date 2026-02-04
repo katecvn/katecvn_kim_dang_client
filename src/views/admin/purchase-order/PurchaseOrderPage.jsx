@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { columns } from './components/Column'
 import PurchaseOrderDataTable from './components/PurchaseOrderDataTable'
+import ViewPurchaseOrderDialog from './components/ViewPurchaseOrderDialog'
 import {
   addHours,
   endOfDay,
@@ -24,10 +25,20 @@ const PurchaseOrderPage = () => {
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
   })
 
+  const [viewPurchaseOrderId, setViewPurchaseOrderId] = useState(null)
+
   useEffect(() => {
     document.title = 'Danh sách đơn đặt hàng'
     dispatch(getPurchaseOrders(filters))
   }, [dispatch, filters])
+
+  const handlePurchaseOrderCreated = (newPurchaseOrder) => {
+    if (newPurchaseOrder?.id) {
+      setViewPurchaseOrderId(newPurchaseOrder.id)
+      // Refresh the list as Create Action in Slice might only refresh my-purchase-orders
+      dispatch(getPurchaseOrders(filters))
+    }
+  }
 
   return (
     <Layout>
@@ -64,9 +75,24 @@ const PurchaseOrderPage = () => {
               data={purchaseOrders}
               columns={columns}
               loading={loading}
+              onCreated={handlePurchaseOrderCreated}
             />
           )}
         </div>
+
+        {/* Auto-open ViewPurchaseOrderDialog from creation */}
+        {viewPurchaseOrderId && (
+          <ViewPurchaseOrderDialog
+            open={!!viewPurchaseOrderId}
+            onOpenChange={(open) => {
+              if (!open) {
+                setViewPurchaseOrderId(null)
+              }
+            }}
+            purchaseOrderId={viewPurchaseOrderId}
+            showTrigger={false}
+          />
+        )}
       </LayoutBody>
     </Layout>
   )

@@ -32,12 +32,13 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@radix-ui/react-separator'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
-import { Mail, MapPin, CreditCard, Package, Pencil } from 'lucide-react'
+import { Mail, MapPin, CreditCard, Package, Pencil, Trash2 } from 'lucide-react'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { getPublicUrl } from '@/utils/file'
 import { getPaymentById, updatePaymentStatus } from '@/stores/PaymentSlice'
 import UpdatePaymentStatusDialog from './UpdatePaymentStatusDialog'
+import { DeletePaymentDialog } from './DeletePaymentDialog'
 import { paymentMethods } from '../../receipt/data'
 import { paymentStatus } from '../data'
 import { purchaseOrderPaymentStatuses } from '../../purchase-order/data'
@@ -68,6 +69,7 @@ const ViewPaymentDialog = ({
   // View Sales Contract
   const [selectedContractId, setSelectedContractId] = useState(null)
   const [showViewContractDialog, setShowViewContractDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const payment = fetchedPayment
 
@@ -639,12 +641,24 @@ const ViewPaymentDialog = ({
           )}
         </div>
 
-        <DialogFooter className={cn("flex gap-2 sm:space-x-0", isMobile && "px-4 pb-4")}>
-          <DialogClose asChild>
-            <Button type="button" variant="outline" className={cn(isMobile && "w-full")}>
-              Đóng
-            </Button>
-          </DialogClose>
+        <DialogFooter className={cn("sm:space-x-0", isMobile && "px-4 pb-4")}>
+          <div className={cn("w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end")}>
+            {(payment?.status === 'draft' || payment?.status === 'cancelled' || payment?.status === 'canceled') && (
+              <Button
+                variant="destructive"
+                className="gap-2 w-full sm:w-auto mr-auto"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Xóa
+              </Button>
+            )}
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="w-full sm:w-auto">
+                Đóng
+              </Button>
+            </DialogClose>
+          </div>
         </DialogFooter>
       </DialogContent>
 
@@ -667,6 +681,21 @@ const ViewPaymentDialog = ({
           showTrigger={false}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
+        />
+      )}
+
+      {payment && (
+        <DeletePaymentDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          payment={payment}
+          showTrigger={false}
+          onSuccess={() => {
+            setShowDeleteDialog(false)
+            onOpenChange(false)
+          }}
+          contentClassName="z-[100060]"
+          overlayClassName="z-[100059]"
         />
       )}
     </Dialog>

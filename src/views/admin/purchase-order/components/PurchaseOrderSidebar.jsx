@@ -71,6 +71,34 @@ const PurchaseOrderSidebar = ({
   const dispatch = useDispatch()
   const [openOrderDatePicker, setOpenOrderDatePicker] = useState(false)
   const [openDeliveryDatePicker, setOpenDeliveryDatePicker] = useState(false)
+  const [phoneError, setPhoneError] = useState('')
+  const [emailError, setEmailError] = useState('')
+
+  const validatePhoneNumber = (phone) => {
+    if (!phone) {
+      setPhoneError('Số điện thoại là bắt buộc')
+      return
+    }
+    const regex = /^(0)(3|5|7|8|9)([0-9]{8})$/
+    if (!regex.test(phone)) {
+      setPhoneError('SĐT không hợp lệ (10 số, đầu 03, 05, 07, 08, 09)')
+    } else {
+      setPhoneError('')
+    }
+  }
+
+  const validateEmail = (email) => {
+    if (!email) {
+      setEmailError('')
+      return
+    }
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!regex.test(email)) {
+      setEmailError('Email không hợp lệ')
+    } else {
+      setEmailError('')
+    }
+  }
 
   // Note: Purchase Order typically doesn't need ID Card info for suppliers like Invoices do for individual customers
   // But we'll keep basic contact info
@@ -210,27 +238,34 @@ const PurchaseOrderSidebar = ({
                   <div className="text-xs font-medium text-muted-foreground">Thông tin nhà cung cấp (có thể sửa)</div>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Tên nhà cung cấp</FormLabel>
+                    <FormLabel className="text-xs">Tên nhà cung cấp <span className="text-destructive"> *</span></FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Nhập tên"
                         value={supplierEditData?.name || ''}
                         onChange={(e) => onSupplierEditDataChange({ ...supplierEditData, name: e.target.value })}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 text-xs"
                       />
                     </FormControl>
                   </FormItem>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Số điện thoại</FormLabel>
+                    <FormLabel className="text-xs">Số điện thoại <span className="text-destructive"> *</span></FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Nhập SĐT"
                         value={supplierEditData?.phone || ''}
-                        onChange={(e) => onSupplierEditDataChange({ ...supplierEditData, phone: e.target.value })}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value
+                          onSupplierEditDataChange({ ...supplierEditData, phone: val })
+                          validatePhoneNumber(val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className={cn("h-8 text-xs", phoneError && "border-destructive")}
                       />
                     </FormControl>
+                    {phoneError && <span className="text-[10px] text-destructive">{phoneError}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
@@ -239,10 +274,16 @@ const PurchaseOrderSidebar = ({
                       <Input
                         placeholder="Nhập email"
                         value={supplierEditData?.email || ''}
-                        onChange={(e) => onSupplierEditDataChange({ ...supplierEditData, email: e.target.value })}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value
+                          onSupplierEditDataChange({ ...supplierEditData, email: val })
+                          validateEmail(val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className={cn("h-8 text-xs", emailError && "border-destructive")}
                       />
                     </FormControl>
+                    {emailError && <span className="text-[10px] text-destructive">{emailError}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
@@ -252,6 +293,7 @@ const PurchaseOrderSidebar = ({
                         placeholder="Nhập địa chỉ"
                         value={supplierEditData?.address || ''}
                         onChange={(e) => onSupplierEditDataChange({ ...supplierEditData, address: e.target.value })}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -264,6 +306,7 @@ const PurchaseOrderSidebar = ({
                         placeholder="MST"
                         value={supplierEditData?.taxCode || ''}
                         onChange={(e) => onSupplierEditDataChange({ ...supplierEditData, taxCode: e.target.value })}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -329,7 +372,7 @@ const PurchaseOrderSidebar = ({
                   <div className="text-xs font-medium text-muted-foreground">Hoặc nhập thông tin nhà cung cấp mới</div>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Tên nhà cung cấp</FormLabel>
+                    <FormLabel className="text-xs">Tên nhà cung cấp <span className="text-destructive"> *</span></FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Nhập tên"
@@ -338,24 +381,31 @@ const PurchaseOrderSidebar = ({
                           ...supplierEditData,
                           name: e.target.value
                         })}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 text-xs"
                       />
                     </FormControl>
                   </FormItem>
 
                   <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">Số điện thoại</FormLabel>
+                    <FormLabel className="text-xs">Số điện thoại <span className="text-destructive"> *</span></FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Nhập SĐT"
                         value={supplierEditData?.phone || ''}
-                        onChange={(e) => onSupplierEditDataChange({
-                          ...supplierEditData,
-                          phone: e.target.value
-                        })}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value
+                          onSupplierEditDataChange({
+                            ...supplierEditData,
+                            phone: val
+                          })
+                          validatePhoneNumber(val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className={cn("h-8 text-xs", phoneError && "border-destructive")}
                       />
                     </FormControl>
+                    {phoneError && <span className="text-[10px] text-destructive">{phoneError}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
@@ -364,13 +414,19 @@ const PurchaseOrderSidebar = ({
                       <Input
                         placeholder="Nhập email"
                         value={supplierEditData?.email || ''}
-                        onChange={(e) => onSupplierEditDataChange({
-                          ...supplierEditData,
-                          email: e.target.value
-                        })}
-                        className="h-8 text-xs"
+                        onChange={(e) => {
+                          const val = e.target.value
+                          onSupplierEditDataChange({
+                            ...supplierEditData,
+                            email: val
+                          })
+                          validateEmail(val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className={cn("h-8 text-xs", emailError && "border-destructive")}
                       />
                     </FormControl>
+                    {emailError && <span className="text-[10px] text-destructive">{emailError}</span>}
                   </FormItem>
 
                   <FormItem className="space-y-1">
@@ -383,6 +439,7 @@ const PurchaseOrderSidebar = ({
                           ...supplierEditData,
                           address: e.target.value
                         })}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -398,6 +455,7 @@ const PurchaseOrderSidebar = ({
                           ...supplierEditData,
                           taxCode: e.target.value
                         })}
+                        onFocus={(e) => e.target.select()}
                         className="h-8 text-xs"
                       />
                     </FormControl>
@@ -433,6 +491,32 @@ const PurchaseOrderSidebar = ({
                     }}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="isAutoApprove"
+            render={({ field }) => (
+              <FormItem className="mb-2">
+                <FormLabel>Cấu hình duyệt</FormLabel>
+                <Select
+                  onValueChange={(value) => field.onChange(value === 'true')}
+                  defaultValue={field.value === false ? 'false' : 'true'}
+                  value={field.value === false ? 'false' : 'true'}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn cấu hình" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="true">Không cần duyệt</SelectItem>
+                    <SelectItem value="false">Cần duyệt</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -519,31 +603,7 @@ const PurchaseOrderSidebar = ({
             )}
           />
 
-          {/* Payment Method */}
-          <FormField
-            control={form.control}
-            name="paymentMethod"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phương thức thanh toán</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn phương thức" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {paymentMethods.map((method) => (
-                      <SelectItem key={method.value} value={method.value}>
-                        {method.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
 
           {/* Payment Terms */}
           <FormField

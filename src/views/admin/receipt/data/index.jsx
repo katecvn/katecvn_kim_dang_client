@@ -12,10 +12,11 @@ const receiptStatus = [
     icon: IconCircleCheck,
   },
   {
-    value: 'canceled',
+    value: 'cancelled',
     label: 'Đã hủy',
     icon: IconCircleX
-  }
+  },
+
 ]
 
 const paymentMethods = [

@@ -47,29 +47,19 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Mã HĐ" />
     ),
-    cell: function Cell({ row }) {
-      const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false)
+    cell: function Cell({ row, table }) {
       const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
       const credit = row.original?.creditNotes || []
+
+      const handleView = () => {
+        if (table?.options?.meta?.onView) {
+          table.options.meta.onView(row.original.id)
+        }
+      }
 
       return (
         <>
           <Can permission={'GET_INVOICE'}>
-            {showViewInvoiceDialog && (
-              <ViewInvoiceDialog
-                open={showViewInvoiceDialog}
-                onOpenChange={setShowViewInvoiceDialog}
-                invoiceId={row.original.id}
-                showTrigger={false}
-                onEdit={() => {
-                  setShowViewInvoiceDialog(false)
-                  setTimeout(() => {
-                    setShowUpdateInvoiceDialog(true)
-                  }, 100)
-                }}
-              />
-            )}
-
             {showUpdateInvoiceDialog && (
               <InvoiceDialog
                 open={showUpdateInvoiceDialog}
@@ -82,7 +72,7 @@ export const columns = [
 
           <span
             className="cursor-pointer hover:text-primary"
-            onClick={() => setShowViewInvoiceDialog(true)}
+            onClick={handleView}
           >
             {row.original.code}
             <br />
@@ -343,7 +333,7 @@ export const columns = [
             </Badge>
             <Badge
               variant="outline"
-              className={`cursor-default select-none ${paymentStatusObj?.color || 'text-gray-500'
+              className={`cursor-default select-none border-0 ${paymentStatusObj?.color || 'text-gray-500'
                 }`}
             >
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
@@ -435,6 +425,6 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Thao tác" />
     ),
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row, table }) => <DataTableRowActions row={row} table={table} />,
   },
 ]

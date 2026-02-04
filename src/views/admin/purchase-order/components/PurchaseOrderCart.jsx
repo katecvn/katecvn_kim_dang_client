@@ -12,6 +12,7 @@ import { ShoppingCart as CartIcon, Minus, Plus, Package, X } from 'lucide-react'
 import { moneyFormat } from '@/utils/money-format'
 import { MoneyInputQuick } from '@/components/custom/MoneyInputQuick'
 import { getPublicUrl } from '@/utils/file'
+import { cn } from '@/lib/utils'
 
 const PurchaseOrderCart = ({
   selectedProducts,
@@ -62,7 +63,7 @@ const PurchaseOrderCart = ({
   }
 
   return (
-    <div className="relative flex w-[600px] flex-col border-l bg-gradient-to-b from-background to-muted/20">
+    <div className="relative flex flex-1 flex-col border-l bg-gradient-to-b from-background to-muted/20">
       {/* Left divider */}
       <div className="absolute bottom-0 left-0 top-0 w-px bg-gradient-to-b from-transparent via-border/40 to-transparent" />
 
@@ -74,7 +75,7 @@ const PurchaseOrderCart = ({
         <h3 className="flex items-center gap-2 font-semibold">
           <CartIcon className="h-4 w-4" />
           <span className="hidden md:inline">Chi tiết đơn hàng</span>
-          <span className="md:hidden">Chi tiết đơn hàng</span>
+          <span className="md:hidden">Chi tiết</span>
           <span className="text-xs text-muted-foreground">
             ({selectedProducts.length})
           </span>
@@ -91,10 +92,7 @@ const PurchaseOrderCart = ({
             const currentPrice = getDisplayPrice(product)
             const currentQuantity = quantities[product.id] || 1
             const subtotal = calculateSubTotal(product.id)
-            const taxAmount = calculateTaxForProduct(product.id)
             const imagePath = getPublicUrl(product.image)
-            const productTaxes = product?.prices?.[0]?.taxes || []
-            const selectedProductTaxes = selectedTaxes[product.id] || []
 
             return (
               <div
@@ -154,11 +152,16 @@ const PurchaseOrderCart = ({
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Price and Quantity Row */}
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                {/* Inputs and Totals */}
+                <div className="mt-3 space-y-3">
+                  <div className="flex flex-col gap-2">
+                    {/* Row 1: Unit & Price */}
+                    <div className="grid grid-cols-2 gap-2">
                       {/* Unit Selection */}
-                      <div className="flex-1">
+                      <div>
                         <label className="mb-1 block text-[10px] text-muted-foreground">
                           Đơn vị
                         </label>
@@ -183,7 +186,7 @@ const PurchaseOrderCart = ({
                       </div>
 
                       {/* Editable Price */}
-                      <div className="flex-1">
+                      <div>
                         <label className="mb-1 block text-[10px] text-muted-foreground">
                           Đơn giá
                         </label>
@@ -193,11 +196,31 @@ const PurchaseOrderCart = ({
                             onPriceChange(product.id, String(num))
                           }
                           className="h-8 text-sm"
+                          onFocus={(e) => e.target.select()}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 2: Discount & Quantity */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Discount */}
+                      <div>
+                        <label className="mb-1 block text-[10px] text-muted-foreground">
+                          Giảm giá
+                        </label>
+                        <MoneyInputQuick
+                          value={discounts[product.id] ?? 0}
+                          onChange={(num) =>
+                            onDiscountChange(product.id, String(num))
+                          }
+                          placeholder="0"
+                          className="h-8 text-sm"
+                          onFocus={(e) => e.target.select()}
                         />
                       </div>
 
                       {/* Quantity Controls */}
-                      <div className="flex-1">
+                      <div>
                         <label className="mb-1 block text-[10px] text-muted-foreground">
                           Số lượng
                         </label>
@@ -206,7 +229,7 @@ const PurchaseOrderCart = ({
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 shrink-0"
                             onClick={() =>
                               onQuantityChange(
                                 product.id,
@@ -226,13 +249,14 @@ const PurchaseOrderCart = ({
                                 Number(e.target.value),
                               )
                             }
-                            className="h-8 w-14 p-0 text-center text-sm"
+                            className="h-8 w-full min-w-0 p-0 text-center text-sm"
+                            onFocus={(e) => e.target.select()}
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 shrink-0"
                             onClick={() =>
                               onQuantityChange(product.id, currentQuantity + 1)
                             }
@@ -242,29 +266,16 @@ const PurchaseOrderCart = ({
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Discount Only */}
-                    <div className="flex-1">
-                      <label className="mb-1 block text-[10px] text-muted-foreground">
-                        Giảm giá
-                      </label>
-                      <MoneyInputQuick
-                        value={discounts[product.id] ?? 0}
-                        onChange={(num) => onDiscountChange(product.id, String(num))}
-                        placeholder="0"
-                        className="h-8 text-sm"
-                      />
-                    </div>
-
-                    {/* Subtotal */}
-                    <div className="flex items-center justify-between border-t pt-2">
-                      <span className="text-xs text-muted-foreground">
-                        Thành tiền:
-                      </span>
-                      <span className="text-sm font-semibold text-primary">
-                        {moneyFormat(subtotal)}
-                      </span>
-                    </div>
+                  {/* Subtotal */}
+                  <div className="flex items-center justify-between border-t pt-2">
+                    <span className="text-xs text-muted-foreground">
+                      Thành tiền:
+                    </span>
+                    <span className="text-sm font-semibold text-primary">
+                      {moneyFormat(subtotal)}
+                    </span>
                   </div>
                 </div>
               </div>

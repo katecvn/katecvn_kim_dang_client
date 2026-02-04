@@ -29,7 +29,7 @@ import {
 import { EllipsisVertical, TruckIcon } from 'lucide-react'
 import DeliveryReminderDialog from './DeliveryReminderDialog'
 
-const DataTableToolbar = ({ table, isMyInvoice }) => {
+const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
   const isFiltered = table.getState().columnFilters.length > 0
 
   const [showCreateInvoiceDialog, setShowCreateInvoiceDialog] = useState(false)
@@ -141,6 +141,7 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
             open={showCreateInvoiceDialog}
             onOpenChange={setShowCreateInvoiceDialog}
             showTrigger={false}
+            onSuccess={onCreated}
           />
         )}
         {showExportDialog && (
@@ -189,22 +190,12 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
     <div className="space-y-3 w-full">
       {/* First row: Search inputs */}
       <div className="flex w-full flex-wrap items-center gap-2">
-        <div className="flex items-center justify-center gap-1">
+        <div className="flex items-center justify-center gap-1 w-full sm:w-auto">
           <Input
-            placeholder="Tìm theo mã HĐ"
-            value={table.getColumn('code')?.getFilterValue() || ''}
-            onChange={(e) =>
-              table.getColumn('code')?.setFilterValue(e.target.value)
-            }
-            className="h-8 w-[100px] lg:w-[160px]"
-          />
-          <Input
-            placeholder="Tìm theo tên KH, MST"
-            value={table.getColumn('customer')?.getFilterValue() || ''}
-            onChange={(event) =>
-              table.getColumn('customer')?.setFilterValue(event.target.value)
-            }
-            className="h-8 w-[100px] lg:w-[200px]"
+            placeholder="Tìm theo Mã Đơn Bán, CCCC, Tên KH, SĐT, Mã Hợp Đồng"
+            value={table.getState().globalFilter || ''}
+            onChange={(e) => table.setGlobalFilter(e.target.value)}
+            className="h-8 w-full sm:w-[400px]"
           />
         </div>
       </div>
@@ -317,6 +308,7 @@ const DataTableToolbar = ({ table, isMyInvoice }) => {
               open={showCreateInvoiceDialog}
               onOpenChange={setShowCreateInvoiceDialog}
               showTrigger={false}
+              onSuccess={onCreated}
             />
           )}
 

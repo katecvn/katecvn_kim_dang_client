@@ -25,7 +25,7 @@ import {
 import { purchaseOrderStatuses, purchaseOrderPaymentStatuses } from '../data'
 import Can from '@/utils/can'
 import DeletePurchaseOrderDialog from './DeletePurchaseOrderDialog'
-import UpdatePurchaseOrderDialog from './UpdatePurchaseOrderDialog'
+import PurchaseOrderDialog from './PurchaseOrderDialog'
 import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
 import { useDispatch, useSelector } from 'react-redux'
@@ -76,7 +76,7 @@ const MobilePurchaseOrderCard = ({
       (s) => s.value === paymentStatusValue
     )
     return (
-      <Badge variant="outline" className={paymentStatusObj?.color}>
+      <Badge variant="outline" className={`${paymentStatusObj?.color} border-0`}>
         <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
           {paymentStatusObj?.icon ? (
             <paymentStatusObj.icon className="h-3 w-3" />
@@ -191,7 +191,7 @@ const MobilePurchaseOrderCard = ({
       )}
 
       {showUpdateDialog && (
-        <UpdatePurchaseOrderDialog
+        <PurchaseOrderDialog
           open={showUpdateDialog}
           onOpenChange={setShowUpdateDialog}
           purchaseOrderId={purchaseOrder.id}

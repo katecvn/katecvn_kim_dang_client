@@ -85,7 +85,7 @@ const InventorySummaryPage = () => {
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Báo Cáo Tổng Hợp Nhập Xuất Tồn
+              Báo Cáo Tổng Hợp Xuất Nhập Tồn
             </h2>
           </div>
 

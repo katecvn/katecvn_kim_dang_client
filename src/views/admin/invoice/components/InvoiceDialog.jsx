@@ -60,6 +60,7 @@ const InvoiceDialog = ({
   onOpenChange,
   showTrigger = true,
   invoiceId = null,
+  onSuccess,
   ...props
 }) => {
   const dispatch = useDispatch()
@@ -966,6 +967,9 @@ const InvoiceDialog = ({
         toast.success(`Đã ${invoiceId ? 'cập nhật' : 'tạo'} hóa đơn thành công`)
         form.reset()
         onOpenChange?.(false)
+        if (!invoiceId && onSuccess) {
+          onSuccess(invoice)
+        }
       }
     } catch (error) {
       console.error('Submit error:', error)

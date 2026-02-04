@@ -8,7 +8,7 @@ import { PlusIcon, TruckIcon, EllipsisVertical } from 'lucide-react'
 import ReceiptReminderDialog from './ReceiptReminderDialog'
 import ExportPurchaseOrderDialog from './ExportPurchaseOrderDialog'
 import { useEffect, useState } from 'react'
-import CreatePurchaseOrderDialog from './CreatePurchaseOrderDialog'
+import PurchaseOrderDialog from './PurchaseOrderDialog'
 import { IconFileTypeXls } from '@tabler/icons-react'
 import { toast } from 'sonner'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-const DataTableToolbar = ({ table, isMyPurchaseOrder }) => {
+const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
   const dispatch = useDispatch()
   const isFiltered = table.getState().columnFilters.length > 0
 
@@ -114,9 +114,10 @@ const DataTableToolbar = ({ table, isMyPurchaseOrder }) => {
 
         {/* Dialog tạo đơn đặt hàng */}
         {showCreateDialog && (
-          <CreatePurchaseOrderDialog
+          <PurchaseOrderDialog
             open={showCreateDialog}
             onOpenChange={setShowCreateDialog}
+            onSuccess={onCreated}
             showTrigger={false}
           />
         )}
@@ -256,9 +257,10 @@ const DataTableToolbar = ({ table, isMyPurchaseOrder }) => {
 
         {/* Dialog tạo đơn đặt hàng */}
         {showCreateDialog && (
-          <CreatePurchaseOrderDialog
+          <PurchaseOrderDialog
             open={showCreateDialog}
             onOpenChange={setShowCreateDialog}
+            onSuccess={onCreated}
             showTrigger={false}
           />
         )}

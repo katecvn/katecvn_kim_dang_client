@@ -12,6 +12,7 @@ const createPurchaseOrderSchema = z.object({
   paymentMethod: z.string().nonempty('Bắt buộc'),
   paymentNote: z.string().max(190, 'Tối đa 190 ký tự'),
   bankAccount: z.any().nullable(),
+  isAutoApprove: z.boolean().default(true).optional(),
 })
 
 const updatePurchaseOrderSchema = z.object({

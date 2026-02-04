@@ -30,48 +30,7 @@ export function DataTableRowActions({ row }) {
       return
     }
 
-    // Validate lot allocations for export receipts (receiptType = 2)
-    if (receipt.receiptType === 2) {
-      // Check if receipt has details
-      if (!receipt.details || receipt.details.length === 0) {
-        alert('Phiếu xuất kho phải có ít nhất một sản phẩm')
-        return
-      }
-
-      // Check if all details have lot allocations
-      const missingAllocations = receipt.details.filter((detail) => {
-        return !detail.lotAllocations || detail.lotAllocations.length === 0
-      })
-
-      if (missingAllocations.length > 0) {
-        const productNames = missingAllocations
-          .map((d) => d.productName)
-          .join(', ')
-        alert(
-          `Vui lòng phân bổ lô cho các sản phẩm sau trước khi duyệt phiếu:\n${productNames}`
-        )
-        return
-      }
-
-      // Validate that total allocated quantity matches qtyActual for each detail
-      const invalidAllocations = receipt.details.filter((detail) => {
-        const totalAllocated = detail.lotAllocations.reduce(
-          (sum, alloc) => sum + parseFloat(alloc.quantity || 0),
-          0
-        )
-        return Math.abs(totalAllocated - parseFloat(detail.qtyActual)) > 0.001
-      })
-
-      if (invalidAllocations.length > 0) {
-        const productNames = invalidAllocations
-          .map((d) => d.productName)
-          .join(', ')
-        alert(
-          `Tổng số lượng phân bổ lô không khớp với số lượng xuất cho:\n${productNames}`
-        )
-        return
-      }
-    }
+    // Validation removed as per user request to remove Lot functionality
 
     // Using window.confirm for now as I haven't created a confirm dialog for Post, but could be added later.
     // Ideally we should have a ConfirmPostDialog too, but sticking to the requested scope (delete & cancel).

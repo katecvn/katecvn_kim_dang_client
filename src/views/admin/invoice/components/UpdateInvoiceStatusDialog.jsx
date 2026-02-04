@@ -63,6 +63,7 @@ const UpdateInvoiceStatusDialog = ({
     try {
       setLoading(true)
       await onSubmit?.(status, invoiceId)
+      onOpenChange(false)
     } finally {
       setLoading(false)
     }

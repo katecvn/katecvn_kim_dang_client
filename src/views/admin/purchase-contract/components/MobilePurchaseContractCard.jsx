@@ -14,13 +14,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { purchaseOrderStatuses } from '../data' // Note: Check if paymentStatuses exists in purchase data, if not use common or skip
+import { purchaseOrderStatuses } from '../../purchase-order/data' // Note: Check if paymentStatuses exists in purchase data, if not use common or skip
 import Can from '@/utils/can'
 import ViewPurchaseContractDialog from './ViewPurchaseContractDialog'
 import LiquidatePurchaseContractDialog from './LiquidatePurchaseContractDialog'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 import React from 'react'
+import { IconPackageImport } from '@tabler/icons-react'
+import ConfirmImportWarehouseDialog from '@/views/admin/warehouse-receipt/components/ConfirmImportWarehouseDialog'
+import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
+import { getPurchaseContracts } from '@/stores/PurchaseContractSlice'
 
 const MobilePurchaseContractCard = ({
   contract,
@@ -31,6 +35,8 @@ const MobilePurchaseContractCard = ({
   const [expanded, setExpanded] = useState(false)
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
+  const dispatch = useDispatch()
 
   const { supplierName, supplierPhone, supplierIdentityNo, supplierTaxCode, totalAmount, paidAmount, status, code, contractDate, paymentStatus } = contract
 
@@ -112,6 +118,50 @@ const MobilePurchaseContractCard = ({
         />
       )}
 
+      {showImportDialog && (
+        <ConfirmImportWarehouseDialog
+          open={showImportDialog}
+          onOpenChange={setShowImportDialog}
+          purchaseContractId={contract.id}
+          onConfirm={async (selectedItems) => {
+            const payload = {
+              code: `NK-${contract.code}-${Date.now().toString().slice(-4)}`,
+              receiptType: 1, // IMPORT
+              businessType: 'purchase_in',
+              receiptDate: new Date().toISOString(),
+              reason: `Nhập kho theo hợp đồng ${contract.code}`,
+              note: contract.note || '',
+              warehouseId: null,
+              supplierId: contract.supplierId,
+              purchaseContractId: contract.id,
+              details: selectedItems.map(item => ({
+                productId: item.productId || item.product?.id,
+                unitId: item.unitId || item.unit?.id,
+                movement: 'in',
+                qtyActual: item.quantity,
+                unitPrice: item.unitPrice || 0,
+                content: `Nhập kho theo hợp đồng ${contract.code}`,
+                purchaseContractId: contract.id,
+                purchaseOrderId: item.purchaseOrderId || null,
+                purchaseOrderItemId: item.purchaseOrderId ? item.id : null,
+                purchaseContractItemId: !item.purchaseOrderId ? item.id : null
+              }))
+            }
+
+            try {
+              await dispatch(createWarehouseReceipt(payload)).unwrap()
+              toast.success('Tạo phiếu nhập kho thành công')
+              dispatch(getPurchaseContracts({}))
+              if (onRowAction) onRowAction()
+            } catch (error) {
+              console.error(error)
+            }
+          }}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
+
       <div className="border rounded-lg bg-card mb-3 overflow-hidden">
         {/* Header - Always Visible */}
         <div className="p-3 border-b bg-background/50 flex items-center gap-2">
@@ -150,6 +200,14 @@ const MobilePurchaseContractCard = ({
                 <DropdownMenuItem onClick={() => setShowLiquidationDialog(true)}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Thanh Lý
+                </DropdownMenuItem>
+              )}
+
+              {/* Import Action */}
+              {(status === 'confirmed' || status === 'shipping') && (
+                <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
+                  <IconPackageImport className="mr-2 h-4 w-4" />
+                  Nhập kho
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>

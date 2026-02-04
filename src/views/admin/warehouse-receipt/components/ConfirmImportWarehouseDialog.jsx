@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { getPurchaseOrderDetail } from '@/stores/PurchaseOrderSlice'
+import { getPurchaseContractDetail } from '@/stores/PurchaseContractSlice'
 
 import {
   Dialog,
@@ -31,40 +32,57 @@ const ConfirmImportWarehouseDialog = ({
   open,
   onOpenChange,
   purchaseOrderId,
+  purchaseContractId,
   onConfirm,
   contentClassName,
   overlayClassName,
 }) => {
   const [purchaseOrder, setPurchaseOrder] = useState(null)
+  console.log(purchaseOrder)
   const [loading, setLoading] = useState(false)
   const [selectedItems, setSelectedItems] = useState({})
   const dispatch = useDispatch()
   const isMobile = useMediaQuery('(max-width: 768px)')
 
   useEffect(() => {
-    if (open && purchaseOrderId) {
+    if (open) {
       setLoading(true)
       setSelectedItems({})
-      dispatch(getPurchaseOrderDetail(purchaseOrderId))
-        .unwrap()
-        .then((data) => {
-          setPurchaseOrder(data)
-        })
-        .finally(() => setLoading(false))
+
+      if (purchaseOrderId) {
+        dispatch(getPurchaseOrderDetail(purchaseOrderId))
+          .unwrap()
+          .then((data) => {
+            setPurchaseOrder(data)
+          })
+          .finally(() => setLoading(false))
+      } else if (purchaseContractId) {
+        dispatch(getPurchaseContractDetail(purchaseContractId))
+          .unwrap()
+          .then((data) => {
+            setPurchaseOrder(data)
+          })
+          .finally(() => setLoading(false))
+      }
     }
-  }, [open, purchaseOrderId, dispatch])
+  }, [open, purchaseOrderId, purchaseContractId, dispatch])
+
+  // Normalize items to display
+  const itemsToDisplay = purchaseOrder?.items ||
+    (purchaseOrder?.purchaseOrders ? purchaseOrder.purchaseOrders.flatMap(po => po.items) : []) ||
+    []
 
   useEffect(() => {
-    if (purchaseOrder?.items) {
+    if (itemsToDisplay.length > 0) {
       const initialSelection = {}
-      purchaseOrder.items.forEach((item) => {
+      itemsToDisplay.forEach((item) => {
         initialSelection[item.id] = true
       })
       setSelectedItems(initialSelection)
     }
   }, [purchaseOrder])
 
-  const itemsCount = purchaseOrder?.items?.length || 0
+  const itemsCount = itemsToDisplay.length || 0
   const selectedCount = Object.values(selectedItems).filter(Boolean).length
 
   const toggleItem = (itemId) => {
@@ -76,7 +94,7 @@ const ConfirmImportWarehouseDialog = ({
 
   const toggleAll = (checked) => {
     const newSelection = {}
-    purchaseOrder?.items?.forEach((item) => {
+    itemsToDisplay.forEach((item) => {
       newSelection[item.id] = checked
     })
     setSelectedItems(newSelection)
@@ -90,7 +108,8 @@ const ConfirmImportWarehouseDialog = ({
       const selectedIds = Object.keys(selectedItems).filter((id) => selectedItems[id])
 
       // Get the actual item objects with Safe ID comparison
-      const selectedItemObjects = purchaseOrder.items.filter(item =>
+      // Get the actual item objects with Safe ID comparison
+      const selectedItemObjects = itemsToDisplay.filter(item =>
         selectedIds.includes(String(item.id))
       )
 
@@ -116,7 +135,7 @@ const ConfirmImportWarehouseDialog = ({
         <DialogHeader className="px-6 py-4 border-b shrink-0">
           <DialogTitle>Xác nhận tạo phiếu nhập kho</DialogTitle>
           <DialogDescription>
-            Tạo phiếu nhập kho từ đơn mua hàng này. Tất cả sản phẩm sẽ được nhập vào kho.
+            Tạo phiếu nhập kho từ {purchaseOrderId ? 'đơn mua hàng' : 'hợp đồng'} này. Tất cả sản phẩm sẽ được nhập vào kho.
           </DialogDescription>
         </DialogHeader>
 
@@ -132,7 +151,7 @@ const ConfirmImportWarehouseDialog = ({
                 <div className="font-medium">{purchaseOrder?.supplier?.name}</div>
               </div>
               <div>
-                <span className="text-muted-foreground">Mã đơn hàng:</span>
+                <span className="text-muted-foreground">{purchaseOrderId ? 'Mã đơn hàng:' : 'Mã hợp đồng:'}</span>
                 <div className="font-medium">{purchaseOrder?.code}</div>
               </div>
             </div>
@@ -166,7 +185,7 @@ const ConfirmImportWarehouseDialog = ({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {purchaseOrder?.items?.map((item, index) => (
+                    {itemsToDisplay.map((item, index) => (
                       <TableRow key={item.id}>
                         <TableCell>
                           <Checkbox
@@ -202,7 +221,7 @@ const ConfirmImportWarehouseDialog = ({
                         </TableCell>
                       </TableRow>
                     ))}
-                    {(!purchaseOrder?.items || purchaseOrder?.items.length === 0) && (
+                    {itemsToDisplay.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
                           Không có sản phẩm nào
@@ -224,7 +243,7 @@ const ConfirmImportWarehouseDialog = ({
                       Chọn tất cả ({itemsCount} sản phẩm)
                     </label>
                   </div>
-                  {purchaseOrder?.items?.map((item, index) => (
+                  {itemsToDisplay.map((item, index) => (
                     <div
                       key={item.id}
                       className="flex gap-3 rounded-lg border p-3 shadow-sm bg-card"
@@ -279,7 +298,8 @@ const ConfirmImportWarehouseDialog = ({
                       </div>
                     </div>
                   ))}
-                  {(!purchaseOrder?.items || purchaseOrder?.items.length === 0) && (
+
+                  {itemsToDisplay.length === 0 && (
                     <div className="text-center py-4 text-muted-foreground text-sm">
                       Không có sản phẩm nào
                     </div>
@@ -290,17 +310,19 @@ const ConfirmImportWarehouseDialog = ({
           </div>
 
           {/* Warning for existing receipts */}
-          {(purchaseOrder?.warehouseReceiptId || (purchaseOrder?.warehouseReceipts && purchaseOrder.warehouseReceipts.length > 0)) && (
-            <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-200">
-              <p className="font-medium flex items-center">
-                <InfoCircledIcon className="mr-2 h-4 w-4" />
-                Đơn hàng này đã có phiếu nhập kho!
-              </p>
-              <p className="mt-1 text-xs ml-6">
-                Vui lòng kiểm tra kỹ để tránh nhập trùng.
-              </p>
-            </div>
-          )}
+          {
+            (purchaseOrder?.warehouseReceiptId || (purchaseOrder?.warehouseReceipts && purchaseOrder.warehouseReceipts.length > 0)) && (
+              <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-200">
+                <p className="font-medium flex items-center">
+                  <InfoCircledIcon className="mr-2 h-4 w-4" />
+                  Đơn hàng này đã có phiếu nhập kho!
+                </p>
+                <p className="mt-1 text-xs ml-6">
+                  Vui lòng kiểm tra kỹ để tránh nhập trùng.
+                </p>
+              </div>
+            )
+          }
 
           {/* Warning */}
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
@@ -315,7 +337,7 @@ const ConfirmImportWarehouseDialog = ({
               <li>Bạn có thể xem và chỉnh sửa phiếu kho sau khi tạo.</li>
             </ul>
           </div>
-        </div>
+        </div >
 
         <DialogFooter className={cn("px-6 py-4 border-t gap-2 shrink-0 bg-background", isMobile ? "pb-4 px-4 flex-row" : "")}>
           <Button
@@ -338,8 +360,8 @@ const ConfirmImportWarehouseDialog = ({
             Tạo phiếu nhập kho ({selectedCount})
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </DialogContent >
+    </Dialog >
   )
 }
 

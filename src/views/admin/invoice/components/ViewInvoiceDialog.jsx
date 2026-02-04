@@ -797,37 +797,77 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                           <div className="flex justify-start border-t py-2 items-center">
                             <strong>Trạng thái đơn bán: </strong>
                             {invoice?.status && (
-                              <div className="ml-2 w-[140px]">
-                                <Select
-                                  value={invoice.status}
-                                  onValueChange={handleSelectStatusChange}
-                                  disabled={isActionDisabled}
-                                >
-                                  <SelectTrigger className="h-7 text-xs px-2 bg-transparent border-input">
-                                    <SelectValue placeholder="Chọn trạng thái">
-                                      {(() => {
-                                        const sObj = statuses.find(s => s.value === invoice.status)
-                                        return sObj ? (
-                                          <span className={`flex items-center gap-1 ${sObj.color}`}>
-                                            {sObj.icon && React.createElement(sObj.icon, { className: 'h-3 w-3' })}
-                                            {sObj.label}
-                                          </span>
-                                        ) : null
-                                      })()}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent position="popper" align="start" className="w-[140px] z-[100005]" modal={false}>
-                                    {filteredStatuses.map((s) => (
-                                      <SelectItem key={s.value} value={s.value} className="text-xs cursor-pointer">
-                                        <span className={`flex items-center gap-1 ${s.color}`}>
-                                          {s.icon && React.createElement(s.icon, { className: 'h-3 w-3' })}
-                                          {s.label}
+                              <>
+                                {isDesktop ? (
+                                  <>
+                                    {showUpdateStatusDialog && (
+                                      <UpdateInvoiceStatusDialog
+                                        open={showUpdateStatusDialog}
+                                        onOpenChange={setShowUpdateStatusDialog}
+                                        invoiceId={invoice.id}
+                                        currentStatus={invoice.status}
+                                        paymentStatus={invoice.paymentStatus}
+                                        statuses={statuses}
+                                        onSubmit={handleUpdateStatus}
+                                      />
+                                    )}
+                                    <div className="ml-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 text-xs px-2"
+                                        onClick={() => setShowUpdateStatusDialog(true)}
+                                        disabled={isActionDisabled}
+                                      >
+                                        <span className={statuses.find(s => s.value === invoice.status)?.color || ''}>
+                                          {(() => {
+                                            const sObj = statuses.find(s => s.value === invoice.status)
+                                            return sObj ? (
+                                              <span className="flex items-center gap-1">
+                                                {sObj.icon && React.createElement(sObj.icon, { className: 'h-3 w-3' })}
+                                                {sObj.label}
+                                                <Pencil className="ml-2 h-3 w-3" />
+                                              </span>
+                                            ) : null
+                                          })()}
                                         </span>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
+                                      </Button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="ml-2 w-[140px]">
+                                    <Select
+                                      value={invoice.status}
+                                      onValueChange={handleSelectStatusChange}
+                                      disabled={isActionDisabled}
+                                    >
+                                      <SelectTrigger className="h-7 text-xs px-2 bg-transparent border-input">
+                                        <SelectValue placeholder="Chọn trạng thái">
+                                          {(() => {
+                                            const sObj = statuses.find(s => s.value === invoice.status)
+                                            return sObj ? (
+                                              <span className={`flex items-center gap-1 ${sObj.color}`}>
+                                                {sObj.icon && React.createElement(sObj.icon, { className: 'h-3 w-3' })}
+                                                {sObj.label}
+                                              </span>
+                                            ) : null
+                                          })()}
+                                        </SelectValue>
+                                      </SelectTrigger>
+                                      <SelectContent position="popper" align="start" className="w-[140px] z-[100005]" modal={false}>
+                                        {filteredStatuses.map((s) => (
+                                          <SelectItem key={s.value} value={s.value} className="text-xs cursor-pointer">
+                                            <span className={`flex items-center gap-1 ${s.color}`}>
+                                              {s.icon && React.createElement(s.icon, { className: 'h-3 w-3' })}
+                                              {s.label}
+                                            </span>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
 

@@ -6,7 +6,7 @@ import {
 } from '@tabler/icons-react'
 import { CheckCircleIcon, XCircleIcon, HandCoinsIcon } from 'lucide-react'
 
-const purchaseOrderStatuses = [
+const purchaseContractStatuses = [
   {
     value: 'draft',
     label: 'Chờ xác nhận',
@@ -40,7 +40,7 @@ const purchaseOrderStatuses = [
 ]
 
 
-const paymentStatuses = [
+const purchaseContractPaymentStatuses = [
   {
     value: 'unpaid',
     label: 'Chưa thanh toán',
@@ -61,4 +61,4 @@ const paymentStatuses = [
   },
 ]
 
-export { purchaseOrderStatuses, paymentStatuses }
+export { purchaseContractStatuses, purchaseContractPaymentStatuses }

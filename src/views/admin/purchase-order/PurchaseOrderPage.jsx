@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { columns } from './components/Column'
 import PurchaseOrderDataTable from './components/PurchaseOrderDataTable'
+import PurchaseOrderDialog from './components/PurchaseOrderDialog'
 import ViewPurchaseOrderDialog from './components/ViewPurchaseOrderDialog'
 import {
   addHours,
@@ -26,6 +27,8 @@ const PurchaseOrderPage = () => {
   })
 
   const [viewPurchaseOrderId, setViewPurchaseOrderId] = useState(null)
+  const [updatePurchaseOrderId, setUpdatePurchaseOrderId] = useState(null)
+  const [showUpdatePurchaseOrderDialog, setShowUpdatePurchaseOrderDialog] = useState(false)
 
   useEffect(() => {
     document.title = 'Danh sách đơn đặt hàng'
@@ -76,6 +79,7 @@ const PurchaseOrderPage = () => {
               columns={columns}
               loading={loading}
               onCreated={handlePurchaseOrderCreated}
+              onView={setViewPurchaseOrderId}
             />
           )}
         </div>
@@ -90,6 +94,24 @@ const PurchaseOrderPage = () => {
               }
             }}
             purchaseOrderId={viewPurchaseOrderId}
+            showTrigger={false}
+            onEdit={() => {
+              setUpdatePurchaseOrderId(viewPurchaseOrderId)
+              setViewPurchaseOrderId(null)
+              setTimeout(() => {
+                setShowUpdatePurchaseOrderDialog(true)
+              }, 100)
+            }}
+            onRefresh={() => dispatch(getPurchaseOrders(filters))}
+          />
+        )}
+
+        {/* Update Purchase Order Dialog */}
+        {showUpdatePurchaseOrderDialog && updatePurchaseOrderId && (
+          <PurchaseOrderDialog
+            open={showUpdatePurchaseOrderDialog}
+            onOpenChange={setShowUpdatePurchaseOrderDialog}
+            purchaseOrderId={updatePurchaseOrderId}
             showTrigger={false}
           />
         )}

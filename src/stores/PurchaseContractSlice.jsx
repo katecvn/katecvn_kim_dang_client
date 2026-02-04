@@ -233,7 +233,8 @@ const purchaseContractSlice = createSlice({
         (action) =>
           action.type.startsWith('purchaseContract') &&
           action.type.endsWith('/pending') &&
-          !action.type.includes('get-purchase-contract-detail'),
+          !action.type.includes('get-purchase-contract-detail') &&
+          !action.type.includes('get-liquidation-preview'),
         (state) => {
           state.loading = true
         }
@@ -242,7 +243,8 @@ const purchaseContractSlice = createSlice({
         (action) =>
           action.type.startsWith('purchaseContract') &&
           action.type.endsWith('/fulfilled') &&
-          !action.type.includes('get-purchase-contract-detail'),
+          !action.type.includes('get-purchase-contract-detail') &&
+          !action.type.includes('get-liquidation-preview'),
         (state) => {
           // If needed, we could set loading=false here for other actions
           // But since the pending matcher didn't run for detail, this is fine
@@ -253,7 +255,8 @@ const purchaseContractSlice = createSlice({
         (action) =>
           action.type.startsWith('purchaseContract') &&
           action.type.endsWith('/rejected') &&
-          !action.type.includes('get-purchase-contract-detail'),
+          !action.type.includes('get-purchase-contract-detail') &&
+          !action.type.includes('get-liquidation-preview'),
         (state, action) => {
           state.loading = false
           state.error = action.payload

@@ -84,7 +84,7 @@ const CreatePurchaseOrderPaymentDialog = ({
     defaultValues: {
       note: '',
       paymentAmount: remainingAmount > 0 ? remainingAmount : 0,
-      paymentMethod: 'transfer', // Default
+      paymentMethod: 'cash',
       paymentNote: '',
       bankAccount: null,
       status: 'success',
@@ -101,7 +101,7 @@ const CreatePurchaseOrderPaymentDialog = ({
       form.reset({
         note: '',
         paymentAmount: remainingAmount > 0 ? remainingAmount : 0,
-        paymentMethod: 'transfer',
+        paymentMethod: 'cash',
         paymentNote: '',
         bankAccount: null,
         status: 'success',
@@ -150,7 +150,7 @@ const CreatePurchaseOrderPaymentDialog = ({
         onSuccess()
       }
       form.reset()
-      onOpenChange(false)
+      onOpenChange?.(false)
     } catch (error) {
       console.log('Submit error: ', error)
     }

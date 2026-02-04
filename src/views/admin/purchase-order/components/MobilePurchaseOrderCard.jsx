@@ -190,6 +190,10 @@ const MobilePurchaseOrderCard = ({
           onOpenChange={setShowViewDialog}
           purchaseOrderId={purchaseOrder.id}
           showTrigger={false}
+          onEdit={() => {
+            setShowViewDialog(false)
+            setTimeout(() => setShowUpdateDialog(true), 100)
+          }}
         />
       )}
 

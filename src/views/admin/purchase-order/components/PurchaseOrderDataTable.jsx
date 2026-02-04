@@ -31,6 +31,7 @@ const PurchaseOrderDataTable = ({
   loading = false,
   onCreated,
   isMyPurchaseOrder = false,
+  onView,
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -46,6 +47,9 @@ const PurchaseOrderDataTable = ({
       pagination: {
         pageSize: isMobile ? 15 : 30,
       },
+    },
+    meta: {
+      onView,
     },
     state: {
       sorting,

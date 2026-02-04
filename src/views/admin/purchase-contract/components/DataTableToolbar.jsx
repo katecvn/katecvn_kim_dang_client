@@ -3,12 +3,18 @@ import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
 import { DataTableViewOptions } from './DataTableViewOption'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
-import { purchaseOrderStatuses } from '../data'
+import { purchaseContractStatuses } from '../data'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
-import { TruckIcon } from 'lucide-react'
+import { TruckIcon, EllipsisVertical } from 'lucide-react'
 import { toast } from 'sonner'
 import { useState } from 'react'
 import ContractReminderDialog from './ContractReminderDialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -37,15 +43,45 @@ const DataTableToolbar = ({ table }) => {
               <DataTableFacetedFilter
                 column={table.getColumn('status')}
                 title="Trạng thái"
-                options={purchaseOrderStatuses}
+                options={purchaseContractStatuses}
               />
             )}
           </div>
 
-          {/* Actions - SalesContract had delivery reminder here. PurchaseContract currently has none in toolbar.
-               Keeping it empty or just ViewOptions if needed, but SalesContract hid ViewOptions on mobile?
-               SalesContract only had the dropdown action menu. 
-           */}
+          {/* Actions */}
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 px-2">
+                  <EllipsisVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem
+                  onClick={() => {
+                    const selectedRows = table.getSelectedRowModel().rows
+                    if (selectedRows.length === 0) {
+                      toast.warning('Vui lòng chọn ít nhất 1 hợp đồng')
+                      return
+                    }
+                    setShowReminderDialog(true)
+                  }}
+                  className="text-xs"
+                >
+                  <TruckIcon className="mr-2 h-3 w-3" />
+                  Gửi nhắc hàng
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {showReminderDialog && (
+              <ContractReminderDialog
+                open={showReminderDialog}
+                onOpenChange={setShowReminderDialog}
+                selectedContracts={table.getSelectedRowModel().rows.map(r => r.original)}
+              />
+            )}
+          </div>
         </div>
       </div>
     )
@@ -66,7 +102,7 @@ const DataTableToolbar = ({ table }) => {
           <DataTableFacetedFilter
             column={table.getColumn('status')}
             title="Trạng thái"
-            options={purchaseOrderStatuses}
+            options={purchaseContractStatuses}
           />
         )}
 

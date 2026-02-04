@@ -66,7 +66,7 @@ const CreatePaymentDialog = ({
   const form = useForm({
     resolver: zodResolver(createPaymentSchema),
     defaultValues: {
-      paymentMethod: 'transfer',
+      paymentMethod: 'cash',
       paymentAmount: parseInt(receipt.debt.remainingAmount),
       paymentNote: '',
       status: 'pending',
@@ -74,6 +74,19 @@ const CreatePaymentDialog = ({
       dueDate: null,
     },
   })
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        paymentMethod: 'cash',
+        paymentAmount: parseInt(receipt.debt.remainingAmount),
+        paymentNote: '',
+        status: 'pending',
+        bankAccount: null,
+        dueDate: null,
+      })
+    }
+  }, [open, receipt, form])
 
   const location = useLocation()
   const onSubmit = async (data) => {

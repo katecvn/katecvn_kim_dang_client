@@ -4,7 +4,7 @@ import { normalizeText } from '@/utils/normalize-text'
 import { Checkbox } from '@/components/ui/checkbox'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
-import { paymentStatuses, purchaseOrderStatuses } from '../data'
+import { purchaseContractPaymentStatuses, purchaseContractStatuses } from '../data'
 import { useState } from 'react'
 import Can from '@/utils/can'
 import ViewPurchaseContractDialog from './ViewPurchaseContractDialog'
@@ -52,7 +52,7 @@ export const columns = [
               <ViewPurchaseContractDialog
                 open={showViewDialog}
                 onOpenChange={setShowViewDialog}
-                contractId={row.original.id}
+                purchaseContractId={row.original.id}
                 showTrigger={false}
               />
             )}
@@ -157,7 +157,7 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Trạng thái" />
     ),
     cell: ({ row }) => {
-      const status = purchaseOrderStatuses.find((s) => s.value === row.original.status)
+      const status = purchaseContractStatuses.find((s) => s.value === row.original.status)
 
       if (!status) return null
 
@@ -177,47 +177,43 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'warehouseStatus',
+    accessorKey: 'warehouseReceiptStatus',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Trạng thái nhập" />
     ),
     cell: ({ row }) => {
-      // Assuming structure similar to Sales: purchaseOrders -> warehouseReceipts
-      const warehouseReceipt = row.original.warehouseReceipts?.[0] || row.original.purchaseOrders?.[0]?.warehouseReceipts?.[0]
+      const status = row.getValue('warehouseReceiptStatus')
 
       let Icon = PackageOpen
       let label = 'Chưa nhập'
       let colorClass = 'text-gray-400'
 
-      if (warehouseReceipt) {
-        if (warehouseReceipt.status === 'draft') {
-          Icon = FileText
-          label = 'Nháp'
-          colorClass = 'text-yellow-600'
-        } else if (warehouseReceipt.status === 'posted') {
-          Icon = CheckCircle
-          label = 'Đã ghi sổ'
-          colorClass = 'text-green-600'
-        } else if (warehouseReceipt.status === 'cancelled') {
-          Icon = XCircle
-          label = 'Đã hủy'
-          colorClass = 'text-red-600'
-        } else {
-          Icon = PackageOpen
-          label = warehouseReceipt.status
-          colorClass = 'text-gray-500'
-        }
+      if (status === 'draft') {
+        Icon = FileText
+        label = 'Đã tạo nháp'
+        colorClass = 'text-yellow-600'
+      } else if (status === 'posted_partial') {
+        Icon = CheckCircle
+        label = 'Nhập một phần'
+        colorClass = 'text-blue-600'
+      } else if (status === 'posted_full') {
+        Icon = CheckCircle
+        label = 'Đã nhập đủ'
+        colorClass = 'text-green-600'
+      } else if (status === 'none') {
+        Icon = PackageOpen
+        label = 'Chưa nhập'
+        colorClass = 'text-gray-400'
+      } else if (status) {
+        // Fallback for other potential statuses
+        label = status
+        colorClass = 'text-gray-500'
       }
 
       return (
         <Badge
           variant="outline"
           className={`cursor-default select-none ${colorClass}`}
-          title={
-            warehouseReceipt
-              ? `Mã: ${warehouseReceipt.code}`
-              : 'Chưa có phiếu nhập kho'
-          }
         >
           <Icon className="mr-1 h-3 w-3" />
           {label}
@@ -239,7 +235,7 @@ export const columns = [
         return <span className="text-muted-foreground text-sm">—</span>
       }
 
-      const paymentStatus = paymentStatuses.find(
+      const paymentStatus = purchaseContractPaymentStatuses.find(
         (s) => s.value === firstPO.paymentStatus,
       )
 

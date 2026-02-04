@@ -226,7 +226,7 @@ const DataTableRowActions = ({ row }) => {
               disabled={warehouseLoading || !contract.invoices?.[0] || contract.invoices?.[0]?.warehouseReceipts?.length > 0}
               className="text-blue-600"
             >
-              Tạo phiếu xuất kho
+              Xuất kho
               <DropdownMenuShortcut>
                 <IconPackageExport className="h-4 w-4" />
               </DropdownMenuShortcut>

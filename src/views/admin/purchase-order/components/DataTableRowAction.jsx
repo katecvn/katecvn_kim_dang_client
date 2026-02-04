@@ -23,7 +23,7 @@ import Can from '@/utils/can'
 import { useState } from 'react'
 import DeletePurchaseOrderDialog from './DeletePurchaseOrderDialog'
 import PurchaseOrderDialog from './PurchaseOrderDialog'
-import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
+
 
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
 import { useDispatch, useSelector } from 'react-redux'
@@ -46,9 +46,10 @@ const DataTableRowActions = ({ row, table }) => {
   const setting = useSelector((state) => state.setting.setting)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
-  const [showViewDialog, setShowViewDialog] = useState(false)
+  // const [showViewDialog, setShowViewDialog] = useState(false) // Moved to parent
 
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+
 
   // New States
   const [showImportWarehouseDialog, setShowImportWarehouseDialog] = useState(false)
@@ -141,14 +142,7 @@ const DataTableRowActions = ({ row, table }) => {
 
   return (
     <>
-      {showViewDialog && (
-        <ViewPurchaseOrderDialog
-          open={showViewDialog}
-          onOpenChange={setShowViewDialog}
-          purchaseOrderId={purchaseOrder.id}
-          showTrigger={false}
-        />
-      )}
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -162,7 +156,7 @@ const DataTableRowActions = ({ row, table }) => {
         <DropdownMenuContent align="end" className="w-48">
           <Can permission="GET_PURCHASE_ORDER">
             <DropdownMenuItem
-              onClick={() => setShowViewDialog(true)}
+              onClick={() => table.options.meta?.onView?.(purchaseOrder.id)}
               className="text-slate-600"
             >
               Xem

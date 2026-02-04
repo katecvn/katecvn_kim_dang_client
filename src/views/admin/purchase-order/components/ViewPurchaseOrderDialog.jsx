@@ -33,13 +33,13 @@ import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
 import { Separator } from '@/components/ui/separator'
 import { dateFormat } from '@/utils/date-format'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { getPurchaseOrderDetail } from '@/stores/PurchaseOrderSlice'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { getPublicUrl } from '@/utils/file'
-import { Mail, MapPin, Pencil, Trash2 } from 'lucide-react'
+import { Mail, MapPin, Pencil, Trash2, Printer } from 'lucide-react'
 import { IconPlus, IconPencil, IconCheck } from '@tabler/icons-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
@@ -53,10 +53,19 @@ import {
   cancelPurchaseOrder,
   revertPurchaseOrder,
   getPurchaseOrders,
+  deletePurchaseOrder,
 } from '@/stores/PurchaseOrderSlice'
 import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import ViewWarehouseReceiptDialog from '../../warehouse-receipt/components/ViewWarehouseReceiptDialog'
 import ViewPaymentDialog from '../../payment/components/ViewPaymentDialog'
+import PrintPurchaseOrderView from './PrintPurchaseOrderView'
+import MobilePurchaseOrderActions from './MobilePurchaseOrderActions'
+import ConfirmActionButton from '@/components/custom/ConfirmActionButton'
+import UpdatePaymentStatusDialog from '../../payment/components/UpdatePaymentStatusDialog'
+import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/components/UpdateWarehouseReceiptStatusDialog'
+import { updateReceiptStatus } from '@/stores/ReceiptSlice'
+import { updateWarehouseReceipt, postWarehouseReceipt, cancelWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
+import { updatePaymentStatus } from '@/stores/PaymentSlice'
 
 const ViewPurchaseOrderDialog = ({
   open,
@@ -65,12 +74,15 @@ const ViewPurchaseOrderDialog = ({
   showTrigger = true,
   contentClassName,
   overlayClassName,
+  onEdit,
+  onRefresh,
   ...props
 }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const [purchaseOrder, setPurchaseOrder] = useState(null)
   const [loading, setLoading] = useState(false)
   const dispatch = useDispatch()
+  const setting = useSelector((state) => state.setting.setting)
   const isViewInvoiceDialog = true
 
   // Dialog States
@@ -90,6 +102,15 @@ const ViewPurchaseOrderDialog = ({
   // Product View State
   const [showViewProductDialog, setShowViewProductDialog] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState(null)
+
+  const [showPrintOrder, setShowPrintOrder] = useState(false)
+
+  // Status Update Dialog States (Sub-items)
+  const [showUpdatePaymentStatus, setShowUpdatePaymentStatus] = useState(false)
+  const [selectedPaymentForUpdate, setSelectedPaymentForUpdate] = useState(null)
+
+  const [showUpdateWarehouseReceiptStatus, setShowUpdateWarehouseReceiptStatus] = useState(false)
+  const [selectedWarehouseReceiptForUpdate, setSelectedWarehouseReceiptForUpdate] = useState(null)
 
   // Fetch Data
   const fetchData = async () => {
@@ -115,15 +136,63 @@ const ViewPurchaseOrderDialog = ({
       } else {
         await dispatch(updatePurchaseOrderStatus({ id, status })).unwrap()
       }
-      setShowUpdateStatusDialog(false)
+      toast.success('Cập nhật trạng thái đơn mua hàng thành công')
       fetchData()
     } catch (error) {
       console.error('Update status error:', error)
+      toast.error('Cập nhật trạng thái thất bại')
     }
+  }
+
+  const handleUpdatePaymentStatus = async (status, id) => {
+    try {
+      await dispatch(updatePaymentStatus({ id, status })).unwrap()
+      toast.success('Cập nhật trạng thái phiếu chi thành công')
+      setShowUpdatePaymentStatus(false)
+      fetchData()
+    } catch (error) {
+      console.error(error)
+      // Toast handled in slice usually
+    }
+  }
+
+  const handleUpdateWarehouseReceiptStatus = async (newStatus, id) => {
+    try {
+      if (newStatus === 'cancelled') {
+        await dispatch(cancelWarehouseReceipt(id)).unwrap()
+      } else if (newStatus === 'posted') {
+        await dispatch(postWarehouseReceipt(id)).unwrap()
+      } else {
+        await dispatch(updateWarehouseReceipt({ id, data: { status: newStatus } })).unwrap()
+      }
+
+      toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
+      setShowUpdateWarehouseReceiptStatus(false)
+      fetchData()
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const handleDeletePurchaseOrder = async () => {
+    try {
+      await dispatch(deletePurchaseOrder(purchaseOrderId)).unwrap()
+      toast.success('Xóa đơn mua hàng thành công')
+      onOpenChange(false)
+      dispatch(getPurchaseOrders({}))
+    } catch (error) {
+      console.error('Delete purchase order error:', error)
+      toast.error('Xóa đơn mua hàng thất bại')
+    }
+  }
+
+  const handlePrintOrder = () => {
+    setShowPrintOrder(true)
   }
 
   useEffect(() => {
     if (open && purchaseOrderId) {
+      // Refresh logic if needed
       fetchData()
     }
   }, [open, purchaseOrderId, dispatch])
@@ -225,7 +294,7 @@ const ViewPurchaseOrderDialog = ({
       <DialogContent
         className={cn(
           "md:h-screen md:max-w-full md:z-[10001] md:my-0 md:top-0 md:translate-y-0",
-          !isDesktop && "fixed inset-0 w-screen h-screen top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none z-[9999] translate-x-0 translate-y-0",
+          !isDesktop && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none z-[9999] translate-x-0 translate-y-0 flex flex-col",
           contentClassName
         )}
         overlayClassName={overlayClassName}
@@ -244,7 +313,7 @@ const ViewPurchaseOrderDialog = ({
 
         <div className={cn(
           "overflow-auto",
-          isDesktop ? "max-h-[75vh]" : "h-full px-4 pb-4"
+          isDesktop ? "max-h-[75vh]" : "h-full px-4 pb-4 flex-1"
         )}>
           {loading ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
@@ -313,7 +382,7 @@ const ViewPurchaseOrderDialog = ({
                                     </div>
                                   )}
                                   <div>
-                                    <div className="font-medium text-blue-600">{item.productName}</div>
+                                    <div className="font-medium text-blue-600 hover:underline">{item.productName}</div>
                                     <div className="text-xs text-muted-foreground">{item.productCode}</div>
                                   </div>
                                 </div>
@@ -618,7 +687,14 @@ const ViewPurchaseOrderDialog = ({
                                       {voucher.paymentMethod === 'cash' ? 'Tiền mặt' : voucher.paymentMethod === 'transfer' ? 'Chuyển khoản' : voucher.paymentMethod}
                                     </TableCell>
                                     <TableCell>
-                                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}>
+                                      <span
+                                        className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)} cursor-pointer hover:opacity-80`}
+                                        onClick={() => {
+                                          setSelectedPaymentForUpdate(voucher)
+                                          setShowUpdatePaymentStatus(true)
+                                        }}
+                                        title="Bấm để cập nhật trạng thái"
+                                      >
                                         {(() => {
                                           const statusObj = paymentStatus.find(s => s.value === voucher.status)
                                           return statusObj?.icon ? <statusObj.icon className="h-3 w-3" /> : (voucher.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (voucher.status === 'completed' ? <IconCheck className="h-3 w-3" /> : null))
@@ -708,7 +784,14 @@ const ViewPurchaseOrderDialog = ({
                                          usually done via ViewPaymentDialog. Showing status as badge/select for consistency. 
                                          Using Select but disabled or just display for now to match UI unless we implement handleUpdatePaymentStatus 
                                      */}
-                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}>
+                                    <span
+                                      className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)} cursor-pointer hover:opacity-80`}
+                                      onClick={() => {
+                                        setSelectedPaymentForUpdate(voucher)
+                                        setShowUpdatePaymentStatus(true)
+                                      }}
+                                      title="Bấm để cập nhật trạng thái"
+                                    >
                                       {(() => {
                                         const statusObj = paymentStatus.find(s => s.value === voucher.status)
                                         return statusObj?.icon ? <statusObj.icon className="h-3 w-3" /> : (voucher.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (voucher.status === 'completed' ? <IconCheck className="h-3 w-3" /> : null))
@@ -788,7 +871,14 @@ const ViewPurchaseOrderDialog = ({
                                       {receipt.receiptType === 1 ? 'Nhập kho' : receipt.receiptType}
                                     </TableCell>
                                     <TableCell>
-                                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}>
+                                      <span
+                                        className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)} cursor-pointer hover:opacity-80`}
+                                        onClick={() => {
+                                          setSelectedWarehouseReceiptForUpdate(receipt)
+                                          setShowUpdateWarehouseReceiptStatus(true)
+                                        }}
+                                        title="Bấm để cập nhật trạng thái"
+                                      >
                                         {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
                                         {receipt.status === 'draft'
                                           ? 'Nháp'
@@ -860,7 +950,14 @@ const ViewPurchaseOrderDialog = ({
                                 <div className="flex justify-between items-center">
                                   <strong>Trạng thái:</strong>
                                   <div className='flex items-center justify-end'>
-                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}>
+                                    <span
+                                      className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)} cursor-pointer hover:opacity-80`}
+                                      onClick={() => {
+                                        setSelectedWarehouseReceiptForUpdate(receipt)
+                                        setShowUpdateWarehouseReceiptStatus(true)
+                                      }}
+                                      title="Bấm để cập nhật trạng thái"
+                                    >
                                       {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
                                       {receipt.status === 'draft'
                                         ? 'Nháp'
@@ -1041,14 +1138,108 @@ const ViewPurchaseOrderDialog = ({
           )}
         </div>
 
-        <DialogFooter className="flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0">
-          {/* Add Action Buttons Here if needed like Print, etc in future */}
+        <DialogFooter className={cn(
+          "hidden md:flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0"
+        )}>
+          {purchaseOrder && (
+            <>
+              <Button
+                size="sm"
+                className="bg-green-600 text-white hover:bg-green-700"
+                onClick={() => {
+                  if (!(!['draft', 'cancelled'].includes(purchaseOrder.status) && purchaseOrder.paymentStatus !== 'paid')) {
+                    toast.warning('Không thể tạo phiếu chi')
+                    return
+                  }
+                  handleCreatePayment()
+                }}
+                disabled={!(!['draft', 'cancelled'].includes(purchaseOrder.status) && purchaseOrder.paymentStatus !== 'paid')}
+              >
+                Tạo Phiếu Chi
+              </Button>
+              <Button
+                size="sm"
+                className="bg-orange-600 text-white hover:bg-orange-700"
+                onClick={() => {
+                  if (!['ordered', 'partial'].includes(purchaseOrder.status)) {
+                    toast.warning('Chỉ tạo phiếu nhập kho khi đơn đã đặt')
+                    return
+                  }
+                  handleCreateImport()
+                }}
+                disabled={!['ordered', 'partial'].includes(purchaseOrder.status)}
+              >
+                Tạo Phiếu Nhập Kho
+              </Button>
+              <Button
+                size="sm"
+                className="bg-blue-600 text-white hover:bg-blue-700"
+                onClick={handlePrintOrder}
+              >
+                In Đơn Hàng
+              </Button>
+
+              <Button
+                size="sm"
+                className="bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => {
+                  if (purchaseOrder.status !== 'draft') {
+                    toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái nháp')
+                    return
+                  }
+                  onEdit?.()
+                }}
+              >
+                Sửa
+              </Button>
+
+              {['draft', 'cancelled'].includes(purchaseOrder.status) ? (
+                <ConfirmActionButton
+                  title="Xác nhận xóa"
+                  description="Bạn có chắc chắn muốn xóa đơn mua hàng này?"
+                  confirmText="Xóa"
+                  onConfirm={handleDeletePurchaseOrder}
+                  contentClassName="z-[100020]"
+                  overlayClassName="z-[100019]"
+                  confirmBtnVariant="destructive"
+                >
+                  <Button variant="destructive" size="sm">
+                    Xóa
+                  </Button>
+                </ConfirmActionButton>
+              ) : (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => toast.warning('Chỉ có thể xóa đơn hàng ở trạng thái nháp hoặc đã hủy')}
+                >
+                  Xóa
+                </Button>
+              )}
+            </>
+          )}
+
           <DialogClose asChild>
-            <Button type="button" variant="outline">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+            >
               Đóng
             </Button>
           </DialogClose>
         </DialogFooter>
+
+        <MobilePurchaseOrderActions
+          purchaseOrder={purchaseOrder}
+          isDesktop={isDesktop}
+          canDelete={['draft', 'cancelled'].includes(purchaseOrder?.status)}
+          onEdit={() => onEdit?.()}
+          handleCreatePayment={handleCreatePayment}
+          handleCreateImport={handleCreateImport}
+          handlePrintOrder={handlePrintOrder}
+          handleDeletePurchaseOrder={handleDeletePurchaseOrder}
+        />
       </DialogContent>
 
       {/* Confirm Import Dialog */}
@@ -1114,7 +1305,11 @@ const ViewPurchaseOrderDialog = ({
       {showUpdateStatusDialog && (
         <UpdatePurchaseOrderStatusDialog
           open={showUpdateStatusDialog}
-          onOpenChange={setShowUpdateStatusDialog}
+          onOpenChange={(value) => {
+            if (!value) {
+              setShowUpdateStatusDialog(false)
+            }
+          }}
           purchaseOrderId={purchaseOrder.id}
           currentStatus={purchaseOrder.status}
           statuses={purchaseOrderStatuses}
@@ -1134,6 +1329,45 @@ const ViewPurchaseOrderDialog = ({
           contentClassName="z-[100021]"
           overlayClassName="z-[100020]"
         />
+      )}
+      {/* Update Payment Status Dialog */}
+      {selectedPaymentForUpdate && (
+        <UpdatePaymentStatusDialog
+          open={showUpdatePaymentStatus}
+          onOpenChange={setShowUpdatePaymentStatus}
+          paymentId={selectedPaymentForUpdate.code || selectedPaymentForUpdate.id}
+          currentStatus={selectedPaymentForUpdate.status}
+          statuses={paymentStatus}
+          onSubmit={(status) => handleUpdatePaymentStatus(status, selectedPaymentForUpdate.id)}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
+
+      {/* Update Warehouse Receipt Status Dialog */}
+      {selectedWarehouseReceiptForUpdate && (
+        <UpdateWarehouseReceiptStatusDialog
+          open={showUpdateWarehouseReceiptStatus}
+          onOpenChange={setShowUpdateWarehouseReceiptStatus}
+          receiptId={selectedWarehouseReceiptForUpdate.id}
+          receiptCode={selectedWarehouseReceiptForUpdate.code}
+          currentStatus={selectedWarehouseReceiptForUpdate.status}
+          statuses={warehouseReceiptStatuses}
+          onSubmit={handleUpdateWarehouseReceiptStatus}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
+
+      {/* Print Order Preview */}
+      {showPrintOrder && purchaseOrder && (
+        <>
+          <PrintPurchaseOrderView
+            purchaseOrder={purchaseOrder}
+            setting={setting}
+            onAfterPrint={() => setShowPrintOrder(false)}
+          />
+        </>
       )}
     </Dialog>
   )

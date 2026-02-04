@@ -39,7 +39,7 @@ const DataTableRowActions = ({ row }) => {
         <DropdownMenuContent align="end" className="w-40">
           {/* Placeholder View/Edit actions can remain if needed, or remove if unused effectively */}
 
-          {row.original.status === 'draft' && (
+          {(row.original.status === 'draft' || row.original.status === 'cancelled') && (
             <DropdownMenuItem
               onSelect={() => setShowDeletePaymentDialog(true)}
               className="text-destructive focus:text-destructive"

@@ -19,13 +19,13 @@ const PurchaseOrderCart = ({
   quantities,
   selectedUnitIds,
   priceOverrides,
-  discounts,
+  discountRates,
   selectedTaxes,
   notes,
   onQuantityChange,
   onUnitChange,
   onPriceChange,
-  onDiscountChange,
+  onDiscountRateChange,
   onTaxChange,
   onNoteChange,
   onRemoveProduct,
@@ -203,15 +203,18 @@ const PurchaseOrderCart = ({
 
                     {/* Row 2: Discount & Quantity */}
                     <div className="grid grid-cols-2 gap-2">
-                      {/* Discount */}
+                      {/* Discount Rate */}
                       <div>
                         <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Giảm giá
+                          Giảm giá (%)
                         </label>
-                        <MoneyInputQuick
-                          value={discounts[product.id] ?? 0}
-                          onChange={(num) =>
-                            onDiscountChange(product.id, String(num))
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={discountRates[product.id] ?? 0}
+                          onChange={(e) =>
+                            onDiscountRateChange(product.id, e.target.value)
                           }
                           placeholder="0"
                           className="h-8 text-sm"

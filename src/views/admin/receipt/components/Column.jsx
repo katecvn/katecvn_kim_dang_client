@@ -12,6 +12,7 @@ import UpdateReceiptStatusDialog from './UpdateReceiptStatusDialog'
 import { receiptStatus } from '../data'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { Pencil } from 'lucide-react'
 
 export const columns = [
   {
@@ -180,13 +181,14 @@ export const columns = [
 
       return (
         <>
-          <div className="w-28">
+          <div className="w-28 flex items-center gap-2">
             <Badge
               className={`cursor-pointer hover:underline ${status === 'completed' ? 'bg-green-500' : status === 'cancelled' ? 'bg-red-500' : 'bg-yellow-500'}`}
               onClick={() => setShowUpdateStatusDialog(true)}
             >
               {status === 'completed' ? 'Đã thu' : status === 'draft' ? 'Nháp' : status === 'cancelled' ? 'Đã hủy' : status}
             </Badge>
+            <Pencil className="h-3 w-3 text-muted-foreground" />
           </div>
           {showUpdateStatusDialog && (
             <UpdateReceiptStatusDialog

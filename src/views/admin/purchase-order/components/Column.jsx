@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
 import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
 import PurchaseOrderDialog from './PurchaseOrderDialog'
-import { Phone, CreditCard, Pencil } from 'lucide-react'
+import { Phone, Pencil } from 'lucide-react'
 
 export const columns = [
   {

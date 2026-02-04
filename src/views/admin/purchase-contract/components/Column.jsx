@@ -1,10 +1,15 @@
 import { DataTableRowActions } from './DataTableRowAction'
 import { DataTableColumnHeader } from './DataTableColumnHeader'
+import { normalizeText } from '@/utils/normalize-text'
+import { Checkbox } from '@/components/ui/checkbox'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
+import { paymentStatuses, purchaseOrderStatuses } from '../data'
+import { useState } from 'react'
+import Can from '@/utils/can'
+import ViewPurchaseContractDialog from './ViewPurchaseContractDialog'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { cn } from '@/lib/utils'
+import { CreditCard, Phone, FileText, CheckCircle, XCircle, PackageOpen } from 'lucide-react'
 
 export const columns = [
   {
@@ -32,34 +37,97 @@ export const columns = [
     enableHiding: false,
   },
   {
-    accessorKey: 'code',
+    id: 'code',
+    accessorFn: (row) => normalizeText(row.code || ''),
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Mã HĐ" />
+      <DataTableColumnHeader column={column} title="Số HĐ" />
     ),
-    cell: ({ row, table }) => {
-      // Placeholder for view dialog interaction
+    cell: function Cell({ row }) {
+      const [showViewDialog, setShowViewDialog] = useState(false)
+
       return (
-        <div
-          className={cn("w-28 font-medium cursor-pointer hover:underline text-primary")}
-          onClick={() => table.options.meta?.onView?.(row.original.id)}
-        >
-          {row.getValue('code')}
+        <>
+          <Can permission={'GET_PURCHASE_CONTRACT'}>
+            {showViewDialog && (
+              <ViewPurchaseContractDialog
+                open={showViewDialog}
+                onOpenChange={setShowViewDialog}
+                contractId={row.original.id}
+                showTrigger={false}
+              />
+            )}
+          </Can>
+
+          <span
+            className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
+            onClick={() => setShowViewDialog(true)}
+          >
+            {row.original.code}
+          </span>
+        </>
+      )
+    },
+  },
+  {
+    accessorKey: 'supplierName',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Nhà cung cấp" />
+    ),
+    cell: function Cell({ row }) {
+      return (
+        <div className="flex w-40 flex-col break-words" title={row.original.supplierName}>
+          <span className="font-semibold">{row.original.supplierName}</span>
+
+          {row.original.supplierIdentityNo && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <CreditCard className="h-3 w-3" />
+              {row.original.supplierIdentityNo}
+            </span>
+          )}
+
+          {(row.original.supplierTaxCode || row.original.supplier?.taxCode) && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <CreditCard className="h-3 w-3" />
+              MST: {row.original.supplierTaxCode || row.original.supplier?.taxCode}
+            </span>
+          )}
+
+          <span className="text-primary underline hover:text-secondary-foreground flex items-center gap-1">
+            <Phone className="h-3 w-3" />
+            <a href={`tel:${row.original.supplierPhone}`}>{row.original.supplierPhone}</a>
+          </span>
         </div>
       )
     },
     enableSorting: true,
     enableHiding: true,
+    filterFn: (row, id, value) => {
+      const searchableText = normalizeText(
+        `${row.original.supplierName || ''} ${row.original.supplierPhone || ''}`,
+      )
+      const searchValue = normalizeText(value)
+      return searchableText.includes(searchValue)
+    },
   },
   {
-    accessorKey: 'supplierName', // Assuming supplierName for Purchase Contract instead of buyerName
+    accessorKey: 'totalAmount',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nhà cung cấp" />
+      <DataTableColumnHeader column={column} title="Tổng tiền" />
     ),
-    cell: ({ row }) => (
-      <div className="w-40 font-medium truncate" title={row.getValue('supplierName')}>
-        {row.getValue('supplierName') || 'N/A'}
-      </div>
-    ),
+    cell: ({ row }) => {
+      return (
+        <div className="flex flex-col">
+          <span className="font-semibold">
+            {moneyFormat(row.original.totalAmount)}
+          </span>
+          {row.original.paidAmount > 0 && (
+            <span className="text-xs text-green-600">
+              Đã trả: {moneyFormat(row.original.paidAmount)}
+            </span>
+          )}
+        </div>
+      )
+    },
     enableSorting: true,
     enableHiding: true,
   },
@@ -68,26 +136,20 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Ngày ký" />
     ),
-    cell: ({ row }) => (
-      <div className="w-32">{dateFormat(row.getValue('contractDate'), true)}</div>
-    ),
-    enableSorting: true,
-    enableHiding: true,
-  },
-  {
-    accessorKey: 'totalAmount',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Tổng giá trị" />
-    ),
     cell: ({ row }) => {
       return (
-        <div className="flex space-x-2">
-          <span className="font-medium text-blue-600">
-            {moneyFormat(row.getValue('totalAmount'))}
-          </span>
+        <div className="flex flex-col">
+          <span>{dateFormat(row.original.contractDate)}</span>
+          {row.original.purchaseOrders?.[0]?.expectedDeliveryDate && (
+            <span className="text-xs text-muted-foreground">
+              Giao: {dateFormat(row.original.purchaseOrders?.[0]?.expectedDeliveryDate)}
+            </span>
+          )}
         </div>
       )
     },
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'status',
@@ -95,27 +157,110 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Trạng thái" />
     ),
     cell: ({ row }) => {
-      const status = row.getValue('status')
+      const status = purchaseOrderStatuses.find((s) => s.value === row.original.status)
+
+      if (!status) return null
+
+      const Icon = status.icon
+
       return (
-        <div className="w-28">
-          <Badge
-            className={cn(
-              status === 'completed' ? 'bg-green-500' :
-                status === 'cancelled' ? 'bg-red-500' :
-                  status === 'confirmed' ? 'bg-blue-500' :
-                    'bg-yellow-500'
-            )}
-          >
-            {status === 'completed' ? 'Đã giao hàng' :
-              status === 'draft' ? 'Chờ xác nhận' :
-                status === 'cancelled' ? 'Đã hủy' :
-                  status === 'confirmed' ? 'Đang giao hàng' :
-                    'Đã thanh lý'}
-          </Badge>
+        <div className="flex items-center gap-2">
+          <Icon className={`h-4 w-4 ${status.color}`} />
+          <span>{status.label}</span>
         </div>
       )
     },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
     enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'warehouseStatus',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Trạng thái nhập" />
+    ),
+    cell: ({ row }) => {
+      // Assuming structure similar to Sales: purchaseOrders -> warehouseReceipts
+      const warehouseReceipt = row.original.warehouseReceipts?.[0] || row.original.purchaseOrders?.[0]?.warehouseReceipts?.[0]
+
+      let Icon = PackageOpen
+      let label = 'Chưa nhập'
+      let colorClass = 'text-gray-400'
+
+      if (warehouseReceipt) {
+        if (warehouseReceipt.status === 'draft') {
+          Icon = FileText
+          label = 'Nháp'
+          colorClass = 'text-yellow-600'
+        } else if (warehouseReceipt.status === 'posted') {
+          Icon = CheckCircle
+          label = 'Đã ghi sổ'
+          colorClass = 'text-green-600'
+        } else if (warehouseReceipt.status === 'cancelled') {
+          Icon = XCircle
+          label = 'Đã hủy'
+          colorClass = 'text-red-600'
+        } else {
+          Icon = PackageOpen
+          label = warehouseReceipt.status
+          colorClass = 'text-gray-500'
+        }
+      }
+
+      return (
+        <Badge
+          variant="outline"
+          className={`cursor-default select-none ${colorClass}`}
+          title={
+            warehouseReceipt
+              ? `Mã: ${warehouseReceipt.code}`
+              : 'Chưa có phiếu nhập kho'
+          }
+        >
+          <Icon className="mr-1 h-3 w-3" />
+          {label}
+        </Badge>
+      )
+    },
+    enableSorting: false,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'purchaseOrders',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Thanh toán" />
+    ),
+    cell: ({ row }) => {
+      // Get paymentStatus from first po
+      const firstPO = row.original.purchaseOrders?.[0]
+      if (!firstPO) {
+        return <span className="text-muted-foreground text-sm">—</span>
+      }
+
+      const paymentStatus = paymentStatuses.find(
+        (s) => s.value === firstPO.paymentStatus,
+      )
+
+      if (!paymentStatus) return <span className="text-sm">—</span>
+
+      const Icon = paymentStatus.icon
+
+      return (
+        <div className="flex items-center gap-2">
+          <Icon className={`h-4 w-4 ${paymentStatus.color}`} />
+          <span className="text-sm">{paymentStatus.label}</span>
+        </div>
+      )
+    },
+    filterFn: (row, id, value) => {
+      // Filter by PO paymentStatus
+      const firstPO = row.original.purchaseOrders?.[0]
+      if (!firstPO) return false
+      return value.includes(firstPO.paymentStatus)
+    },
+    enableSorting: false,
     enableHiding: true,
   },
   {
@@ -124,5 +269,7 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Thao tác" />
     ),
     cell: ({ row }) => <DataTableRowActions row={row} />,
+    enableSorting: false,
+    enableHiding: false,
   },
 ]

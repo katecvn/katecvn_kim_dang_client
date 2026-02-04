@@ -43,7 +43,8 @@ import { IconPlus, IconPackageExport, IconCheck, IconPackage } from '@tabler/ico
 import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
 import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
-import { generateWarehouseReceiptFromInvoice, postWarehouseReceipt } from '@/api/warehouse_receipt'
+
+import { createWarehouseReceipt, postWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { getInvoices } from '@/stores/InvoiceSlice'
 import { getStartOfCurrentMonth, getEndOfCurrentMonth } from '@/utils/date-format'
 
@@ -228,14 +229,47 @@ const MobileInvoiceCard = ({
     setShowConfirmWarehouseDialog(true)
   }
 
-  const handleConfirmCreateWarehouseReceipt = async () => {
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
     const invoiceId = invoice.id
     if (!invoiceId) return
 
     try {
       setWarehouseLoading(true)
-      const data = await generateWarehouseReceiptFromInvoice(invoiceId)
-      toast.success(`Đã tạo phiếu xuất kho ${data?.code || 'thành công'}`)
+
+      // Selected items details
+      const selectedDetails = selectedItems
+        .map(item => ({
+          productId: item.productId || item.id,
+          unitId: item.unitId || item.unit?.id,
+          movement: 'out',
+          qtyActual: item.quantity,
+          unitPrice: item.price || 0,
+          content: `Xuất kho theo đơn bán ${invoice.code}`,
+          salesContractId: invoice.salesContractId,
+          salesContractItemId: item.salesContractItemId
+        }))
+
+      if (selectedDetails.length === 0) {
+        toast.error('Vui lòng chọn ít nhất một sản phẩm')
+        return
+      }
+
+      const payload = {
+        code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
+        receiptType: 2, // ISSUE
+        businessType: 'sale_out',
+        receiptDate: new Date().toISOString(),
+        reason: `Xuất kho cho đơn bán ${invoice.code}`,
+        note: invoice.note || 'Xuất kho từ hóa đơn',
+        warehouseId: null,
+        customerId: invoice.customerId,
+        salesContractId: invoice.salesContractId,
+        invoiceId: invoice.id,
+        details: selectedDetails
+      }
+
+      await dispatch(createWarehouseReceipt(payload)).unwrap()
+      toast.success('Đã tạo phiếu xuất kho thành công')
 
       // Refresh invoice list
       await dispatch(
@@ -246,9 +280,7 @@ const MobileInvoiceCard = ({
       ).unwrap()
     } catch (error) {
       console.error('Create warehouse receipt error:', error)
-      toast.error(
-        error?.response?.data?.message || 'Tạo phiếu xuất kho thất bại'
-      )
+      toast.error('Tạo phiếu xuất kho thất bại')
     } finally {
       setWarehouseLoading(false)
       setShowConfirmWarehouseDialog(false)

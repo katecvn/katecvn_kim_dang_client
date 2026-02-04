@@ -40,13 +40,16 @@ import { Printer } from 'lucide-react'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { getPublicUrl } from '@/utils/file'
-import { getReceiptById, updateReceiptStatus } from '@/stores/ReceiptSlice'
+import { getReceiptById, updateReceiptStatus, getReceiptQRCode } from '@/stores/ReceiptSlice'
 import UpdateReceiptStatusDialog from './UpdateReceiptStatusDialog'
 import { DeleteReceiptDialog } from './DeleteReceiptDialog'
 import { receiptStatus } from '../data'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
+import { QrCode } from 'lucide-react'
+import PaymentQRCodeDialog from './PaymentQRCodeDialog'
 import PrintReceiptView from './PrintReceiptView'
+import MobileReceiptActions from './MobileReceiptActions'
 const ViewReceiptDialog = ({
   receiptId,
   open,
@@ -61,6 +64,35 @@ const ViewReceiptDialog = ({
   const [loading, setLoading] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
   const [printData, setPrintData] = useState(null)
+
+  const [qrCodeData, setQrCodeData] = useState(null)
+  const [openQrDisplayDialog, setOpenQrDisplayDialog] = useState(false)
+
+  const handleGenerateQR = async (receiptData) => {
+    // If called from mobile actions, receiptData is passed. If from button, use state receipt.
+    const targetReceipt = receiptData || receipt
+
+    if (!targetReceipt) return
+
+    if (targetReceipt.status !== 'draft') {
+      toast.warning('Chỉ có thể tạo mã QR cho phiếu thu nháp')
+      return
+    }
+
+    try {
+      // Reuse loading state or add specific one if needed. 
+      // Using global loading might hide dialog content, so maybe just toast errors/success or separate loader.
+      // For now, fast enough or blocks user interaction slightly?
+      // DataTableRowActions uses local qrLoading.
+
+      const qrData = await dispatch(getReceiptQRCode(targetReceipt.id)).unwrap()
+      setQrCodeData(qrData)
+      setOpenQrDisplayDialog(true)
+    } catch (error) {
+      console.error('Failed to fetch QR code:', error)
+      toast.error('Không lấy được mã QR thanh toán')
+    }
+  }
 
   // View Product
   const [selectedProductId, setSelectedProductId] = useState(null)
@@ -442,7 +474,7 @@ const ViewReceiptDialog = ({
                                       // actually data.js has icons as components
                                       ((Icon) => Icon && <Icon className="h-3 w-3" />)(getReceiptStatusObj(receipt?.status === 'cancelled' ? 'canceled' : receipt?.status)?.icon)
                                     }
-                                    {getReceiptStatusObj(receipt?.status === 'cancelled' ? 'canceled' : receipt?.status)?.label || receipt?.status}
+                                    {getReceiptStatusObj(receipt?.status)?.label || receipt?.status}
                                   </span>
                                 </SelectValue>
                               </SelectTrigger>
@@ -494,7 +526,7 @@ const ViewReceiptDialog = ({
                                 receipt?.status === 'completed' ? 'bg-green-500' : (receipt?.status === 'canceled' || receipt?.status === 'cancelled') ? 'bg-red-500' : 'bg-yellow-500'
                               )}
                             >
-                              {receipt?.status === 'completed' ? 'Đã thu' : receipt?.status === 'draft' ? 'Nháp' : receipt?.status === 'cancelled' ? 'Đã hủy' : receipt?.status || 'Không xác định'}
+                              {receipt?.status === 'completed' ? 'Đã thu' : receipt?.status === 'draft' ? 'Nháp' : (receipt?.status === 'cancelled' || receipt?.status === 'canceled') ? 'Đã hủy' : receipt?.status || 'Không xác định'}
                             </Badge>
                             <Pencil className="h-3 w-3 text-muted-foreground" />
                           </div>
@@ -691,32 +723,56 @@ const ViewReceiptDialog = ({
           )}
         </div>
 
-        <DialogFooter className={cn("sm:space-x-0", isMobile && "pb-4 px-4")}>
+        <DialogFooter className={cn("hidden md:flex sm:space-x-0")}>
           <div className={cn("w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end")}>
-            {(receipt?.status === 'draft' || receipt?.status === 'cancelled' || receipt?.status === 'canceled') && (
+            {(receipt?.status === 'draft') && (
               <Button
-                variant="destructive"
-                className="gap-2 w-full sm:w-auto mr-auto"
-                onClick={() => setShowDeleteDialog(true)}
+                size="sm"
+                variant="outline"
+                className="gap-2 w-full sm:w-auto text-primary border-primary hover:bg-primary/10"
+                onClick={() => handleGenerateQR(receipt)}
               >
-                <Trash2 className="h-4 w-4" />
-                Xóa
+                <QrCode className="h-4 w-4" />
+                Tạo QR
               </Button>
             )}
+
             <Button
+              size="sm"
               className="gap-2 bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
               onClick={handlePrintReceipt}
             >
               <Printer className="h-4 w-4" />
               In phiếu
             </Button>
+
+            {(receipt?.status === 'draft' || receipt?.status === 'cancelled' || receipt?.status === 'canceled') && (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="gap-2 w-full sm:w-auto"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Xóa
+              </Button>
+            )}
+
             <DialogClose asChild>
-              <Button type="button" variant="outline" className="w-full sm:w-auto">
+              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
                 Đóng
               </Button>
             </DialogClose>
           </div>
         </DialogFooter>
+
+        <MobileReceiptActions
+          receipt={receipt}
+          isMobile={isMobile}
+          handlePrintReceipt={handlePrintReceipt}
+          setShowDeleteDialog={setShowDeleteDialog}
+          handleGenerateQR={handleGenerateQR}
+        />
       </DialogContent>
 
       {/* Print View */}
@@ -726,6 +782,15 @@ const ViewReceiptDialog = ({
           setting={setting}
         />
       )}
+
+      {/* QR Code Dialog */}
+      <PaymentQRCodeDialog
+        open={openQrDisplayDialog}
+        onOpenChange={setOpenQrDisplayDialog}
+        qrCodeData={qrCodeData}
+        overlayClassName="z-[100060]"
+        className="z-[100061]"
+      />
 
       {
         selectedProductId && (

@@ -170,7 +170,7 @@ const MobilePaymentCard = ({
                 <Eye className="mr-2 h-4 w-4" />
                 Xem
               </DropdownMenuItem>
-              {(status === 'draft') && (
+              {(status === 'draft' || status === 'cancelled') && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

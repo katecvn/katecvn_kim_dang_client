@@ -67,7 +67,7 @@ import {
   updateWarehouseReceipt,
   postWarehouseReceipt,
   cancelWarehouseReceipt,
-  generateWarehouseReceiptFromInvoice,
+  createWarehouseReceipt,
 } from '@/stores/WarehouseReceiptSlice'
 import { toast } from 'sonner'
 import ConfirmActionButton from '@/components/custom/ConfirmActionButton'
@@ -98,6 +98,7 @@ import CreateSalesContractDialog from '../../sales-contract/components/CreateSal
 import { buildAgreementData } from '../helpers/BuildAgreementData'
 import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 import MobileInvoiceActions from './MobileInvoiceActions'
+import PaymentQRCodeDialog from '../../receipt/components/PaymentQRCodeDialog'
 
 const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClassName, overlayClassName, ...props }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -436,25 +437,53 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
     setShowConfirmWarehouseDialog(true)
   }
 
-  const handleConfirmCreateWarehouseReceipt = async (selectedItemIds) => {
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
     const invoiceId = invoice?.id
     if (!invoiceId) return
 
     try {
       setWarehouseLoading(true)
-      const data = await dispatch(
-        generateWarehouseReceiptFromInvoice({
-          invoiceId,
-          selectedItemIds,
-          type: 'retail',
-        }),
-      ).unwrap()
-      toast.success(`Đã tạo phiếu xuất kho ${data?.code || 'thành công'}`)
+
+      // Selected items details
+      const selectedDetails = selectedItems
+        .map(item => ({
+          productId: item.productId || item.id,
+          unitId: item.unitId || item.unit?.id,
+          movement: 'out',
+          qtyActual: item.quantity,
+          unitPrice: item.price || 0,
+          content: `Xuất kho theo đơn bán ${invoice.code}`,
+          salesContractId: invoice.salesContractId,
+          salesContractItemId: item.salesContractItemId
+        }))
+
+      if (selectedDetails.length === 0) {
+        toast.error('Vui lòng chọn ít nhất một sản phẩm')
+        return
+      }
+
+      const payload = {
+        code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
+        receiptType: 2, // ISSUE
+        businessType: 'sale_out',
+        receiptDate: new Date().toISOString(),
+        reason: `Xuất kho cho đơn bán ${invoice.code}`,
+        note: invoice.note || 'Xuất kho từ hóa đơn',
+        warehouseId: null,
+        customerId: invoice.customerId,
+        salesContractId: invoice.salesContractId,
+        invoiceId: invoice.id,
+        details: selectedDetails
+      }
+
+      await dispatch(createWarehouseReceipt(payload)).unwrap()
+      toast.success('Đã tạo phiếu xuất kho thành công')
 
       // Refresh invoice data
       fetchData()
     } catch (error) {
       console.error('Create warehouse receipt error:', error)
+      toast.error('Tạo phiếu xuất kho thất bại')
     } finally {
       setWarehouseLoading(false)
       setShowConfirmWarehouseDialog(false)
@@ -2118,46 +2147,13 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
       }
 
       {/* QR Code Display Dialog */}
-      <Dialog open={openQrDisplayDialog} onOpenChange={setOpenQrDisplayDialog}>
-        <DialogContent className="sm:max-w-md z-[100020]" overlayClassName="z-[100019]">
-          <DialogHeader>
-            <DialogTitle>Mã QR Thanh Toán</DialogTitle>
-            <DialogDescription>
-              Quét mã QR để thanh toán {qrCodeData?.voucherCode}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col items-center space-y-4 py-4">
-            {qrCodeData?.qrLink ? (
-              <>
-                <img
-                  src={qrCodeData.qrLink}
-                  alt="QR Code"
-                  className="w-64 h-64 border rounded-lg"
-                />
-                <div className="text-center space-y-2">
-                  <p className="text-lg font-semibold text-primary">
-                    {moneyFormat(qrCodeData.amount)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {qrCodeData.description}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="text-center text-muted-foreground">
-                Đang tải mã QR...
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="sm:justify-center">
-            <Button onClick={() => setOpenQrDisplayDialog(false)} className="w-full sm:w-auto">
-              Đóng
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PaymentQRCodeDialog
+        open={openQrDisplayDialog}
+        onOpenChange={setOpenQrDisplayDialog}
+        qrCodeData={qrCodeData}
+        overlayClassName="z-[100019]"
+        className="z-[100020]"
+      />
 
       {/* Sales Contract Detail Dialog (Nested) */}
       <ViewSalesContractDialog

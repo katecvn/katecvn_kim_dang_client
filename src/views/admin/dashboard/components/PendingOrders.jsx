@@ -1,96 +1,112 @@
-
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Link } from 'react-router-dom'
-import { Badge } from '@/components/ui/badge'
 import { moneyFormat } from '@/utils/money-format'
-import { format } from 'date-fns'
+import { format, isPast, isToday, parseISO } from 'date-fns'
+import { IconShoppingCart, IconTruckDelivery, IconUser, IconPackage, IconCalendar } from '@tabler/icons-react'
 
-const PendingOrders = ({ salesBacklog = [], purchaseBacklog = [], loading = false }) => {
+const BacklogWidget = ({ title, data = [], type, loading = false, description }) => {
 
-  const OrderItem = ({ item, type }) => {
+  const OrderItem = ({ item }) => {
     const isSale = type === 'sale'
     const name = isSale ? item.buyerName : item.supplierName
-    const phone = isSale ? item.buyerPhone : item.supplierPhone
+    // const phone = isSale ? item.buyerPhone : item.supplierPhone
+    const linkPath = isSale ? '/sales-backlog' : '/purchase-backlog'
+
+    const deliveryDate = item.deliveryDate ? new Date(item.deliveryDate) : null
+    const isOverdue = deliveryDate && isPast(deliveryDate) && !isToday(deliveryDate)
 
     return (
-      <div className="flex items-center justify-between p-2 border-b last:border-0 hover:bg-muted/50 transition-colors">
-        <div className="flex flex-col gap-1 overflow-hidden">
-          <div className="flex items-center gap-2">
+      <div className="flex items-start gap-3 p-3 border-b last:border-0 hover:bg-muted/30 transition-colors group">
+        {/* Icon Badge */}
+        <div className={`
+          flex-none w-10 h-10 rounded-full flex items-center justify-center
+          ${isSale ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}
+        `}>
+          {isSale ? <IconShoppingCart size={18} /> : <IconTruckDelivery size={18} />}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0 flex flex-col gap-1">
+          {/* Row 1: Code and Amount */}
+          <div className="flex items-center justify-between">
             <Link
-              to={isSale ? '/sales-backlog' : '/purchase-backlog'}
-              className="font-medium text-sm hover:underline truncate"
+              to={linkPath}
+              className="font-bold text-sm hover:underline hover:text-primary truncate transition-colors"
             >
               {item.code}
             </Link>
-            {item.items && item.items.length > 0 && (
-              <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">
-                - {item.items[0].productName} {item.items.length > 1 ? `(+${item.items.length - 1})` : ''}
+            <span className="font-semibold text-sm">{moneyFormat(item.totalAmount)}</span>
+          </div>
+
+          {/* Row 2: Customer Name */}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <IconUser size={12} className="flex-none" />
+            <span className="truncate" title={name}>{name || 'Khách lẻ'}</span>
+          </div>
+
+          {/* Row 3: Product Info (Optional) */}
+          {item.items && item.items.length > 0 && (
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 mt-0.5">
+              <IconPackage size={12} className="flex-none" />
+              <span className="truncate max-w-[200px]">
+                {item.items[0].productName} {item.items.length > 1 ? `(+${item.items.length - 1})` : ''}
               </span>
-            )}
-          </div>
-          <div className="text-xs text-muted-foreground truncate">
-            {name} - {phone}
-          </div>
+            </div>
+          )}
         </div>
-        <div className="flex flex-col items-end gap-1 min-w-[80px]">
-          <div className="font-semibold text-sm">{moneyFormat(item.totalAmount)}</div>
-          <div className="text-[10px] text-muted-foreground">
-            Hẹn: {item.deliveryDate ? format(new Date(item.deliveryDate), 'dd/MM') : '-'}
-          </div>
+
+        {/* Date / Status */}
+        <div className="flex-none flex flex-col items-end gap-1">
+          {deliveryDate ? (
+            <div className={`
+              flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border
+              ${isOverdue
+                ? 'bg-red-50 text-red-600 border-red-100'
+                : 'bg-slate-50 text-slate-600 border-slate-100'}
+            `}>
+              <IconCalendar size={10} />
+              <span>{format(deliveryDate, 'dd/MM')}</span>
+            </div>
+          ) : (
+            <span className="text-[10px] text-muted-foreground">-</span>
+          )}
         </div>
       </div>
     )
   }
 
   return (
-    <Card className="h-full shadow-none">
-      <CardHeader className="pb-3">
-        <CardTitle>Đơn hàng chờ xử lý</CardTitle>
-        <CardDescription>Đơn bán chưa giao & Đơn mua chưa nhận</CardDescription>
+    <Card className="h-full shadow-sm border-border/60">
+      <CardHeader className="p-4 pb-3 border-b border-border/40 bg-muted/10">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-semibold text-foreground/90">{title}</CardTitle>
+          {/* Optional badge count or action */}
+        </div>
+        {description && <CardDescription className="text-xs">{description}</CardDescription>}
       </CardHeader>
       <CardContent className="p-0">
-        <Tabs defaultValue="sales" className="w-full">
-          <div className="px-4 pb-2">
-            <TabsList className="w-full grid grid-cols-2">
-              <TabsTrigger value="sales">Chưa giao ({salesBacklog.length})</TabsTrigger>
-              <TabsTrigger value="purchases">Chưa nhận ({purchaseBacklog.length})</TabsTrigger>
-            </TabsList>
+        <ScrollArea className="h-full">
+          <div className="">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted-foreground">
+                <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+                <span className="text-xs">Đang tải...</span>
+              </div>
+            ) : data.length > 0 ? (
+              data.map(item => <OrderItem key={item.id} item={item} />)
+            ) : (
+              <div className="flex flex-col items-center justify-center h-40 text-muted-foreground/60 gap-2">
+                <IconPackage size={32} strokeWidth={1.5} />
+                <span className="text-sm">Không có đơn hàng</span>
+              </div>
+            )}
           </div>
-
-          <TabsContent value="sales" className="m-0">
-            <ScrollArea className="h-[300px]">
-              <div className="px-4 pb-2">
-                {loading ? (
-                  <div className="py-8 text-center text-xs">Đang tải...</div>
-                ) : salesBacklog.length > 0 ? (
-                  salesBacklog.map(item => <OrderItem key={item.id} item={item} type="sale" />)
-                ) : (
-                  <div className="text-center text-sm text-muted-foreground py-8">Không có đơn bán chưa giao</div>
-                )}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="purchases" className="m-0">
-            <ScrollArea className="h-[300px]">
-              <div className="px-4 pb-2">
-                {loading ? (
-                  <div className="py-8 text-center text-xs">Đang tải...</div>
-                ) : purchaseBacklog.length > 0 ? (
-                  purchaseBacklog.map(item => <OrderItem key={item.id} item={item} type="purchase" />)
-                ) : (
-                  <div className="text-center text-sm text-muted-foreground py-8">Không có đơn mua chưa nhận</div>
-                )}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
+        </ScrollArea>
       </CardContent>
     </Card>
   )
 }
 
-export default PendingOrders
+export default BacklogWidget

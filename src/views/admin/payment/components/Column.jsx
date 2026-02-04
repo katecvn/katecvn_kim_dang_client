@@ -12,6 +12,7 @@ import UpdatePaymentStatusDialog from './UpdatePaymentStatusDialog'
 import { paymentStatus } from '../data'
 import { toast } from 'sonner'
 import ViewPaymentDialog from './ViewPaymentDialog'
+import { Pencil } from 'lucide-react'
 
 export const columns = [
   {
@@ -60,7 +61,7 @@ export const columns = [
             />
           )}
           <div
-            className={cn("w-28 font-medium cursor-pointer text-primary hover:underline")}
+            className={cn(" font-medium cursor-pointer text-primary hover:underline")}
             onClick={handleViewPayment}
           >
             {row.getValue('code')}
@@ -120,7 +121,7 @@ export const columns = [
     cell: ({ row }) => {
       return (
         <div className="flex space-x-2">
-          <span className="font-medium text-red-600">
+          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem] font-medium text-red-600">
             {moneyFormat(row.getValue('amount'))}
           </span>
         </div>
@@ -169,7 +170,7 @@ export const columns = [
 
       return (
         <>
-          <div className="w-28">
+          <div className="w-28 flex items-center gap-2">
             <Badge
               className={cn(
                 "cursor-pointer hover:underline",
@@ -181,6 +182,7 @@ export const columns = [
             >
               {status === 'completed' ? 'Đã chi' : status === 'draft' ? 'Nháp' : status === 'cancelled' ? 'Đã hủy' : status}
             </Badge>
+            <Pencil className="h-3 w-3 text-muted-foreground" />
           </div>
           {showUpdateStatusDialog && (
             <UpdatePaymentStatusDialog
@@ -199,6 +201,21 @@ export const columns = [
     },
     enableSorting: true,
     enableHiding: true,
+  },
+  {
+    accessorKey: 'updatedAt',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Cập nhật" />
+    ),
+    cell: ({ row }) => {
+      return (
+        <div className="flex space-x-2">
+          <span className="max-w-36 truncate sm:max-w-72 md:max-w-[31rem]">
+            {dateFormat(row.getValue('updatedAt'), true)}
+          </span>
+        </div>
+      )
+    },
   },
   {
     id: 'actions',

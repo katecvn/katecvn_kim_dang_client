@@ -22,7 +22,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { CheckIcon, Mail, MapPin, User, Calendar, Truck } from 'lucide-react'
+import { CheckIcon, Mail, MapPin, User, Calendar, Truck, RefreshCcw } from 'lucide-react'
 import { CaretSortIcon, MobileIcon } from '@radix-ui/react-icons'
 import { IconDatabasePlus } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
@@ -194,7 +194,7 @@ const PurchaseOrderSidebar = ({
                       className="h-7 w-7"
                       onClick={() => onSelectSupplier(null)}
                     >
-                      <CheckIcon className="h-4 w-4" />
+                      <RefreshCcw className="h-4 w-4" />
                     </Button>
                   </div>
 

@@ -108,7 +108,13 @@ const ConfirmWarehouseReceiptDialog = ({
     const selectedIds = Object.keys(selectedItems).filter(
       (id) => selectedItems[id],
     )
-    await onConfirm?.(selectedIds)
+
+    // Get the actual item objects
+    const selectedItemObjects = activeInvoice.invoiceItems.filter(item =>
+      selectedIds.includes(String(item.id))
+    )
+
+    await onConfirm?.(selectedItemObjects)
     onOpenChange(false)
   }
 

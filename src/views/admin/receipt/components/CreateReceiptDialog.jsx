@@ -57,6 +57,7 @@ import { cn } from '@/lib/utils'
 import { getPublicUrl } from '@/utils/file'
 
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import PaymentQRCodeDialog from '../../receipt/components/PaymentQRCodeDialog'
 
 const CreateReceiptDialog = ({
   invoices,
@@ -785,46 +786,13 @@ const CreateReceiptDialog = ({
       </Dialog>
 
       {/* QR Code Dialog */}
-      <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
-        <DialogContent className={cn("sm:max-w-md", qrContentClassName)} overlayClassName={qrOverlayClassName}>
-          <DialogHeader>
-            <DialogTitle>Mã QR Thanh Toán</DialogTitle>
-            <DialogDescription>
-              Quét mã QR để thanh toán {qrCodeData?.voucherCode}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col items-center space-y-4 py-4">
-            {qrCodeData?.qrLink ? (
-              <>
-                <img
-                  src={qrCodeData.qrLink}
-                  alt="QR Code"
-                  className="w-64 h-64 border rounded-lg"
-                />
-                <div className="text-center space-y-2">
-                  <p className="text-lg font-semibold text-primary">
-                    {moneyFormat(qrCodeData.amount)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {qrCodeData.description}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="text-center text-muted-foreground">
-                Đang tải mã QR...
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="sm:justify-center">
-            <Button onClick={handleCloseQrDialog} className="w-full sm:w-auto">
-              Đóng và tiếp tục
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PaymentQRCodeDialog
+        open={showQrDialog}
+        onOpenChange={handleCloseQrDialog}
+        qrCodeData={qrCodeData}
+        className={qrContentClassName}
+        overlayClassName={qrOverlayClassName}
+      />
     </>
   )
 }

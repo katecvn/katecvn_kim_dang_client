@@ -145,23 +145,26 @@ const MobilePurchaseOrderCard = ({
     setShowContractPreview(true)
   }
 
-  const handleCreateWarehouseReceipt = async (selectedIds) => {
-    const selectedItems = items.filter(item => selectedIds.includes(String(item.id)) || selectedIds.includes(item.id))
-
+  const handleCreateWarehouseReceipt = async (selectedItems) => {
     const payload = {
-      type: 'import',
+      code: `NK-${purchaseOrder.code}-${Date.now().toString().slice(-4)}`,
+      receiptType: 1, // IMPORT / RECEIPT
+      businessType: 'purchase_in',
+      receiptDate: new Date().toISOString(),
+      reason: `Nhập kho từ đơn mua hàng ${purchaseOrder.code}`,
+      note: purchaseOrder.note || '',
+      warehouseId: null,
       supplierId: purchaseOrder.supplierId,
-      referenceId: purchaseOrder.id,
-      referenceType: 'purchase_order',
-      note: `Nhập kho từ đơn hàng ${purchaseOrder.code}`,
-      status: 'draft',
-      orderDate: new Date().toISOString(),
-      items: selectedItems.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        unitId: item.unitId,
-        unitPrice: item.unitPrice,
-        conversionFactor: item.conversionFactor || 1,
+      purchaseOrderId: purchaseOrder.id,
+      details: selectedItems.map(item => ({
+        productId: item.productId || item.product?.id,
+        unitId: item.unitId || item.unit?.id,
+        movement: 'in',
+        qtyActual: item.quantity,
+        unitPrice: item.unitPrice || 0,
+        content: `Nhập kho theo đơn mua ${purchaseOrder.code}`,
+        purchaseOrderId: purchaseOrder.id,
+        purchaseOrderItemId: item.id
       }))
     }
 

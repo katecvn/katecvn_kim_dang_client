@@ -107,12 +107,13 @@ export const cancelWarehouseReceipt = createAsyncThunk(
 
 export const generateWarehouseReceiptFromPO = createAsyncThunk(
   'warehouseReceipt/generate-from-po',
-  async (purchaseOrderId, { rejectWithValue }) => {
+  async ({ purchaseOrderId, selectedItemIds }, { rejectWithValue }) => {
     try {
       const response = await api.post(
         '/warehouse-receipts/generate-from-purchase-order',
         {
           purchaseOrderId,
+          selectedItemIds,
         },
       )
       toast.success('Tạo phiếu nhập kho thành công')

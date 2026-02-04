@@ -38,6 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import PaymentQRCodeDialog from './PaymentQRCodeDialog'
 
 const MobileReceiptCard = ({
   receipt,
@@ -183,46 +184,11 @@ const MobileReceiptCard = ({
       )}
 
       {/* QR Dialog */}
-      <Dialog open={openQrDialog} onOpenChange={setOpenQrDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Mã QR Thanh Toán</DialogTitle>
-            <DialogDescription>
-              Quét mã QR để thanh toán {qrCodeData?.voucherCode}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col items-center space-y-4 py-4">
-            {qrCodeData?.qrLink ? (
-              <>
-                <img
-                  src={qrCodeData.qrLink}
-                  alt="QR Code"
-                  className="w-64 h-64 border rounded-lg"
-                />
-                <div className="text-center space-y-2">
-                  <p className="text-lg font-semibold text-primary">
-                    {moneyFormat(qrCodeData.amount)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {qrCodeData.description}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="text-center text-muted-foreground">
-                Đang tải mã QR...
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="sm:justify-center">
-            <Button onClick={() => setOpenQrDialog(false)} className="w-full sm:w-auto">
-              Đóng
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PaymentQRCodeDialog
+        open={openQrDialog}
+        onOpenChange={setOpenQrDialog}
+        qrCodeData={qrCodeData}
+      />
 
       <div className="border rounded-lg bg-card mb-3 overflow-hidden">
         {/* Header */}

@@ -30,9 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Separator } from '@radix-ui/react-separator'
+import { Separator } from '@/components/ui/separator'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
-import { Mail, MapPin, CreditCard, Package, Pencil, Trash2 } from 'lucide-react'
+import { Mail, MapPin, CreditCard, Package, Pencil, Trash2, Printer } from 'lucide-react'
+import { useSelector } from 'react-redux'
+import PrintPaymentView from './PrintPaymentView'
+import MobilePaymentActions from './MobilePaymentActions'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { getPublicUrl } from '@/utils/file'
@@ -46,6 +49,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
 import ViewSalesContractDialog from '../../sales-contract/components/ViewSalesContractDialog'
+import ViewPurchaseOrderDialog from '../../purchase-order/components/ViewPurchaseOrderDialog'
 
 const ViewPaymentDialog = ({
   paymentId,
@@ -58,9 +62,13 @@ const ViewPaymentDialog = ({
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [fetchedPayment, setFetchedPayment] = useState(null)
+  console.log(fetchedPayment)
 
   const [loading, setLoading] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+  const [printData, setPrintData] = useState(null)
+
+  const setting = useSelector((state) => state.setting.setting)
 
   // View Product
   const [selectedProductId, setSelectedProductId] = useState(null)
@@ -69,6 +77,11 @@ const ViewPaymentDialog = ({
   // View Sales Contract
   const [selectedContractId, setSelectedContractId] = useState(null)
   const [showViewContractDialog, setShowViewContractDialog] = useState(false)
+
+  // View Purchase Order
+  const [selectedPurchaseOrderId, setSelectedPurchaseOrderId] = useState(null)
+  const [showViewPurchaseOrderDialog, setShowViewPurchaseOrderDialog] = useState(false)
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const payment = fetchedPayment
@@ -140,6 +153,12 @@ const ViewPaymentDialog = ({
     }
   }, [open, paymentId, dispatch])
 
+  const handlePrintPayment = () => {
+    if (!payment) return
+    setPrintData(payment)
+    setTimeout(() => setPrintData(null), 100)
+  }
+
   // Helper to determine display name for receiver type
   const getReceiverLabel = () => {
     if (payment?.receiverType === 'customer') return 'Khách hàng'
@@ -210,7 +229,13 @@ const ViewPaymentDialog = ({
                   Thông tin phiếu chi
                   {payment?.purchaseOrder && (
                     <span className="ml-2 text-sm text-muted-foreground">
-                      (Đơn hàng: {payment.purchaseOrder.code})
+                      (Đơn hàng: <span
+                        className="cursor-pointer text-primary hover:underline hover:text-blue-600"
+                        onClick={() => {
+                          setSelectedPurchaseOrderId(payment.purchaseOrder.id)
+                          setShowViewPurchaseOrderDialog(true)
+                        }}
+                      >{payment.purchaseOrder.code}</span>)
                     </span>
                   )}
                   {payment?.salesContract && (
@@ -641,12 +666,22 @@ const ViewPaymentDialog = ({
           )}
         </div>
 
-        <DialogFooter className={cn("sm:space-x-0", isMobile && "px-4 pb-4")}>
+        <DialogFooter className={cn("hidden md:flex sm:space-x-0")}>
           <div className={cn("w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end")}>
+            <Button
+              size="sm"
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+              onClick={handlePrintPayment}
+            >
+              <Printer className="h-4 w-4" />
+              In phiếu
+            </Button>
+
             {(payment?.status === 'draft' || payment?.status === 'cancelled' || payment?.status === 'canceled') && (
               <Button
+                size="sm"
                 variant="destructive"
-                className="gap-2 w-full sm:w-auto mr-auto"
+                className="gap-2 w-full sm:w-auto"
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="h-4 w-4" />
@@ -654,12 +689,19 @@ const ViewPaymentDialog = ({
               </Button>
             )}
             <DialogClose asChild>
-              <Button type="button" variant="outline" className="w-full sm:w-auto">
+              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
                 Đóng
               </Button>
             </DialogClose>
           </div>
         </DialogFooter>
+
+        <MobilePaymentActions
+          payment={payment}
+          isMobile={isMobile}
+          handlePrintPayment={handlePrintPayment}
+          setShowDeleteDialog={setShowDeleteDialog}
+        />
       </DialogContent>
 
       {selectedProductId && (
@@ -684,6 +726,17 @@ const ViewPaymentDialog = ({
         />
       )}
 
+      {selectedPurchaseOrderId && (
+        <ViewPurchaseOrderDialog
+          open={showViewPurchaseOrderDialog}
+          onOpenChange={setShowViewPurchaseOrderDialog}
+          purchaseOrderId={selectedPurchaseOrderId}
+          showTrigger={false}
+          contentClassName="!z-[100020]"
+          overlayClassName="!z-[100019]"
+        />
+      )}
+
       {payment && (
         <DeletePaymentDialog
           open={showDeleteDialog}
@@ -696,6 +749,13 @@ const ViewPaymentDialog = ({
           }}
           contentClassName="z-[100060]"
           overlayClassName="z-[100059]"
+        />
+      )}
+      {/* Print View */}
+      {printData && (
+        <PrintPaymentView
+          payment={printData}
+          setting={setting}
         />
       )}
     </Dialog>

@@ -6,7 +6,7 @@ import api from '@/utils/axios'
 import { moneyFormat } from '@/utils/money-format'
 import { IconArrowUp, IconArrowDown, IconShoppingCart, IconTruckDelivery } from '@tabler/icons-react'
 
-const DashboardSummary = () => {
+const DashboardSummary = ({ todayIncome = 0, todayExpense = 0 }) => {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -26,8 +26,8 @@ const DashboardSummary = () => {
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton key={i} className="h-32 w-full rounded-xl" />
         ))}
       </div>
@@ -37,19 +37,33 @@ const DashboardSummary = () => {
   if (!data) return null
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <SummaryCard
+        title="Thu hôm nay"
+        value={moneyFormat(todayIncome)}
+        subValue="Tổng tiền thu thực tế"
+        icon={<IconArrowUp className="h-4 w-4 text-emerald-600" />}
+      />
+      <SummaryCard
+        title="Chi hôm nay"
+        value={moneyFormat(todayExpense)}
+        subValue="Tổng tiền chi thực tế"
+        icon={<IconArrowDown className="h-4 w-4 text-rose-600" />}
+      />
+
       <SummaryCard
         title="Doanh số hôm nay"
         value={moneyFormat(data.salesToday)}
         subValue={`Tháng này: ${moneyFormat(data.salesMonth)}`}
-        icon={<IconArrowUp className="h-4 w-4 text-green-500" />}
+        icon={<IconShoppingCart className="h-4 w-4 text-blue-500" />}
       />
       <SummaryCard
         title="Tiền mua hôm nay"
         value={moneyFormat(data.purchasesToday)}
         subValue={`Tháng này: ${moneyFormat(data.purchasesMonth)}`}
-        icon={<IconArrowDown className="h-4 w-4 text-red-500" />}
+        icon={<IconTruckDelivery className="h-4 w-4 text-orange-500" />}
       />
+
       <SummaryCard
         title="Đơn bán chưa giao"
         value={data.salesBacklogCount}

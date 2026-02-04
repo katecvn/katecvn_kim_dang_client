@@ -69,7 +69,7 @@ const PurchaseOrderDialog = ({
   const [selectedUnitIds, setSelectedUnitIds] = useState({})
   const [baseUnitPrices, setBaseUnitPrices] = useState({})
   const [priceOverrides, setPriceOverrides] = useState({})
-  const [discounts, setDiscounts] = useState({})
+  const [discountRates, setDiscountRates] = useState({})
   const [quantities, setQuantities] = useState({})
   const [notes, setNotes] = useState({})
   const [selectedTaxes, setSelectedTaxes] = useState({})
@@ -171,7 +171,7 @@ const PurchaseOrderDialog = ({
       const nextQuantities = {}
       const nextUnitIds = {}
       const nextPriceOverrides = {}
-      const nextDiscounts = {}
+      const nextDiscountRates = {}
       const nextNotes = {}
       const nextBasePrices = {}
       // Taxes reconstruction skipped as per Update logic
@@ -184,7 +184,10 @@ const PurchaseOrderDialog = ({
 
           nextQuantities[pid] = item.quantity
           nextUnitIds[pid] = item.unitId
-          nextDiscounts[pid] = item.discount || 0
+          const rate = (item.discount && item.unitPrice && item.quantity)
+            ? (item.discount / (item.unitPrice * item.quantity)) * 100
+            : 0
+          nextDiscountRates[pid] = parseFloat(rate.toFixed(2)) // Keep 2 decimals
           nextNotes[pid] = item.note || ''
           nextPriceOverrides[pid] = item.unitPrice
 
@@ -196,7 +199,7 @@ const PurchaseOrderDialog = ({
       setQuantities(nextQuantities)
       setSelectedUnitIds(nextUnitIds)
       setPriceOverrides(nextPriceOverrides)
-      setDiscounts(nextDiscounts)
+      setDiscountRates(nextDiscountRates)
       setNotes(nextNotes)
       setBaseUnitPrices(nextBasePrices)
 
@@ -216,7 +219,7 @@ const PurchaseOrderDialog = ({
     setSelectedUnitIds({})
     setBaseUnitPrices({})
     setPriceOverrides({})
-    setDiscounts({})
+    setDiscountRates({})
     setQuantities({})
     setNotes({})
     setSelectedTaxes({})
@@ -398,7 +401,7 @@ const PurchaseOrderDialog = ({
     cleanup(setSelectedUnitIds)
     cleanup(setBaseUnitPrices)
     cleanup(setPriceOverrides)
-    cleanup(setDiscounts)
+    cleanup(setDiscountRates)
     cleanup(setQuantities)
     cleanup(setNotes)
     cleanup(setSelectedTaxes)
@@ -439,9 +442,10 @@ const PurchaseOrderDialog = ({
     setPriceOverrides(prev => ({ ...prev, [productId]: numericValue }))
   }
 
-  const handleDiscountChange = (productId, value) => {
-    const numericValue = Number(value.replace(/,/g, '').replace(/\D/g, ''))
-    setDiscounts(prev => ({ ...prev, [productId]: numericValue }))
+  const handleDiscountRateChange = (productId, value) => {
+    let numericValue = Number(value.replace(/,/g, '').replace(/\D/g, ''))
+    if (numericValue > 100) numericValue = 100
+    setDiscountRates(prev => ({ ...prev, [productId]: numericValue }))
   }
 
   const handleNoteChange = (productId, value) => {
@@ -468,10 +472,11 @@ const PurchaseOrderDialog = ({
     const quantity = quantities[productId] || 1
     const product = selectedProducts.find((prod) => prod.id === productId)
     if (!product) return 0
-    const discount = discounts[productId] || 0
+    const discountRate = discountRates[productId] || 0
     const price = getDisplayPrice(product)
-    const subtotal = quantity * price
-    return subtotal - discount > 0 ? subtotal - discount : 0
+    const discountAmount = (price * quantity * discountRate) / 100
+    const subtotal = price * quantity
+    return subtotal - discountAmount > 0 ? subtotal - discountAmount : 0
   }
 
   const calculateTaxForProduct = (productId) => {
@@ -493,7 +498,13 @@ const PurchaseOrderDialog = ({
   }
 
   const calculateTotalDiscount = () => {
-    return selectedProducts.reduce((sum, p) => sum + (discounts[p.id] || 0), 0)
+    return selectedProducts.reduce((sum, p) => {
+      const price = getDisplayPrice(p)
+      const quantity = quantities[p.id] || 1
+      const rate = discountRates[p.id] || 0
+      const discountAmount = (price * quantity * rate) / 100
+      return sum + discountAmount
+    }, 0)
   }
 
   const handleCalculateSubTotalInvoice = () => {
@@ -547,6 +558,8 @@ const PurchaseOrderDialog = ({
       // Logic from existing Create and Update dialogs merged:
       const subTotal = calculateSubTotal(product.id)
       const taxAmt = calculateTaxForProduct(product.id)
+      const rate = discountRates[product.id] || 0
+      const discountAmount = (priceUnit * qtyUnit * rate) / 100
 
       return {
         lineNo: index + 1,
@@ -564,7 +577,7 @@ const PurchaseOrderDialog = ({
         unitPrice: priceUnit,
         taxAmount: taxAmt,
         subTotal: subTotal,
-        discount: discounts[product.id] || 0,
+        discount: discountAmount,
         total: subTotal + taxAmt,
         note: notes[product.id] || '',
       }
@@ -759,13 +772,13 @@ const PurchaseOrderDialog = ({
                         quantities={quantities}
                         selectedUnitIds={selectedUnitIds}
                         priceOverrides={priceOverrides}
-                        discounts={discounts}
+                        discountRates={discountRates}
                         selectedTaxes={selectedTaxes}
                         notes={notes}
                         onQuantityChange={handleQuantityChange}
                         onUnitChange={handleUnitChange}
                         onPriceChange={handlePriceChange}
-                        onDiscountChange={handleDiscountChange}
+                        onDiscountRateChange={handleDiscountRateChange}
                         onTaxChange={handleTaxChange}
                         onNoteChange={handleNoteChange}
                         onRemoveProduct={handleRemoveProduct}
@@ -901,13 +914,13 @@ const PurchaseOrderDialog = ({
                 quantities={quantities}
                 selectedUnitIds={selectedUnitIds}
                 priceOverrides={priceOverrides}
-                discounts={discounts}
+                discountRates={discountRates}
                 selectedTaxes={selectedTaxes}
                 notes={notes}
                 onQuantityChange={handleQuantityChange}
                 onUnitChange={handleUnitChange}
                 onPriceChange={handlePriceChange}
-                onDiscountChange={handleDiscountChange}
+                onDiscountRateChange={handleDiscountRateChange}
                 onTaxChange={handleTaxChange}
                 onNoteChange={handleNoteChange}
                 onRemoveProduct={handleRemoveProduct}

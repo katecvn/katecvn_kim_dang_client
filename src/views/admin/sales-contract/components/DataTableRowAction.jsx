@@ -14,13 +14,15 @@ import {
   IconTrash,
   IconFileInvoice,
   IconPackageExport,
+  IconArchive,
 } from '@tabler/icons-react'
 import Can from '@/utils/can'
 import { useState } from 'react'
 import DeleteSalesContractDialog from './DeleteSalesContractDialog'
 import UpdateSalesContractDialog from './UpdateSalesContractDialog'
+import LiquidateContractDialog from './LiquidateContractDialog'
 import { useDispatch } from 'react-redux'
-import { generateWarehouseReceiptFromInvoice } from '@/stores/WarehouseReceiptSlice'
+import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { toast } from 'sonner'
 import { getSalesContracts, getSalesContractDetail } from '@/stores/SalesContractSlice'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
@@ -46,6 +48,7 @@ const DataTableRowActions = ({ row }) => {
   const [warehouseLoading, setWarehouseLoading] = useState(false)
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
   const [dialogData, setDialogData] = useState(null)
+  const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
 
   // Print Contract State
   const [installmentData, setInstallmentData] = useState(null)
@@ -120,29 +123,60 @@ const DataTableRowActions = ({ row }) => {
     }
   }
 
-  const handleConfirmCreateWarehouseReceipt = async (selectedItemIds) => {
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
     const firstInvoice = contract.invoices?.[0]
     if (!firstInvoice) return
 
     try {
       setWarehouseLoading(true)
-      const data = await dispatch(
-        generateWarehouseReceiptFromInvoice({
-          invoiceId: firstInvoice.id,
-          type: 'contract',
-          selectedItemIds,
-        })
-      ).unwrap()
 
-      toast.success(`Đã tạo phiếu xuất kho ${data?.code || 'thành công'}`)
+      // Selected items details
+      const selectedDetails = selectedItems
+        .map(item => ({
+          productId: item.productId || item.id, // Ensure correct ID mapping from what was set in handleCreateWarehouseReceipt
+          unitId: item.unitId || item.unit?.id, // Assuming structure
+          movement: 'out',
+          qtyActual: item.quantity,
+          unitPrice: item.unitPrice || 0,
+          content: `Xuất kho theo HĐ ${contract.code}`,
+          salesContractId: contract.id,
+          salesContractItemId: item.salesContractItemId
+        }))
+
+      if (selectedDetails.length === 0) {
+        toast.error('Vui lòng chọn ít nhất một sản phẩm')
+        return
+      }
+
+      const payload = {
+        code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`, // Auto-gen code example
+        receiptType: 2, // ISSUE / EXPORT
+        businessType: 'sale_out',
+        receiptDate: new Date().toISOString(),
+        reason: `Xuất kho cho HĐ ${contract.code}`,
+        note: contract.note || '',
+        warehouseId: null, // Let backend decide or need to select? User example didn't establish this.
+        customerId: contract.customerId,
+        salesContractId: contract.id,
+        details: selectedDetails
+      }
+
+      await dispatch(createWarehouseReceipt(payload)).unwrap()
+
+      toast.success('Đã tạo phiếu xuất kho thành công')
 
       // Refresh list
       await dispatch(getSalesContracts({})).unwrap()
     } catch (error) {
       console.error('Create warehouse receipt error:', error)
+      toast.error('Tạo phiếu xuất kho thất bại')
     } finally {
       setWarehouseLoading(false)
     }
+  }
+
+  const handleLiquidationSuccess = () => {
+    dispatch(getSalesContracts({}))
   }
 
   return (
@@ -199,6 +233,20 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can>
 
+          {contract.status === 'confirmed' && (
+            <Can permission={'UPDATE_SALES_CONTRACT'}>
+              <DropdownMenuItem
+                onClick={() => setShowLiquidationDialog(true)}
+                className="text-orange-600"
+              >
+                Thanh lý
+                <DropdownMenuShortcut>
+                  <IconArchive className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
+
           <DropdownMenuSeparator />
 
           <Can permission={'DELETE_SALES_CONTRACT'}>
@@ -242,6 +290,15 @@ const DataTableRowActions = ({ row }) => {
           onConfirm={handleConfirmCreateWarehouseReceipt}
           loading={warehouseLoading}
           type="contract"
+        />
+      )}
+
+      {showLiquidationDialog && (
+        <LiquidateContractDialog
+          open={showLiquidationDialog}
+          onOpenChange={setShowLiquidationDialog}
+          contractId={contract.id}
+          onSuccess={handleLiquidationSuccess}
         />
       )}
 

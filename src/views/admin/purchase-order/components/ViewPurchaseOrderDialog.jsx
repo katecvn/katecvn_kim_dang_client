@@ -52,7 +52,9 @@ import {
   confirmPurchaseOrder,
   cancelPurchaseOrder,
   revertPurchaseOrder,
+  getPurchaseOrders,
 } from '@/stores/PurchaseOrderSlice'
+import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import ViewWarehouseReceiptDialog from '../../warehouse-receipt/components/ViewWarehouseReceiptDialog'
 import ViewPaymentDialog from '../../payment/components/ViewPaymentDialog'
 
@@ -61,6 +63,8 @@ const ViewPurchaseOrderDialog = ({
   onOpenChange,
   purchaseOrderId,
   showTrigger = true,
+  contentClassName,
+  overlayClassName,
   ...props
 }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -163,6 +167,39 @@ const ViewPurchaseOrderDialog = ({
     setShowCreatePaymentDialog(true)
   }
 
+  const handleCreateWarehouseReceipt = async (selectedItems) => {
+    const payload = {
+      code: `NK-${purchaseOrder.code}-${Date.now().toString().slice(-4)}`,
+      receiptType: 1, // IMPORT / RECEIPT
+      businessType: 'purchase_in',
+      receiptDate: new Date().toISOString(),
+      reason: `Nhập kho từ đơn mua hàng ${purchaseOrder.code}`,
+      note: purchaseOrder.note || '',
+      warehouseId: null,
+      supplierId: purchaseOrder.supplierId,
+      purchaseOrderId: purchaseOrder.id,
+      details: selectedItems.map(item => ({
+        productId: item.productId || item.product?.id,
+        unitId: item.unitId || item.unit?.id,
+        movement: 'in',
+        qtyActual: item.quantity,
+        unitPrice: item.unitPrice || 0,
+        content: `Nhập kho theo đơn mua ${purchaseOrder.code}`,
+        purchaseOrderId: purchaseOrder.id,
+        purchaseOrderItemId: item.id
+      }))
+    }
+
+    try {
+      await dispatch(createWarehouseReceipt(payload)).unwrap()
+      toast.success('Tạo phiếu nhập kho thành công')
+      fetchData()
+    } catch (error) {
+      console.error(error)
+      toast.error('Tạo phiếu nhập kho thất bại')
+    }
+  }
+
   // Helper for Warehouse Receipt Status (assuming similar to Invoice)
   const getWarehouseReceiptStatusColor = (statusValue) => {
     switch (statusValue) {
@@ -188,8 +225,11 @@ const ViewPurchaseOrderDialog = ({
       <DialogContent
         className={cn(
           "md:h-screen md:max-w-full md:z-[10001] md:my-0 md:top-0 md:translate-y-0",
-          !isDesktop && "fixed inset-0 w-screen h-screen top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none z-[9999] translate-x-0 translate-y-0"
-        )}>
+          !isDesktop && "fixed inset-0 w-screen h-screen top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none z-[9999] translate-x-0 translate-y-0",
+          contentClassName
+        )}
+        overlayClassName={overlayClassName}
+      >
         <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
           <DialogTitle className={cn(!isDesktop && "text-base")}>
             Thông tin chi tiết đơn mua hàng: {purchaseOrder?.code} <br />
@@ -1017,7 +1057,7 @@ const ViewPurchaseOrderDialog = ({
           open={showConfirmImportDialog}
           onOpenChange={setShowConfirmImportDialog}
           purchaseOrderId={purchaseOrder.id}
-          onSuccess={() => fetchData()}
+          onConfirm={handleCreateWarehouseReceipt}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
         />

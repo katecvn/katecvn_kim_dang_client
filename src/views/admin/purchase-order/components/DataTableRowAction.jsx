@@ -79,33 +79,37 @@ const DataTableRowActions = ({ row, table }) => {
 
 
 
-  const handleCreateWarehouseReceipt = async (selectedIds) => {
-    const selectedItems = purchaseOrder.items.filter(item => selectedIds.includes(String(item.id)) || selectedIds.includes(item.id))
-
-    // Construct payload strictly matching Create Warehouse Receipt Structure
+  const handleCreateWarehouseReceipt = async (selectedItems) => {
+    // Construct payload
     const payload = {
-      type: 'import',
+      code: `NK-${purchaseOrder.code}-${Date.now().toString().slice(-4)}`,
+      receiptType: 1, // IMPORT / RECEIPT
+      businessType: 'purchase_in',
+      receiptDate: new Date().toISOString(),
+      reason: `Nhập kho từ đơn mua hàng ${purchaseOrder.code}`,
+      note: purchaseOrder.note || '',
+      warehouseId: null,
       supplierId: purchaseOrder.supplierId,
-      referenceId: purchaseOrder.id,
-      referenceType: 'purchase_order',
-      note: `Nhập kho từ đơn hàng ${purchaseOrder.code}`,
-      status: 'draft',
-      orderDate: new Date().toISOString(),
-      items: selectedItems.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        unitId: item.unitId,
-        unitPrice: item.unitPrice,
-        conversionFactor: item.conversionFactor || 1,
-        // Ensure other required fields if strictly validated
+      purchaseOrderId: purchaseOrder.id,
+      details: selectedItems.map(item => ({
+        productId: item.productId || item.product?.id,
+        unitId: item.unitId || item.unit?.id,
+        movement: 'in',
+        qtyActual: item.quantity,
+        unitPrice: item.unitPrice || 0,
+        content: `Nhập kho theo đơn mua ${purchaseOrder.code}`,
+        purchaseOrderId: purchaseOrder.id,
+        purchaseOrderItemId: item.id
       }))
     }
 
     try {
       await dispatch(createWarehouseReceipt(payload)).unwrap()
-      // toast.success handled in slice
+      // Refresh list
+      await dispatch(getPurchaseOrders({})).unwrap()
     } catch (error) {
       console.error(error)
+      // Error handled in slice typically or toast here if needed
     }
   }
 

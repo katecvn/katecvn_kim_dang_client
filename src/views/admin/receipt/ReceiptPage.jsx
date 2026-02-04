@@ -1,6 +1,6 @@
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { getReceipts } from '@/stores/ReceiptSlice'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { ReceiptDataTable } from './components/ReceiptDataTable'
 import { columns } from './components/Column'
@@ -20,9 +20,14 @@ const ReceiptPage = () => {
   const current = new Date()
 
   const [filters, setFilters] = useState({
+    search: '',
     fromDate: addHours(startOfDay(startOfMonth(current)), 12),
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
   })
+
+  const handleSearch = useCallback((searchTerm) => {
+    setFilters(prev => ({ ...prev, search: searchTerm }))
+  }, [])
 
   useEffect(() => {
     document.title = 'Danh sách phiếu thu'
@@ -64,6 +69,7 @@ const ReceiptPage = () => {
               data={Array.isArray(receipts) ? receipts : receipts.data || []}
               columns={columns}
               loading={loading}
+              onSearch={handleSearch}
             />
           )}
         </div>

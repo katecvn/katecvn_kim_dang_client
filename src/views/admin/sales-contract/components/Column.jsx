@@ -9,7 +9,7 @@ import { useState } from 'react'
 import Can from '@/utils/can'
 import ViewSalesContractDialog from './ViewSalesContractDialog'
 import { Badge } from '@/components/ui/badge'
-import { CreditCard, Phone } from 'lucide-react'
+import { CreditCard, Phone, FileText, CheckCircle, XCircle, PackageOpen } from 'lucide-react'
 
 export const columns = [
   {
@@ -82,6 +82,13 @@ export const columns = [
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <CreditCard className="h-3 w-3" />
               {row.original.buyerIdentityNo}
+            </span>
+          )}
+
+          {(row.original.buyerTaxCode || row.original.customer?.taxCode) && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <CreditCard className="h-3 w-3" />
+              MST: {row.original.buyerTaxCode || row.original.customer?.taxCode}
             </span>
           )}
 
@@ -177,31 +184,42 @@ export const columns = [
     cell: ({ row }) => {
       const warehouseReceipt = row.original.warehouseReceipts?.[0] || row.original.invoices?.[0]?.warehouseReceipts?.[0]
 
+      let Icon = PackageOpen
+      let label = 'Chưa xuất'
+      let colorClass = 'text-gray-400'
+
+      if (warehouseReceipt) {
+        if (warehouseReceipt.status === 'draft') {
+          Icon = FileText
+          label = 'Nháp'
+          colorClass = 'text-yellow-600'
+        } else if (warehouseReceipt.status === 'posted') {
+          Icon = CheckCircle
+          label = 'Đã ghi sổ'
+          colorClass = 'text-green-600'
+        } else if (warehouseReceipt.status === 'cancelled') {
+          Icon = XCircle
+          label = 'Đã hủy'
+          colorClass = 'text-red-600'
+        } else {
+          Icon = PackageOpen
+          label = warehouseReceipt.status
+          colorClass = 'text-gray-500'
+        }
+      }
+
       return (
         <Badge
           variant="outline"
-          className={`cursor-default select-none ${warehouseReceipt
-            ? warehouseReceipt.status === 'draft'
-              ? 'text-yellow-600'
-              : warehouseReceipt.status === 'posted'
-                ? 'text-green-600'
-                : 'text-gray-500'
-            : 'text-gray-400'
-            }`}
+          className={`cursor-default select-none ${colorClass}`}
           title={
             warehouseReceipt
               ? `Mã: ${warehouseReceipt.code}`
               : 'Chưa có phiếu xuất kho'
           }
         >
-          <span className="mr-1">📦</span>
-          {warehouseReceipt
-            ? warehouseReceipt.status === 'draft'
-              ? 'Nháp'
-              : warehouseReceipt.status === 'posted'
-                ? 'Đã ghi sổ'
-                : warehouseReceipt.status
-            : 'Chưa xuất'}
+          <Icon className="mr-1 h-3 w-3" />
+          {label}
         </Badge>
       )
     },

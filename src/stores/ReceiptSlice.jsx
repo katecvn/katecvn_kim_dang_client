@@ -214,6 +214,13 @@ export const receiptSlice = createSlice({
         state.error = action.payload.message || 'Không lấy được mã QR'
         state.qrCodeData = null
       })
+      .addCase(updateReceiptStatus.fulfilled, (state, action) => {
+        const updatedReceipt = action.payload
+        const index = state.receipts.findIndex((r) => r.id === updatedReceipt.id)
+        if (index !== -1) {
+          state.receipts[index] = { ...state.receipts[index], ...updatedReceipt }
+        }
+      })
   },
 })
 

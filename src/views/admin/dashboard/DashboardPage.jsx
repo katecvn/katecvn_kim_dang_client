@@ -5,21 +5,30 @@ import { Layout, LayoutBody } from '@/components/custom/Layout'
 import DashboardSummary from './components/DashboardSummary'
 import MarketPriceWidget from './components/MarketPriceWidget'
 import DailyRevenueChart from './components/DailyRevenueChart'
-import PendingOrders from './components/PendingOrders'
+import BacklogWidget from './components/PendingOrders'
 import RecentSales from './components/RecentSales'
+import TransactionList from './components/TransactionList'
 import api from '@/utils/axios'
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns'
 
 const DashboardPage = () => {
   const [salesSummary, setSalesSummary] = useState([])
   const [salesBacklog, setSalesBacklog] = useState([])
   const [purchaseBacklog, setPurchaseBacklog] = useState([])
   const [recentSales, setRecentSales] = useState([])
+
+  // New State
+  const [todayReceipts, setTodayReceipts] = useState([])
+  const [todayPayments, setTodayPayments] = useState([])
+
   const [loading, setLoading] = useState(true)
 
   const current = new Date()
   const fromDate = startOfMonth(current)
   const toDate = endOfMonth(current)
+
+  const todayStart = startOfDay(current)
+  const todayEnd = endOfDay(current)
 
   useEffect(() => {
     document.title = 'Tổng quan - CRM'
@@ -27,17 +36,41 @@ const DashboardPage = () => {
     const fetchAllData = async () => {
       setLoading(true)
       try {
-        const [salesRes, salesBacklogRes, purchaseBacklogRes, recentRes] = await Promise.all([
+        const [salesRes, salesBacklogRes, purchaseBacklogRes, recentRes, receiptsTodayRes, paymentsTodayRes] = await Promise.all([
           api.get('/reports/sales/summary', { params: { fromDate, toDate } }),
           api.get('/reports/sales/backlog'),
           api.get('/reports/purchases/backlog'),
-          api.get('/invoice', { params: { limit: 5, sort: 'createdAt:desc' } })
+          api.get('/invoice', { params: { limit: 5, sort: 'createdAt:desc' } }),
+          api.get('/payment-vouchers', {
+            params: {
+              voucherType: 'receipt_in',
+              fromDate: todayStart,
+              toDate: todayEnd,
+              limit: 100
+            }
+          }),
+          api.get('/payment-vouchers', {
+            params: {
+              voucherType: 'payment_out',
+              fromDate: todayStart,
+              toDate: todayEnd,
+              limit: 100
+            }
+          })
         ])
 
         setSalesSummary(salesRes.data.data.data || [])
         setSalesBacklog(salesBacklogRes.data.data || [])
         setPurchaseBacklog(purchaseBacklogRes.data.data || [])
         setRecentSales(recentRes.data.data || [])
+
+        // Handle paginated response structure if necessary, or just data array
+        // ReceiptSlice says: response.data.data || response.data
+        const receiptsData = receiptsTodayRes.data.data?.data || receiptsTodayRes.data.data || []
+        const paymentsData = paymentsTodayRes.data.data?.data || paymentsTodayRes.data.data || []
+
+        setTodayReceipts(receiptsData)
+        setTodayPayments(paymentsData)
 
       } catch (error) {
         console.error("Error fetching dashboard data:", error)
@@ -49,6 +82,10 @@ const DashboardPage = () => {
     fetchAllData()
   }, [])
 
+  // Calculate totals
+  const todayIncome = todayReceipts.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+  const todayExpense = todayPayments.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+
   return (
     <Layout>
       <LayoutBody className="flex flex-col h-full" fixedHeight>
@@ -59,32 +96,57 @@ const DashboardPage = () => {
         <div className="flex-1 overflow-y-auto min-h-0">
           <Can permission={['GET_REPORT']}>
             <div className="space-y-6 pb-8">
-              <DashboardSummary />
+              <DashboardSummary
+                todayIncome={todayIncome}
+                todayExpense={todayExpense}
+              />
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <div className="col-span-2 space-y-4">
-                  <MarketPriceWidget />
-                  {/* Can put Recent Sales here too if we want shorter left column */}
-                </div>
-                <div className="col-span-5 space-y-4">
-                  <DailyRevenueChart
-                    data={salesSummary}
-                    loading={loading}
-                    fromDate={fromDate}
-                    toDate={toDate}
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <PendingOrders
-                      salesBacklog={salesBacklog}
-                      purchaseBacklog={purchaseBacklog}
-                      loading={loading}
-                    />
-                    <RecentSales
-                      recentSales={recentSales}
-                      loading={loading}
-                    />
-                  </div>
-                </div>
+              <DailyRevenueChart
+                data={salesSummary}
+                loading={loading}
+                fromDate={fromDate}
+                toDate={toDate}
+              />
+
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+                <MarketPriceWidget />
+
+                <TransactionList
+                  title={`Thu hôm nay (${todayReceipts.length})`}
+                  data={todayReceipts}
+                  type="receipt"
+                  loading={loading}
+                  description="Phiếu thu trong ngày"
+                />
+
+                <TransactionList
+                  title={`Chi hôm nay (${todayPayments.length})`}
+                  data={todayPayments}
+                  type="payment"
+                  loading={loading}
+                  description="Phiếu chi trong ngày"
+                />
+
+                <BacklogWidget
+                  title={`Chưa giao (${salesBacklog.length})`}
+                  data={salesBacklog}
+                  type="sale"
+                  loading={loading}
+                  description="Đơn bán chưa xuất kho"
+                />
+
+                <BacklogWidget
+                  title={`Chưa nhận (${purchaseBacklog.length})`}
+                  data={purchaseBacklog}
+                  type="purchase"
+                  loading={loading}
+                  description="Đơn mua chưa nhập kho"
+                />
+
+                <RecentSales
+                  recentSales={recentSales}
+                  loading={loading}
+                />
               </div>
             </div>
           </Can>

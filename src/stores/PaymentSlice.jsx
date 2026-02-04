@@ -184,11 +184,16 @@ export const paymentSlice = createSlice({
         state.error = action.payload
       })
 
-      .addCase(updatePaymentStatus.pending, (state) => {
-        state.loading = true
-      })
-      .addCase(updatePaymentStatus.fulfilled, (state) => {
+      // .addCase(updatePaymentStatus.pending, (state) => {
+      //   state.loading = true
+      // })
+      .addCase(updatePaymentStatus.fulfilled, (state, action) => {
         state.loading = false
+        const updatedPayment = action.payload
+        const index = state.payments.findIndex((p) => p.id === updatedPayment.id)
+        if (index !== -1) {
+          state.payments[index] = { ...state.payments[index], ...updatedPayment }
+        }
       })
       .addCase(updatePaymentStatus.rejected, (state, action) => {
         state.loading = false

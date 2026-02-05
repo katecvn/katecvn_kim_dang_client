@@ -64,6 +64,7 @@ import ConfirmActionButton from '@/components/custom/ConfirmActionButton'
 import UpdatePaymentStatusDialog from '../../payment/components/UpdatePaymentStatusDialog'
 import { DeletePaymentDialog } from '../../payment/components/DeletePaymentDialog'
 import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/components/UpdateWarehouseReceiptStatusDialog'
+import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components/DeleteWarehouseReceiptDialog'
 import { updateReceiptStatus } from '@/stores/ReceiptSlice'
 import { updateWarehouseReceipt, postWarehouseReceipt, cancelWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { updatePaymentStatus } from '@/stores/PaymentSlice'
@@ -116,6 +117,11 @@ const ViewPurchaseOrderDialog = ({
   // Delete Payment Dialog State
   const [showDeletePaymentDialog, setShowDeletePaymentDialog] = useState(false)
   const [paymentToDelete, setPaymentToDelete] = useState(null)
+
+  // Delete Warehouse Receipt Dialog State
+  const [showDeleteWarehouseReceiptDialog, setShowDeleteWarehouseReceiptDialog] = useState(false)
+  const [warehouseReceiptToDelete, setWarehouseReceiptToDelete] = useState(null)
+
 
   // Fetch Data
   const fetchData = async () => {
@@ -279,6 +285,8 @@ const ViewPurchaseOrderDialog = ({
     switch (statusValue) {
       case 'draft': return 'bg-yellow-100 text-yellow-700'
       case 'posted': return 'bg-green-100 text-green-700'
+      case 'cancelled': return 'bg-red-100 text-red-700'
+      case 'canceled': return 'bg-red-100 text-red-700'
       default: return 'bg-gray-100 text-gray-700'
     }
   }
@@ -288,6 +296,7 @@ const ViewPurchaseOrderDialog = ({
     switch (statusValue) {
       case 'draft': return 'bg-yellow-100 text-yellow-700'
       case 'completed': return 'bg-green-100 text-green-700'
+      case 'cancelled': return 'bg-red-100 text-red-700'
       case 'canceled': return 'bg-red-100 text-red-700'
       default: return 'bg-gray-100 text-gray-700'
     }
@@ -886,7 +895,9 @@ const ViewPurchaseOrderDialog = ({
                                           ? 'Nháp'
                                           : receipt.status === 'posted'
                                             ? 'Đã ghi sổ'
-                                            : receipt.status}
+                                            : receipt.status === 'cancelled'
+                                              ? 'Đã hủy'
+                                              : receipt.status}
                                       </span>
                                     </TableCell>
                                     <TableCell className="text-right font-semibold">
@@ -894,15 +905,15 @@ const ViewPurchaseOrderDialog = ({
                                     </TableCell>
                                     <TableCell>{dateFormat(receipt.receiptDate, true)}</TableCell>
                                     <TableCell>
-                                      {receipt.status === 'draft' && (
+                                      {['draft', 'cancelled'].includes(receipt.status) && (
                                         <Button
                                           variant="ghost"
                                           size="icon"
                                           className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                                           onClick={(e) => {
                                             e.stopPropagation()
-                                            // TODO: Implement delete logic
-                                            toast.info("Tính năng xóa đang phát triển")
+                                            setWarehouseReceiptToDelete(receipt)
+                                            setShowDeleteWarehouseReceiptDialog(true)
                                           }}
                                         >
                                           <Trash2 className="h-4 w-4" />
@@ -930,14 +941,15 @@ const ViewPurchaseOrderDialog = ({
                                     >
                                       {receipt.code}
                                     </span>
-                                    {receipt.status === 'draft' && (
+                                    {['draft', 'cancelled'].includes(receipt.status) && (
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
                                         onClick={(e) => {
                                           e.stopPropagation()
-                                          toast.info("Tính năng xóa đang phát triển")
+                                          setWarehouseReceiptToDelete(receipt)
+                                          setShowDeleteWarehouseReceiptDialog(true)
                                         }}
                                       >
                                         <Trash2 className="h-4 w-4" />
@@ -1318,6 +1330,7 @@ const ViewPurchaseOrderDialog = ({
           onSubmit={handleUpdateStatus}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
+          selectContentClassName="z-[100050]"
         />
       )}
 
@@ -1343,7 +1356,7 @@ const ViewPurchaseOrderDialog = ({
           onSubmit={(status) => handleUpdatePaymentStatus(status, selectedPaymentForUpdate.id)}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
-          selectContentClassName="z-[100025]"
+          selectContentClassName="z-[100050]"
         />
       )}
 
@@ -1373,6 +1386,23 @@ const ViewPurchaseOrderDialog = ({
           currentStatus={selectedWarehouseReceiptForUpdate.status}
           statuses={warehouseReceiptStatuses}
           onSubmit={handleUpdateWarehouseReceiptStatus}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+          selectContentClassName="z-[100050]"
+        />
+      )}
+
+      {/* Delete Warehouse Receipt Dialog */}
+      {warehouseReceiptToDelete && (
+        <DeleteWarehouseReceiptDialog
+          open={showDeleteWarehouseReceiptDialog}
+          onOpenChange={setShowDeleteWarehouseReceiptDialog}
+          receipt={warehouseReceiptToDelete}
+          showTrigger={false}
+          onSuccess={() => {
+            setShowDeleteWarehouseReceiptDialog(false)
+            fetchData()
+          }}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
         />

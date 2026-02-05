@@ -206,13 +206,8 @@ export const updatePurchaseOrderStatus = createAsyncThunk(
   async (data, { rejectWithValue, dispatch }) => {
     try {
       await api.put(`/purchase-orders/${data.id}`, data)
-      await dispatch(
-        getPurchaseOrders({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      ).unwrap()
       toast.success('Cập nhật trạng thái thành công')
+      return data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -291,8 +286,15 @@ export const purchaseOrderSlice = createSlice({
         state.loading = true
         state.error = null
       })
-      .addCase(updatePurchaseOrderStatus.fulfilled, (state) => {
+      .addCase(updatePurchaseOrderStatus.fulfilled, (state, action) => {
         state.loading = false
+        if (action.payload) {
+          const { id, status } = action.payload
+          const index = state.purchaseOrders.findIndex((po) => po.id === id)
+          if (index !== -1) {
+            state.purchaseOrders[index].status = status
+          }
+        }
       })
       .addCase(updatePurchaseOrderStatus.rejected, (state, action) => {
         state.loading = false

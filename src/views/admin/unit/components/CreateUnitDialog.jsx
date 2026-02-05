@@ -42,6 +42,7 @@ const CreateUnitDialog = ({
     resolver: zodResolver(createUnitSchema),
     defaultValues: {
       name: '',
+      code: '',
     },
   })
 
@@ -82,6 +83,19 @@ const CreateUnitDialog = ({
           <Form {...form}>
             <form id="create-unit" onSubmit={form.handleSubmit(onSubmit)}>
               <div className="grid gap-4 md:grid-cols-1">
+                <FormField
+                  control={form.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem className="mb-2 space-y-1">
+                      <FormLabel>Mã đơn vị tính</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nhập mã đơn vị tính" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="name"

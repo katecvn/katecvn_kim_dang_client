@@ -43,6 +43,7 @@ const LiquidatePurchaseContractDialog = ({
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [previewData, setPreviewData] = useState(null)
+  console.log(previewData)
   const [items, setItems] = useState([])
 
   useEffect(() => {
@@ -92,7 +93,7 @@ const LiquidatePurchaseContractDialog = ({
   const summary = useMemo(() => {
     if (!previewData || !items.length) return null
 
-    const totalContractValue = previewData.summary?.totalContractValue || 0
+    const totalContractValue = previewData.summary?.contractValue || previewData.summary?.totalContractValue || 0
     const depositAmount = previewData.summary?.depositAmount || 0
 
     const totalMarketValue = items.reduce((sum, item) => {
@@ -205,13 +206,13 @@ const LiquidatePurchaseContractDialog = ({
               <div>
                 <span className="text-muted-foreground">Giá trị HĐ:</span>
                 <p className="font-medium text-primary">
-                  {moneyFormat(previewData.contract?.totalAmount)}
+                  {moneyFormat(previewData.contract?.totalAmount || previewData.summary?.contractValue)}
                 </p>
               </div>
               <div>
                 <span className="text-muted-foreground">Đã thanh toán:</span>
                 <p className="font-medium text-green-600">
-                  {moneyFormat(previewData.contract?.paidAmount)}
+                  {moneyFormat(previewData.contract?.paidAmount || previewData.summary?.depositAmount)}
                 </p>
               </div>
             </div>

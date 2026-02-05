@@ -32,13 +32,28 @@ import { cn } from '@/lib/utils'
 import { PlusIcon, MobileIcon } from '@radix-ui/react-icons'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import React from 'react'
-import { Package, Mail, MapPin, CreditCard } from 'lucide-react'
+import { Package, Mail, MapPin, CreditCard, Trash2 } from 'lucide-react'
 import { getPublicUrl } from '@/utils/file'
 import { purchaseContractStatuses } from '../data'
+import { toast } from 'sonner'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
 import ViewPurchaseOrderDialog from '../../purchase-order/components/ViewPurchaseOrderDialog'
+import UpdatePurchaseOrderStatusDialog from '../../purchase-order/components/UpdatePurchaseOrderStatusDialog'
+import {
+  updatePurchaseOrderStatus,
+  confirmPurchaseOrder,
+  cancelPurchaseOrder,
+  revertPurchaseOrder
+} from '@/stores/PurchaseOrderSlice'
 import ViewWarehouseReceiptDialog from '../../warehouse-receipt/components/ViewWarehouseReceiptDialog'
 import ViewPaymentDialog from '../../payment/components/ViewPaymentDialog'
+import UpdatePaymentStatusDialog from '../../payment/components/UpdatePaymentStatusDialog'
+import { updatePaymentStatus } from '@/stores/PaymentSlice'
+import { paymentStatus } from '../../payment/data'
+import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/components/UpdateWarehouseReceiptStatusDialog'
+import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
+import { DeletePaymentDialog } from '../../payment/components/DeletePaymentDialog'
+import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components/DeleteWarehouseReceiptDialog'
 
 const ViewPurchaseContractDialog = ({
   open,
@@ -52,7 +67,6 @@ const ViewPurchaseContractDialog = ({
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const dispatch = useDispatch()
   const [contract, setContract] = useState({})
-  console.log(contract)
   const [loading, setLoading] = useState(false)
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
   const [showViewProductDialog, setShowViewProductDialog] = useState(false)
@@ -65,6 +79,23 @@ const ViewPurchaseContractDialog = ({
 
   const [showViewPaymentDialog, setShowViewPaymentDialog] = useState(false)
   const [selectedPaymentId, setSelectedPaymentId] = useState(null)
+
+  const [showUpdatePurchaseOrderStatus, setShowUpdatePurchaseOrderStatus] = useState(false)
+  const [selectedPurchaseOrderForUpdate, setSelectedPurchaseOrderForUpdate] = useState(null)
+
+  // Update Payment Status States
+  const [showUpdatePaymentStatus, setShowUpdatePaymentStatus] = useState(false)
+  const [selectedPaymentForUpdate, setSelectedPaymentForUpdate] = useState(null)
+
+  // Update Warehouse Receipt Status States
+  const [showUpdateWarehouseReceiptStatus, setShowUpdateWarehouseReceiptStatus] = useState(false)
+  const [selectedWarehouseReceiptForUpdate, setSelectedWarehouseReceiptForUpdate] = useState(null)
+
+  // Delete Dialog States
+  const [showDeletePaymentDialog, setShowDeletePaymentDialog] = useState(false)
+  const [paymentToDelete, setPaymentToDelete] = useState(null)
+  const [showDeleteWarehouseReceiptDialog, setShowDeleteWarehouseReceiptDialog] = useState(false)
+  const [warehouseReceiptToDelete, setWarehouseReceiptToDelete] = useState(null)
 
   useEffect(() => {
     if (open && purchaseContractId) {
@@ -81,6 +112,61 @@ const ViewPurchaseContractDialog = ({
       console.error('Fetch contract error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleUpdatePurchaseOrderStatus = async (newStatus, poId) => {
+    try {
+      const orderToUpdate = contract.purchaseOrders?.find(o => o.id === poId)
+      if (!orderToUpdate) return
+
+      if (newStatus === 'ordered') {
+        await dispatch(confirmPurchaseOrder(poId)).unwrap()
+        toast.success('Đã xác nhận đơn hàng')
+      } else if (newStatus === 'cancelled') {
+        await dispatch(cancelPurchaseOrder(poId)).unwrap()
+        toast.success('Đã hủy đơn hàng')
+      } else if (newStatus === 'draft' && orderToUpdate.status === 'ordered') {
+        await dispatch(revertPurchaseOrder(poId)).unwrap()
+        toast.success('Đã chuyển về nháp')
+      } else {
+        await dispatch(updatePurchaseOrderStatus({ id: poId, status: newStatus })).unwrap()
+        // toast.success('Cập nhật trạng thái thành công') // slice might already toast
+      }
+
+      fetchContractDetail()
+      setShowUpdatePurchaseOrderStatus(false)
+    } catch (error) {
+      console.error('Update PO status error:', error)
+    }
+  }
+
+  const handleUpdatePaymentStatus = async (status, id) => {
+    try {
+      await dispatch(updatePaymentStatus({ id, status })).unwrap()
+      toast.success('Cập nhật trạng thái phiếu chi thành công')
+      setShowUpdatePaymentStatus(false)
+      fetchContractDetail()
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const handleUpdateWarehouseReceiptStatus = async (newStatus, id) => {
+    try {
+      if (newStatus === 'cancelled') {
+        await dispatch(cancelWarehouseReceipt(id)).unwrap()
+      } else if (newStatus === 'posted') {
+        await dispatch(postWarehouseReceipt(id)).unwrap()
+      } else {
+        await dispatch(updateWarehouseReceipt({ id, data: { status: newStatus } })).unwrap()
+      }
+
+      toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
+      setShowUpdateWarehouseReceiptStatus(false)
+      fetchContractDetail()
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -399,7 +485,20 @@ const ViewPurchaseContractDialog = ({
                                         <TableCell className="text-right font-semibold">{moneyFormat(order.totalAmount)}</TableCell>
                                         <TableCell className="text-right text-green-600">{moneyFormat(order.paidAmount)}</TableCell>
                                         <TableCell>
-                                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${orderStatus?.color || 'bg-gray-100 text-gray-700'}`}>
+                                          <span
+                                            className={cn(
+                                              "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
+                                              orderStatus?.bgColor || 'bg-gray-100 text-gray-700',
+                                              ['completed', 'cancelled'].includes(order.status) ? "cursor-default opacity-80" : "cursor-pointer hover:opacity-80"
+                                            )}
+                                            onClick={() => {
+                                              if (!['completed', 'cancelled'].includes(order.status)) {
+                                                setSelectedPurchaseOrderForUpdate(order)
+                                                setShowUpdatePurchaseOrderStatus(true)
+                                              }
+                                            }}
+                                            title={!['completed', 'cancelled'].includes(order.status) ? "Bấm để cập nhật trạng thái" : ""}
+                                          >
                                             {orderStatus?.label || order.status}
                                           </span>
                                         </TableCell>
@@ -452,7 +551,20 @@ const ViewPurchaseContractDialog = ({
                                           <span className="text-muted-foreground">
                                             Trạng thái:
                                           </span>
-                                          <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${orderStatus.color}`}>
+                                          <div
+                                            className={cn(
+                                              "inline-flex items-center gap-1 rounded-full px-2 py-0.5",
+                                              orderStatus.bgColor,
+                                              ['completed', 'cancelled'].includes(order.status) ? "cursor-default opacity-80" : "cursor-pointer hover:opacity-80"
+                                            )}
+                                            onClick={() => {
+                                              if (!['completed', 'cancelled'].includes(order.status)) {
+                                                setSelectedPurchaseOrderForUpdate(order)
+                                                setShowUpdatePurchaseOrderStatus(true)
+                                              }
+                                            }}
+                                            title={!['completed', 'cancelled'].includes(order.status) ? "Bấm để cập nhật trạng thái" : ""}
+                                          >
                                             {orderStatus.icon && React.createElement(orderStatus.icon, { className: "h-3 w-3" })}
                                             <span className="truncate text-xs font-medium">
                                               {orderStatus.label}
@@ -465,6 +577,176 @@ const ViewPurchaseContractDialog = ({
                                       Ngày đặt:{' '}
                                       <span className="font-medium text-foreground">
                                         {dateFormat(order.orderDate, true)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Payment Vouchers Section */}
+                    {contract?.paymentVouchers && contract.paymentVouchers.length > 0 && (
+                      <>
+                        <Separator className="my-4" />
+                        <div className="space-y-3">
+                          <h3 className="font-semibold">Phiếu chi</h3>
+                          {isDesktop ? (
+                            <div className="overflow-x-auto rounded-lg border">
+                              <Table className="min-w-full">
+                                <TableHeader>
+                                  <TableRow className="bg-secondary text-xs">
+                                    <TableHead className="w-12">STT</TableHead>
+                                    <TableHead className="min-w-32">Mã phiếu</TableHead>
+                                    <TableHead className="min-w-28 text-right">Số tiền</TableHead>
+                                    <TableHead className="min-w-24">Trạng thái</TableHead>
+                                    <TableHead className="min-w-32">Ngày chi</TableHead>
+                                    <TableHead className="w-10"></TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {contract.paymentVouchers.map((voucher, index) => {
+                                    let statusLabel = voucher.status;
+                                    let statusColor = "bg-gray-100 text-gray-700";
+
+                                    if (voucher.status === 'draft') {
+                                      statusLabel = 'Nháp';
+                                      statusColor = 'bg-yellow-100 text-yellow-700';
+                                    } else if (voucher.status === 'completed') {
+                                      statusLabel = 'Đã chi';
+                                      statusColor = 'bg-green-100 text-green-700';
+                                    } else if (voucher.status === 'cancelled') {
+                                      statusLabel = 'Đã hủy';
+                                      statusColor = 'bg-red-100 text-red-700';
+                                    }
+
+                                    return (
+                                      <TableRow key={voucher.id}>
+                                        <TableCell>{index + 1}</TableCell>
+                                        <TableCell>
+                                          <span
+                                            className="font-medium text-blue-600 cursor-pointer hover:underline"
+                                            onClick={() => {
+                                              setSelectedPaymentId(voucher.id)
+                                              setShowViewPaymentDialog(true)
+                                            }}
+                                          >
+                                            {voucher.code}
+                                          </span>
+                                        </TableCell>
+                                        <TableCell className="text-right font-semibold">{moneyFormat(voucher.amount)}</TableCell>
+                                        <TableCell>
+                                          <span
+                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusColor} cursor-pointer hover:opacity-80`}
+                                            onClick={() => {
+                                              setSelectedPaymentForUpdate(voucher)
+                                              setShowUpdatePaymentStatus(true)
+                                            }}
+                                            title="Bấm để cập nhật trạng thái"
+                                          >
+                                            {statusLabel}
+                                          </span>
+                                        </TableCell>
+                                        <TableCell>{dateFormat(voucher.paymentDate, true)}</TableCell>
+                                        <TableCell>
+                                          {['draft', 'cancelled'].includes(voucher.status) && (
+                                            <div
+                                              className="flex items-center justify-center cursor-pointer text-red-500 hover:text-red-600 transition-colors"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                setPaymentToDelete(voucher)
+                                                setShowDeletePaymentDialog(true)
+                                              }}
+                                              title="Xóa phiếu chi"
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </div>
+                                          )}
+                                        </TableCell>
+                                      </TableRow>
+                                    )
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {contract.paymentVouchers.map((voucher, index) => {
+                                let statusLabel = voucher.status;
+                                let statusColor = "bg-gray-100 text-gray-700";
+
+                                if (voucher.status === 'draft') {
+                                  statusLabel = 'Nháp';
+                                  statusColor = 'bg-yellow-100 text-yellow-700';
+                                } else if (voucher.status === 'completed') {
+                                  statusLabel = 'Đã chi';
+                                  statusColor = 'bg-green-100 text-green-700';
+                                } else if (voucher.status === 'cancelled') {
+                                  statusLabel = 'Đã hủy';
+                                  statusColor = 'bg-red-100 text-red-700';
+                                }
+
+                                return (
+                                  <div
+                                    key={voucher.id || index}
+                                    className="border rounded-lg p-3 space-y-2 bg-card text-xs relative"
+                                  >
+                                    <div className="font-medium text-primary cursor-pointer hover:underline text-blue-600"
+                                      onClick={() => {
+                                        setSelectedPaymentId(voucher.id)
+                                        setShowViewPaymentDialog(true)
+                                      }}
+                                    >
+                                      {voucher.code}
+                                    </div>
+                                    {['draft', 'cancelled'].includes(voucher.status) && (
+                                      <div
+                                        className="absolute top-3 right-3 text-red-500 hover:text-red-600 cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setPaymentToDelete(voucher)
+                                          setShowDeletePaymentDialog(true)
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </div>
+                                    )}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <span className="text-muted-foreground">
+                                          Số tiền:{' '}
+                                        </span>
+                                        <span className="font-medium">
+                                          {moneyFormat(voucher.amount)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 border-t pt-2">
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-muted-foreground">
+                                          Trạng thái:
+                                        </span>
+                                        <div
+                                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${statusColor} cursor-pointer hover:opacity-80`}
+                                          onClick={() => {
+                                            setSelectedPaymentForUpdate(voucher)
+                                            setShowUpdatePaymentStatus(true)
+                                          }}
+                                          title="Bấm để cập nhật trạng thái"
+                                        >
+                                          <span className="truncate text-xs font-medium">
+                                            {statusLabel}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="border-t pt-2 text-muted-foreground">
+                                      Ngày chi:{' '}
+                                      <span className="font-medium text-foreground">
+                                        {dateFormat(voucher.paymentDate, true)}
                                       </span>
                                     </div>
                                   </div>
@@ -492,6 +774,7 @@ const ViewPurchaseContractDialog = ({
                                     <TableHead className="min-w-28 text-right">Tổng tiền</TableHead>
                                     <TableHead className="min-w-24">Trạng thái</TableHead>
                                     <TableHead className="min-w-32">Ngày nhập</TableHead>
+                                    <TableHead className="w-10"></TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -526,11 +809,33 @@ const ViewPurchaseContractDialog = ({
                                         </TableCell>
                                         <TableCell className="text-right font-semibold">{moneyFormat(receipt.totalAmount)}</TableCell>
                                         <TableCell>
-                                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusColor}`}>
+                                          <span
+                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusColor} cursor-pointer hover:opacity-80`}
+                                            onClick={() => {
+                                              setSelectedWarehouseReceiptForUpdate(receipt)
+                                              setShowUpdateWarehouseReceiptStatus(true)
+                                            }}
+                                            title="Bấm để cập nhật trạng thái"
+                                          >
                                             {statusLabel}
                                           </span>
                                         </TableCell>
                                         <TableCell>{dateFormat(receipt.receiptDate, true)}</TableCell>
+                                        <TableCell>
+                                          {['draft', 'cancelled'].includes(receipt.status) && (
+                                            <div
+                                              className="flex items-center justify-center cursor-pointer text-red-500 hover:text-red-600 transition-colors"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                setWarehouseReceiptToDelete(receipt)
+                                                setShowDeleteWarehouseReceiptDialog(true)
+                                              }}
+                                              title="Xóa phiếu nhập"
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </div>
+                                          )}
+                                        </TableCell>
                                       </TableRow>
                                     )
                                   })}
@@ -557,7 +862,7 @@ const ViewPurchaseContractDialog = ({
                                 return (
                                   <div
                                     key={receipt.id || index}
-                                    className="border rounded-lg p-3 space-y-2 bg-card text-xs"
+                                    className="border rounded-lg p-3 space-y-2 bg-card text-xs relative"
                                   >
                                     <div className="font-medium text-primary cursor-pointer hover:underline text-blue-600"
                                       onClick={() => {
@@ -567,6 +872,18 @@ const ViewPurchaseContractDialog = ({
                                     >
                                       {receipt.code}
                                     </div>
+                                    {['draft', 'cancelled'].includes(receipt.status) && (
+                                      <div
+                                        className="absolute top-3 right-3 text-red-500 hover:text-red-600 cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setWarehouseReceiptToDelete(receipt)
+                                          setShowDeleteWarehouseReceiptDialog(true)
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </div>
+                                    )}
                                     <div className="grid grid-cols-2 gap-2">
                                       <div>
                                         <span className="text-muted-foreground">
@@ -582,7 +899,14 @@ const ViewPurchaseContractDialog = ({
                                         <span className="text-muted-foreground">
                                           Trạng thái:
                                         </span>
-                                        <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${statusColor}`}>
+                                        <div
+                                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${statusColor} cursor-pointer hover:opacity-80`}
+                                          onClick={() => {
+                                            setSelectedWarehouseReceiptForUpdate(receipt)
+                                            setShowUpdateWarehouseReceiptStatus(true)
+                                          }}
+                                          title="Bấm để cập nhật trạng thái"
+                                        >
                                           <span className="truncate text-xs font-medium">
                                             {statusLabel}
                                           </span>
@@ -593,134 +917,6 @@ const ViewPurchaseContractDialog = ({
                                       Ngày nhập:{' '}
                                       <span className="font-medium text-foreground">
                                         {dateFormat(receipt.receiptDate, true)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-
-                    {/* Payment Vouchers Section */}
-                    {contract?.paymentVouchers && contract.paymentVouchers.length > 0 && (
-                      <>
-                        <Separator className="my-4" />
-                        <div className="space-y-3">
-                          <h3 className="font-semibold">Phiếu chi</h3>
-                          {isDesktop ? (
-                            <div className="overflow-x-auto rounded-lg border">
-                              <Table className="min-w-full">
-                                <TableHeader>
-                                  <TableRow className="bg-secondary text-xs">
-                                    <TableHead className="w-12">STT</TableHead>
-                                    <TableHead className="min-w-32">Mã phiếu</TableHead>
-                                    <TableHead className="min-w-28 text-right">Số tiền</TableHead>
-                                    <TableHead className="min-w-24">Trạng thái</TableHead>
-                                    <TableHead className="min-w-32">Ngày chi</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {contract.paymentVouchers.map((voucher, index) => {
-                                    let statusLabel = voucher.status;
-                                    let statusColor = "bg-gray-100 text-gray-700";
-
-                                    if (voucher.status === 'draft') {
-                                      statusLabel = 'Nháp';
-                                      statusColor = 'bg-yellow-100 text-yellow-700';
-                                    } else if (voucher.status === 'posted') {
-                                      statusLabel = 'Đã ghi sổ';
-                                      statusColor = 'bg-green-100 text-green-700';
-                                    } else if (voucher.status === 'cancelled') {
-                                      statusLabel = 'Đã hủy';
-                                      statusColor = 'bg-red-100 text-red-700';
-                                    }
-
-                                    return (
-                                      <TableRow key={voucher.id}>
-                                        <TableCell>{index + 1}</TableCell>
-                                        <TableCell>
-                                          <span
-                                            className="font-medium text-blue-600 cursor-pointer hover:underline"
-                                            onClick={() => {
-                                              setSelectedPaymentId(voucher.id)
-                                              setShowViewPaymentDialog(true)
-                                            }}
-                                          >
-                                            {voucher.code}
-                                          </span>
-                                        </TableCell>
-                                        <TableCell className="text-right font-semibold">{moneyFormat(voucher.amount)}</TableCell>
-                                        <TableCell>
-                                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusColor}`}>
-                                            {statusLabel}
-                                          </span>
-                                        </TableCell>
-                                        <TableCell>{dateFormat(voucher.paymentDate, true)}</TableCell>
-                                      </TableRow>
-                                    )
-                                  })}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              {contract.paymentVouchers.map((voucher, index) => {
-                                let statusLabel = voucher.status;
-                                let statusColor = "bg-gray-100 text-gray-700";
-
-                                if (voucher.status === 'draft') {
-                                  statusLabel = 'Nháp';
-                                  statusColor = 'bg-yellow-100 text-yellow-700';
-                                } else if (voucher.status === 'posted') {
-                                  statusLabel = 'Đã ghi sổ';
-                                  statusColor = 'bg-green-100 text-green-700';
-                                } else if (voucher.status === 'cancelled') {
-                                  statusLabel = 'Đã hủy';
-                                  statusColor = 'bg-red-100 text-red-700';
-                                }
-
-                                return (
-                                  <div
-                                    key={voucher.id || index}
-                                    className="border rounded-lg p-3 space-y-2 bg-card text-xs"
-                                  >
-                                    <div className="font-medium text-primary cursor-pointer hover:underline text-blue-600"
-                                      onClick={() => {
-                                        setSelectedPaymentId(voucher.id)
-                                        setShowViewPaymentDialog(true)
-                                      }}
-                                    >
-                                      {voucher.code}
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div>
-                                        <span className="text-muted-foreground">
-                                          Số tiền:{' '}
-                                        </span>
-                                        <span className="font-medium">
-                                          {moneyFormat(voucher.amount)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 border-t pt-2">
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-muted-foreground">
-                                          Trạng thái:
-                                        </span>
-                                        <div className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${statusColor}`}>
-                                          <span className="truncate text-xs font-medium">
-                                            {statusLabel}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="border-t pt-2 text-muted-foreground">
-                                      Ngày chi:{' '}
-                                      <span className="font-medium text-foreground">
-                                        {dateFormat(voucher.paymentDate, true)}
                                       </span>
                                     </div>
                                   </div>
@@ -900,6 +1096,82 @@ const ViewPurchaseContractDialog = ({
             showTrigger={false}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
+          />
+        )}
+
+        {/* Update Purchase Order Status Dialog */}
+        {selectedPurchaseOrderForUpdate && (
+          <UpdatePurchaseOrderStatusDialog
+            open={showUpdatePurchaseOrderStatus}
+            onOpenChange={setShowUpdatePurchaseOrderStatus}
+            purchaseOrderId={selectedPurchaseOrderForUpdate.id}
+            currentStatus={selectedPurchaseOrderForUpdate.status}
+            statuses={purchaseOrderStatuses}
+            onSubmit={handleUpdatePurchaseOrderStatus}
+            contentClassName="!z-[100060]"
+            overlayClassName="z-[100059]"
+            selectContentClassName="z-[100065]"
+          />
+        )}
+
+        {selectedPaymentForUpdate && (
+          <UpdatePaymentStatusDialog
+            open={showUpdatePaymentStatus}
+            onOpenChange={setShowUpdatePaymentStatus}
+            paymentId={selectedPaymentForUpdate.code || selectedPaymentForUpdate.id}
+            currentStatus={selectedPaymentForUpdate.status}
+            statuses={paymentStatus}
+            onSubmit={(status) => handleUpdatePaymentStatus(status, selectedPaymentForUpdate.id)}
+            contentClassName="!z-[100060]"
+            overlayClassName="z-[100059]"
+            selectContentClassName="z-[100065]"
+          />
+        )}
+
+        {/* Delete Payment Dialog */}
+        {paymentToDelete && (
+          <DeletePaymentDialog
+            open={showDeletePaymentDialog}
+            onOpenChange={setShowDeletePaymentDialog}
+            payment={paymentToDelete}
+            showTrigger={false}
+            onSuccess={() => {
+              setShowDeletePaymentDialog(false)
+              fetchContractDetail()
+            }}
+            contentClassName="!z-[100060]"
+            overlayClassName="z-[100059]"
+          />
+        )}
+
+        {/* Delete Warehouse Receipt Dialog */}
+        {warehouseReceiptToDelete && (
+          <DeleteWarehouseReceiptDialog
+            open={showDeleteWarehouseReceiptDialog}
+            onOpenChange={setShowDeleteWarehouseReceiptDialog}
+            receipt={warehouseReceiptToDelete}
+            showTrigger={false}
+            onSuccess={() => {
+              setShowDeleteWarehouseReceiptDialog(false)
+              fetchContractDetail()
+            }}
+            contentClassName="!z-[100060]"
+            overlayClassName="z-[100059]"
+          />
+        )}
+
+        {selectedWarehouseReceiptForUpdate && (
+          <UpdateWarehouseReceiptStatusDialog
+            open={showUpdateWarehouseReceiptStatus}
+            onOpenChange={setShowUpdateWarehouseReceiptStatus}
+            receiptId={selectedWarehouseReceiptForUpdate.id}
+            receiptCode={selectedWarehouseReceiptForUpdate.code}
+            currentStatus={selectedWarehouseReceiptForUpdate.status}
+            statuses={warehouseReceiptStatuses}
+            onSubmit={handleUpdateWarehouseReceiptStatus}
+            contentClassName="!z-[100060]"
+            overlayClassName="z-[100059]"
+            selectContentClassName="z-[100065]"
           />
         )}
       </DialogContent>

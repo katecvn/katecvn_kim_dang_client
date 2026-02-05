@@ -13,24 +13,28 @@ const purchaseOrderStatuses = [
     label: 'Chờ xác nhận',
     icon: Circle,
     color: 'text-gray-500',
+    bgColor: 'bg-gray-100 text-gray-700',
   },
   {
     value: 'ordered',
     label: 'Đã đặt',
     icon: CheckCircle2,
     color: 'text-blue-500',
+    bgColor: 'bg-blue-100 text-blue-700',
   },
   {
     value: 'completed',
     label: 'Hoàn thành',
     icon: CheckCircle2,
     color: 'text-green-500',
+    bgColor: 'bg-green-100 text-green-700',
   },
   {
     value: 'cancelled',
     label: 'Đã hủy',
     icon: XCircle,
     color: 'text-red-500',
+    bgColor: 'bg-red-100 text-red-700',
   },
 ]
 

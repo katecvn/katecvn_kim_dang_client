@@ -139,12 +139,6 @@ const CreatePurchaseOrderPaymentDialog = ({
 
     try {
       await dispatch(createPayment(dataToSend)).unwrap()
-      dispatch(
-        getPurchaseOrders({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      )
 
       if (onSuccess) {
         onSuccess()

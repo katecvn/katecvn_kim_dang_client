@@ -30,6 +30,7 @@ const UpdateWarehouseReceiptStatusDialog = ({
   onSubmit, // Handler function to call on save
   contentClassName,
   overlayClassName,
+  selectContentClassName,
 }) => {
   const current = useMemo(
     () => statuses.find((s) => s.value === currentStatus),
@@ -118,7 +119,7 @@ const UpdateWarehouseReceiptStatusDialog = ({
               </SelectValue>
             </SelectTrigger>
 
-            <SelectContent position="popper" className="z-[10010]">
+            <SelectContent position="popper" className={cn("z-[10010]", selectContentClassName)}>
               {statuses.filter(s => {
                 if (currentStatus === 'posted') {
                   // Nếu ở trạng thái post thì chì có thể hủy

@@ -30,6 +30,7 @@ const UpdateInvoiceStatusDialog = ({
   onSubmit,
   className,
   overlayClassName,
+  selectContentClassName,
 }) => {
   const current = useMemo(
     () => statuses.find((s) => s.value === currentStatus),
@@ -148,7 +149,7 @@ const UpdateInvoiceStatusDialog = ({
                 </SelectValue>
               </SelectTrigger>
 
-              <SelectContent position="popper" className="z-[10004]">
+              <SelectContent position="popper" className={cn("z-[10004]", selectContentClassName)}>
                 {filteredStatuses.map((s) => (
                   <SelectItem
                     key={s.value}

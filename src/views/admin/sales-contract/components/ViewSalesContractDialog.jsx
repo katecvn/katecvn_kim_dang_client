@@ -50,6 +50,18 @@ import {
 } from '@/components/ui/select'
 import { updateInvoiceStatus } from '@/stores/InvoiceSlice'
 import ViewWarehouseReceiptDialog from '../../warehouse-receipt/components/ViewWarehouseReceiptDialog'
+import {
+  updateWarehouseReceipt,
+  cancelWarehouseReceipt,
+  postWarehouseReceipt,
+} from '@/stores/WarehouseReceiptSlice'
+import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/components/UpdateWarehouseReceiptStatusDialog'
+import UpdateInvoiceStatusDialog from '../../invoice/components/UpdateInvoiceStatusDialog'
+import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components/DeleteWarehouseReceiptDialog'
+import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
+import { IconPencil, IconCheck } from '@tabler/icons-react'
+import { Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const ViewSalesContractDialog = ({
   open,
@@ -63,15 +75,25 @@ const ViewSalesContractDialog = ({
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const dispatch = useDispatch()
   const [contract, setContract] = useState({})
+  console.log(contract)
   const [loading, setLoading] = useState(false)
   const [viewInvoiceOpen, setViewInvoiceOpen] = useState(false)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
   const [selectedInvoiceIdForUpdate, setSelectedInvoiceIdForUpdate] = useState(null)
+  // Invoice Update Logic
   const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
+  const [invoiceToUpdateStatus, setInvoiceToUpdateStatus] = useState(null)
+  const [showUpdateInvoiceStatusDialog, setShowUpdateInvoiceStatusDialog] = useState(false)
 
   // View Warehouse Receipt Logic
   const [showViewWarehouseReceiptDialog, setShowViewWarehouseReceiptDialog] = useState(false)
   const [selectedWarehouseReceiptId, setSelectedWarehouseReceiptId] = useState(null)
+
+  // Update/Delete Warehouse Receipt Logic
+  const [selectedWarehouseReceipt, setSelectedWarehouseReceipt] = useState(null)
+  const [showUpdateWarehouseReceiptStatus, setShowUpdateWarehouseReceiptStatus] = useState(false)
+  const [warehouseReceiptToDelete, setWarehouseReceiptToDelete] = useState(null)
+  const [showDeleteWarehouseReceiptDialog, setShowDeleteWarehouseReceiptDialog] = useState(false)
 
   // Liquidation State
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
@@ -126,6 +148,34 @@ const ViewSalesContractDialog = ({
     } catch (error) {
       console.log('Update status error: ', error)
       toast.error('Cập nhật trạng thái thất bại')
+    }
+  }
+
+  // Warehouse Receipt Handlers
+  const handleUpdateWarehouseReceiptStatus = async (newStatus, id) => {
+    try {
+      if (newStatus === 'cancelled') {
+        await dispatch(cancelWarehouseReceipt(id)).unwrap()
+      } else if (newStatus === 'posted') {
+        await dispatch(postWarehouseReceipt(id)).unwrap()
+      } else {
+        await dispatch(updateWarehouseReceipt({ id, data: { status: newStatus } })).unwrap()
+      }
+
+      toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
+      fetchContractDetail()
+    } catch (error) {
+      console.error(error)
+      // toast.error('Cập nhật trạng thái phiếu xuất kho thất bại')
+    }
+  }
+
+  const getWarehouseReceiptStatusColor = (statusValue) => {
+    switch (statusValue) {
+      case 'draft': return 'bg-yellow-100 text-yellow-700'
+      case 'posted': return 'bg-green-100 text-green-700'
+      case 'cancelled': return 'bg-red-100 text-red-700'
+      default: return 'bg-gray-100 text-gray-700'
     }
   }
 
@@ -595,42 +645,35 @@ const ViewSalesContractDialog = ({
                                             {moneyFormat(invoice.paidAmount || 0)}
                                           </TableCell>
                                           <TableCell>
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                              <Select
-                                                value={invoice.status}
-                                                onValueChange={(val) => handleUpdateStatus(val, invoice.id)}
-                                                disabled={['delivered', 'rejected'].includes(invoice.status) || invoice.paymentStatus === 'paid'}
-                                              >
-                                                <SelectTrigger className="h-7 w-[140px] text-xs px-2 bg-transparent border-input focus:ring-0">
-                                                  <SelectValue placeholder="Chọn trạng thái">
-                                                    {(() => {
-                                                      const sObj = invoiceStatuses.find(s => s.value === invoice.status)
-                                                      return sObj ? (
-                                                        <div className={`flex items-center gap-2 ${sObj.color}`}>
-                                                          {sObj.icon && React.createElement(sObj.icon, { className: "h-3 w-3" })}
-                                                          <span className="truncate text-xs font-medium">
-                                                            {sObj.label}
-                                                          </span>
-                                                        </div>
-                                                      ) : invoice.status
-                                                    })()}
-                                                  </SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent position="popper" align="start" className="w-[140px] z-[100005]">
-                                                  {getFilteredStatuses(invoice).map((status) => (
-                                                    <SelectItem
-                                                      key={status.value}
-                                                      value={status.value}
-                                                      className="text-xs cursor-pointer"
-                                                    >
-                                                      <div className={`flex items-center gap-2 ${status.color}`}>
-                                                        {status.icon && React.createElement(status.icon, { className: "h-3 w-3" })}
-                                                        <span>{status.label}</span>
-                                                      </div>
-                                                    </SelectItem>
-                                                  ))}
-                                                </SelectContent>
-                                              </Select>
+                                            <div
+                                              className="cursor-pointer"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                // Check if status update is allowed
+                                                if (['delivered', 'rejected'].includes(invoice.status) || invoice.paymentStatus === 'paid') {
+                                                  return
+                                                }
+                                                setInvoiceToUpdateStatus(invoice)
+                                                setShowUpdateInvoiceStatusDialog(true)
+                                              }}
+                                            >
+                                              {(() => {
+                                                const sObj = invoiceStatuses.find(s => s.value === invoice.status)
+                                                // Determine if editable
+                                                const isEditable = !(['delivered', 'rejected'].includes(invoice.status) || invoice.paymentStatus === 'paid')
+
+                                                return sObj ? (
+                                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium border ${sObj.color} ${isEditable ? 'hover:opacity-80' : ''}`}>
+                                                    {sObj.icon && React.createElement(sObj.icon, { className: "h-3 w-3" })}
+                                                    {sObj.label}
+                                                    {isEditable && <IconPencil className="h-3 w-3 ml-0.5" />}
+                                                  </span>
+                                                ) : (
+                                                  <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                                                    {invoice.status}
+                                                  </span>
+                                                )
+                                              })()}
                                             </div>
                                           </TableCell>
                                           <TableCell>
@@ -818,22 +861,56 @@ const ViewSalesContractDialog = ({
 
                                       return (
                                         <TableRow key={receipt.id || index}>
-                                          <TableCell
-                                            className="font-medium text-primary cursor-pointer hover:underline text-blue-600"
-                                            onClick={() => {
-                                              setSelectedWarehouseReceiptId(receipt.id)
-                                              setShowViewWarehouseReceiptDialog(true)
-                                            }}
-                                          >
-                                            {receipt.code}
+                                          <TableCell>
+                                            <div className="flex items-center gap-2">
+                                              <span
+                                                className="font-medium text-blue-600 cursor-pointer hover:underline"
+                                                onClick={() => {
+                                                  setSelectedWarehouseReceiptId(receipt.id)
+                                                  setShowViewWarehouseReceiptDialog(true)
+                                                }}
+                                              >
+                                                {receipt.code}
+                                              </span>
+                                              {['draft', 'cancelled'].includes(receipt.status) && (
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setWarehouseReceiptToDelete(receipt)
+                                                    setShowDeleteWarehouseReceiptDialog(true)
+                                                  }}
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              )}
+                                            </div>
                                           </TableCell>
                                           <TableCell className="text-right">
                                             {moneyFormat(receipt.totalAmount)}
                                           </TableCell>
                                           <TableCell>
-                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColor}`}>
-                                              {statusLabel}
-                                            </span>
+                                            <div
+                                              className="cursor-pointer"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                setSelectedWarehouseReceipt(receipt)
+                                                setShowUpdateWarehouseReceiptStatus(true)
+                                              }}
+                                            >
+                                              <span
+                                                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
+                                              >
+                                                {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
+                                                {receipt.status === 'draft'
+                                                  ? 'Nháp'
+                                                  : receipt.status === 'posted'
+                                                    ? 'Đã ghi sổ'
+                                                    : receipt.status === 'cancelled' ? 'Đã hủy' : receipt.status}
+                                              </span>
+                                            </div>
                                           </TableCell>
                                           <TableCell className="text-sm">
                                             {dateFormat(receipt.createdAt, true)}
@@ -1121,6 +1198,60 @@ const ViewSalesContractDialog = ({
               showTrigger={false}
               contentClassName="z-[100020] md:z-[100020]"
               overlayClassName="z-[100019] md:z-[100019]"
+            />
+          )}
+
+          {/* Update Invoice Status Dialog */}
+          {invoiceToUpdateStatus && (
+            <UpdateInvoiceStatusDialog
+              open={showUpdateInvoiceStatusDialog}
+              onOpenChange={setShowUpdateInvoiceStatusDialog}
+              invoiceId={invoiceToUpdateStatus.id}
+              currentStatus={invoiceToUpdateStatus.status}
+              statuses={invoiceStatuses}
+              paymentStatus={invoiceToUpdateStatus.paymentStatus}
+              onSuccess={() => {
+                fetchContractDetail()
+                // If the dialog doesn't close automatically on success, close it here
+                setShowUpdateInvoiceStatusDialog(false)
+              }}
+              contentClassName="z-[100030]"
+              className="z-[100030]"
+              overlayClassName="z-[100029]"
+              selectContentClassName="z-[100040]"
+              title={`Cập nhật trạng thái hóa đơn: ${invoiceToUpdateStatus.code}`}
+            />
+          )}
+
+          {/* Update Warehouse Receipt Status Dialog */}
+          {selectedWarehouseReceipt && (
+            <UpdateWarehouseReceiptStatusDialog
+              open={showUpdateWarehouseReceiptStatus}
+              onOpenChange={setShowUpdateWarehouseReceiptStatus}
+              receiptId={selectedWarehouseReceipt.id}
+              receiptCode={selectedWarehouseReceipt.code}
+              currentStatus={selectedWarehouseReceipt.status}
+              statuses={warehouseReceiptStatuses}
+              onSubmit={handleUpdateWarehouseReceiptStatus}
+              contentClassName="z-[100020]"
+              overlayClassName="z-[100019]"
+              selectContentClassName="z-[100050]"
+            />
+          )}
+
+          {/* Delete Warehouse Receipt Dialog */}
+          {warehouseReceiptToDelete && (
+            <DeleteWarehouseReceiptDialog
+              open={showDeleteWarehouseReceiptDialog}
+              onOpenChange={setShowDeleteWarehouseReceiptDialog}
+              receipt={warehouseReceiptToDelete}
+              showTrigger={false}
+              onSuccess={() => {
+                setShowDeleteWarehouseReceiptDialog(false)
+                fetchContractDetail()
+              }}
+              contentClassName="z-[100020]"
+              overlayClassName="z-[100019]"
             />
           )}
         </DialogContent>

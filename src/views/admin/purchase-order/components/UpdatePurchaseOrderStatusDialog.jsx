@@ -27,6 +27,7 @@ const UpdatePurchaseOrderStatusDialog = ({
   onSubmit,
   contentClassName,
   overlayClassName,
+  selectContentClassName,
 }) => {
   const filteredStatuses = useMemo(
     () => statuses.filter((s) => s.value !== 'completed'),
@@ -47,8 +48,8 @@ const UpdatePurchaseOrderStatusDialog = ({
   }, [open, currentStatus])
 
   const selectedStatusObj = useMemo(
-    () => filteredStatuses.find((s) => s.value === status),
-    [filteredStatuses, status],
+    () => statuses.find((s) => s.value === status),
+    [statuses, status],
   )
 
   const handleSave = async () => {
@@ -110,7 +111,7 @@ const UpdatePurchaseOrderStatusDialog = ({
               </SelectValue>
             </SelectTrigger>
 
-            <SelectContent className="z-[100021]">
+            <SelectContent className={cn("z-[100021]", selectContentClassName)}>
               {filteredStatuses.map((s) => (
                 <SelectItem
                   key={s.value}

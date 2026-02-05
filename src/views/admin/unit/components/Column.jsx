@@ -5,6 +5,21 @@ import { normalizeText } from '@/utils/normalize-text'
 
 export const columns = [
   {
+    accessorKey: 'code',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Mã đơn vị" />
+    ),
+    cell: ({ row }) => <div className="w-24">{row.getValue('code')}</div>,
+    enableSorting: true,
+    enableHiding: true,
+    filterFn: (row, id, value) => {
+      const code = normalizeText(row.original.code)
+      const searchValue = normalizeText(value)
+
+      return code.includes(searchValue)
+    },
+  },
+  {
     accessorKey: 'name',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Tên đơn vị" />

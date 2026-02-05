@@ -139,7 +139,10 @@ const UpdatePurchaseOrderStatusDialog = ({
           >
             Hủy
           </Button>
-          <Button type="button" onClick={handleSave} disabled={loading}>
+          <Button type="button" onClick={(e) => {
+            e.stopPropagation()
+            handleSave()
+          }} disabled={loading}>
             {loading ? 'Đang cập nhật...' : 'Cập nhật'}
           </Button>
         </DialogFooter>

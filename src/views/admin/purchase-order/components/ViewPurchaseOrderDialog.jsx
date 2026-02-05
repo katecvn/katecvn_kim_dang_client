@@ -62,6 +62,7 @@ import PrintPurchaseOrderView from './PrintPurchaseOrderView'
 import MobilePurchaseOrderActions from './MobilePurchaseOrderActions'
 import ConfirmActionButton from '@/components/custom/ConfirmActionButton'
 import UpdatePaymentStatusDialog from '../../payment/components/UpdatePaymentStatusDialog'
+import { DeletePaymentDialog } from '../../payment/components/DeletePaymentDialog'
 import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/components/UpdateWarehouseReceiptStatusDialog'
 import { updateReceiptStatus } from '@/stores/ReceiptSlice'
 import { updateWarehouseReceipt, postWarehouseReceipt, cancelWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
@@ -111,6 +112,10 @@ const ViewPurchaseOrderDialog = ({
 
   const [showUpdateWarehouseReceiptStatus, setShowUpdateWarehouseReceiptStatus] = useState(false)
   const [selectedWarehouseReceiptForUpdate, setSelectedWarehouseReceiptForUpdate] = useState(null)
+
+  // Delete Payment Dialog State
+  const [showDeletePaymentDialog, setShowDeletePaymentDialog] = useState(false)
+  const [paymentToDelete, setPaymentToDelete] = useState(null)
 
   // Fetch Data
   const fetchData = async () => {
@@ -719,12 +724,9 @@ const ViewPurchaseOrderDialog = ({
                                           size="icon"
                                           className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                                           onClick={(e) => {
-                                            // TODO: Implement delete logic or wire up delete dialog
-                                            // For now, just visually show the button matching UI
-                                            // setSelectedPaymentDetail(voucher)
-                                            // setShowDeletePaymentDialog(true) 
                                             e.stopPropagation()
-                                            toast.info("Tính năng xóa đang phát triển")
+                                            setPaymentToDelete(voucher)
+                                            setShowDeletePaymentDialog(true)
                                           }}
                                         >
                                           <Trash2 className="h-4 w-4" />
@@ -1339,6 +1341,23 @@ const ViewPurchaseOrderDialog = ({
           currentStatus={selectedPaymentForUpdate.status}
           statuses={paymentStatus}
           onSubmit={(status) => handleUpdatePaymentStatus(status, selectedPaymentForUpdate.id)}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+          selectContentClassName="z-[100025]"
+        />
+      )}
+
+      {/* Delete Payment Dialog */}
+      {paymentToDelete && (
+        <DeletePaymentDialog
+          open={showDeletePaymentDialog}
+          onOpenChange={setShowDeletePaymentDialog}
+          payment={paymentToDelete}
+          showTrigger={false}
+          onSuccess={() => {
+            setShowDeletePaymentDialog(false)
+            fetchData()
+          }}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
         />

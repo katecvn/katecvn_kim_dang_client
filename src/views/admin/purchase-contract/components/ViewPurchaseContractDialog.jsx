@@ -244,7 +244,9 @@ const ViewPurchaseContractDialog = ({
     : 0
 
   // Aggregate items from all purchase orders if direct items are missing
-  const items = contract?.items || contract?.purchaseOrders?.flatMap(po => po.items) || []
+  const items = (contract?.items && contract.items.length > 0)
+    ? contract.items
+    : (contract?.purchaseOrders?.flatMap(po => po.items.map(item => ({ ...item, purchaseOrderId: po.id }))) || [])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
@@ -853,24 +855,24 @@ const ViewPurchaseContractDialog = ({
 
                     {/* Warehouse Receipts Section */}
                     <>
-                        <Separator className="my-4" />
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-semibold">Phiếu nhập kho</h3>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 gap-1"
-                              onClick={handleCreateWarehouseReceipt}
-                            >
-                              <IconPlus className="h-4 w-4 text-orange-600" />
-                              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                                Thêm
-                              </span>
-                            </Button>
-                          </div>
-                          {contract?.warehouseReceipts && contract.warehouseReceipts.length > 0 ? (
-                             isDesktop ? (
+                      <Separator className="my-4" />
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold">Phiếu nhập kho</h3>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1"
+                            onClick={handleCreateWarehouseReceipt}
+                          >
+                            <IconPlus className="h-4 w-4 text-orange-600" />
+                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                              Thêm
+                            </span>
+                          </Button>
+                        </div>
+                        {contract?.warehouseReceipts && contract.warehouseReceipts.length > 0 ? (
+                          isDesktop ? (
                             <div className="overflow-x-auto rounded-lg border">
                               <Table className="min-w-full">
                                 <TableHeader>
@@ -1039,12 +1041,12 @@ const ViewPurchaseContractDialog = ({
                               })}
                             </div>
                           )
-                          ) : (
-                             <div className="text-center text-sm text-muted-foreground italic py-2">
-                               Chưa có dữ liệu phiếu nhập kho
-                             </div>
-                          )}
-                        </div>
+                        ) : (
+                          <div className="text-center text-sm text-muted-foreground italic py-2">
+                            Chưa có dữ liệu phiếu nhập kho
+                          </div>
+                        )}
+                      </div>
                     </>
                   </div>
                 </div>
@@ -1284,8 +1286,8 @@ const ViewPurchaseContractDialog = ({
             open={showCreatePaymentDialog}
             onOpenChange={setShowCreatePaymentDialog}
             purchaseOrder={contract?.purchaseOrders?.[0]}
+            supplier={contract?.supplier}
             onSuccess={() => {
-              setShowCreatePaymentDialog(false)
               fetchContractDetail()
             }}
             contentClassName="!z-[100060]"
@@ -1297,8 +1299,7 @@ const ViewPurchaseContractDialog = ({
           <ConfirmImportWarehouseDialog
             open={showConfirmImportDialog}
             onOpenChange={setShowConfirmImportDialog}
-            purchaseContract={contract}
-            purchaseOrder={contract?.purchaseOrders?.[0]}
+            purchaseContractId={contract?.id}
             onConfirm={handleConfirmCreateWarehouseReceipt}
             loading={warehouseLoading}
             contentClassName="!z-[100060]"

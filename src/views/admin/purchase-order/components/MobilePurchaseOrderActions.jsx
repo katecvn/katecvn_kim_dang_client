@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/sheet'
 import { PlusIcon } from '@radix-ui/react-icons'
 import { IconPlus } from '@tabler/icons-react'
-import { Pencil, Trash2, Printer } from 'lucide-react'
+import { Pencil, Trash2, Printer, CreditCard, PackagePlus } from 'lucide-react'
 import { toast } from 'sonner'
 import ConfirmActionButton from '@/components/custom/ConfirmActionButton'
 import { Separator } from '@/components/ui/separator'
@@ -75,11 +75,11 @@ const MobilePurchaseOrderActions = ({
                   handleAction(handleCreatePayment)
                 }}
               >
-                <IconPlus className="h-5 w-5" />
+                <CreditCard className="h-5 w-5" />
                 <span className="text-xs">Tạo Phiếu Chi</span>
               </Button>
               <Button
-                className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 flex-col gap-1"
+                className="bg-blue-600 text-white hover:bg-blue-700 h-auto py-3 flex-col gap-1"
                 onClick={() => {
                   if (!['ordered', 'partial'].includes(purchaseOrder.status)) {
                     toast.warning('Chỉ tạo phiếu nhập kho khi đơn đã đặt')
@@ -88,7 +88,7 @@ const MobilePurchaseOrderActions = ({
                   handleAction(handleCreateImport)
                 }}
               >
-                <IconPlus className="h-5 w-5" />
+                <PackagePlus className="h-5 w-5" />
                 <span className="text-xs">Tạo Phiếu Nhập Kho</span>
               </Button>
             </div>
@@ -101,7 +101,7 @@ const MobilePurchaseOrderActions = ({
               <div className="grid grid-cols-1 gap-2">
                 <Button
                   variant="outline"
-                  className="justify-start text-blue-600 border-blue-200 hover:bg-blue-50"
+                  className="justify-start text-blue-600 border-blue-600 hover:bg-blue-50"
                   onClick={() => handleAction(handlePrintOrder)}
                 >
                   <Printer className="mr-2 h-4 w-4" />
@@ -115,8 +115,7 @@ const MobilePurchaseOrderActions = ({
             {/* Edit/Delete Actions */}
             <div className="grid grid-cols-2 gap-3">
               <Button
-                variant="outline"
-                className="border-primary text-primary hover:bg-primary/10"
+                className="bg-orange-600 text-white hover:bg-orange-700"
                 onClick={() => {
                   if (purchaseOrder.status !== 'draft') {
                     toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái nháp')

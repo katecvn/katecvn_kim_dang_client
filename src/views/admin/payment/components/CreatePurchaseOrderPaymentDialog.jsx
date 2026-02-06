@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
+import { toast } from 'sonner'
 
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -62,6 +63,7 @@ const CreatePurchaseOrderPaymentDialog = ({
   contentClassName,
   overlayClassName,
   onSuccess,
+  supplier: propSupplier,
   ...props
 }) => {
   const dispatch = useDispatch()
@@ -69,7 +71,7 @@ const CreatePurchaseOrderPaymentDialog = ({
   const setting = useSelector((state) => state.setting.setting)
   const banks = setting?.payload?.banks || []
 
-  const supplier = purchaseOrder?.supplier
+  const supplier = propSupplier || purchaseOrder?.supplier
   const items = purchaseOrder?.items || []
 
   const totalAmount = parseFloat(purchaseOrder.totalAmount || 0)
@@ -147,6 +149,7 @@ const CreatePurchaseOrderPaymentDialog = ({
       onOpenChange?.(false)
     } catch (error) {
       console.log('Submit error: ', error)
+      toast.error('Có lỗi xảy ra khi tạo phiếu chi')
     }
   }
 

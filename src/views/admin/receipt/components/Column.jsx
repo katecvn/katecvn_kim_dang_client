@@ -61,7 +61,7 @@ export const columns = [
             />
           )}
           <div
-            className={cn("w-28 cursor-pointer text-primary hover:underline")}
+            className={cn("cursor-pointer font-medium text-blue-600 hover:underline")}
             onClick={handleViewReceipt}
           >
             <div className="flex items-center gap-2">

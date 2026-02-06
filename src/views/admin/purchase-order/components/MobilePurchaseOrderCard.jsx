@@ -5,8 +5,17 @@ import { Button } from '@/components/custom/Button'
 import { moneyFormat } from '@/utils/money-format'
 import { dateFormat } from '@/utils/date-format'
 import { cn } from '@/lib/utils'
-import { ChevronDown, MoreVertical, Eye, Pencil, Trash2, Phone, CreditCard } from 'lucide-react'
-import { IconPrinter, IconFileText, IconPackageImport, IconCreditCard, IconCircleX } from '@tabler/icons-react'
+import { ChevronDown, MoreVertical, Phone } from 'lucide-react'
+import {
+  IconFileTypePdf,
+  IconPackageImport,
+  IconCreditCard,
+  IconCircleX,
+  IconPencil,
+  IconTrash,
+  IconEye,
+  IconFileText
+} from '@tabler/icons-react'
 import { useState, useMemo } from 'react'
 import {
   DropdownMenu,
@@ -296,38 +305,38 @@ const MobilePurchaseOrderCard = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <Can permission="GET_PURCHASE_ORDER">
-                <DropdownMenuItem onClick={() => setShowViewDialog(true)}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  Xem chi tiết
+                <DropdownMenuItem onClick={() => setShowViewDialog(true)} className="text-slate-600">
+                  <IconEye className="mr-2 h-4 w-4" />
+                  Xem
                 </DropdownMenuItem>
               </Can>
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem onClick={() => setShowPrintOrder(true)}>
-                <IconPrinter className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => setShowPrintOrder(true)} className="text-purple-600">
+                <IconFileTypePdf className="mr-2 h-4 w-4" />
                 In đơn hàng
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={handlePrintContract}>
+              {/* <DropdownMenuItem onClick={handlePrintContract}>
                 <IconFileText className="mr-2 h-4 w-4" />
                 In hợp đồng
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
 
               <DropdownMenuSeparator />
 
               {canImportWarehouse && (
                 <Can permission="CREATE_WAREHOUSE_RECEIPT">
-                  <DropdownMenuItem onClick={() => setShowImportWarehouseDialog(true)}>
+                  <DropdownMenuItem onClick={() => setShowImportWarehouseDialog(true)} className="text-orange-600">
                     <IconPackageImport className="mr-2 h-4 w-4" />
-                    Tạo phiếu nhập kho
+                    Tạo phiếu nhập
                   </DropdownMenuItem>
                 </Can>
               )}
 
               {canPayment && (
                 <Can permission="CREATE_PAYMENT">
-                  <DropdownMenuItem onClick={() => setShowPaymentDialog(true)}>
+                  <DropdownMenuItem onClick={() => setShowPaymentDialog(true)} className="text-emerald-600">
                     <IconCreditCard className="mr-2 h-4 w-4" />
                     Tạo phiếu chi
                   </DropdownMenuItem>
@@ -339,7 +348,7 @@ const MobilePurchaseOrderCard = ({
               {canEdit && (
                 <Can permission="UPDATE_PURCHASE_ORDER">
                   <DropdownMenuItem onClick={() => setShowUpdateDialog(true)} className="text-blue-600">
-                    <Pencil className="mr-2 h-4 w-4" />
+                    <IconPencil className="mr-2 h-4 w-4" />
                     Sửa
                   </DropdownMenuItem>
                 </Can>
@@ -359,9 +368,9 @@ const MobilePurchaseOrderCard = ({
                 <Can permission="DELETE_PURCHASE_ORDER">
                   <DropdownMenuItem
                     onClick={() => setShowDeleteDialog(true)}
-                    className="text-destructive focus:text-destructive"
+                    className="text-red-600"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <IconTrash className="mr-2 h-4 w-4" />
                     Xóa
                   </DropdownMenuItem>
                 </Can>

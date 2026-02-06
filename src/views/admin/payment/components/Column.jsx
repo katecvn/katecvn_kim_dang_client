@@ -9,7 +9,7 @@ import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { updatePaymentStatus, getPayments } from '@/stores/PaymentSlice'
 import UpdatePaymentStatusDialog from './UpdatePaymentStatusDialog'
-import { paymentStatus } from '../data'
+import { paymentStatus, paymentMethods } from '../data'
 import { toast } from 'sonner'
 import ViewPaymentDialog from './ViewPaymentDialog'
 import { Pencil } from 'lucide-react'
@@ -102,17 +102,7 @@ export const columns = [
     enableSorting: true,
     enableHiding: true,
   },
-  {
-    accessorKey: 'paymentDate',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Ngày chi" />
-    ),
-    cell: ({ row }) => (
-      <div className="w-36">{dateFormat(row.getValue('paymentDate'), true)}</div>
-    ),
-    enableSorting: true,
-    enableHiding: true,
-  },
+
   {
     accessorKey: 'amount',
     header: ({ column }) => (
@@ -135,10 +125,14 @@ export const columns = [
     ),
     cell: ({ row }) => {
       const method = row.getValue('paymentMethod')
+      const paymentMethodObj = paymentMethods.find(m => m.value === method)
+      const Icon = paymentMethodObj?.icon
+
       return (
-        <div className="w-28">
-          <Badge variant="outline">
-            {method === 'cash' ? 'Tiền mặt' : (method === 'transfer' || method === 'bank_transfer') ? 'Chuyển khoản' : method}
+        <div className="w-36">
+          <Badge variant="outline" className={`whitespace-nowrap ${paymentMethodObj?.color}`}>
+            {Icon && <Icon className="mr-1 h-3 w-3" />}
+            {paymentMethodObj?.label || method}
           </Badge>
         </div>
       )
@@ -182,7 +176,6 @@ export const columns = [
             >
               {status === 'completed' ? 'Đã chi' : status === 'draft' ? 'Nháp' : status === 'cancelled' ? 'Đã hủy' : status}
             </Badge>
-            <Pencil className="h-3 w-3 text-muted-foreground" />
           </div>
           {showUpdateStatusDialog && (
             <UpdatePaymentStatusDialog
@@ -199,6 +192,17 @@ export const columns = [
         </>
       )
     },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'paymentDate',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Ngày chi" />
+    ),
+    cell: ({ row }) => (
+      <div className="w-36">{dateFormat(row.getValue('paymentDate'), true)}</div>
+    ),
     enableSorting: true,
     enableHiding: true,
   },

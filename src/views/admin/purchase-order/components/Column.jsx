@@ -54,12 +54,12 @@ export const getColumns = (onView) => [
     ),
     cell: ({ row }) => {
       return (
-        <span
-          className="cursor-pointer hover:text-primary"
+        <div
+          className="cursor-pointer font-medium text-blue-600 hover:underline"
           onClick={() => onView(row.original.id)}
         >
           {row.original.code}
-        </span>
+        </div>
       )
     },
   },

@@ -99,14 +99,7 @@ const DataTableToolbar = ({ table }) => {
           className="h-8 w-[150px] lg:w-[250px]"
         />
 
-        <Button
-          size="sm"
-          className="bg-green-600 hover:bg-green-700 text-white"
-          onClick={() => setShowCreateDialog(true)}
-        >
-          <PlusIcon className="mr-2 h-4 w-4" />
-          Tạo phiếu
-        </Button>
+
 
         {/* Filter by status */}
         {table.getColumn('status') && (
@@ -131,9 +124,19 @@ const DataTableToolbar = ({ table }) => {
 
       <DataTableViewOptions table={table} />
 
+      <Button
+        size="sm"
+        className="bg-green-600 hover:bg-green-700 text-white"
+        onClick={() => setShowCreateDialog(true)}
+      >
+        <PlusIcon className="mr-2 h-4 w-4" />
+        Tạo phiếu
+      </Button>
+
       <CreateManualWarehouseReceiptDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
+        showTrigger={false}
       />
     </div>
   )

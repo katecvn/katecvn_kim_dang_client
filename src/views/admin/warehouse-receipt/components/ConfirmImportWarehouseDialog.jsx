@@ -38,7 +38,6 @@ const ConfirmImportWarehouseDialog = ({
   overlayClassName,
 }) => {
   const [purchaseOrder, setPurchaseOrder] = useState(null)
-  console.log(purchaseOrder)
   const [loading, setLoading] = useState(false)
   const [selectedItems, setSelectedItems] = useState({})
   const dispatch = useDispatch()
@@ -68,9 +67,9 @@ const ConfirmImportWarehouseDialog = ({
   }, [open, purchaseOrderId, purchaseContractId, dispatch])
 
   // Normalize items to display
-  const itemsToDisplay = purchaseOrder?.items ||
-    (purchaseOrder?.purchaseOrders ? purchaseOrder.purchaseOrders.flatMap(po => po.items) : []) ||
-    []
+  const itemsToDisplay = (purchaseOrder?.items && purchaseOrder.items.length > 0)
+    ? purchaseOrder.items
+    : (purchaseOrder?.purchaseOrders ? purchaseOrder.purchaseOrders.flatMap(po => po.items.map(item => ({ ...item, purchaseOrderId: po.id }))) : [])
 
   useEffect(() => {
     if (itemsToDisplay.length > 0) {

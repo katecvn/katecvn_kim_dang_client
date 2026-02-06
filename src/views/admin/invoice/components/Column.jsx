@@ -72,7 +72,7 @@ export const columns = [
           </Can>
 
           <span
-            className="cursor-pointer hover:text-primary"
+            className="cursor-pointer font-medium text-blue-600 hover:underline"
             onClick={handleView}
           >
             {row.original.code}

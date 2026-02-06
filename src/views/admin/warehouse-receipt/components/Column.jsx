@@ -47,7 +47,7 @@ export const getColumns = (onView) => [
     cell: ({ row }) => {
       return (
         <div
-          className="w-32 cursor-pointer text-primary hover:underline"
+          className="w-32 cursor-pointer font-medium text-blue-600 hover:underline"
           onClick={() => onView(row.original)}
         >
           {row.getValue('code')}

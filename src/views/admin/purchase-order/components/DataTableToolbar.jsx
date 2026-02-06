@@ -84,7 +84,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem
                 onClick={() => setShowExportDialog(true)}
-                className="text-xs"
+                className="text-xs text-green-600"
               >
                 <IconFileTypeXls className="mr-2 h-3 w-3" />
                 Xuất file Excel
@@ -92,7 +92,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
 
               <DropdownMenuItem
                 onClick={() => setShowImportDialog(true)}
-                className="text-xs"
+                className="text-xs text-blue-600"
               >
                 <FileSpreadsheet className="mr-2 h-3 w-3" />
                 Import Excel
@@ -113,7 +113,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
                   }
                   setShowReceiptReminderDialog(true)
                 }}
-                className="text-xs"
+                className="text-xs text-orange-600"
               >
                 <TruckIcon className="mr-2 h-3 w-3" />
                 Gửi nhắc hàng

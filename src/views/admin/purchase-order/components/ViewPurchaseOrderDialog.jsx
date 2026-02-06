@@ -82,6 +82,7 @@ const ViewPurchaseOrderDialog = ({
 }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const [purchaseOrder, setPurchaseOrder] = useState(null)
+  console.log(purchaseOrder)
   const [loading, setLoading] = useState(false)
   const dispatch = useDispatch()
   const setting = useSelector((state) => state.setting.setting)
@@ -513,43 +514,70 @@ const ViewPurchaseOrderDialog = ({
                       <div className="flex justify-start border-t py-2">
                         <strong className="mr-2">Trạng thái đơn hàng: </strong>
                         <div className="w-[140px]">
-                          <Select
-                            value={purchaseOrder.status}
-                            onValueChange={(val) => handleUpdateStatus(val, purchaseOrder.id)}
-                            disabled={['cancelled', 'completed'].includes(purchaseOrder.status)}
-                          >
-                            <SelectTrigger className="h-7 text-xs px-2">
-                              <SelectValue placeholder="Chọn trạng thái">
-                                {(() => {
-                                  const selectedStatusObj = purchaseOrderStatuses.find((s) => s.value === purchaseOrder.status)
-                                  return selectedStatusObj ? (
-                                    <span
-                                      className={`inline-flex items-center gap-1 font-medium ${selectedStatusObj.color || ''}`}
-                                    >
-                                      {selectedStatusObj.icon ? <selectedStatusObj.icon className="h-3 w-3" /> : null}
-                                      {selectedStatusObj.label}
-                                    </span>
-                                  ) : null
-                                })()}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent position="popper" align="start" className="w-[140px] z-[10005]">
-                              {filteredStatuses.map((s) => (
-                                <SelectItem
-                                  key={s.value}
-                                  value={s.value}
-                                  className="cursor-pointer text-xs"
+                          {isDesktop ? (
+                            (() => {
+                              const currentStatus = purchaseOrder.status
+                              const statusObj = purchaseOrderStatuses.find((s) => s.value === currentStatus)
+                              const isTerminalStatus = ['cancelled', 'completed'].includes(currentStatus)
+                              return (
+                                <Badge
+                                  className={cn(
+                                    'select-none',
+                                    currentStatus === 'completed'
+                                      ? 'cursor-default bg-transparent p-0 text-green-600 hover:bg-transparent shadow-none border-0'
+                                      : `cursor-pointer ${statusObj?.bgColor || ''}`,
+                                  )}
+                                  onClick={() => !isTerminalStatus && setShowUpdateStatusDialog(true)}
+                                  title={!isTerminalStatus ? 'Bấm để cập nhật trạng thái' : ''}
                                 >
-                                  <span
-                                    className={`inline-flex items-center gap-1 font-medium ${s.color || ''}`}
-                                  >
-                                    {s.icon ? <s.icon className="h-3 w-3" /> : null}
-                                    {s.label}
+                                  <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
+                                    {statusObj?.icon ? (
+                                      <statusObj.icon className="h-4 w-4" />
+                                    ) : null}
                                   </span>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                                  {statusObj?.label || 'Không xác định'}
+                                </Badge>
+                              )
+                            })()
+                          ) : (
+                            <Select
+                              value={purchaseOrder.status}
+                              onValueChange={(val) => handleUpdateStatus(val, purchaseOrder.id)}
+                              disabled={['cancelled', 'completed'].includes(purchaseOrder.status)}
+                            >
+                              <SelectTrigger className="h-7 text-xs px-2">
+                                <SelectValue placeholder="Chọn trạng thái">
+                                  {(() => {
+                                    const selectedStatusObj = purchaseOrderStatuses.find((s) => s.value === purchaseOrder.status)
+                                    return selectedStatusObj ? (
+                                      <span
+                                        className={`inline-flex items-center gap-1 font-medium ${selectedStatusObj.color || ''}`}
+                                      >
+                                        {selectedStatusObj.icon ? <selectedStatusObj.icon className="h-3 w-3" /> : null}
+                                        {selectedStatusObj.label}
+                                      </span>
+                                    ) : null
+                                  })()}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent position="popper" align="start" className="w-[140px] z-[10005]">
+                                {filteredStatuses.map((s) => (
+                                  <SelectItem
+                                    key={s.value}
+                                    value={s.value}
+                                    className="cursor-pointer text-xs"
+                                  >
+                                    <span
+                                      className={`inline-flex items-center gap-1 font-medium ${s.color || ''}`}
+                                    >
+                                      {s.icon ? <s.icon className="h-3 w-3" /> : null}
+                                      {s.label}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                         </div>
                       </div>
 
@@ -1206,7 +1234,7 @@ const ViewPurchaseOrderDialog = ({
               </Button>
               <Button
                 size="sm"
-                className="gap-2 bg-orange-600 text-white hover:bg-orange-700"
+                className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
                 onClick={() => {
                   if (!['ordered', 'partial'].includes(purchaseOrder.status)) {
                     toast.warning('Chỉ tạo phiếu nhập kho khi đơn đã đặt')
@@ -1221,7 +1249,8 @@ const ViewPurchaseOrderDialog = ({
               </Button>
               <Button
                 size="sm"
-                className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                variant="outline"
+                className="gap-2 text-blue-600 border-blue-600 hover:bg-blue-50"
                 onClick={handlePrintOrder}
               >
                 <Printer className="h-4 w-4" />
@@ -1230,7 +1259,7 @@ const ViewPurchaseOrderDialog = ({
 
               <Button
                 size="sm"
-                className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                className="gap-2 bg-orange-600 text-white hover:bg-orange-700"
                 onClick={() => {
                   if (purchaseOrder.status !== 'draft') {
                     toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái nháp')

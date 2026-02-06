@@ -163,11 +163,26 @@ export const columns = [
 
       const Icon = status.icon
 
+      // Helper to get border color from text color
+      const getBorderColor = (colorClass) => {
+        if (colorClass.includes('text-gray-500')) return 'border-gray-500'
+        if (colorClass.includes('text-blue-500')) return 'border-blue-500'
+        if (colorClass.includes('text-green-500')) return 'border-green-500'
+        if (colorClass.includes('text-red-500')) return 'border-red-500'
+        if (colorClass.includes('text-yellow-500')) return 'border-yellow-500'
+        return 'border-gray-200'
+      }
+
+      const borderColor = getBorderColor(status.color)
+
       return (
-        <div className="flex items-center gap-2">
-          <Icon className={`h-4 w-4 ${status.color}`} />
-          <span>{status.label}</span>
-        </div>
+        <Badge
+          variant="outline"
+          className={`cursor-default select-none ${status.color} ${borderColor}`}
+        >
+          <Icon className="mr-1 h-3 w-3" />
+          {status.label}
+        </Badge>
       )
     },
     filterFn: (row, id, value) => {
@@ -191,23 +206,23 @@ export const columns = [
       if (status === 'draft') {
         Icon = FileText
         label = 'Đã tạo nháp'
-        colorClass = 'text-yellow-600'
+        colorClass = 'text-yellow-600 border-yellow-600'
       } else if (status === 'posted_partial') {
         Icon = CheckCircle
         label = 'Nhập một phần'
-        colorClass = 'text-blue-600'
+        colorClass = 'text-blue-600 border-blue-600'
       } else if (status === 'posted_full') {
         Icon = CheckCircle
         label = 'Đã nhập đủ'
-        colorClass = 'text-green-600'
+        colorClass = 'text-green-600 border-green-600'
       } else if (status === 'none') {
         Icon = PackageOpen
         label = 'Chưa nhập'
-        colorClass = 'text-gray-400'
+        colorClass = 'text-gray-400 border-gray-400'
       } else if (status) {
         // Fallback for other potential statuses
         label = status
-        colorClass = 'text-gray-500'
+        colorClass = 'text-gray-500 border-gray-500'
       }
 
       return (
@@ -243,11 +258,26 @@ export const columns = [
 
       const Icon = paymentStatus.icon
 
+      // Helper to get border color from text color
+      const getBorderColor = (colorClass) => {
+        if (colorClass.includes('text-gray-500')) return 'border-gray-500'
+        if (colorClass.includes('text-blue-500')) return 'border-blue-500'
+        if (colorClass.includes('text-green-500')) return 'border-green-500'
+        if (colorClass.includes('text-red-500')) return 'border-red-500'
+        if (colorClass.includes('text-yellow-500')) return 'border-yellow-500'
+        return 'border-gray-200'
+      }
+
+      const borderColor = getBorderColor(paymentStatus.color)
+
       return (
-        <div className="flex items-center gap-2">
-          <Icon className={`h-4 w-4 ${paymentStatus.color}`} />
-          <span className="text-sm">{paymentStatus.label}</span>
-        </div>
+        <Badge
+          variant="outline"
+          className={`cursor-default select-none ${paymentStatus.color} ${borderColor}`}
+        >
+          <Icon className="mr-1 h-3 w-3" />
+          {paymentStatus.label}
+        </Badge>
       )
     },
     filterFn: (row, id, value) => {

@@ -18,7 +18,8 @@ import {
 } from '@/stores/PurchaseOrderSlice'
 import { Badge } from '@/components/ui/badge'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
-import { Phone, Pencil } from 'lucide-react'
+import { Phone } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export const getColumns = (onView) => [
   {
@@ -233,16 +234,21 @@ export const getColumns = (onView) => [
 
           <div className="flex flex-col gap-2">
             <Badge
-              variant="outline"
-              className={`cursor-pointer select-none flex ${statusObj?.color || ''} ${isTerminalStatus ? 'opacity-80 cursor-default' : ''}`}
+              className={cn(
+                'select-none',
+                currentStatus === 'completed'
+                  ? 'cursor-default bg-transparent p-0 text-green-600 hover:bg-transparent shadow-none border-0'
+                  : `cursor-pointer ${statusObj?.bgColor || ''}`,
+              )}
               onClick={() => !isTerminalStatus && setOpenUpdateStatus(true)}
               title={!isTerminalStatus ? 'Bấm để cập nhật trạng thái' : ''}
             >
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
-                {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
+                {statusObj?.icon ? (
+                  <statusObj.icon className="h-4 w-4" />
+                ) : null}
               </span>
               {statusObj?.label || 'Không xác định'}
-              <Pencil className="ml-2 h-3 w-3 text-muted-foreground" />
             </Badge>
             <Badge
               variant="outline"
@@ -277,7 +283,7 @@ export const getColumns = (onView) => [
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
-      // Check if overdue: date < today AND not delivered/received
+      // Check if overdue: date < today AND not delivered /received
       const isOverdue = date < today && !['received', 'completed', 'cancelled'].includes(status)
 
       return (

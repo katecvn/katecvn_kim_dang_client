@@ -66,7 +66,7 @@ const DataTableToolbar = ({ table }) => {
                     }
                     setShowReminderDialog(true)
                   }}
-                  className="text-xs"
+                  className="text-xs text-blue-500"
                 >
                   <TruckIcon className="mr-2 h-3 w-3" />
                   Gửi nhắc hàng
@@ -120,6 +120,7 @@ const DataTableToolbar = ({ table }) => {
 
       <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
         <Button
+          className="text-blue-500 border-blue-500 hover:bg-blue-50"
           variant="outline"
           size="sm"
           onClick={() => {

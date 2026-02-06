@@ -53,7 +53,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
       <div className="space-y-2">
         {/* Search section */}
         <Input
-          placeholder="Tìm theo Mã ĐĐH, Tên NCC, SĐT, MST"
+          placeholder="Tìm kiếm..."
           value={table.getState().globalFilter || ''}
           onChange={(e) =>
             table.setGlobalFilter(e.target.value)
@@ -173,7 +173,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
       <div className="flex flex-1 flex-wrap items-center gap-2">
         <div className="flex items-center justify-center gap-1 w-full sm:w-auto">
           <Input
-            placeholder="Tìm theo Mã ĐĐH, Tên NCC, SĐT, MST"
+            placeholder="Tìm kiếm..."
             value={table.getState().globalFilter || ''}
             onChange={(e) =>
               table.setGlobalFilter(e.target.value)
@@ -221,6 +221,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
       <div className="flex flex-wrap items-center justify-end gap-2 whitespace-nowrap">
         {/* Nhắc nhở giao hàng (cho Nhà cung cấp) */}
         <Button
+          className="text-orange-600 border-orange-200 hover:bg-orange-50"
           variant="outline"
           size="sm"
           onClick={() => {
@@ -245,6 +246,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
 
         {/* Xuất Excel */}
         <Button
+          className="text-green-600 border-green-200 hover:bg-green-50"
           variant="outline"
           size="sm"
           onClick={() => setShowExportDialog(true)}
@@ -255,6 +257,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
 
         {/* Import Excel */}
         <Button
+          className="text-blue-600 border-blue-200 hover:bg-blue-50"
           variant="outline"
           size="sm"
           onClick={() => setShowImportDialog(true)}

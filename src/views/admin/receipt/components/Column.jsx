@@ -107,17 +107,7 @@ export const columns = [
     enableSorting: true,
     enableHiding: true,
   },
-  {
-    accessorKey: 'paymentDate',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Ngày thanh toán" />
-    ),
-    cell: ({ row }) => (
-      <div className="w-36">{dateFormat(row.getValue('paymentDate'), true)}</div>
-    ),
-    enableSorting: true,
-    enableHiding: true,
-  },
+
   {
     accessorKey: 'amount',
     header: ({ column }) => (
@@ -126,7 +116,7 @@ export const columns = [
     cell: ({ row }) => {
       return (
         <div className="flex space-x-2">
-          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
+          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem] text-green-600 font-medium">
             {moneyFormat(row.getValue('amount'))}
           </span>
         </div>
@@ -213,6 +203,17 @@ export const columns = [
   },
 
 
+  {
+    accessorKey: 'paymentDate',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Ngày thanh toán" />
+    ),
+    cell: ({ row }) => (
+      <div className="w-36">{dateFormat(row.getValue('paymentDate'), true)}</div>
+    ),
+    enableSorting: true,
+    enableHiding: true,
+  },
   {
     accessorKey: 'updatedAt',
     header: ({ column }) => (

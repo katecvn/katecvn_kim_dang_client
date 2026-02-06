@@ -190,7 +190,7 @@ const InventorySummaryPage = () => {
               onClick={() => exportGeneralInventoryToExcel(inventorySummary, filters)}
             >
               <FileSpreadsheet className="h-4 w-4" />
-              Xuất Excel
+              Xuất Báo Cáo Tổng Hợp
             </Button>
           </div>
         </div>

@@ -215,6 +215,29 @@ export const updatePurchaseOrderStatus = createAsyncThunk(
   },
 )
 
+export const importPurchaseOrder = createAsyncThunk(
+  'purchaseOrder/import',
+  async (formData, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/purchase-orders/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      await dispatch(
+        getMyPurchaseOrders({
+          fromDate: getStartOfCurrentMonth(),
+          toDate: getEndOfCurrentMonth(),
+        }),
+      ).unwrap()
+      toast.success('Import dữ liệu thành công')
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 const initialState = {
   purchaseOrders: [],
   purchaseOrder: null,
@@ -338,6 +361,17 @@ export const purchaseOrderSlice = createSlice({
       })
       .addCase(getPurchaseOrderDetail.rejected, (state, action) => {
         state.error = action.payload
+      })
+      .addCase(importPurchaseOrder.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(importPurchaseOrder.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(importPurchaseOrder.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+        toast.error(state.error)
       })
   },
 })

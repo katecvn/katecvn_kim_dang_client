@@ -137,7 +137,7 @@ const UpdateInvoiceStatusDialog = ({
                 <SelectValue placeholder="Chọn trạng thái">
                   {selectedStatusObj ? (
                     <span
-                      className={`inline-flex items-center gap-2 font-medium ${selectedStatusObj.color || ''
+                      className={`inline-flex items-center gap-2 font-medium ${selectedStatusObj.textColor || selectedStatusObj.color || ''
                         }`}
                     >
                       {selectedStatusObj.icon ? (
@@ -157,7 +157,7 @@ const UpdateInvoiceStatusDialog = ({
                     className="cursor-pointer"
                   >
                     <span
-                      className={`inline-flex items-center gap-2 font-medium ${s.color || ''
+                      className={`inline-flex items-center gap-2 font-medium ${s.textColor || s.color || ''
                         }`}
                     >
                       {s.icon ? <s.icon className="h-4 w-4" /> : null}
@@ -186,7 +186,7 @@ const UpdateInvoiceStatusDialog = ({
           )}
         </DialogFooter>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   )
 }
 

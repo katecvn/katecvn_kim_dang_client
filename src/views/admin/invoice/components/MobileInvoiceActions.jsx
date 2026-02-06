@@ -7,8 +7,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { PlusIcon } from '@radix-ui/react-icons'
-import { IconPlus } from '@tabler/icons-react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { IconPlus, IconFileTypePdf } from '@tabler/icons-react'
+import { Pencil, Trash2, Printer, X } from 'lucide-react'
 import { toast } from 'sonner'
 import ConfirmActionButton from '@/components/custom/ConfirmActionButton'
 import { Separator } from '@/components/ui/separator'
@@ -24,6 +24,7 @@ const MobileInvoiceActions = ({
   handlePrintAgreement,
   handlePrintContract,
   handleDeleteInvoice,
+  onCloseDialog,
 }) => {
   const [open, setOpen] = useState(false)
 
@@ -60,14 +61,14 @@ const MobileInvoiceActions = ({
                 className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 flex-col gap-1"
                 onClick={() => handleAction(handleCreateReceipt)}
               >
-                <IconPlus className="h-5 w-5" />
+                <PlusIcon className="h-5 w-5" />
                 <span className="text-xs">Tạo Phiếu Thu</span>
               </Button>
               <Button
                 className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 flex-col gap-1"
                 onClick={() => handleAction(handleCreateWarehouseReceipt)}
               >
-                <IconPlus className="h-5 w-5" />
+                <PlusIcon className="h-5 w-5" />
                 <span className="text-xs">Tạo Phiếu Xuất Kho</span>
               </Button>
             </div>
@@ -80,23 +81,26 @@ const MobileInvoiceActions = ({
               <div className="grid grid-cols-1 gap-2">
                 <Button
                   variant="outline"
-                  className="justify-start text-blue-600 border-blue-200 hover:bg-blue-50"
+                  className="justify-start gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
                   onClick={() => handleAction(handlePrintInvoice)}
                 >
+                  <Printer className="h-4 w-4" />
                   In Hóa Đơn
                 </Button>
                 <Button
                   variant="outline"
-                  className="justify-start text-blue-600 border-blue-200 hover:bg-blue-50"
+                  className="justify-start gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
                   onClick={() => handleAction(handlePrintAgreement)}
                 >
+                  <IconFileTypePdf className="h-4 w-4" />
                   In Thỏa Thuận
                 </Button>
                 <Button
                   variant="outline"
-                  className="justify-start text-blue-600 border-blue-200 hover:bg-blue-50"
+                  className="justify-start gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
                   onClick={() => handleAction(handlePrintContract)}
                 >
+                  <Printer className="h-4 w-4" />
                   In Hợp Đồng
                 </Button>
               </div>
@@ -107,8 +111,7 @@ const MobileInvoiceActions = ({
             {/* Edit/Delete Actions */}
             <div className="grid grid-cols-2 gap-3">
               <Button
-                variant="outline"
-                className="border-primary text-primary hover:bg-primary/10"
+                className="bg-orange-600 text-white hover:bg-orange-700 w-full"
                 onClick={() => {
                   if (invoice.status !== 'pending') {
                     toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái chờ duyệt')
@@ -140,6 +143,7 @@ const MobileInvoiceActions = ({
                 ) : (
                   <Button
                     variant="destructive"
+                    className="w-full"
                     onClick={() => toast.warning('Chỉ có thể xóa đơn hàng ở trạng thái chờ duyệt')}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
@@ -148,6 +152,18 @@ const MobileInvoiceActions = ({
                 )
               )}
             </div>
+
+            <Button
+              variant="outline"
+              className="w-full justify-center gap-2 mt-2"
+              onClick={() => {
+                setOpen(false)
+                onCloseDialog?.()
+              }}
+            >
+              <X className="h-4 w-4" />
+              Đóng
+            </Button>
           </div>
         </SheetContent>
       </Sheet>

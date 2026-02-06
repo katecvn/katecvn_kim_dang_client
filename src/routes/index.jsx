@@ -95,11 +95,11 @@ const routes = [
     element: ProductPage,
     layout: AdminLayout,
   },
-  {
-    path: '/product-stock-snapshot',
-    element: ProductStockSnapshotPage,
-    layout: AdminLayout,
-  },
+  // {
+  //   path: '/product-stock-snapshot',
+  //   element: ProductStockSnapshotPage,
+  //   layout: AdminLayout,
+  // },
   {
     path: '/invoice',
     element: InvoicePage,
@@ -210,11 +210,11 @@ const routes = [
     element: WarehouseOutPage,
     layout: AdminLayout,
   },
-  {
-    path: '/lots',
-    element: LotPage,
-    layout: AdminLayout,
-  },
+  // {
+  //   path: '/lots',
+  //   element: LotPage,
+  //   layout: AdminLayout,
+  // },
   {
     path: '/warehouse-report/summary',
     element: InventorySummaryPage,
@@ -266,7 +266,7 @@ const routes = [
     layout: AdminLayout,
   },
   {
-    path: '/setting/system-log',
+    path: '/system-log',
     element: SystemLogPage,
     layout: AdminLayout,
   },

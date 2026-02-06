@@ -8,11 +8,14 @@ import Can from '@/utils/can'
 import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import CreateSupplierDialog from './CreateSupplierDialog'
+import ImportSupplierDialog from './ImportSupplierDialog'
+import { FileSpreadsheet } from 'lucide-react'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showCreateSupplierDialog, setShowCreateSupplierDialog] =
     useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
 
   return (
     <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-1">
@@ -38,11 +41,10 @@ const DataTableToolbar = ({ table }) => {
         )}
       </div>
 
-      <Can permission={'CREATE_TAX'}>
+      <Can permission={'CREATE_SUPPLIER'}>
         <Button
           onClick={() => setShowCreateSupplierDialog(true)}
-          className="mx-2"
-          variant="outline"
+          className="mx-2 bg-green-600 hover:bg-green-700 text-white"
           size="sm"
         >
           <PlusIcon className="mr-2 size-4" aria-hidden="true" />
@@ -54,6 +56,22 @@ const DataTableToolbar = ({ table }) => {
             open={showCreateSupplierDialog}
             onOpenChange={setShowCreateSupplierDialog}
             showTrigger={false}
+          />
+        )}
+
+        <Button
+          onClick={() => setShowImportDialog(true)}
+          className="mx-2 bg-blue-600 hover:bg-blue-700 text-white"
+          size="sm"
+        >
+          <FileSpreadsheet className="mr-2 size-4" aria-hidden="true" />
+          Import Excel
+        </Button>
+
+        {showImportDialog && (
+          <ImportSupplierDialog
+            open={showImportDialog}
+            onOpenChange={setShowImportDialog}
           />
         )}
       </Can>

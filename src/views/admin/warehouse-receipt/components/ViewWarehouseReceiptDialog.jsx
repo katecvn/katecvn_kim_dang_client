@@ -21,12 +21,14 @@ import { getWarehouseReceiptById, updateWarehouseReceipt, postWarehouseReceipt, 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { MobileIcon } from '@radix-ui/react-icons'
-import { Mail, MapPin, CreditCard, Package, Printer, FileSpreadsheet, Pencil } from 'lucide-react'
+import { Mail, MapPin, CreditCard, Package, Printer, FileSpreadsheet, Pencil, Trash, X, Save } from 'lucide-react'
 import PrintWarehouseReceiptView from './PrintWarehouseReceiptView'
 import { getPublicUrl } from '@/utils/file'
 import { exportWarehouseReceiptToExcel } from '@/utils/export-warehouse-receipt'
 import { UpdateWarehouseReceiptStatusDialog } from './UpdateWarehouseReceiptStatusDialog'
+import { DeleteWarehouseReceiptDialog } from './DeleteWarehouseReceiptDialog'
 import ExportWarehouseReceiptPreview from './ExportWarehouseReceiptPreview'
+import MobileWarehouseReceiptActions from './MobileWarehouseReceiptActions'
 import { toast } from 'sonner'
 import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
 import InvoiceDialog from '../../invoice/components/InvoiceDialog'
@@ -56,6 +58,7 @@ const ViewWarehouseReceiptDialog = ({
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
   const [targetStatus, setTargetStatus] = useState(null)
   const [showExportPreview, setShowExportPreview] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
   const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
@@ -137,29 +140,36 @@ const ViewWarehouseReceiptDialog = ({
       }))
 
       const payload = {
-        ...receipt,
-        details: cleanDetails
+        details: details.map((d) => ({
+          productId: d.productId,
+          unitId: d.unitId,
+          qtyDocument: parseFloat(d.qtyDocument) || 0, // Ensure numbers
+          qtyActual: parseFloat(d.qtyActual) || 0, // Ensure numbers
+          unitPrice: d.unitPrice
+        }))
       }
-      await dispatch(updateWarehouseReceipt({ id: receiptId, data: payload })).unwrap()
-      toast.success('Đã lưu thay đổi')
-      fetchData() // Refresh
+
+      await dispatch(updateWarehouseReceipt({ id: receipt.id, data: payload })).unwrap()
+      toast.success('Cập nhật phiếu kho thành công')
+      fetchData()
     } catch (error) {
-      console.error("Save details error:", error)
+      console.error(error)
+      toast.error('Cập nhật thất bại')
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
-    // Chỉ fetch khi Dialog được mở
-    if (open && receiptId) {
+    if (open) {
       fetchData()
     }
-  }, [open, receiptId, fetchData, dispatch])
+  }, [open, fetchData])
 
-  const receiptType = receiptTypes.find((t) => t.value === receipt?.receiptType)
+  if (!open && !showTrigger) return null
+
+  const partner = receipt?.supplier || receipt?.customer
   const status = warehouseReceiptStatuses.find((s) => s.value === receipt?.status)
-  const partner = receipt?.receiptType === 1 ? receipt?.supplier : receipt?.customer
-
-
 
   const handlePrintWarehouseReceipt = () => {
     if (!receipt) return
@@ -296,7 +306,6 @@ const ViewWarehouseReceiptDialog = ({
                           <Badge className={status?.color}>
                             {status?.label}
                           </Badge>
-                          <Pencil className="h-3 w-3 text-muted-foreground" />
                         </div>
                       )}
                     </div>
@@ -321,36 +330,40 @@ const ViewWarehouseReceiptDialog = ({
                       <div className="divide-y">
                         {details.map((detail, index) => (
                           <div key={detail.id || index} className="p-3">
-                            <div className="flex items-start gap-3">
-                              {/* Image */}
-                              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border">
-                                {detail.product?.image ? (
-                                  <img src={getPublicUrl(detail.product.image)} alt={detail.productName} className="h-full w-full object-cover" />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center bg-secondary">
-                                    <Package className="h-5 w-5 text-muted-foreground" />
-                                  </div>
-                                )}
-                              </div>
+                            <div className="flex flex-col md:flex-row md:items-start gap-3">
+                              {/* Left: Image & Info */}
+                              <div className="flex items-start gap-3 flex-1">
+                                {/* Image */}
+                                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border">
+                                  {detail.product?.image ? (
+                                    <img src={getPublicUrl(detail.product.image)} alt={detail.productName} className="h-full w-full object-cover" />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                      <Package className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                </div>
 
-                              <div className="flex-1">
-                                <div
-                                  className="font-medium cursor-pointer text-primary hover:underline hover:text-blue-600"
-                                  onClick={() => {
-                                    setSelectedProductId(detail.productId)
-                                    setShowViewProductDialog(true)
-                                  }}
-                                >{detail.productName}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  Mã: {detail.productCode}
+                                <div className="flex-1 min-w-0">
+                                  <div
+                                    className="font-medium cursor-pointer text-primary hover:underline hover:text-blue-600 truncate"
+                                    onClick={() => {
+                                      setSelectedProductId(detail.productId)
+                                      setShowViewProductDialog(true)
+                                    }}
+                                  >{detail.productName}</div>
+                                  <div className="text-sm text-muted-foreground truncate">
+                                    Mã: {detail.productCode}
+                                  </div>
                                 </div>
                               </div>
 
-                              <div className="text-right space-y-2">
+                              {/* Right: Quantity & Price */}
+                              <div className="flex flex-row md:flex-col justify-between md:justify-start items-center md:items-end gap-2 w-full md:w-auto mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-dashed">
                                 {/* Editable Quantities */}
                                 {receipt?.status === 'draft' ? (
-                                  <div className="flex flex-col gap-2 items-end">
-                                    <div className="flex items-center gap-2">
+                                  <div className="flex flex-col gap-2 items-end w-full md:w-auto">
+                                    <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
                                       <label className="text-xs text-muted-foreground">SL Chứng từ:</label>
                                       <input
                                         type="number"
@@ -359,7 +372,7 @@ const ViewWarehouseReceiptDialog = ({
                                         readOnly
                                       />
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
                                       <label className="text-xs text-muted-foreground">SL Thực tế:</label>
                                       <input
                                         type="number"
@@ -396,7 +409,7 @@ const ViewWarehouseReceiptDialog = ({
 
                   {/* Totals Section */}
                   <div className="grid gap-4 md:grid-cols-[2fr,1fr]">
-                    <div></div> {/* Spacer */}
+                    <div className="hidden md:block"></div> {/* Spacer */}
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <strong>Tổng số lượng:</strong>
@@ -532,41 +545,79 @@ const ViewWarehouseReceiptDialog = ({
 
         <DialogFooter
           className={cn(
-            'flex gap-2 sm:space-x-0',
+            'hidden md:flex flex-col md:flex-row gap-2 md:space-x-0',
             contentClassName
           )}
         >
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
-            {/* {receipt?.status === 'draft' && (
+            {receipt?.status === 'draft' && (
               <Button
+                size="sm"
                 className="gap-2 bg-green-600 hover:bg-green-700 text-white"
                 onClick={handleSaveChanges}
                 disabled={loading}
               >
-                Lưu thay đổi
+                <Save className="h-4 w-4" />
+                Lưu
               </Button>
-            )} */}
+            )}
             <Button
-              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+              size="sm"
+              variant="outline"
+              className="gap-2 text-green-600 border-green-200 hover:bg-green-50"
               onClick={() => setShowExportPreview(true)}
             >
               <FileSpreadsheet className="h-4 w-4" />
               Xuất Excel
             </Button>
             <Button
-              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+              size="sm"
+              variant="outline"
+              className="gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
               onClick={handlePrintWarehouseReceipt}
             >
               <Printer className="h-4 w-4" />
               In phiếu
             </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-2"
+              onClick={() => {
+                if (['draft', 'cancelled'].includes(receipt?.status)) {
+                  setShowDeleteDialog(true)
+                } else {
+                  toast.warning('Chỉ có thể xóa phiếu kho ở trạng thái nháp hoặc đã hủy')
+                }
+              }}
+            >
+              <Trash className="h-4 w-4" />
+              Xóa
+            </Button>
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button type="button" variant="outline" size="sm" className="gap-2">
+                <X className="h-4 w-4" />
                 Đóng
               </Button>
             </DialogClose>
           </div>
         </DialogFooter>
+
+        <MobileWarehouseReceiptActions
+          receipt={receipt}
+          isDesktop={isDesktop}
+          canDelete={receipt?.status === 'draft'}
+          onEdit={() => {
+            // TODO: Implement edit for warehouse receipt
+            toast.info('Tính năng sửa đang phát triển')
+          }}
+          handlePrintWarehouseReceipt={handlePrintWarehouseReceipt}
+          handleExportToExcel={() => setShowExportPreview(true)}
+          handleUpdateStatus={() => setShowUpdateStatusDialog(true)}
+          handleDeleteReceipt={() => setShowDeleteDialog(true)}
+          onCloseParent={() => onOpenChange(false)}
+          onSave={handleSaveChanges}
+        />
       </DialogContent>
 
       {/* Update Status Dialog */}
@@ -645,6 +696,20 @@ const ViewWarehouseReceiptDialog = ({
           overlayClassName="z-[100019]"
         />
       )}
+
+      {/* Delete Dialog */}
+      {showDeleteDialog && (
+        <DeleteWarehouseReceiptDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          receipt={receipt}
+          showTrigger={false}
+          contentClassName="z-[10006]"
+          overlayClassName="z-[10005]"
+          onSuccess={() => onOpenChange?.(false)}
+        />
+      )}
+
     </Dialog>
   )
 }

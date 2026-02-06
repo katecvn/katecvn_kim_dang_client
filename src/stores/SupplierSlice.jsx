@@ -90,6 +90,24 @@ export const getSupplierDetailWithProducts = createAsyncThunk(
   },
 )
 
+export const importSupplier = createAsyncThunk(
+  'supplier/import',
+  async (formData, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/supplier/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      await dispatch(getSuppliers()).unwrap()
+      toast.success('Import dữ liệu thành công')
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 const initialState = {
   suppliers: [],
   supplier: {},
@@ -174,6 +192,19 @@ export const supplierSlice = createSlice({
         state.supplier = action.payload
       })
       .addCase(getSupplierDetailWithProducts.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload.message || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+      // Import supplier
+      .addCase(importSupplier.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(importSupplier.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(importSupplier.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload.message || 'Lỗi không xác định'
         toast.error(state.error)

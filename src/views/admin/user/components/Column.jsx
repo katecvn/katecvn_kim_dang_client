@@ -48,7 +48,14 @@ export const columns = [
       return (
         <div className="flex w-[110px] items-center">
           <span>
-            <Badge variant={status.value === 'blocked' ? 'destructive' : ''}>
+            <Badge
+              variant="outline"
+              className={
+                status.value === 'active'
+                  ? 'border-green-600 text-green-600'
+                  : 'border-red-600 text-red-600'
+              }
+            >
               {status.icon && <status.icon className="mr-2 h-4 w-4" />}
               {status.label}
             </Badge>

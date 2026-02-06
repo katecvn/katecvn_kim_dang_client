@@ -37,8 +37,7 @@ export function DataTableToolbar({ table }) {
       <Can permission={'CREATE_LOT'}>
         <Button
           onClick={() => setOpenCreate(true)}
-          className="mx-2"
-          variant="outline"
+          className="mx-2 bg-green-600 hover:bg-green-700 text-white"
           size="sm"
         >
           <PlusIcon className="mr-2 size-4" aria-hidden="true" />

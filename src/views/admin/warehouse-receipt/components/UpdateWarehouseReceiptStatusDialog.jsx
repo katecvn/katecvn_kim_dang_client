@@ -43,7 +43,7 @@ const UpdateWarehouseReceiptStatusDialog = ({
 
   const getColor = (statusValue) => {
     switch (statusValue) {
-      case 'draft': return 'text-yellow-600'
+      case 'draft': return 'text-yellow-500'
       case 'confirmed': return 'text-blue-600'
       case 'posted': return 'text-green-600'
       case 'cancelled': return 'text-red-600'

@@ -164,10 +164,13 @@ export const columns = [
       const Icon = status.icon
 
       return (
-        <div className="flex items-center gap-2">
-          <Icon className={`h-4 w-4 ${status.color}`} />
-          <span>{status.label}</span>
-        </div>
+        <Badge
+          variant="outline"
+          className={`cursor-default select-none ${status.color}`}
+        >
+          <Icon className="mr-1 h-3 w-3" />
+          {status.label}
+        </Badge>
       )
     },
     filterFn: (row, id, value) => {
@@ -186,25 +189,25 @@ export const columns = [
 
       let Icon = PackageOpen
       let label = 'Chưa xuất'
-      let colorClass = 'text-gray-400'
+      let colorClass = 'text-gray-400 border-gray-400'
 
       if (warehouseReceipt) {
         if (warehouseReceipt.status === 'draft') {
           Icon = FileText
           label = 'Nháp'
-          colorClass = 'text-yellow-600'
+          colorClass = 'text-yellow-600 border-yellow-600'
         } else if (warehouseReceipt.status === 'posted') {
           Icon = CheckCircle
           label = 'Đã ghi sổ'
-          colorClass = 'text-green-600'
+          colorClass = 'text-green-600 border-green-600'
         } else if (warehouseReceipt.status === 'cancelled') {
           Icon = XCircle
           label = 'Đã hủy'
-          colorClass = 'text-red-600'
+          colorClass = 'text-red-600 border-red-600'
         } else {
           Icon = PackageOpen
           label = warehouseReceipt.status
-          colorClass = 'text-gray-500'
+          colorClass = 'text-gray-500 border-gray-500'
         }
       }
 
@@ -247,10 +250,13 @@ export const columns = [
       const Icon = paymentStatus.icon
 
       return (
-        <div className="flex items-center gap-2">
-          <Icon className={`h-4 w-4 ${paymentStatus.color}`} />
-          <span className="text-sm">{paymentStatus.label}</span>
-        </div>
+        <Badge
+          variant="outline"
+          className={`cursor-default select-none ${paymentStatus.color}`}
+        >
+          <Icon className="mr-1 h-3 w-3" />
+          {paymentStatus.label}
+        </Badge>
       )
     },
     filterFn: (row, id, value) => {

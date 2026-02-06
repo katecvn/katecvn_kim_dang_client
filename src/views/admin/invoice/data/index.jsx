@@ -14,25 +14,29 @@ const statuses = [
     value: 'pending',
     label: 'Chờ xác nhận',
     icon: IconRefreshDot,
-    color: 'text-yellow-500',
+    color: 'bg-yellow-500 text-white',
+    textColor: 'text-yellow-500',
   },
   {
     value: 'accepted',
     label: 'Đã xác nhận',
     icon: TruckIcon,
-    color: 'text-blue-500',
+    color: 'bg-blue-500 text-white',
+    textColor: 'text-blue-500',
   },
   {
     value: 'delivered',
     label: 'Hoàn thành',
     icon: CheckCircleIcon,
-    color: 'text-green-500',
+    color: 'bg-green-500 text-white',
+    textColor: 'text-green-500',
   },
   {
     value: 'rejected',
     label: 'Từ chối',
     icon: IconX,
-    color: 'text-red-500',
+    color: 'bg-red-500 text-white',
+    textColor: 'text-red-500',
   },
 ]
 

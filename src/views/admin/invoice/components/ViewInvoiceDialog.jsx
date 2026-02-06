@@ -39,9 +39,9 @@ import { statuses, paymentStatuses } from '../data'
 import { statuses as contractStatuses } from '../../sales-contract/data'
 import { receiptStatus } from '../../receipt/data'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { CreditCard, Mail, MapPin, Pencil, Trash2, QrCode } from 'lucide-react'
+import { CreditCard, Mail, MapPin, Pencil, Trash2, QrCode, Printer, X } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
-import { IconInfoCircle, IconEye, IconCheck, IconPencil, IconPlus } from '@tabler/icons-react'
+import { IconInfoCircle, IconEye, IconCheck, IconPencil, IconPlus, IconX, IconFileTypePdf, IconFileText, IconCircleCheck, IconCircleX } from '@tabler/icons-react'
 import {
   Tooltip,
   TooltipContent,
@@ -99,6 +99,7 @@ import { buildAgreementData } from '../helpers/BuildAgreementData'
 import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 import MobileInvoiceActions from './MobileInvoiceActions'
 import PaymentQRCodeDialog from '../../receipt/components/PaymentQRCodeDialog'
+import { Badge } from '@/components/ui/badge'
 
 const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClassName, overlayClassName, ...props }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -541,7 +542,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
         >
           <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
             <DialogTitle className={cn(!isDesktop && "text-base")}>
-              Thông tin chi tiết đơn bán: {invoice?.code}
+              Thông tin chi tiết đơn bán: <span className={cn(!isDesktop && "block")}>{invoice?.code}</span>
             </DialogTitle>
           </DialogHeader>
 
@@ -814,27 +815,34 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                         onSubmit={handleUpdateStatus}
                                       />
                                     )}
-                                    <div className="ml-2">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-7 text-xs px-2"
-                                        onClick={() => setShowUpdateStatusDialog(true)}
-                                        disabled={isActionDisabled}
-                                      >
-                                        <span className={statuses.find(s => s.value === invoice.status)?.color || ''}>
-                                          {(() => {
-                                            const sObj = statuses.find(s => s.value === invoice.status)
-                                            return sObj ? (
-                                              <span className="flex items-center gap-1">
-                                                {sObj.icon && React.createElement(sObj.icon, { className: 'h-3 w-3' })}
-                                                {sObj.label}
-                                                <Pencil className="ml-2 h-3 w-3" />
+                                    <div className="ml-2 flex flex-col gap-2">
+                                      {(() => {
+                                        const statusObj = statuses.find(s => s.value === invoice.status)
+                                        const paymentStatusObj = paymentStatuses.find(s => s.value === invoice.paymentStatus)
+                                        return (
+                                          <>
+                                            <Badge
+                                              className={`cursor-pointer select-none ${statusObj?.color || ''}`}
+                                              onClick={() => setShowUpdateStatusDialog(true)}
+                                              title="Bấm để cập nhật trạng thái"
+                                            >
+                                              <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
+                                                {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
                                               </span>
-                                            ) : null
-                                          })()}
-                                        </span>
-                                      </Button>
+                                              {statusObj?.label || 'Không xác định'}
+                                            </Badge>
+                                            <Badge
+                                              variant="outline"
+                                              className={`cursor-default select-none border-0 ${paymentStatusObj?.color || 'text-gray-500'}`}
+                                            >
+                                              <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
+                                                {paymentStatusObj?.icon ? <paymentStatusObj.icon className="h-4 w-4" /> : null}
+                                              </span>
+                                              {paymentStatusObj?.label || 'Không xác định'}
+                                            </Badge>
+                                          </>
+                                        )
+                                      })()}
                                     </div>
                                   </>
                                 ) : (
@@ -849,7 +857,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                           {(() => {
                                             const sObj = statuses.find(s => s.value === invoice.status)
                                             return sObj ? (
-                                              <span className={`flex items-center gap-1 ${sObj.color}`}>
+                                              <span className={`flex items-center gap-1 ${sObj.textColor || 'text-gray-600'}`}>
                                                 {sObj.icon && React.createElement(sObj.icon, { className: 'h-3 w-3' })}
                                                 {sObj.label}
                                               </span>
@@ -860,7 +868,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                       <SelectContent position="popper" align="start" className="w-[140px] z-[100005]" modal={false}>
                                         {filteredStatuses.map((s) => (
                                           <SelectItem key={s.value} value={s.value} className="text-xs cursor-pointer">
-                                            <span className={`flex items-center gap-1 ${s.color}`}>
+                                            <span className={`flex items-center gap-1 ${s.textColor || 'text-gray-600'}`}>
                                               {s.icon && React.createElement(s.icon, { className: 'h-3 w-3' })}
                                               {s.label}
                                             </span>
@@ -1292,7 +1300,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                           <SelectTrigger className="h-auto border-none bg-transparent p-0 text-xs focus:ring-0 focus:ring-offset-0">
                                             <SelectValue>
                                               <span
-                                                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}
+                                                className={`inline-flex items-center gap-1 text-xs font-medium ${getReceiptStatusColor(voucher.status).replace(/bg-[^ ]+/, '').trim()}`}
                                               >
                                                 {getReceiptStatusObj(voucher.status)?.icon &&
                                                   React.createElement(getReceiptStatusObj(voucher.status).icon, { className: "h-3 w-3" })
@@ -1443,7 +1451,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                             <span
                                               className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
                                             >
-                                              {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
+                                              {receipt.status === 'draft' ? <IconFileText className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCircleCheck className="h-3 w-3" /> : (receipt.status === 'cancelled' || receipt.status === 'canceled' ? <IconCircleX className="h-3 w-3" /> : null))}
                                               {receipt.status === 'draft'
                                                 ? 'Nháp'
                                                 : receipt.status === 'posted'
@@ -1461,7 +1469,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                         <TableCell>
                                           {/* Action buttons */}
                                           <div className="flex items-center justify-end gap-1">
-                                            {receipt.status === 'draft' && (
+                                            {(receipt.status === 'draft' || receipt.status === 'cancelled') && (
                                               <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -1535,14 +1543,16 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                                           <SelectTrigger className="h-auto border-none bg-transparent p-0 text-xs focus:ring-0 focus:ring-offset-0">
                                             <SelectValue>
                                               <span
-                                                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
+                                                className={`inline-flex items-center gap-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status).replace('bg-', 'text-')}`}
                                               >
-                                                {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
+                                                {receipt.status === 'draft' ? <IconFileText className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCircleCheck className="h-3 w-3" /> : (receipt.status === 'cancelled' || receipt.status === 'canceled' ? <IconCircleX className="h-3 w-3" /> : null))}
                                                 {receipt.status === 'draft'
                                                   ? 'Nháp'
                                                   : receipt.status === 'posted'
                                                     ? 'Đã ghi sổ'
-                                                    : receipt.status}
+                                                    : (receipt.status === 'cancelled' || receipt.status === 'canceled')
+                                                      ? 'Đã hủy'
+                                                      : receipt.status}
                                               </span>
                                             </SelectValue>
                                           </SelectTrigger>
@@ -2024,45 +2034,53 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                 <>
                   <Button
                     size="sm"
-                    className={cn("bg-green-600 text-white hover:bg-green-700", !isDesktop && "w-full")}
+                    className={cn("gap-2 bg-green-600 text-white hover:bg-green-700", !isDesktop && "w-full")}
                     onClick={handleCreateReceipt}
                   >
+                    <PlusIcon className="h-4 w-4" />
                     Tạo Phiếu Thu
                   </Button>
                   <Button
                     size="sm"
-                    className={cn("bg-orange-600 text-white hover:bg-orange-700", !isDesktop && "w-full")}
+                    className={cn("gap-2 bg-orange-600 text-white hover:bg-orange-700", !isDesktop && "w-full")}
                     onClick={handleCreateWarehouseReceipt}
                   >
+                    <PlusIcon className="h-4 w-4" />
                     Tạo Phiếu xuất kho
                   </Button>
                 </>
 
                 <Button
                   size="sm"
-                  className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
+                  variant="outline"
+                  className={cn("gap-2 text-blue-600 border-blue-200 hover:bg-blue-50", !isDesktop && "w-full")}
                   onClick={handlePrintInvoice}
                 >
+                  <Printer className="h-4 w-4" />
                   In Hóa Đơn
                 </Button>
                 <Button
                   size="sm"
-                  className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
+                  variant="outline"
+                  className={cn("gap-2 text-blue-600 border-blue-200 hover:bg-blue-50", !isDesktop && "w-full")}
                   onClick={handlePrintAgreement}
                 >
+                  <IconFileTypePdf className="h-4 w-4" />
                   In Thỏa Thuận
                 </Button>
                 <Button
                   size="sm"
-                  className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
+                  variant="outline"
+                  className={cn("gap-2 text-blue-600 border-blue-200 hover:bg-blue-50", !isDesktop && "w-full")}
                   onClick={handlePrintContract}
                 >
+                  <Printer className="h-4 w-4" />
                   In Hợp Đồng
                 </Button>
 
                 <Button
                   size="sm"
-                  className={cn("bg-blue-600 text-white hover:bg-blue-700", !isDesktop && "w-full")}
+                  className={cn("gap-2 bg-orange-600 text-white hover:bg-orange-700", !isDesktop && "w-full")}
                   onClick={() => {
                     if (invoice.status !== 'pending') {
                       toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái chờ duyệt')
@@ -2071,6 +2089,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                     onEdit?.()
                   }}
                 >
+                  <Pencil className="h-4 w-4" />
                   Sửa
                 </Button>
 
@@ -2088,8 +2107,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                       <Button
                         variant="destructive"
                         size="sm"
-                        className={cn(!isDesktop && "w-full")}
+                        className={cn("gap-2", !isDesktop && "w-full")}
                       >
+                        <Trash2 className="h-4 w-4" />
                         Xóa
                       </Button>
                     </ConfirmActionButton>
@@ -2097,9 +2117,10 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                     <Button
                       variant="destructive"
                       size="sm"
-                      className={cn(!isDesktop && "w-full")}
+                      className={cn("gap-2", !isDesktop && "w-full")}
                       onClick={() => toast.warning('Chỉ có thể xóa đơn hàng ở trạng thái chờ duyệt')}
                     >
+                      <Trash2 className="h-4 w-4" />
                       Xóa
                     </Button>
                   )
@@ -2111,8 +2132,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
                 type="button"
                 variant="outline"
                 size="sm"
-                className={cn(!isDesktop && (invoice?.status === 'pending' && canDelete ? "w-full" : "w-full col-span-2"))}
+                className={cn("gap-2", !isDesktop && (invoice?.status === 'pending' && canDelete ? "w-full" : "w-full col-span-2"))}
               >
+                <X className="h-4 w-4" />
                 Đóng
               </Button>
             </DialogClose>
@@ -2128,6 +2150,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
             handlePrintAgreement={handlePrintAgreement}
             handlePrintContract={handlePrintContract}
             handleDeleteInvoice={handleDeleteInvoice}
+            onCloseDialog={() => props.onOpenChange && props.onOpenChange(false)}
           />
         </DialogContent>
       </Dialog >

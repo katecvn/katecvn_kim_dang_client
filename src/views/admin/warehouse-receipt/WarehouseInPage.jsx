@@ -1,9 +1,10 @@
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { getWarehouseReceipts } from '@/stores/WarehouseReceiptSlice'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { WarehouseReceiptDataTable } from './components/WarehouseReceiptDataTable'
-import { columns } from './components/Column'
+import { getColumns } from './components/Column'
+import ViewWarehouseReceiptDialog from './components/ViewWarehouseReceiptDialog'
 import {
   addHours,
   endOfDay,
@@ -12,6 +13,7 @@ import {
   startOfMonth,
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
+import Can from '@/utils/can'
 
 const WarehouseInPage = () => {
   const dispatch = useDispatch()
@@ -33,6 +35,16 @@ const WarehouseInPage = () => {
     : warehouseReceipts?.data
       ? warehouseReceipts.data.filter((receipt) => receipt.receiptType === 1)
       : []
+
+  const [selectedReceiptId, setSelectedReceiptId] = useState(null)
+  const [showViewDialog, setShowViewDialog] = useState(false)
+
+  const handleView = (receipt) => {
+    setSelectedReceiptId(receipt.id)
+    setShowViewDialog(true)
+  }
+
+  const columns = useMemo(() => getColumns(handleView), [])
 
   useEffect(() => {
     document.title = 'Danh sách phiếu nhập kho'
@@ -80,6 +92,17 @@ const WarehouseInPage = () => {
             />
           )}
         </div>
+
+        {showViewDialog && (
+          <Can permission="GET_WAREHOUSE_RECEIPT">
+            <ViewWarehouseReceiptDialog
+              open={showViewDialog}
+              onOpenChange={setShowViewDialog}
+              receiptId={selectedReceiptId}
+              showTrigger={false}
+            />
+          </Can>
+        )}
       </LayoutBody>
     </Layout>
   )

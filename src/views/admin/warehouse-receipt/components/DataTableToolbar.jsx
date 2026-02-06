@@ -15,7 +15,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { EllipsisVertical } from 'lucide-react'
 
+import CreateManualWarehouseReceiptDialog from './CreateManualWarehouseReceiptDialog'
+import { useState } from 'react'
+import { PlusIcon } from '@radix-ui/react-icons'
+
 const DataTableToolbar = ({ table }) => {
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
   const isFiltered = table.getState().columnFilters.length > 0
   const isMobile = useMediaQuery('(max-width: 768px)')
 
@@ -39,6 +44,14 @@ const DataTableToolbar = ({ table }) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[200px]">
+            <DropdownMenuItem
+              onClick={() => setShowCreateDialog(true)}
+              className="text-green-600 focus:text-green-700 focus:bg-green-50"
+            >
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Tạo phiếu mới
+            </DropdownMenuItem>
+            <div className="my-1 h-px bg-muted" />
             {/* We can put filters here if needed, or simplified actions */}
             {table.getColumn('status') && (
               <>
@@ -86,6 +99,15 @@ const DataTableToolbar = ({ table }) => {
           className="h-8 w-[150px] lg:w-[250px]"
         />
 
+        <Button
+          size="sm"
+          className="bg-green-600 hover:bg-green-700 text-white"
+          onClick={() => setShowCreateDialog(true)}
+        >
+          <PlusIcon className="mr-2 h-4 w-4" />
+          Tạo phiếu
+        </Button>
+
         {/* Filter by status */}
         {table.getColumn('status') && (
           <DataTableFacetedFilter
@@ -108,6 +130,11 @@ const DataTableToolbar = ({ table }) => {
       </div>
 
       <DataTableViewOptions table={table} />
+
+      <CreateManualWarehouseReceiptDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+      />
     </div>
   )
 }

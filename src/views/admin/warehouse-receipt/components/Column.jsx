@@ -3,7 +3,6 @@ import { DataTableColumnHeader } from './DataTableColumnHeader'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
 import { useState } from 'react'
-import ViewWarehouseReceiptDialog from './ViewWarehouseReceiptDialog'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { receiptTypes, warehouseReceiptStatuses } from '../data'
@@ -15,7 +14,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { CreditCard, Phone, Pencil } from 'lucide-react'
 
-export const columns = [
+export const getColumns = (onView) => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -45,29 +44,14 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Mã phiếu" />
     ),
-    cell: function Cell({ row }) {
-      const [showViewDialog, setShowViewDialog] = useState(false)
-
+    cell: ({ row }) => {
       return (
-        <>
-          <Can permission={'GET_WAREHOUSE_RECEIPT'}>
-            {showViewDialog && (
-              <ViewWarehouseReceiptDialog
-                open={showViewDialog}
-                onOpenChange={setShowViewDialog}
-                receiptId={row.original.id}
-                showTrigger={false}
-              />
-            )}
-          </Can>
-
-          <div
-            className="w-32 cursor-pointer text-primary hover:underline"
-            onClick={() => setShowViewDialog(true)}
-          >
-            {row.getValue('code')}
-          </div>
-        </>
+        <div
+          className="w-32 cursor-pointer text-primary hover:underline"
+          onClick={() => onView(row.original)}
+        >
+          {row.getValue('code')}
+        </div>
       )
     },
     enableSorting: true,
@@ -213,12 +197,11 @@ export const columns = [
             >
               <Badge
                 className={cn(
-                  getStatus?.color || 'bg-gray-500'
+                  getStatus?.color || 'bg-gray-500',
                 )}
               >
                 {getStatus?.label || 'Không xác định'}
               </Badge>
-              <Pencil className="h-3 w-3 text-muted-foreground" />
             </div>
           </div>
           {showUpdateStatusDialog && (

@@ -159,7 +159,7 @@ const LiquidateContractDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("sm:max-w-[900px]", contentClassName)} overlayClassName={overlayClassName}>
+      <DialogContent className={cn("sm:max-w-[900px] h-[100dvh] sm:h-auto max-h-[100dvh] sm:max-h-[90vh] overflow-y-auto m-0 sm:m-4 rounded-none sm:rounded-lg top-0 sm:top-auto translate-y-0 sm:translate-y-[-50%]", contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Thanh lý hợp đồng</DialogTitle>
           <DialogDescription>
@@ -202,48 +202,95 @@ const LiquidateContractDialog = ({
             <Separator />
 
             {/* Items Table */}
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Sản phẩm</TableHead>
-                    <TableHead className="text-right">SL</TableHead>
-                    <TableHead className="text-right">Đơn giá HĐ</TableHead>
-                    <TableHead className="text-right w-[180px]">Giá thị trường</TableHead>
-                    <TableHead className="text-right">Chênh lệch</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => {
-                    const diff = (item.marketPrice - item.contractPrice) * item.quantity
-                    return (
-                      <TableRow key={item.productId}>
-                        <TableCell className="font-medium">
-                          {item.productName}
-                          <div className="text-xs text-muted-foreground">{item.productCode}</div>
-                        </TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right">
-                          {moneyFormat(item.contractPrice)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Input
-                            type="number"
-                            className="text-right h-8"
-                            value={item.marketPrice}
-                            onChange={(e) => handlePriceChange(item.productId, e.target.value)}
-                            min={0}
-                          />
-                        </TableCell>
-                        <TableCell className={cn("text-right font-medium", diff > 0 ? "text-green-600" : diff < 0 ? "text-red-500" : "")}>
+            {isDesktop ? (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Sản phẩm</TableHead>
+                      <TableHead className="text-right">SL</TableHead>
+                      <TableHead className="text-right">Đơn giá HĐ</TableHead>
+                      <TableHead className="text-right w-[180px]">Giá thị trường</TableHead>
+                      <TableHead className="text-right">Chênh lệch</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item) => {
+                      const diff = (item.marketPrice - item.contractPrice) * item.quantity
+                      return (
+                        <TableRow key={item.productId}>
+                          <TableCell className="font-medium">
+                            {item.productName}
+                            <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                          </TableCell>
+                          <TableCell className="text-right">{item.quantity}</TableCell>
+                          <TableCell className="text-right">
+                            {moneyFormat(item.contractPrice)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input
+                              type="number"
+                              className="text-right h-8"
+                              value={item.marketPrice}
+                              onChange={(e) => handlePriceChange(item.productId, e.target.value)}
+                              onFocus={(e) => e.target.select()}
+                              min={0}
+                            />
+                          </TableCell>
+                          <TableCell className={cn("text-right font-medium", diff > 0 ? "text-green-600" : diff < 0 ? "text-red-500" : "")}>
+                            {moneyFormat(diff)}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {items.map((item) => {
+                  const diff = (item.marketPrice - item.contractPrice) * item.quantity
+                  return (
+                    <div key={item.productId} className="rounded-lg border p-3 space-y-2 bg-card">
+                      <div className="font-medium">
+                        {item.productName}
+                        <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">SL:</span>
+                          <span className="ml-2 font-medium">{item.quantity}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-muted-foreground">Đơn giá HĐ:</span>
+                          <div className="font-medium">{moneyFormat(item.contractPrice)}</div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Giá thị trường</label>
+                        <Input
+                          type="number"
+                          className="text-right h-9"
+                          value={item.marketPrice}
+                          onChange={(e) => handlePriceChange(item.productId, e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          min={0}
+                        />
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2 border-t">
+                        <span className="text-sm text-muted-foreground">Chênh lệch:</span>
+                        <span className={cn("font-semibold", diff > 0 ? "text-green-600" : diff < 0 ? "text-red-500" : "")}>
                           {moneyFormat(diff)}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Summary */}
             <div className="bg-muted/50 p-4 rounded-lg space-y-3 text-sm">

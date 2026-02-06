@@ -15,6 +15,7 @@ import { useDispatch } from 'react-redux'
 import { updateInvoiceStatus } from '@/stores/InvoiceSlice'
 import UpdateInvoiceStatusDialog from './UpdateInvoiceStatusDialog'
 import InvoiceDialog from './InvoiceDialog'
+import { cn } from '@/lib/utils'
 
 export const columns = [
   {
@@ -320,16 +321,19 @@ export const columns = [
 
           <div className="flex flex-col gap-2">
             <Badge
-              variant="outline"
-              className={`cursor-pointer select-none ${statusObj?.color || ''}`}
-              onClick={() => setOpenUpdateStatus(true)}
-              title="Bấm để cập nhật trạng thái"
+              className={cn(
+                "select-none",
+                currentStatus === 'delivered'
+                  ? "cursor-default bg-transparent p-0 text-green-600 hover:bg-transparent shadow-none border-0"
+                  : `cursor-pointer ${statusObj?.color || ''}`
+              )}
+              onClick={() => currentStatus !== 'delivered' && setOpenUpdateStatus(true)}
+              title={currentStatus !== 'delivered' ? "Bấm để cập nhật trạng thái" : ""}
             >
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
                 {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
               </span>
               {statusObj?.label || 'Không xác định'}
-              <Pencil className="ml-2 h-3 w-3 text-muted-foreground" />
             </Badge>
             <Badge
               variant="outline"

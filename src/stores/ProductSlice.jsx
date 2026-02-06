@@ -221,6 +221,23 @@ export const getProductSaleHistory = createAsyncThunk(
   },
 )
 
+export const importProduct = createAsyncThunk(
+  'product/import',
+  async (formData, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/product/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      await dispatch(getProducts()).unwrap()
+      toast.success('Import dữ liệu thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
 const initialState = {
   products: [],
   product: null,
@@ -328,6 +345,20 @@ export const productSlice = createSlice({
         state.loading = false
       })
       .addCase(copyProduct.rejected, (state, action) => {
+        state.loading = false
+        state.error =
+          action.payload?.message || action.payload || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+
+      .addCase(importProduct.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(importProduct.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(importProduct.rejected, (state, action) => {
         state.loading = false
         state.error =
           action.payload?.message || action.payload || 'Lỗi không xác định'

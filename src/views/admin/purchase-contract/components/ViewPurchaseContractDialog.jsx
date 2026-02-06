@@ -54,6 +54,10 @@ import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/comp
 import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
 import { DeletePaymentDialog } from '../../payment/components/DeletePaymentDialog'
 import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components/DeleteWarehouseReceiptDialog'
+import CreatePurchaseOrderPaymentDialog from '../../payment/components/CreatePurchaseOrderPaymentDialog'
+import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
+import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
+import { IconPlus } from '@tabler/icons-react'
 
 const ViewPurchaseContractDialog = ({
   open,
@@ -97,6 +101,10 @@ const ViewPurchaseContractDialog = ({
   const [showDeleteWarehouseReceiptDialog, setShowDeleteWarehouseReceiptDialog] = useState(false)
   const [warehouseReceiptToDelete, setWarehouseReceiptToDelete] = useState(null)
 
+  const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false)
+  const [showConfirmImportDialog, setShowConfirmImportDialog] = useState(false)
+  const [warehouseLoading, setWarehouseLoading] = useState(false)
+
   useEffect(() => {
     if (open && purchaseContractId) {
       fetchContractDetail()
@@ -112,6 +120,66 @@ const ViewPurchaseContractDialog = ({
       console.error('Fetch contract error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleCreatePayment = () => {
+    const firstPO = contract?.purchaseOrders?.[0]
+    if (!firstPO) {
+      toast.warning('Hợp đồng chưa có đơn đặt hàng để tạo phiếu chi')
+      return
+    }
+
+    if (firstPO.status !== 'ordered' && firstPO.status !== 'partial' && firstPO.status !== 'completed') {
+      toast.warning('Chỉ có thể tạo phiếu chi cho đơn đặt hàng đã xác nhận')
+      return
+    }
+
+    setShowCreatePaymentDialog(true)
+  }
+
+  const handleCreateWarehouseReceipt = () => {
+    if (contract?.status !== 'confirmed') {
+      toast.warning('Chỉ có thể tạo phiếu nhập kho cho hợp đồng đã duyệt')
+      return
+    }
+    setShowConfirmImportDialog(true)
+  }
+
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
+    const firstPO = contract?.purchaseOrders?.[0] || {}
+    const payload = {
+      code: `NK-${contract.code}-${Date.now().toString().slice(-4)}`,
+      receiptType: 1, // IMPORT
+      businessType: 'purchase_in',
+      receiptDate: new Date().toISOString(),
+      reason: `Nhập kho từ hợp đồng ${contract.code}`,
+      note: contract.note || '',
+      warehouseId: null,
+      supplierId: contract.supplierId || firstPO.supplierId,
+      purchaseOrderId: firstPO.id || null,
+      details: selectedItems.map(item => ({
+        productId: item.productId || item.product?.id,
+        unitId: item.unitId || item.unit?.id,
+        movement: 'in',
+        qtyActual: item.quantity,
+        unitPrice: item.unitPrice || 0,
+        content: `Nhập kho theo hợp đồng ${contract.code}`,
+        purchaseOrderId: item.purchaseOrderId || firstPO.id,
+        purchaseOrderItemId: item.id
+      }))
+    }
+
+    try {
+      setWarehouseLoading(true)
+      await dispatch(createWarehouseReceipt(payload)).unwrap()
+      toast.success('Tạo phiếu nhập kho thành công')
+      fetchContractDetail()
+    } catch (error) {
+      console.error(error)
+      toast.error('Tạo phiếu nhập kho thất bại')
+    } finally {
+      setWarehouseLoading(false)
     }
   }
 
@@ -589,12 +657,25 @@ const ViewPurchaseContractDialog = ({
                     )}
 
                     {/* Payment Vouchers Section */}
-                    {contract?.paymentVouchers && contract.paymentVouchers.length > 0 && (
-                      <>
-                        <Separator className="my-4" />
-                        <div className="space-y-3">
+                    <>
+                      <Separator className="my-4" />
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
                           <h3 className="font-semibold">Phiếu chi</h3>
-                          {isDesktop ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-1"
+                            onClick={handleCreatePayment}
+                          >
+                            <IconPlus className="h-4 w-4 text-green-600" />
+                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                              Thêm
+                            </span>
+                          </Button>
+                        </div>
+                        {contract?.paymentVouchers && contract.paymentVouchers.length > 0 ? (
+                          isDesktop ? (
                             <div className="overflow-x-auto rounded-lg border">
                               <Table className="min-w-full">
                                 <TableHeader>
@@ -729,17 +810,25 @@ const ViewPurchaseContractDialog = ({
                                         <span className="text-muted-foreground">
                                           Trạng thái:
                                         </span>
-                                        <div
-                                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${statusColor} cursor-pointer hover:opacity-80`}
-                                          onClick={() => {
-                                            setSelectedPaymentForUpdate(voucher)
-                                            setShowUpdatePaymentStatus(true)
-                                          }}
-                                          title="Bấm để cập nhật trạng thái"
-                                        >
-                                          <span className="truncate text-xs font-medium">
-                                            {statusLabel}
-                                          </span>
+                                        <div className='flex items-center justify-end'>
+                                          <Select value={voucher.status} onValueChange={(val) => handleUpdatePaymentStatus(val, voucher.id)}>
+                                            <SelectTrigger className="h-6 w-auto border-0 p-0 focus:ring-0">
+                                              <SelectValue>
+                                                <span className={`inline-flex items-center gap-1 text-xs font-medium ${getReceiptStatusColor(voucher.status).replace(/bg-[^ ]+/, '').trim()}`}>
+                                                  {voucher.status === 'draft' ? 'Nháp' :
+                                                    voucher.status === 'completed' ? 'Đã chi' :
+                                                      voucher.status === 'cancelled' ? 'Đã hủy' : voucher.status}
+                                                </span>
+                                              </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent align="end" className="w-[140px] z-[100065]">
+                                              {paymentStatus.map((s) => (
+                                                <SelectItem key={s.value} value={s.value} className="text-xs">
+                                                  {s.label}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
                                         </div>
                                       </div>
                                     </div>
@@ -753,18 +842,35 @@ const ViewPurchaseContractDialog = ({
                                 )
                               })}
                             </div>
-                          )}
-                        </div>
-                      </>
-                    )}
+                          )
+                        ) : (
+                          <div className="text-center text-sm text-muted-foreground italic py-2">
+                            Chưa có dữ liệu phiếu chi
+                          </div>
+                        )}
+                      </div>
+                    </>
 
                     {/* Warehouse Receipts Section */}
-                    {contract?.warehouseReceipts && contract.warehouseReceipts.length > 0 && (
-                      <>
+                    <>
                         <Separator className="my-4" />
                         <div className="space-y-3">
-                          <h3 className="font-semibold">Phiếu nhập kho</h3>
-                          {isDesktop ? (
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">Phiếu nhập kho</h3>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 gap-1"
+                              onClick={handleCreateWarehouseReceipt}
+                            >
+                              <IconPlus className="h-4 w-4 text-orange-600" />
+                              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                Thêm
+                              </span>
+                            </Button>
+                          </div>
+                          {contract?.warehouseReceipts && contract.warehouseReceipts.length > 0 ? (
+                             isDesktop ? (
                             <div className="overflow-x-auto rounded-lg border">
                               <Table className="min-w-full">
                                 <TableHeader>
@@ -899,17 +1005,26 @@ const ViewPurchaseContractDialog = ({
                                         <span className="text-muted-foreground">
                                           Trạng thái:
                                         </span>
-                                        <div
-                                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${statusColor} cursor-pointer hover:opacity-80`}
-                                          onClick={() => {
-                                            setSelectedWarehouseReceiptForUpdate(receipt)
-                                            setShowUpdateWarehouseReceiptStatus(true)
-                                          }}
-                                          title="Bấm để cập nhật trạng thái"
-                                        >
-                                          <span className="truncate text-xs font-medium">
-                                            {statusLabel}
-                                          </span>
+                                        <div className='flex items-center justify-end'>
+                                          <Select value={receipt.status} onValueChange={(val) => handleUpdateWarehouseReceiptStatus(val, receipt.id)}>
+                                            <SelectTrigger className="h-6 w-auto border-0 p-0 focus:ring-0">
+                                              <SelectValue>
+                                                <span className={`inline-flex items-center gap-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status).replace(/bg-[^ ]+/, '').trim()}`}>
+                                                  {receipt.status === 'draft' ? 'Nháp' :
+                                                    receipt.status === 'posted' ? 'Đã ghi sổ' :
+                                                      receipt.status === 'cancelled' ? 'Đã hủy' :
+                                                        receipt.status}
+                                                </span>
+                                              </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent align="end" className="w-[140px] z-[100065]">
+                                              {warehouseReceiptStatuses.map((s) => (
+                                                <SelectItem key={s.value} value={s.value} className="text-xs">
+                                                  {s.label}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
                                         </div>
                                       </div>
                                     </div>
@@ -923,10 +1038,14 @@ const ViewPurchaseContractDialog = ({
                                 )
                               })}
                             </div>
+                          )
+                          ) : (
+                             <div className="text-center text-sm text-muted-foreground italic py-2">
+                               Chưa có dữ liệu phiếu nhập kho
+                             </div>
                           )}
                         </div>
-                      </>
-                    )}
+                    </>
                   </div>
                 </div>
 
@@ -1160,18 +1279,30 @@ const ViewPurchaseContractDialog = ({
           />
         )}
 
-        {selectedWarehouseReceiptForUpdate && (
-          <UpdateWarehouseReceiptStatusDialog
-            open={showUpdateWarehouseReceiptStatus}
-            onOpenChange={setShowUpdateWarehouseReceiptStatus}
-            receiptId={selectedWarehouseReceiptForUpdate.id}
-            receiptCode={selectedWarehouseReceiptForUpdate.code}
-            currentStatus={selectedWarehouseReceiptForUpdate.status}
-            statuses={warehouseReceiptStatuses}
-            onSubmit={handleUpdateWarehouseReceiptStatus}
+        {showCreatePaymentDialog && (
+          <CreatePurchaseOrderPaymentDialog
+            open={showCreatePaymentDialog}
+            onOpenChange={setShowCreatePaymentDialog}
+            purchaseOrder={contract?.purchaseOrders?.[0]}
+            onSuccess={() => {
+              setShowCreatePaymentDialog(false)
+              fetchContractDetail()
+            }}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
-            selectContentClassName="z-[100065]"
+          />
+        )}
+
+        {showConfirmImportDialog && (
+          <ConfirmImportWarehouseDialog
+            open={showConfirmImportDialog}
+            onOpenChange={setShowConfirmImportDialog}
+            purchaseContract={contract}
+            purchaseOrder={contract?.purchaseOrders?.[0]}
+            onConfirm={handleConfirmCreateWarehouseReceipt}
+            loading={warehouseLoading}
+            contentClassName="!z-[100060]"
+            overlayClassName="z-[100059]"
           />
         )}
       </DialogContent>

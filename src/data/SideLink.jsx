@@ -218,12 +218,12 @@ export const sideLinks = [
         icon: <IconBox size={18} />,
         permission: 'GET_PRODUCT',
       },
-      {
-        title: 'Kho sản phẩm',
-        href: '/product-stock-snapshot',
-        icon: <IconStack3Filled size={18} />,
-        permission: 'GET_STOCK',
-      },
+      // {
+      //   title: 'Kho sản phẩm',
+      //   href: '/product-stock-snapshot',
+      //   icon: <IconStack3Filled size={18} />,
+      //   permission: 'GET_STOCK',
+      // },
       {
         title: 'Danh mục',
         href: '/category',
@@ -270,14 +270,14 @@ export const sideLinks = [
         icon: <IconBox size={18} />,
         permission: 'GET_WAREHOUSE_RECEIPT',
       },
+      // {
+      //   title: 'Lô',
+      //   href: '/lots',
+      //   icon: <IconBox size={18} />,
+      //   permission: 'GET_STOCK',
+      // },
       {
-        title: 'Lô',
-        href: '/lots',
-        icon: <IconBox size={18} />,
-        permission: 'GET_STOCK',
-      },
-      {
-        title: ' Tổng hợp N-X-T',
+        title: ' Tổng hợp X-N-T',
         href: '/warehouse-report/summary',
         icon: <IconBox size={18} />,
         permission: 'GET_STOCK',
@@ -310,7 +310,7 @@ export const sideLinks = [
       },
       {
         title: 'Nhật ký hệ thống',
-        href: '/setting/system-log',
+        href: '/system-log',
         icon: <IconLogs size={18} />,
         permission: 'SESSION_SETTING',
       },

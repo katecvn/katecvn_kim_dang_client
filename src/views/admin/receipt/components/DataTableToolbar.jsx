@@ -87,7 +87,7 @@ const DataTableToolbar = ({ table }) => {
             <DropdownMenuItem
               disabled={!canRemind}
               onClick={() => setOpenReminder(true)}
-              className="text-xs"
+              className="text-xs text-orange-500"
             >
               <BellIcon className="mr-2 h-3 w-3" />
               Nhắc hạn thanh toán
@@ -96,7 +96,7 @@ const DataTableToolbar = ({ table }) => {
             <DropdownMenuItem
               disabled={selectedRows.length !== 1 || selectedRows[0]?.original?.status !== 'draft'}
               onClick={handleGenerateQR}
-              className="text-xs"
+              className="text-xs text-purple-600"
             >
               <QrCode className="mr-2 h-3 w-3" />
               Tạo QR thanh toán
@@ -151,6 +151,7 @@ const DataTableToolbar = ({ table }) => {
           variant="outline"
           disabled={!canRemind}
           onClick={() => setOpenReminder(true)}
+          className="text-orange-500 border-orange-500 hover:bg-orange-50"
         >
           <BellIcon className="mr-2 h-4 w-4" />
           Nhắc hạn thanh toán
@@ -162,6 +163,7 @@ const DataTableToolbar = ({ table }) => {
           disabled={selectedRows.length !== 1 || selectedRows[0]?.original?.status !== 'draft'}
           onClick={handleGenerateQR}
           loading={qrLoading}
+          className="text-purple-600 border-purple-600 hover:bg-purple-50"
         >
           <QrCode className="mr-2 h-4 w-4" />
           Tạo QR thanh toán

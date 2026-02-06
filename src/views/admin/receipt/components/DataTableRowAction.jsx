@@ -7,34 +7,37 @@ import {
   DropdownMenuItem,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { DeleteReceiptDialog } from './DeleteReceiptDialog'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { getReceiptQRCode } from '@/stores/ReceiptSlice'
 import { toast } from 'sonner'
-import { moneyFormat } from '@/utils/money-format'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { QrCode } from 'lucide-react'
+  Eye,
+  Printer,
+  Trash2,
+  QrCode,
+} from 'lucide-react'
 import PaymentQRCodeDialog from './PaymentQRCodeDialog'
+import ViewReceiptDialog from './ViewReceiptDialog'
+import PrintReceiptView from './PrintReceiptView'
 
 const DataTableRowActions = ({ row }) => {
   const [showDeleteReceiptDialog, setShowDeleteReceiptDialog] = useState(false)
+  const [showViewReceiptDialog, setShowViewReceiptDialog] = useState(false)
+  const [printData, setPrintData] = useState(null)
+
   const [openQrDialog, setOpenQrDialog] = useState(false)
   const [qrCodeData, setQrCodeData] = useState(null)
   const [qrLoading, setQrLoading] = useState(false)
+
   const dispatch = useDispatch()
+  const setting = useSelector((state) => state.setting.setting)
+  const receipt = row.original
 
   const handleGenerateQR = async () => {
-    const receipt = row.original
     if (receipt.status !== 'draft') {
       toast.warning('Chỉ có thể tạo mã QR cho phiếu thu nháp')
       return
@@ -53,6 +56,11 @@ const DataTableRowActions = ({ row }) => {
     }
   }
 
+  const handlePrintReceipt = () => {
+    setPrintData(receipt)
+    setTimeout(() => setPrintData(null), 100)
+  }
+
   return (
     <>
       <PaymentQRCodeDialog
@@ -61,12 +69,29 @@ const DataTableRowActions = ({ row }) => {
         qrCodeData={qrCodeData}
       />
 
+      {showViewReceiptDialog && (
+        <ViewReceiptDialog
+          open={showViewReceiptDialog}
+          onOpenChange={setShowViewReceiptDialog}
+          receiptId={receipt.id}
+          showTrigger={false}
+        />
+      )}
+
       {showDeleteReceiptDialog && (
         <DeleteReceiptDialog
           open={showDeleteReceiptDialog}
           onOpenChange={setShowDeleteReceiptDialog}
-          receipt={row.original}
+          receipt={receipt}
           showTrigger={false}
+        />
+      )}
+
+      {/* Print View */}
+      {printData && (
+        <PrintReceiptView
+          receipt={printData}
+          setting={setting}
         />
       )}
 
@@ -81,26 +106,51 @@ const DataTableRowActions = ({ row }) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
-          {row.original.status === 'draft' && (
-            <DropdownMenuItem onSelect={handleGenerateQR}>
-              Tạo QR
-              <DropdownMenuShortcut>
-                <QrCode className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            onClick={() => setShowViewReceiptDialog(true)}
+            className="text-blue-600 focus:text-blue-600"
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Xem
+          </DropdownMenuItem>
 
-          {(row.original.status === 'draft' ||
-            row.original.status === 'cancelled' ||
-            row.original.status === 'canceled') && (
+          <DropdownMenuItem
+            onClick={handlePrintReceipt}
+            className="text-orange-600 focus:text-orange-600"
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            In phiếu
+          </DropdownMenuItem>
+
+          {receipt.status === 'draft' && (
+            <>
+              <DropdownMenuItem
+                onSelect={handleGenerateQR}
+                className="text-purple-600 focus:text-purple-600"
+              >
+                <QrCode className="mr-2 h-4 w-4" />
+                Tạo QR
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onSelect={() => setShowDeleteReceiptDialog(true)}
                 className="text-destructive focus:text-destructive"
               >
+                <Trash2 className="mr-2 h-4 w-4" />
                 Xóa
-                <DropdownMenuShortcut>
-                  <IconTrash className="h-4 w-4" />
-                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </>
+          )}
+
+          {(receipt.status === 'cancelled' ||
+            receipt.status === 'canceled') && (
+              <DropdownMenuItem
+                onSelect={() => setShowDeleteReceiptDialog(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Xóa
               </DropdownMenuItem>
             )}
         </DropdownMenuContent>

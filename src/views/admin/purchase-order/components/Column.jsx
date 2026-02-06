@@ -18,11 +18,9 @@ import {
 } from '@/stores/PurchaseOrderSlice'
 import { Badge } from '@/components/ui/badge'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
-import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
-import PurchaseOrderDialog from './PurchaseOrderDialog'
 import { Phone, Pencil } from 'lucide-react'
 
-export const columns = [
+export const getColumns = (onView) => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -53,45 +51,14 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Mã ĐĐH" />
     ),
-    cell: function Cell({ row }) {
-      const [showViewDialog, setShowViewDialog] = useState(false)
-      const [showUpdateDialog, setShowUpdateDialog] = useState(false)
-
+    cell: ({ row }) => {
       return (
-        <>
-          <Can permission={'GET_PURCHASE_ORDER'}>
-            {showViewDialog && (
-              <ViewPurchaseOrderDialog
-                open={showViewDialog}
-                onOpenChange={setShowViewDialog}
-                purchaseOrderId={row.original.id}
-                showTrigger={false}
-                onEdit={() => {
-                  setShowViewDialog(false)
-                  setTimeout(() => {
-                    setShowUpdateDialog(true)
-                  }, 100)
-                }}
-              />
-            )}
-
-            {showUpdateDialog && (
-              <PurchaseOrderDialog
-                open={showUpdateDialog}
-                onOpenChange={setShowUpdateDialog}
-                purchaseOrderId={row.original.id}
-                showTrigger={false}
-              />
-            )}
-          </Can>
-
-          <span
-            className="cursor-pointer hover:text-primary"
-            onClick={() => setShowViewDialog(true)}
-          >
-            {row.original.code}
-          </span>
-        </>
+        <span
+          className="cursor-pointer hover:text-primary"
+          onClick={() => onView(row.original.id)}
+        >
+          {row.original.code}
+        </span>
       )
     },
   },

@@ -1,9 +1,11 @@
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { getMyPurchaseOrders } from '@/stores/PurchaseOrderSlice'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { columns } from './components/Column'
+import { getColumns } from './components/Column'
 import PurchaseOrderDataTable from './components/PurchaseOrderDataTable'
+import PurchaseOrderDialog from './components/PurchaseOrderDialog'
+import ViewPurchaseOrderDialog from './components/ViewPurchaseOrderDialog'
 import {
   addHours,
   endOfDay,
@@ -23,6 +25,12 @@ const MyPurchaseOrderPage = () => {
     fromDate: addHours(startOfDay(startOfMonth(current)), 12),
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
   })
+
+  const [viewPurchaseOrderId, setViewPurchaseOrderId] = useState(null)
+  const [updatePurchaseOrderId, setUpdatePurchaseOrderId] = useState(null)
+  const [showUpdatePurchaseOrderDialog, setShowUpdatePurchaseOrderDialog] = useState(false)
+
+  const columns = useMemo(() => getColumns(setViewPurchaseOrderId), [])
 
   useEffect(() => {
     document.title = 'Đơn đặt hàng của tôi'
@@ -65,9 +73,42 @@ const MyPurchaseOrderPage = () => {
               columns={columns}
               loading={loading}
               isMyPurchaseOrder={true}
+              onView={setViewPurchaseOrderId}
             />
           )}
         </div>
+
+        {/* Auto-open ViewPurchaseOrderDialog from creation */}
+        {viewPurchaseOrderId && (
+          <ViewPurchaseOrderDialog
+            open={!!viewPurchaseOrderId}
+            onOpenChange={(open) => {
+              if (!open) {
+                setViewPurchaseOrderId(null)
+              }
+            }}
+            purchaseOrderId={viewPurchaseOrderId}
+            showTrigger={false}
+            onEdit={() => {
+              setUpdatePurchaseOrderId(viewPurchaseOrderId)
+              setViewPurchaseOrderId(null)
+              setTimeout(() => {
+                setShowUpdatePurchaseOrderDialog(true)
+              }, 100)
+            }}
+            onRefresh={() => dispatch(getMyPurchaseOrders(filters))}
+          />
+        )}
+
+        {/* Update Purchase Order Dialog */}
+        {showUpdatePurchaseOrderDialog && updatePurchaseOrderId && (
+          <PurchaseOrderDialog
+            open={showUpdatePurchaseOrderDialog}
+            onOpenChange={setShowUpdatePurchaseOrderDialog}
+            purchaseOrderId={updatePurchaseOrderId}
+            showTrigger={false}
+          />
+        )}
       </LayoutBody>
     </Layout>
   )

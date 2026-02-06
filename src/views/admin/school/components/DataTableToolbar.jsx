@@ -130,8 +130,7 @@ const DataTableToolbar = ({ table }) => {
         <Can permission={['CREATE_SCHOOL']}>
           <Button
             onClick={() => setShowCreateSchoolDialog(true)}
-            className="mx-2"
-            variant="outline"
+            className="mx-2 bg-green-600 hover:bg-green-700 text-white"
             size="sm"
           >
             <IconPlus className="mr-2 size-4" /> Thêm mới

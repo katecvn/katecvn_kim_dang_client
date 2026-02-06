@@ -1,8 +1,8 @@
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { getPurchaseOrders } from '@/stores/PurchaseOrderSlice'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { columns } from './components/Column'
+import { getColumns } from './components/Column'
 import PurchaseOrderDataTable from './components/PurchaseOrderDataTable'
 import PurchaseOrderDialog from './components/PurchaseOrderDialog'
 import ViewPurchaseOrderDialog from './components/ViewPurchaseOrderDialog'
@@ -29,6 +29,8 @@ const PurchaseOrderPage = () => {
   const [viewPurchaseOrderId, setViewPurchaseOrderId] = useState(null)
   const [updatePurchaseOrderId, setUpdatePurchaseOrderId] = useState(null)
   const [showUpdatePurchaseOrderDialog, setShowUpdatePurchaseOrderDialog] = useState(false)
+
+  const columns = useMemo(() => getColumns(setViewPurchaseOrderId), [])
 
   useEffect(() => {
     document.title = 'Danh sách đơn đặt hàng'

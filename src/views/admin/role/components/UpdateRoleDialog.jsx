@@ -164,8 +164,7 @@ const UpdateRoleDialog = ({
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-primary">
-                        <strong className="text-destructive">Lưu ý:</strong>
-                        Mã vai trò không thể thay đổi sau khi tạo và mã vai trò
+                        <strong className="text-destructive">Lưu ý:</strong>&nbsp;Mã vai trò không thể thay đổi sau khi tạo và mã vai trò
                         phải là duy nhất.
                       </FormDescription>
                     </FormItem>
@@ -186,7 +185,7 @@ const UpdateRoleDialog = ({
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-primary">
-                        <strong className="text-destructive">Lưu ý:</strong> Tên
+                        <strong className="text-destructive">Lưu ý:</strong>&nbsp;Tên
                         vai trò phải là duy nhất.
                       </FormDescription>
                     </FormItem>

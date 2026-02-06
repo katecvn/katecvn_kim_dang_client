@@ -87,10 +87,8 @@ const UpdateUserDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
       {showTrigger && (
         <DialogTrigger asChild>
-          <Button className="mx-2" variant="outline" size="sm">
-            <PlusIcon className="mr-2 size-4" aria-hidden="true" />
-            Thêm mới
-          </Button>
+          {/* Custom Trigger if needed, otherwise empty to prevent ghost button */}
+          <span />
         </DialogTrigger>
       )}
 

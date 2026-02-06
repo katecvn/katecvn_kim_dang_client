@@ -49,8 +49,7 @@ const DataTableToolbar = ({ table }) => {
       <Can permission={['CREATE_USER', 'GET_ROLE']}>
         <Button
           onClick={() => setShowCreateUserDialog(true)}
-          className="mx-2"
-          variant="outline"
+          className="mx-2 bg-green-600 hover:bg-green-700 text-white"
           size="sm"
         >
           <PlusIcon className="mr-2 size-4" aria-hidden="true" />

@@ -3,7 +3,9 @@ import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
 import { DataTableViewOptions } from './DataTableViewOption'
 import CreateProductDialog from './CreateProductDialog'
+import ImportProductDialog from './ImportProductDialog'
 import Can from '@/utils/can'
+import { FileSpreadsheet } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getCategories } from '@/stores/CategorySlice'
 import { useDispatch, useSelector } from 'react-redux'
@@ -24,6 +26,7 @@ import { useMediaQuery } from '@/hooks/UseMediaQuery'
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showCreateProductDialog, setShowCreateProductDialog] = useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
   const dispatch = useDispatch()
   const categories = useSelector((state) => state.category.categories)
   const loading = useSelector((state) => state.product.loading)
@@ -55,10 +58,9 @@ const DataTableToolbar = ({ table }) => {
           ]}
         >
           <Button
-            variant="outline"
             size="sm"
             onClick={() => setShowCreateProductDialog(true)}
-            className="h-8 px-2"
+            className="h-8 px-2 bg-green-600 hover:bg-green-700 text-white"
           >
             <PlusIcon className="size-4" aria-hidden="true" />
           </Button>
@@ -68,6 +70,14 @@ const DataTableToolbar = ({ table }) => {
               open={showCreateProductDialog}
               onOpenChange={setShowCreateProductDialog}
               showTrigger={false}
+            />
+          )}
+
+          {/* Mobile Import Dialog */}
+          {showImportDialog && (
+            <ImportProductDialog
+              open={showImportDialog}
+              onOpenChange={setShowImportDialog}
             />
           )}
         </Can>
@@ -132,6 +142,14 @@ const DataTableToolbar = ({ table }) => {
                   </DropdownMenuItem>
                 </>
               )}
+
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setShowImportDialog(true)}
+              >
+                <FileSpreadsheet className="mr-2 size-4" />
+                <span>Import Excel</span>
+              </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -211,8 +229,7 @@ const DataTableToolbar = ({ table }) => {
         ]}
       >
         <Button
-          className="mx-2"
-          variant="outline"
+          className="mx-2 bg-green-600 hover:bg-green-700 text-white"
           size="sm"
           onClick={() => setShowCreateProductDialog(true)}
         >
@@ -220,11 +237,29 @@ const DataTableToolbar = ({ table }) => {
           Thêm mới
         </Button>
 
+        <Button
+          onClick={() => setShowImportDialog(true)}
+          className="mx-2"
+          variant="outline"
+          size="sm"
+        >
+          <FileSpreadsheet className="mr-2 size-4" aria-hidden="true" />
+          Import Excel
+        </Button>
+
         {showCreateProductDialog && (
           <CreateProductDialog
             open={showCreateProductDialog}
             onOpenChange={setShowCreateProductDialog}
             showTrigger={false}
+          />
+        )}
+
+        {/* Desktop Import Dialog */}
+        {showImportDialog && (
+          <ImportProductDialog
+            open={showImportDialog}
+            onOpenChange={setShowImportDialog}
           />
         )}
       </Can>

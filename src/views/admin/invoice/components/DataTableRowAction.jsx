@@ -407,20 +407,6 @@ const DataTableRowActions = ({ row, table }) => {
             </Can>
           )}
 
-          {row?.original?.status === 'pending' && (
-            <Can permission="REJECT_INVOICE">
-              <DropdownMenuItem
-                onClick={() => setShowRejectInvoiceDialog(true)}
-                className="text-red-600"
-              >
-                Hủy
-                <DropdownMenuShortcut>
-                  <IconCircleX className="h-4 w-4" />
-                </DropdownMenuShortcut>
-              </DropdownMenuItem>
-            </Can>
-          )}
-
           <DropdownMenuSeparator />
 
           {/* In Hóa Đơn */}

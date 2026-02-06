@@ -1,20 +1,23 @@
-import { IconBrandVisa, IconCash, IconCircleCheck, IconCircleX, IconFileText } from '@tabler/icons-react'
+import { IconBuildingBank, IconCash, IconCircleCheck, IconCircleX, IconFileText } from '@tabler/icons-react'
 
 const receiptStatus = [
   {
     value: 'draft',
     label: 'Nháp',
     icon: IconFileText,
+    color: 'bg-yellow-100 text-yellow-700',
   },
   {
     value: 'completed',
     label: 'Đã thu',
     icon: IconCircleCheck,
+    color: 'bg-green-100 text-green-700',
   },
   {
     value: 'cancelled',
     label: 'Đã hủy',
-    icon: IconCircleX
+    icon: IconCircleX,
+    color: 'bg-red-100 text-red-700',
   },
 
 ]
@@ -24,11 +27,13 @@ const paymentMethods = [
     value: 'cash',
     label: 'Tiền mặt',
     icon: IconCash,
+    color: 'text-green-600 border-green-600',
   },
   {
     value: 'transfer',
     label: 'Chuyển khoản',
-    icon: IconBrandVisa,
+    icon: IconBuildingBank,
+    color: 'text-blue-600 border-blue-600',
   },
 ]
 

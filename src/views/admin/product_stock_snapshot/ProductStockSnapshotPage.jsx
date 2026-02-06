@@ -24,8 +24,7 @@ import { CalendarIcon } from 'lucide-react'
 import { DatePicker } from '@/components/custom/DatePicker.jsx'
 
 import { ProductStockSnapshotDataTable } from './components/ProductStockSnapshotDataTable'
-import { FileSpreadsheet } from 'lucide-react'
-import { exportGeneralInventoryToExcel } from '@/utils/export-general-inventory'
+
 
 const ProductStockSnapshotPage = () => {
   const dispatch = useDispatch()
@@ -200,16 +199,7 @@ const ProductStockSnapshotPage = () => {
           </Form>
         </div>
 
-        <div className="flex justify-end mb-2">
-          <Button
-            variant="outline"
-            className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => exportGeneralInventoryToExcel(productStockSnapshots, filters)}
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Xuất Báo Cáo Tổng Hợp
-          </Button>
-        </div>
+
 
         <div className="-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
           {productStockSnapshots && (

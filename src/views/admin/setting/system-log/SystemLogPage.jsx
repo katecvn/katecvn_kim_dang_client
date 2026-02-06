@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Search, X, Eye } from 'lucide-react'
+import { Search, X, Eye, Plus, Edit3, Trash2, LogIn, LogOut } from 'lucide-react'
 import { DateRange } from '@/components/custom/DateRange'
 import { getUsers } from '@/stores/UserSlice'
 import { format } from 'date-fns'
@@ -109,6 +109,34 @@ const SystemLogPage = () => {
   }
 
   const ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT']
+
+  const ACTIONS_CONFIG = {
+    CREATE: {
+      label: 'CREATE',
+      icon: Plus,
+      color: 'border-green-300 bg-green-50 text-green-700',
+    },
+    UPDATE: {
+      label: 'UPDATE',
+      icon: Edit3,
+      color: 'border-blue-300 bg-blue-50 text-blue-700',
+    },
+    DELETE: {
+      label: 'DELETE',
+      icon: Trash2,
+      color: 'border-red-300 bg-red-50 text-red-700',
+    },
+    LOGIN: {
+      label: 'LOGIN',
+      icon: LogIn,
+      color: 'border-purple-300 bg-purple-50 text-purple-700',
+    },
+    LOGOUT: {
+      label: 'LOGOUT',
+      icon: LogOut,
+      color: 'border-orange-300 bg-orange-50 text-orange-700',
+    },
+  }
 
   return (
     <Layout>
@@ -244,9 +272,19 @@ const SystemLogPage = () => {
                       {log.user?.fullName || log.username || 'System'}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={log.action === 'DELETE' ? 'destructive' : 'outline'}>
-                        {log.action}
-                      </Badge>
+                      {(() => {
+                        const actionConfig = ACTIONS_CONFIG[log.action]
+                        const IconComponent = actionConfig?.icon
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={`${actionConfig?.color || 'border-gray-300 bg-gray-50 text-gray-700'}`}
+                          >
+                            {IconComponent && <IconComponent className="mr-2 h-4 w-4 inline" />}
+                            {log.action}
+                          </Badge>
+                        )
+                      })()}
                     </TableCell>
                     <TableCell>
                       <span className='font-medium'>{log.entityNameVi}</span>

@@ -28,6 +28,7 @@ const UpdateReceiptStatusDialog = ({
   contentClassName,
   overlayClassName,
   targetStatus, // New prop to pre-select status
+  selectContentClassName,
 }) => {
   // Normalize status to handle both single and double 'l' from backend/frontend mismatch
   const normalizedStatus = useMemo(() => {
@@ -46,7 +47,7 @@ const UpdateReceiptStatusDialog = ({
   // Explicit color mapping since data might not have it
   const getColor = (statusValue) => {
     switch (statusValue) {
-      case 'draft': return 'text-gray-600'
+      case 'draft': return 'text-yellow-500'
       case 'completed': return 'text-green-600'
       case 'canceled':
       case 'cancelled': return 'text-red-600'
@@ -112,7 +113,10 @@ const UpdateReceiptStatusDialog = ({
               <>
                 {' '}
                 • Hiện tại:{' '}
-                <span className={`font-semibold ${getColor(currentStatus)}`}>{current.label}</span>
+                <span className={`inline-flex items-center gap-1 font-semibold ${getColor(currentStatus)}`}>
+                  {current.icon && <current.icon className="h-4 w-4" />}
+                  {current.label}
+                </span>
               </>
             ) : null}
           </DialogDescription>
@@ -137,7 +141,7 @@ const UpdateReceiptStatusDialog = ({
               </SelectValue>
             </SelectTrigger>
 
-            <SelectContent position="popper" className="z-[10010]">
+            <SelectContent position="popper" className={cn("z-[10010]", selectContentClassName)}>
               {filteredStatuses.map((s) => (
                 <SelectItem
                   key={s.value}

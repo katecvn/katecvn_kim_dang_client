@@ -197,6 +197,29 @@ export const recordPrintSuccess = createAsyncThunk(
   },
 )
 
+export const importInvoice = createAsyncThunk(
+  'invoice/import',
+  async (formData, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/invoice/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      await dispatch(
+        getMyInvoices({
+          fromDate: getStartOfCurrentMonth(),
+          toDate: getEndOfCurrentMonth(),
+        }),
+      ).unwrap()
+      toast.success('Import dữ liệu thành công')
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 const initialState = {
   invoices: [],
   invoice: null,
@@ -310,6 +333,17 @@ export const invoiceSlice = createSlice({
       .addCase(recordPrintSuccess.rejected, (state, action) => {
         // Silent fail
         console.error('Failed to record print success:', action.payload)
+      })
+      .addCase(importInvoice.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(importInvoice.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(importInvoice.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+        toast.error(state.error)
       })
   },
 })

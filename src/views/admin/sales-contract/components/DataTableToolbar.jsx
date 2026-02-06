@@ -67,7 +67,7 @@ const DataTableToolbar = ({ table }) => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem
                   onClick={handleShowDeliveryReminderDialog}
-                  className="text-xs"
+                  className="text-xs text-blue-500"
                 >
                   <TruckIcon className="mr-2 h-3 w-3" />
                   Gửi nhắc giao hàng
@@ -138,7 +138,7 @@ const DataTableToolbar = ({ table }) => {
 
         {/* Gửi nhắc giao hàng */}
         <Button
-          className=""
+          className="text-blue-500 border-blue-500 hover:bg-blue-50"
           variant="outline"
           size="sm"
           onClick={handleShowDeliveryReminderDialog}

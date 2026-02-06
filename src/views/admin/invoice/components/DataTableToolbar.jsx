@@ -6,7 +6,9 @@ import Can from '@/utils/can'
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import InvoiceDialog from './InvoiceDialog'
+import ImportInvoiceDialog from './ImportInvoiceDialog'
 import { IconFileTypeXls } from '@tabler/icons-react'
+import { FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
 import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
 import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
@@ -33,6 +35,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
   const isFiltered = table.getState().columnFilters.length > 0
 
   const [showCreateInvoiceDialog, setShowCreateInvoiceDialog] = useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
 
   const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
   const [showCreateSalesContractDialog, setShowCreateSalesContractDialog] = useState(false)
@@ -77,7 +80,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
       <div className="space-y-2">
         {/* Search section */}
         <Input
-          placeholder="Tìm mã ĐB hoặc tên KH"
+          placeholder="Tìm kiếm..."
           value={table.getState().globalFilter || ''}
           onChange={(e) => {
             table.setGlobalFilter(e.target.value)
@@ -89,9 +92,8 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
         <div className="flex gap-2">
           <Can permission={['CREATE_INVOICE']}>
             <Button
-              variant="default"
+              className="flex-1 h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
               size="sm"
-              className="flex-1 h-8 text-xs"
               onClick={() => setShowCreateInvoiceDialog(true)}
             >
               <PlusIcon className="mr-1 h-3 w-3" />
@@ -109,10 +111,18 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem
                 onClick={() => setShowExportDialog(true)}
-                className="text-xs"
+                className="text-xs text-green-600 focus:text-green-700 focus:bg-green-50"
               >
                 <IconFileTypeXls className="mr-2 h-3 w-3" />
                 Xuất file
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => setShowImportDialog(true)}
+                className="text-xs text-blue-600 focus:text-blue-700 focus:bg-blue-50"
+              >
+                <FileSpreadsheet className="mr-2 h-3 w-3" />
+                Import Excel
               </DropdownMenuItem>
 
               {/* Gửi nhắc giao hàng */}
@@ -125,13 +135,21 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
                   }
                   setShowDeliveryReminderDialog(true)
                 }}
-                className="text-xs"
+                className="text-xs text-orange-600 focus:text-orange-700 focus:bg-orange-50"
               >
                 <TruckIcon className="mr-2 h-3 w-3" />
                 Nhắc giao hàng
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Dialog Import */}
+          {showImportDialog && (
+            <ImportInvoiceDialog
+              open={showImportDialog}
+              onOpenChange={setShowImportDialog}
+            />
+          )}
         </div>
 
         {/* Dialogs */}
@@ -192,7 +210,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
       <div className="flex w-full flex-wrap items-center gap-2">
         <div className="flex items-center justify-center gap-1 w-full sm:w-auto">
           <Input
-            placeholder="Tìm theo Mã Đơn Bán, CCCC, Tên KH, SĐT, Mã Hợp Đồng"
+            placeholder="Tìm kiếm..."
             value={table.getState().globalFilter || ''}
             onChange={(e) => table.setGlobalFilter(e.target.value)}
             className="h-8 w-full sm:w-[400px]"
@@ -245,7 +263,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
         <div className="flex flex-wrap items-center justify-end gap-2 whitespace-nowrap">
           {/* Xuất Excel */}
           <Button
-            className=""
+            className="text-green-600 border-green-200 hover:bg-green-50"
             variant="outline"
             size="sm"
             loading={loading}
@@ -259,13 +277,30 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
               open={showExportDialog}
               onOpenChange={setShowExportDialog}
               showTrigger={false}
-              isMyInvoice={isMyInvoice}
+            />
+          )}
+
+          {/* Import Excel */}
+          <Button
+            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowImportDialog(true)}
+          >
+            <FileSpreadsheet className="mr-2 size-4" aria-hidden="true" />
+            Import Excel
+          </Button>
+
+          {showImportDialog && (
+            <ImportInvoiceDialog
+              open={showImportDialog}
+              onOpenChange={setShowImportDialog}
             />
           )}
 
           {/* Gửi nhắc giao hàng */}
           <Button
-            className=""
+            className="text-orange-600 border-orange-200 hover:bg-orange-50"
             variant="outline"
             size="sm"
             onClick={() => {
@@ -292,7 +327,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
           {/* Tạo hóa đơn chung */}
           <Can permission={['CREATE_INVOICE']}>
             <Button
-              className=""
+              className="bg-green-600 hover:bg-green-700 text-white"
               size="sm"
               onClick={() => setShowCreateInvoiceDialog(true)}
             >

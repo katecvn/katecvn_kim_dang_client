@@ -159,7 +159,7 @@ const CreateRoleDialog = ({
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-primary">
-                        <strong className="text-destructive">Lưu ý:</strong>
+                        <strong className="text-destructive">Lưu ý: </strong>
                         Mã vai trò không thể thay đổi sau khi tạo và mã vai trò
                         phải là duy nhất.
                       </FormDescription>

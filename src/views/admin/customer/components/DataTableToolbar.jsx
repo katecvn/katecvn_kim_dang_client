@@ -6,6 +6,7 @@ import Can from '@/utils/can'
 import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import CreateCustomerDialog from './CreateCustomerDialog'
+import ImportCustomerDialog from './ImportCustomerDialog'
 import { types } from '../data'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 
@@ -13,6 +14,7 @@ const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showCreateCustomerDialog, setShowCreateCustomerDialog] =
     useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
 
   return (
     <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-1">
@@ -51,13 +53,29 @@ const DataTableToolbar = ({ table }) => {
       <Can permission={'CREATE_CUSTOMER'}>
         <Button
           onClick={() => setShowCreateCustomerDialog(true)}
-          className="mx-2"
-          variant="outline"
+          className="mx-2 bg-green-600 hover:bg-green-700 text-white"
           size="sm"
         >
           <PlusIcon className="mr-2 size-4" aria-hidden="true" />
           Thêm mới
         </Button>
+
+        <Button
+          onClick={() => setShowImportDialog(true)}
+          className="mx-2"
+          variant="outline"
+          size="sm"
+        >
+          <PlusIcon className="mr-2 size-4" aria-hidden="true" />
+          Import Excel
+        </Button>
+
+        {showImportDialog && (
+          <ImportCustomerDialog
+            open={showImportDialog}
+            onOpenChange={setShowImportDialog}
+          />
+        )}
 
         {showCreateCustomerDialog && (
           <CreateCustomerDialog

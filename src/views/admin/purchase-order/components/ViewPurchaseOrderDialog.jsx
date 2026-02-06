@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { purchaseOrderStatuses, purchaseOrderPaymentStatuses } from '../data'
 import { paymentStatus } from '../../payment/data'
 import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
@@ -39,7 +39,7 @@ import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { getPublicUrl } from '@/utils/file'
-import { Mail, MapPin, Pencil, Trash2, Printer } from 'lucide-react'
+import { Mail, MapPin, Pencil, Trash2, Printer, X, CreditCard, PackagePlus } from 'lucide-react'
 import { IconPlus, IconPencil, IconCheck } from '@tabler/icons-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
@@ -122,6 +122,12 @@ const ViewPurchaseOrderDialog = ({
   const [showDeleteWarehouseReceiptDialog, setShowDeleteWarehouseReceiptDialog] = useState(false)
   const [warehouseReceiptToDelete, setWarehouseReceiptToDelete] = useState(null)
 
+
+
+  const filteredStatuses = useMemo(
+    () => purchaseOrderStatuses.filter((s) => s.value !== 'completed'),
+    []
+  )
 
   // Fetch Data
   const fetchData = async () => {
@@ -315,7 +321,7 @@ const ViewPurchaseOrderDialog = ({
       >
         <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
           <DialogTitle className={cn(!isDesktop && "text-base")}>
-            Thông tin chi tiết đơn mua hàng: {purchaseOrder?.code} <br />
+            Thông tin chi tiết đơn mua hàng: <span className={cn(!isDesktop && "block")}>{purchaseOrder?.code}</span>
             {/* <span className="text-sm font-normal text-muted-foreground">
               Ngày đặt: {dateFormat(purchaseOrder?.orderDate, true)}
             </span> */}
@@ -421,15 +427,27 @@ const ViewPurchaseOrderDialog = ({
                       {purchaseOrder.items?.map((item, index) => (
                         <div key={index} className="border rounded-lg p-3 space-y-2 bg-card">
                           <div
-                            className="font-medium text-sm text-blue-600 cursor-pointer hover:underline"
+                            className="flex gap-3 items-start cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => {
-                              if (item.productId) {
+                              if (item?.productId) {
                                 setSelectedProductId(item.productId)
                                 setShowViewProductDialog(true)
                               }
                             }}
                           >
-                            {index + 1}. {item.productName}
+                            {item.product?.image && (
+                              <div className="size-16 rounded border overflow-hidden shrink-0">
+                                <img src={getPublicUrl(item.product?.image)} alt={item.product?.productName} className="h-full w-full object-cover" />
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-medium text-sm text-blue-600 hover:underline">
+                                {index + 1}. {item.productName}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {item.productCode || item.code}
+                              </div>
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div>
@@ -494,31 +512,45 @@ const ViewPurchaseOrderDialog = ({
 
                       <div className="flex justify-start border-t py-2">
                         <strong className="mr-2">Trạng thái đơn hàng: </strong>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "cursor-pointer select-none flex h-fit",
-                            getStatusColor(purchaseOrder.status),
-                            ['completed', 'cancelled'].includes(purchaseOrder.status)
-                              ? "opacity-80 cursor-default"
-                              : "hover:opacity-80"
-                          )}
-                          onClick={() => {
-                            if (!['completed', 'cancelled'].includes(purchaseOrder.status)) {
-                              setShowUpdateStatusDialog(true)
-                            }
-                          }}
-                          title={!['completed', 'cancelled'].includes(purchaseOrder.status) ? 'Bấm để cập nhật trạng thái' : ''}
-                        >
-                          <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
-                            {(() => {
-                              const s = purchaseOrderStatuses.find(st => st.value === purchaseOrder.status)
-                              return s?.icon ? <s.icon className="h-4 w-4" /> : null
-                            })()}
-                          </span>
-                          {getStatusLabel(purchaseOrder.status)}
-                          <Pencil className="ml-2 h-3 w-3 text-muted-foreground" />
-                        </Badge>
+                        <div className="w-[140px]">
+                          <Select
+                            value={purchaseOrder.status}
+                            onValueChange={(val) => handleUpdateStatus(val, purchaseOrder.id)}
+                            disabled={['cancelled', 'completed'].includes(purchaseOrder.status)}
+                          >
+                            <SelectTrigger className="h-7 text-xs px-2">
+                              <SelectValue placeholder="Chọn trạng thái">
+                                {(() => {
+                                  const selectedStatusObj = purchaseOrderStatuses.find((s) => s.value === purchaseOrder.status)
+                                  return selectedStatusObj ? (
+                                    <span
+                                      className={`inline-flex items-center gap-1 font-medium ${selectedStatusObj.color || ''}`}
+                                    >
+                                      {selectedStatusObj.icon ? <selectedStatusObj.icon className="h-3 w-3" /> : null}
+                                      {selectedStatusObj.label}
+                                    </span>
+                                  ) : null
+                                })()}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent position="popper" align="start" className="w-[140px] z-[10005]">
+                              {filteredStatuses.map((s) => (
+                                <SelectItem
+                                  key={s.value}
+                                  value={s.value}
+                                  className="cursor-pointer text-xs"
+                                >
+                                  <span
+                                    className={`inline-flex items-center gap-1 font-medium ${s.color || ''}`}
+                                  >
+                                    {s.icon ? <s.icon className="h-3 w-3" /> : null}
+                                    {s.label}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       <div className="space-y-3 pt-2">
@@ -1159,7 +1191,7 @@ const ViewPurchaseOrderDialog = ({
             <>
               <Button
                 size="sm"
-                className="bg-green-600 text-white hover:bg-green-700"
+                className="gap-2 bg-green-600 text-white hover:bg-green-700"
                 onClick={() => {
                   if (!(!['draft', 'cancelled'].includes(purchaseOrder.status) && purchaseOrder.paymentStatus !== 'paid')) {
                     toast.warning('Không thể tạo phiếu chi')
@@ -1169,11 +1201,12 @@ const ViewPurchaseOrderDialog = ({
                 }}
                 disabled={!(!['draft', 'cancelled'].includes(purchaseOrder.status) && purchaseOrder.paymentStatus !== 'paid')}
               >
+                <CreditCard className="h-4 w-4" />
                 Tạo Phiếu Chi
               </Button>
               <Button
                 size="sm"
-                className="bg-orange-600 text-white hover:bg-orange-700"
+                className="gap-2 bg-orange-600 text-white hover:bg-orange-700"
                 onClick={() => {
                   if (!['ordered', 'partial'].includes(purchaseOrder.status)) {
                     toast.warning('Chỉ tạo phiếu nhập kho khi đơn đã đặt')
@@ -1183,19 +1216,21 @@ const ViewPurchaseOrderDialog = ({
                 }}
                 disabled={!['ordered', 'partial'].includes(purchaseOrder.status)}
               >
+                <PackagePlus className="h-4 w-4" />
                 Tạo Phiếu Nhập Kho
               </Button>
               <Button
                 size="sm"
-                className="bg-blue-600 text-white hover:bg-blue-700"
+                className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
                 onClick={handlePrintOrder}
               >
+                <Printer className="h-4 w-4" />
                 In Đơn Hàng
               </Button>
 
               <Button
                 size="sm"
-                className="bg-blue-600 text-white hover:bg-blue-700"
+                className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
                 onClick={() => {
                   if (purchaseOrder.status !== 'draft') {
                     toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái nháp')
@@ -1204,6 +1239,7 @@ const ViewPurchaseOrderDialog = ({
                   onEdit?.()
                 }}
               >
+                <Pencil className="h-4 w-4" />
                 Sửa
               </Button>
 
@@ -1217,7 +1253,8 @@ const ViewPurchaseOrderDialog = ({
                   overlayClassName="z-[100019]"
                   confirmBtnVariant="destructive"
                 >
-                  <Button variant="destructive" size="sm">
+                  <Button variant="destructive" size="sm" className="gap-2">
+                    <Trash2 className="h-4 w-4" />
                     Xóa
                   </Button>
                 </ConfirmActionButton>
@@ -1225,8 +1262,10 @@ const ViewPurchaseOrderDialog = ({
                 <Button
                   variant="destructive"
                   size="sm"
+                  className="gap-2"
                   onClick={() => toast.warning('Chỉ có thể xóa đơn hàng ở trạng thái nháp hoặc đã hủy')}
                 >
+                  <Trash2 className="h-4 w-4" />
                   Xóa
                 </Button>
               )}
@@ -1238,7 +1277,9 @@ const ViewPurchaseOrderDialog = ({
               type="button"
               variant="outline"
               size="sm"
+              className="gap-2"
             >
+              <X className="h-4 w-4" />
               Đóng
             </Button>
           </DialogClose>

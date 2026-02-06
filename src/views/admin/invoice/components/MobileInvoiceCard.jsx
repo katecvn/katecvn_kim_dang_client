@@ -119,17 +119,23 @@ const MobileInvoiceCard = ({
 
   const getStatusBadge = (statusValue) => {
     const statusObj = statuses.find((s) => s.value === statusValue)
+    // Extract text color from color class string if possible, or use explicit mapping
+    // Assuming statusObj.color might look like "bg-green-100 text-green-700"
+    // We want just "text-green-700" or similar.
+    // For now, let's use a mapping based on value if data doesn't have partials.
+    // Or we can just use the provided color class but override background?
+    // "bg-green-100" will show background.
+    // Let's assume I need to find the text color.
+
+    let textColor = "text-gray-600"
     return (
-      <Badge
-        variant="outline"
-        className={`cursor-pointer ${statusObj?.color}`}
+      <div
+        className={`cursor-pointer inline-flex items-center gap-1 font-medium text-xs ${statusObj?.textColor || 'text-gray-600'}`}
         onClick={() => setShowUpdateStatusDialog(true)}
       >
-        <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
-          {statusObj?.icon ? <statusObj.icon className="h-3 w-3" /> : null}
-        </span>
+        {statusObj?.icon ? <statusObj.icon className="h-3 w-3" /> : null}
         {statusObj?.label || 'Không xác định'}
-      </Badge>
+      </div>
     )
   }
 
@@ -492,14 +498,14 @@ const MobileInvoiceCard = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => setShowViewDialog(true)}>
+              <DropdownMenuItem onClick={() => setShowViewDialog(true)} className="text-slate-600">
                 <Eye className="mr-2 h-4 w-4" />
                 Xem
               </DropdownMenuItem>
 
               {status !== 'accepted' && (
                 <Can permission="GET_INVOICE">
-                  <DropdownMenuItem onClick={() => setShowUpdateDialog(true)}>
+                  <DropdownMenuItem onClick={() => setShowUpdateDialog(true)} className="text-blue-600">
                     <Pencil className="mr-2 h-4 w-4" />
                     Sửa
                   </DropdownMenuItem>
@@ -509,19 +515,19 @@ const MobileInvoiceCard = ({
               <DropdownMenuSeparator />
 
               {/* In Hóa Đơn */}
-              <DropdownMenuItem onClick={handlePrintInvoice}>
+              <DropdownMenuItem onClick={handlePrintInvoice} className="text-purple-600">
                 <IconFileTypePdf className="mr-2 h-4 w-4" />
                 In HĐ
               </DropdownMenuItem>
 
               {/* In Thỏa Thuận Mua Bán */}
-              <DropdownMenuItem onClick={handlePrintAgreement}>
+              <DropdownMenuItem onClick={handlePrintAgreement} className="text-purple-600">
                 <IconFileTypePdf className="mr-2 h-4 w-4" />
                 In Thỏa Thuận
               </DropdownMenuItem>
 
               {/* In Hợp Đồng Bán Hàng */}
-              <DropdownMenuItem onClick={handlePrintInstallment}>
+              <DropdownMenuItem onClick={handlePrintInstallment} className="text-purple-600">
                 <IconFileTypePdf className="mr-2 h-4 w-4" />
                 In Hợp Đồng
               </DropdownMenuItem>
@@ -531,7 +537,7 @@ const MobileInvoiceCard = ({
               {/* Create Receipt */}
               {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && (
                 <Can permission="CREATE_RECEIPT">
-                  <DropdownMenuItem onClick={handleCreateReceipt}>
+                  <DropdownMenuItem onClick={handleCreateReceipt} className="text-emerald-600">
                     <IconPlus className="mr-2 h-4 w-4" />
                     Tạo Phiếu Thu
                   </DropdownMenuItem>
@@ -541,7 +547,7 @@ const MobileInvoiceCard = ({
               {/* Create Sales Contract */}
               {invoice?.status === 'accepted' && !invoice?.salesContract && (
                 <Can permission="CREATE_SALES_CONTRACT">
-                  <DropdownMenuItem onClick={handleCreateSalesContract}>
+                  <DropdownMenuItem onClick={handleCreateSalesContract} className="text-indigo-600">
                     <IconPlus className="mr-2 h-4 w-4" />
                     Tạo Hợp Đồng
                   </DropdownMenuItem>
@@ -555,7 +561,7 @@ const MobileInvoiceCard = ({
                 <Can permission="CREATE_INVOICE">
                   <DropdownMenuItem
                     onClick={handleCreateWarehouseReceipt}
-                    className="text-blue-600"
+                    className="text-orange-600"
                   >
                     <IconPackageExport className="mr-2 h-4 w-4" />
                     Tạo Phiếu Xuất Kho
@@ -567,7 +573,7 @@ const MobileInvoiceCard = ({
                 <Can permission="CREATE_INVOICE">
                   <DropdownMenuItem
                     onClick={handlePostWarehouseReceipt}
-                    className="text-green-600"
+                    className="text-orange-600"
                   >
                     <IconCheck className="mr-2 h-4 w-4" />
                     Ghi Sổ Kho
@@ -580,6 +586,7 @@ const MobileInvoiceCard = ({
                   onClick={() => {
                     toast.info(`Phiếu kho: ${invoice?.warehouseReceipt?.code || invoice?.warehouseReceiptId}`)
                   }}
+                  className="text-orange-600"
                 >
                   <IconPackage className="mr-2 h-4 w-4" />
                   Xem Phiếu Kho
@@ -589,7 +596,7 @@ const MobileInvoiceCard = ({
               <Can permission="DELETE_INVOICE">
                 <DropdownMenuItem
                   onClick={() => setShowDeleteDialog(true)}
-                  className="text-destructive focus:text-destructive"
+                  className="text-red-600"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Xóa
@@ -655,8 +662,12 @@ const MobileInvoiceCard = ({
                   <SelectValue placeholder="Chọn trạng thái">
                     {selectedStatusObj ? (
                       <span
-                        className={`inline-flex items-center gap-1 font-medium ${selectedStatusObj.color || ''
-                          }`}
+                        className={cn(
+                          "inline-flex items-center gap-1 font-medium",
+                          invoice.status === 'delivered'
+                            ? "text-green-600"
+                            : selectedStatusObj.textColor || selectedStatusObj.color || ''
+                        )}
                       >
                         {selectedStatusObj.icon ? (
                           <selectedStatusObj.icon className="h-3 w-3" />
@@ -674,7 +685,7 @@ const MobileInvoiceCard = ({
                       className="cursor-pointer text-xs"
                     >
                       <span
-                        className={`inline-flex items-center gap-1 font-medium ${s.color || ''
+                        className={`inline-flex items-center gap-1 font-medium ${s.textColor || s.color || ''
                           }`}
                       >
                         {s.icon ? <s.icon className="h-3 w-3" /> : null}

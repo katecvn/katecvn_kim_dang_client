@@ -207,7 +207,7 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can>
 
-          <Can permission={'UPDATE_SALES_CONTRACT'}>
+          {/* <Can permission={'UPDATE_SALES_CONTRACT'}>
             <DropdownMenuItem
               onClick={() => setShowUpdateDialog(true)}
               className={`text-blue-600 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -218,7 +218,7 @@ const DataTableRowActions = ({ row }) => {
                 <IconPencil className="h-4 w-4" />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
-          </Can>
+          </Can> */}
 
           <Can permission={'CREATE_INVOICE'}>
             <DropdownMenuItem

@@ -82,7 +82,7 @@ export function DataTableRowActions({ row }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
-          {receipt.status === 'draft' && (
+          {(receipt.status === 'draft' || receipt.status === 'cancelled') && (
             <>
               <DropdownMenuItem
                 onClick={() => setShowDeleteDialog(true)}

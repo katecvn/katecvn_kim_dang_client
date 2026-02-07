@@ -47,7 +47,7 @@ const UpdatePaymentStatusDialog = ({
   // Explicit color mapping since data might not have it
   const getColor = (statusValue) => {
     switch (statusValue) {
-      case 'draft': return 'text-gray-600'
+      case 'draft': return 'text-yellow-600'
       case 'completed': return 'text-green-600'
       case 'canceled':
       case 'cancelled': return 'text-red-600'

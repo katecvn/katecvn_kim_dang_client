@@ -29,7 +29,7 @@ import { Separator } from '@/components/ui/separator'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
 import { PlusIcon, MobileIcon } from '@radix-ui/react-icons'
-import { Mail, MapPin, CreditCard, Printer } from 'lucide-react'
+import { Mail, MapPin, CreditCard, Printer, X } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import React from 'react'
 import ViewInvoiceDialog from '@/views/admin/invoice/components/ViewInvoiceDialog'
@@ -37,6 +37,7 @@ import InvoiceDialog from '@/views/admin/invoice/components/InvoiceDialog'
 import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
 import InstallmentPreviewDialog from '../../invoice/components/InstallmentPreviewDialog'
 import LiquidateContractDialog from './LiquidateContractDialog'
+import DeleteSalesContractDialog from './DeleteSalesContractDialog'
 import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWord'
 import { Package } from 'lucide-react'
 import { getPublicUrl } from '@/utils/file'
@@ -60,11 +61,12 @@ import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/comp
 import UpdateInvoiceStatusDialog from '../../invoice/components/UpdateInvoiceStatusDialog'
 import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components/DeleteWarehouseReceiptDialog'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
-import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
+import CreateReceiptDialog from '@/views/admin/receipt/components/CreateReceiptDialog'
 import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
 import { receiptStatus } from '../../receipt/data' // Corrected path based on previous check, wait. ViewInvoice said ../../receipt/data. I need to be careful.
 import { updateReceiptStatus, getReceiptQRCode } from '@/stores/ReceiptSlice'
-import ViewReceiptDialog from '../../receipt/components/ViewReceiptDialog'
+import ViewReceiptDialog from '@/views/admin/receipt/components/ViewReceiptDialog'
+import PaymentQRCodeDialog from '@/views/admin/receipt/components/PaymentQRCodeDialog'
 import { DeleteReceiptDialog } from '../../receipt/components/DeleteReceiptDialog'
 import UpdateReceiptStatusDialog from '../../receipt/components/UpdateReceiptStatusDialog'
 import { IconPencil, IconCheck, IconFileText, IconCircleCheck, IconCircleX } from '@tabler/icons-react'
@@ -83,6 +85,7 @@ const ViewSalesContractDialog = ({
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const dispatch = useDispatch()
   const [contract, setContract] = useState({})
+  console.log(contract)
   const [loading, setLoading] = useState(false)
   const [viewInvoiceOpen, setViewInvoiceOpen] = useState(false)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
@@ -112,6 +115,9 @@ const ViewSalesContractDialog = ({
 
   // Liquidation State
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
+
+  // Delete State
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   // Print Contract State
   const [installmentData, setInstallmentData] = useState(null)
@@ -220,17 +226,16 @@ const ViewSalesContractDialog = ({
     }
   }
 
+  const [showQrDialog, setShowQrDialog] = useState(false)
+  const [qrCodeData, setQrCodeData] = useState(null)
+
   const handleGenerateQR = async (voucher) => {
     if (!voucher?.id) return
     try {
       const res = await dispatch(getReceiptQRCode(voucher.id)).unwrap()
-      if (res?.qrDataURL) {
-        const link = document.createElement('a')
-        link.href = res.qrDataURL
-        link.download = `QR_${voucher.code}.png`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+      if (res?.qrLink) {
+        setQrCodeData(res)
+        setShowQrDialog(true)
       } else {
         toast.warning('Không tạo được mã QR')
       }
@@ -243,6 +248,7 @@ const ViewSalesContractDialog = ({
   const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
   const [warehouseLoading, setWarehouseLoading] = useState(false)
+  const [warehouseDialogData, setWarehouseDialogData] = useState(null)
 
   const handleCreateReceipt = () => {
     // Check if contract has invoices
@@ -253,12 +259,48 @@ const ViewSalesContractDialog = ({
     setShowCreateReceiptDialog(true)
   }
 
-  const handleCreateWarehouseReceipt = () => {
+  const handleCreateWarehouseReceipt = async () => {
     if (!contract?.invoices || contract.invoices.length === 0) {
       toast.warning('Hợp đồng chưa có hóa đơn để tạo phiếu xuất kho')
       return
     }
-    setShowConfirmWarehouseDialog(true)
+
+    const firstInvoice = contract.invoices[0]
+    if (firstInvoice.warehouseReceipts?.length > 0) {
+      toast.warning('Hóa đơn này đã có phiếu xuất kho')
+      return
+    }
+
+    try {
+      setWarehouseLoading(true)
+      // Fetch contract detail to ensure we have items
+      const contractDetail = await dispatch(getSalesContractDetail(contractId)).unwrap()
+
+      // Map contract details to invoice items structure for the dialog
+      // This matches the logic in DataTableRowAction
+      const mappedItems = contractDetail?.items?.map(item => ({
+        id: item.id,
+        productName: item.product?.name,
+        quantity: item.quantity,
+        unitName: item.unit?.name,
+        salesContractItemId: item.id, // Mark as contract item
+      })) || []
+
+      // Construct object data for dialog
+      setWarehouseDialogData({
+        ...firstInvoice,
+        code: firstInvoice.code,
+        customer: contract.customer,
+        invoiceItems: mappedItems
+      })
+
+      setShowConfirmWarehouseDialog(true)
+    } catch (error) {
+      console.error('Fetch contract detail error:', error)
+      toast.error('Không thể lấy chi tiết hợp đồng')
+    } finally {
+      setWarehouseLoading(false)
+    }
   }
 
   const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
@@ -278,8 +320,8 @@ const ViewSalesContractDialog = ({
           movement: 'out',
           qtyActual: item.quantity,
           unitPrice: item.price || 0,
-          content: `Xuất kho theo đơn bán ${invoice.code}`,
-          salesContractId: invoice.salesContractId,
+          content: `Xuất kho theo HĐ ${contract.code}`,
+          salesContractId: contract.id,
           salesContractItemId: item.salesContractItemId
         }))
 
@@ -289,16 +331,16 @@ const ViewSalesContractDialog = ({
       }
 
       const payload = {
-        code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
+        code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`,
         receiptType: 2, // ISSUE
         businessType: 'sale_out',
         receiptDate: new Date().toISOString(),
-        reason: `Xuất kho cho đơn bán ${invoice.code}`,
-        note: invoice.note || 'Xuất kho từ hóa đơn',
+        reason: `Xuất kho cho HĐ ${contract.code}`,
+        note: contract.note || '',
         warehouseId: null,
-        customerId: invoice.customerId,
-        salesContractId: invoice.salesContractId,
-        invoiceId: invoice.id,
+        customerId: contract.customerId,
+        salesContractId: contract.id,
+        // invoiceId: invoice.id, // Removed to match DataTableRowAction logic
         details: selectedDetails
       }
 
@@ -960,7 +1002,7 @@ const ViewSalesContractDialog = ({
                       )}
 
                       {/* Payment Vouchers Section */}
-                      {paymentVouchers && paymentVouchers.length > 0 && (
+                      {(paymentVouchers?.length > 0 || contract?.invoices?.length > 0) && (
                         <>
                           <Separator className="my-4" />
                           <div className="space-y-4">
@@ -984,81 +1026,135 @@ const ViewSalesContractDialog = ({
                             </div>
 
                             {isDesktop ? (
-                              <div className="overflow-x-auto rounded-lg border">
-                                <Table className="min-w-full">
-                                  <TableHeader>
-                                    <TableRow className="bg-secondary text-xs">
-                                      <TableHead className="w-12">STT</TableHead>
-                                      <TableHead className="min-w-32">Mã phiếu</TableHead>
-                                      <TableHead className="min-w-28 text-right">Số tiền</TableHead>
-                                      <TableHead className="min-w-24">PT thanh toán</TableHead>
-                                      <TableHead className="min-w-20">Trạng thái</TableHead>
-                                      <TableHead className="min-w-20">Loại GD</TableHead>
-                                      <TableHead className="min-w-32">Người tạo</TableHead>
-                                      <TableHead className="min-w-32">Ngày tạo</TableHead>
-                                      <TableHead className="w-10"></TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {paymentVouchers.map((voucher, index) => (
-                                      <TableRow key={voucher.id}>
-                                        <TableCell>{index + 1}</TableCell>
-                                        <TableCell>
+                              paymentVouchers?.length > 0 ? (
+                                <div className="overflow-x-auto rounded-lg border">
+                                  <Table className="min-w-full">
+                                    <TableHeader>
+                                      <TableRow className="bg-secondary text-xs">
+                                        <TableHead className="w-12">STT</TableHead>
+                                        <TableHead className="min-w-32">Mã phiếu</TableHead>
+                                        <TableHead className="min-w-28 text-right">Số tiền</TableHead>
+                                        <TableHead className="min-w-24">PT thanh toán</TableHead>
+                                        <TableHead className="min-w-20">Trạng thái</TableHead>
+                                        <TableHead className="min-w-20">Loại GD</TableHead>
+                                        <TableHead className="min-w-32">Người tạo</TableHead>
+                                        <TableHead className="min-w-32">Ngày tạo</TableHead>
+                                        <TableHead className="w-10"></TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {paymentVouchers.map((voucher, index) => (
+                                        <TableRow key={voucher.id}>
+                                          <TableCell>{index + 1}</TableCell>
+                                          <TableCell>
+                                            <span
+                                              className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
+                                              onClick={() => handleOpenReceiptDetail(voucher)}
+                                            >
+                                              {voucher.code}
+                                            </span>
+                                          </TableCell>
+                                          <TableCell className="text-right font-semibold">
+                                            {moneyFormat(voucher.amount)}
+                                          </TableCell>
+                                          <TableCell>
+                                            {voucher.paymentMethod === 'cash'
+                                              ? 'Tiền mặt'
+                                              : voucher.paymentMethod === 'transfer'
+                                                ? 'Chuyển khoản'
+                                                : voucher.paymentMethod}
+                                          </TableCell>
+                                          <TableCell>
+                                            <div
+                                              className="cursor-pointer"
+                                              onClick={() => {
+                                                // if (['completed', 'cancelled', 'canceled'].includes(voucher.status)) return
+                                                setSelectedReceipt(voucher)
+                                                setShowUpdateReceiptStatus(true)
+                                              }}
+                                            >
+                                              <span
+                                                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}
+                                              >
+                                                {getReceiptStatusObj(voucher.status)?.icon &&
+                                                  React.createElement(getReceiptStatusObj(voucher.status).icon, { className: "h-3 w-3" })
+                                                }
+                                                {getReceiptStatusObj(voucher.status)?.label || voucher.status}
+                                              </span>
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                            {voucher.transactionType === 'payment'
+                                              ? 'Thanh toán'
+                                              : voucher.transactionType === 'deposit'
+                                                ? 'Đặt cọc'
+                                                : voucher.transactionType === 'refund'
+                                                  ? 'Hoàn tiền'
+                                                  : voucher.transactionType}
+                                          </TableCell>
+                                          <TableCell>
+                                            {voucher.createdByUser?.fullName || '—'}
+                                          </TableCell>
+                                          <TableCell>{dateFormat(voucher.createdAt, true)}</TableCell>
+                                          <TableCell>
+                                            {voucher.status === 'draft' && (
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-primary hover:text-primary/90 hover:bg-primary/10"
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  handleGenerateQR(voucher)
+                                                }}
+                                                title="Tạo mã QR"
+                                              >
+                                                <QrCode className="h-4 w-4" />
+                                              </Button>
+                                            )}
+                                            {(voucher.status === 'draft' || voucher.status === 'cancelled' || voucher.status === 'canceled') && (
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  setReceiptToDelete(voucher)
+                                                  setShowDeleteReceiptDialog(true)
+                                                }}
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            )}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              ) : (
+                                <div className="py-8 text-center text-sm text-muted-foreground border rounded-lg bg-muted/20">
+                                  Chưa có phiếu thu nào
+                                </div>
+                              )
+                            ) : (
+                              paymentVouchers?.length > 0 ? (
+                                <div className="space-y-3">
+                                  {paymentVouchers.map((voucher) => (
+                                    <div key={voucher.id} className="space-y-2 rounded-lg border p-3 text-sm">
+                                      <div className="flex justify-between items-center">
+                                        <strong>Mã phiếu:</strong>
+                                        <div className="flex items-center gap-2">
                                           <span
-                                            className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
+                                            className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
                                             onClick={() => handleOpenReceiptDetail(voucher)}
                                           >
                                             {voucher.code}
                                           </span>
-                                        </TableCell>
-                                        <TableCell className="text-right font-semibold">
-                                          {moneyFormat(voucher.amount)}
-                                        </TableCell>
-                                        <TableCell>
-                                          {voucher.paymentMethod === 'cash'
-                                            ? 'Tiền mặt'
-                                            : voucher.paymentMethod === 'transfer'
-                                              ? 'Chuyển khoản'
-                                              : voucher.paymentMethod}
-                                        </TableCell>
-                                        <TableCell>
-                                          <div
-                                            className="cursor-pointer"
-                                            onClick={() => {
-                                              // if (['completed', 'cancelled', 'canceled'].includes(voucher.status)) return
-                                              setSelectedReceipt(voucher)
-                                              setShowUpdateReceiptStatus(true)
-                                            }}
-                                          >
-                                            <span
-                                              className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getReceiptStatusColor(voucher.status)}`}
-                                            >
-                                              {getReceiptStatusObj(voucher.status)?.icon &&
-                                                React.createElement(getReceiptStatusObj(voucher.status).icon, { className: "h-3 w-3" })
-                                              }
-                                              {getReceiptStatusObj(voucher.status)?.label || voucher.status}
-                                            </span>
-                                          </div>
-                                        </TableCell>
-                                        <TableCell>
-                                          {voucher.transactionType === 'payment'
-                                            ? 'Thanh toán'
-                                            : voucher.transactionType === 'deposit'
-                                              ? 'Đặt cọc'
-                                              : voucher.transactionType === 'refund'
-                                                ? 'Hoàn tiền'
-                                                : voucher.transactionType}
-                                        </TableCell>
-                                        <TableCell>
-                                          {voucher.createdByUser?.fullName || '—'}
-                                        </TableCell>
-                                        <TableCell>{dateFormat(voucher.createdAt, true)}</TableCell>
-                                        <TableCell>
                                           {voucher.status === 'draft' && (
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-8 w-8 text-primary hover:text-primary/90 hover:bg-primary/10"
+                                              className="h-6 w-6 text-primary hover:text-primary/90 hover:bg-primary/10 -mr-2"
                                               onClick={(e) => {
                                                 e.stopPropagation()
                                                 handleGenerateQR(voucher)
@@ -1072,7 +1168,7 @@ const ViewSalesContractDialog = ({
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                              className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
                                               onClick={(e) => {
                                                 e.stopPropagation()
                                                 setReceiptToDelete(voucher)
@@ -1082,158 +1178,116 @@ const ViewSalesContractDialog = ({
                                               <Trash2 className="h-4 w-4" />
                                             </Button>
                                           )}
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            ) : (
-                              <div className="space-y-3">
-                                {paymentVouchers.map((voucher) => (
-                                  <div key={voucher.id} className="space-y-2 rounded-lg border p-3 text-sm">
-                                    <div className="flex justify-between items-center">
-                                      <strong>Mã phiếu:</strong>
-                                      <div className="flex items-center gap-2">
-                                        <span
-                                          className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
-                                          onClick={() => handleOpenReceiptDetail(voucher)}
-                                        >
-                                          {voucher.code}
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <strong>Số tiền:</strong>
+                                        <span className="font-semibold">{moneyFormat(voucher.amount)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <strong>PT thanh toán:</strong>
+                                        <span>
+                                          {voucher.paymentMethod === 'cash'
+                                            ? 'Tiền mặt'
+                                            : voucher.paymentMethod === 'transfer'
+                                              ? 'Chuyển khoản'
+                                              : voucher.paymentMethod}
                                         </span>
-                                        {voucher.status === 'draft' && (
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 text-primary hover:text-primary/90 hover:bg-primary/10 -mr-2"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              handleGenerateQR(voucher)
-                                            }}
-                                            title="Tạo mã QR"
-                                          >
-                                            <QrCode className="h-4 w-4" />
-                                          </Button>
-                                        )}
-                                        {(voucher.status === 'draft' || voucher.status === 'cancelled' || voucher.status === 'canceled') && (
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              setReceiptToDelete(voucher)
-                                              setShowDeleteReceiptDialog(true)
-                                            }}
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        )}
                                       </div>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <strong>Số tiền:</strong>
-                                      <span className="font-semibold">{moneyFormat(voucher.amount)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <strong>PT thanh toán:</strong>
-                                      <span>
-                                        {voucher.paymentMethod === 'cash'
-                                          ? 'Tiền mặt'
-                                          : voucher.paymentMethod === 'transfer'
-                                            ? 'Chuyển khoản'
-                                            : voucher.paymentMethod}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                      <strong>Trạng thái:</strong>
-                                      <div className='flex items-center justify-end'>
-                                        <Select
-                                          value={voucher.status}
-                                          onValueChange={(val) => handleUpdateReceiptStatus(val, voucher.id)}
-                                        >
-                                          <SelectTrigger className="h-auto border-none bg-transparent p-0 text-xs focus:ring-0 focus:ring-offset-0">
-                                            <SelectValue>
-                                              <span
-                                                className={`inline-flex items-center gap-1 text-xs font-medium ${getReceiptStatusColor(voucher.status).replace(/bg-[^ ]+/, '').trim()}`}
-                                              >
-                                                {getReceiptStatusObj(voucher.status)?.icon &&
-                                                  React.createElement(getReceiptStatusObj(voucher.status).icon, { className: "h-3 w-3" })
-                                                }
-                                                {getReceiptStatusObj(voucher.status)?.label || voucher.status}
-                                              </span>
-                                            </SelectValue>
-                                          </SelectTrigger>
-                                          <SelectContent align="end" className="w-[140px]">
-                                            {receiptStatus
-                                              .filter((s) => {
-                                                const currentStatus = voucher.status
-                                                if (
-                                                  currentStatus === 'canceled' ||
-                                                  currentStatus === 'cancelled'
-                                                ) {
-                                                  return (
-                                                    s.value === 'canceled' ||
-                                                    s.value === 'cancelled'
-                                                  )
-                                                }
-                                                if (currentStatus === 'completed') {
-                                                  return s.value !== 'draft'
-                                                }
-                                                return true
-                                              })
-                                              .map((s) => (
-                                                <SelectItem
-                                                  key={s.value}
-                                                  value={s.value}
-                                                  className="text-xs"
+                                      <div className="flex justify-between items-center">
+                                        <strong>Trạng thái:</strong>
+                                        <div className='flex items-center justify-end'>
+                                          <Select
+                                            value={voucher.status}
+                                            onValueChange={(val) => handleUpdateReceiptStatus(val, voucher.id)}
+                                          >
+                                            <SelectTrigger className="h-auto border-none bg-transparent p-0 text-xs focus:ring-0 focus:ring-offset-0">
+                                              <SelectValue>
+                                                <span
+                                                  className={`inline-flex items-center gap-1 text-xs font-medium ${getReceiptStatusColor(voucher.status).replace(/bg-[^ ]+/, '').trim()}`}
                                                 >
-                                                  <div
-                                                    className={`flex items-center gap-1 rounded-full px-2 py-1 ${getReceiptStatusColor(s.value)}`}
+                                                  {getReceiptStatusObj(voucher.status)?.icon &&
+                                                    React.createElement(getReceiptStatusObj(voucher.status).icon, { className: "h-3 w-3" })
+                                                  }
+                                                  {getReceiptStatusObj(voucher.status)?.label || voucher.status}
+                                                </span>
+                                              </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent align="end" className="w-[140px]">
+                                              {receiptStatus
+                                                .filter((s) => {
+                                                  const currentStatus = voucher.status
+                                                  if (
+                                                    currentStatus === 'canceled' ||
+                                                    currentStatus === 'cancelled'
+                                                  ) {
+                                                    return (
+                                                      s.value === 'canceled' ||
+                                                      s.value === 'cancelled'
+                                                    )
+                                                  }
+                                                  if (currentStatus === 'completed') {
+                                                    return s.value !== 'draft'
+                                                  }
+                                                  return true
+                                                })
+                                                .map((s) => (
+                                                  <SelectItem
+                                                    key={s.value}
+                                                    value={s.value}
+                                                    className="text-xs"
                                                   >
-                                                    {s.icon &&
-                                                      React.createElement(
-                                                        s.icon,
-                                                        { className: 'h-3 w-3' },
-                                                      )}
-                                                    <span>{s.label}</span>
-                                                  </div>
-                                                </SelectItem>
-                                              ))}
-                                          </SelectContent>
-                                        </Select>
+                                                    <div
+                                                      className={`flex items-center gap-1 rounded-full px-2 py-1 ${getReceiptStatusColor(s.value)}`}
+                                                    >
+                                                      {s.icon &&
+                                                        React.createElement(
+                                                          s.icon,
+                                                          { className: 'h-3 w-3' },
+                                                        )}
+                                                      <span>{s.label}</span>
+                                                    </div>
+                                                  </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <strong>Loại GD:</strong>
+                                        <span>
+                                          {voucher.transactionType === 'payment'
+                                            ? 'Thanh toán'
+                                            : voucher.transactionType === 'deposit'
+                                              ? 'Đặt cọc'
+                                              : voucher.transactionType === 'refund'
+                                                ? 'Hoàn tiền'
+                                                : voucher.transactionType}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between border-t pt-2">
+                                        <strong>Người tạo:</strong>
+                                        <span>{voucher.createdByUser?.fullName || '—'}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <strong>Ngày tạo:</strong>
+                                        <span>{dateFormat(voucher.createdAt, true)}</span>
                                       </div>
                                     </div>
-                                    <div className="flex justify-between">
-                                      <strong>Loại GD:</strong>
-                                      <span>
-                                        {voucher.transactionType === 'payment'
-                                          ? 'Thanh toán'
-                                          : voucher.transactionType === 'deposit'
-                                            ? 'Đặt cọc'
-                                            : voucher.transactionType === 'refund'
-                                              ? 'Hoàn tiền'
-                                              : voucher.transactionType}
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between border-t pt-2">
-                                      <strong>Người tạo:</strong>
-                                      <span>{voucher.createdByUser?.fullName || '—'}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <strong>Ngày tạo:</strong>
-                                      <span>{dateFormat(voucher.createdAt, true)}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="py-8 text-center text-sm text-muted-foreground border rounded-lg bg-muted/20">
+                                  Chưa có phiếu thu nào
+                                </div>
+                              )
                             )}
                           </div>
                         </>
                       )}
 
                       {/* Warehouse Receipts Section */}
-                      {contract?.warehouseReceipts && contract.warehouseReceipts.length > 0 && (
+                      {(contract?.warehouseReceipts?.length > 0 || contract?.invoices?.length > 0) && (
                         <>
                           <Separator className="my-4" />
                           <div className="space-y-3">
@@ -1257,39 +1311,40 @@ const ViewSalesContractDialog = ({
                             </div>
 
                             {isDesktop ? (
-                              <div className="overflow-x-auto rounded-lg border">
-                                <Table className="min-w-full">
-                                  <TableHeader>
-                                    <TableRow className="bg-secondary text-xs">
-                                      <TableHead className="min-w-32">Mã phiếu</TableHead>
-                                      <TableHead className="min-w-28 text-right">
-                                        Tổng tiền
-                                      </TableHead>
-                                      <TableHead className="min-w-28">
-                                        Trạng thái
-                                      </TableHead>
-                                      <TableHead className="min-w-32">
-                                        Ngày tạo
-                                      </TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {contract.warehouseReceipts.map((receipt, index) => {
-                                      // Map status (assuming standard status strings)
-                                      let statusColor = 'text-gray-500 bg-gray-100'
-                                      let statusLabel = receipt.status
-                                      if (receipt.status === 'draft') {
-                                        statusColor = 'text-yellow-700 bg-yellow-100'
-                                        statusLabel = 'Nháp'
-                                      } else if (receipt.status === 'posted') {
-                                        statusColor = 'text-green-700 bg-green-100'
-                                        statusLabel = 'Đã ghi sổ'
-                                      }
+                              contract.warehouseReceipts?.length > 0 ? (
+                                <div className="overflow-x-auto rounded-lg border">
+                                  <Table className="min-w-full">
+                                    <TableHeader>
+                                      <TableRow className="bg-secondary text-xs">
+                                        <TableHead className="min-w-32">Mã phiếu</TableHead>
+                                        <TableHead className="min-w-28 text-right">
+                                          Tổng tiền
+                                        </TableHead>
+                                        <TableHead className="min-w-28">
+                                          Trạng thái
+                                        </TableHead>
+                                        <TableHead className="min-w-32">
+                                          Ngày tạo
+                                        </TableHead>
+                                        <TableHead className="w-10"></TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {contract.warehouseReceipts.map((receipt, index) => {
+                                        // Map status (assuming standard status strings)
+                                        let statusColor = 'text-gray-500 bg-gray-100'
+                                        let statusLabel = receipt.status
+                                        if (receipt.status === 'draft') {
+                                          statusColor = 'text-yellow-700 bg-yellow-100'
+                                          statusLabel = 'Nháp'
+                                        } else if (receipt.status === 'posted') {
+                                          statusColor = 'text-green-700 bg-green-100'
+                                          statusLabel = 'Đã ghi sổ'
+                                        }
 
-                                      return (
-                                        <TableRow key={receipt.id || index}>
-                                          <TableCell>
-                                            <div className="flex items-center gap-2">
+                                        return (
+                                          <TableRow key={receipt.id || index}>
+                                            <TableCell>
                                               <span
                                                 className="font-medium text-blue-600 cursor-pointer hover:underline"
                                                 onClick={() => {
@@ -1299,11 +1354,40 @@ const ViewSalesContractDialog = ({
                                               >
                                                 {receipt.code}
                                               </span>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              {moneyFormat(receipt.totalAmount)}
+                                            </TableCell>
+                                            <TableCell>
+                                              <div
+                                                className="cursor-pointer"
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  setSelectedWarehouseReceipt(receipt)
+                                                  setShowUpdateWarehouseReceiptStatus(true)
+                                                }}
+                                              >
+                                                <span
+                                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
+                                                >
+                                                  {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
+                                                  {receipt.status === 'draft'
+                                                    ? 'Nháp'
+                                                    : receipt.status === 'posted'
+                                                      ? 'Đã ghi sổ'
+                                                      : receipt.status === 'cancelled' ? 'Đã hủy' : receipt.status}
+                                                </span>
+                                              </div>
+                                            </TableCell>
+                                            <TableCell className="text-sm">
+                                              {dateFormat(receipt.createdAt, true)}
+                                            </TableCell>
+                                            <TableCell>
                                               {['draft', 'cancelled'].includes(receipt.status) && (
                                                 <Button
                                                   variant="ghost"
                                                   size="icon"
-                                                  className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                                                   onClick={(e) => {
                                                     e.stopPropagation()
                                                     setWarehouseReceiptToDelete(receipt)
@@ -1313,133 +1397,116 @@ const ViewSalesContractDialog = ({
                                                   <Trash2 className="h-4 w-4" />
                                                 </Button>
                                               )}
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            {moneyFormat(receipt.totalAmount)}
-                                          </TableCell>
-                                          <TableCell>
-                                            <div
-                                              className="cursor-pointer"
-                                              onClick={(e) => {
-                                                e.stopPropagation()
-                                                setSelectedWarehouseReceipt(receipt)
-                                                setShowUpdateWarehouseReceiptStatus(true)
-                                              }}
-                                            >
-                                              <span
-                                                className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status)}`}
-                                              >
-                                                {receipt.status === 'draft' ? <IconPencil className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCheck className="h-3 w-3" /> : null)}
-                                                {receipt.status === 'draft'
-                                                  ? 'Nháp'
-                                                  : receipt.status === 'posted'
-                                                    ? 'Đã ghi sổ'
-                                                    : receipt.status === 'cancelled' ? 'Đã hủy' : receipt.status}
-                                              </span>
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className="text-sm">
-                                            {dateFormat(receipt.createdAt, true)}
-                                          </TableCell>
-                                        </TableRow>
-                                      )
-                                    })}
-                                  </TableBody>
-                                </Table>
-                              </div>
+                                            </TableCell>
+                                          </TableRow>
+                                        )
+                                      })}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              ) : (
+                                <div className="py-8 text-center text-sm text-muted-foreground border rounded-lg bg-muted/20">
+                                  Chưa có phiếu xuất kho nào
+                                </div>
+                              )
                             ) : (
-                              <div className="space-y-2">
-                                {contract.warehouseReceipts.map((receipt, index) => {
-                                  let statusColor = 'text-gray-500'
-                                  let statusLabel = receipt.status
-                                  if (receipt.status === 'draft') {
-                                    statusColor = 'text-yellow-600'
-                                    statusLabel = 'Nháp'
-                                  } else if (receipt.status === 'posted') {
-                                    statusColor = 'text-green-600'
-                                    statusLabel = 'Đã ghi sổ'
-                                  }
+                              contract.warehouseReceipts?.length > 0 ? (
+                                <div className="space-y-2">
+                                  {contract.warehouseReceipts.map((receipt, index) => {
+                                    let statusColor = 'text-gray-500'
+                                    let statusLabel = receipt.status
+                                    if (receipt.status === 'draft') {
+                                      statusColor = 'text-yellow-600'
+                                      statusLabel = 'Nháp'
+                                    } else if (receipt.status === 'posted') {
+                                      statusColor = 'text-green-600'
+                                      statusLabel = 'Đã ghi sổ'
+                                    }
 
-                                  return (
-                                    <div
-                                      key={receipt.id || index}
-                                      className="border rounded-lg p-3 space-y-2 bg-card text-xs"
-                                    >
+                                    return (
                                       <div
-                                        className="font-medium text-primary cursor-pointer hover:underline text-blue-600"
-                                        onClick={() => {
-                                          setSelectedWarehouseReceiptId(receipt.id)
-                                          setShowViewWarehouseReceiptDialog(true)
-                                        }}
+                                        key={receipt.id || index}
+                                        className="border rounded-lg p-3 space-y-2 bg-card text-xs"
                                       >
-                                        {receipt.code}
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                          <span className="text-muted-foreground">
-                                            Tổng tiền:{' '}
-                                          </span>
-                                          <span className="font-medium">
-                                            {moneyFormat(receipt.totalAmount)}
-                                          </span>
+                                        <div
+                                          className="font-medium text-primary cursor-pointer hover:underline text-blue-600"
+                                          onClick={() => {
+                                            setSelectedWarehouseReceiptId(receipt.id)
+                                            setShowViewWarehouseReceiptDialog(true)
+                                          }}
+                                        >
+                                          {receipt.code}
                                         </div>
-                                        <div>
-                                          <span className="text-muted-foreground">
-                                            Trạng thái:{' '}
-                                          </span>
-                                          <div className='flex items-center justify-end'>
-                                            <Select
-                                              value={receipt.status}
-                                              onValueChange={(val) => handleUpdateWarehouseReceiptStatus(val, receipt.id)}
-                                            >
-                                              <SelectTrigger className="h-auto border-none bg-transparent p-0 text-xs focus:ring-0 focus:ring-offset-0">
-                                                <SelectValue>
-                                                  <span
-                                                    className={`inline-flex items-center gap-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status).replace('bg-', 'text-')}`}
-                                                  >
-                                                    {receipt.status === 'draft' ? <IconFileText className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCircleCheck className="h-3 w-3" /> : (receipt.status === 'cancelled' || receipt.status === 'canceled' ? <IconCircleX className="h-3 w-3" /> : null))}
-                                                    {receipt.status === 'draft'
-                                                      ? 'Nháp'
-                                                      : receipt.status === 'posted'
-                                                        ? 'Đã ghi sổ'
-                                                        : (receipt.status === 'cancelled' || receipt.status === 'canceled')
-                                                          ? 'Đã hủy'
-                                                          : receipt.status}
-                                                  </span>
-                                                </SelectValue>
-                                              </SelectTrigger>
-                                              <SelectContent align="end" className="w-[140px]">
-                                                {warehouseReceiptStatuses
-                                                  .map((s) => (
-                                                    <SelectItem
-                                                      key={s.value}
-                                                      value={s.value}
-                                                      className="text-xs"
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <div>
+                                            <span className="text-muted-foreground">
+                                              Tổng tiền:{' '}
+                                            </span>
+                                            <span className="font-medium">
+                                              {moneyFormat(receipt.totalAmount)}
+                                            </span>
+                                          </div>
+                                          <div>
+                                            <span className="text-muted-foreground">
+                                              Trạng thái:{' '}
+                                            </span>
+                                            <div className='flex items-center justify-end'>
+                                              <Select
+                                                value={receipt.status}
+                                                onValueChange={(val) => handleUpdateWarehouseReceiptStatus(val, receipt.id)}
+                                              >
+                                                <SelectTrigger className="h-auto border-none bg-transparent p-0 text-xs focus:ring-0 focus:ring-offset-0">
+                                                  <SelectValue>
+                                                    <span
+                                                      className={`inline-flex items-center gap-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status).replace('bg-', 'text-')}`}
                                                     >
-                                                      <div
-                                                        className={cn("flex items-center gap-1 rounded-full px-2 py-1 font-medium", getWarehouseReceiptStatusColor(s.value))}
+                                                      {receipt.status === 'draft' ? <IconFileText className="h-3 w-3" /> : (receipt.status === 'posted' ? <IconCircleCheck className="h-3 w-3" /> : (receipt.status === 'cancelled' || receipt.status === 'canceled' ? <IconCircleX className="h-3 w-3" /> : null))}
+                                                      {receipt.status === 'draft'
+                                                        ? 'Nháp'
+                                                        : receipt.status === 'posted'
+                                                          ? 'Đã ghi sổ'
+                                                          : (receipt.status === 'cancelled' || receipt.status === 'canceled')
+                                                            ? 'Đã hủy'
+                                                            : receipt.status}
+                                                    </span>
+                                                  </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent align="end" className="w-[140px]">
+                                                  {warehouseReceiptStatuses
+                                                    .map((s) => (
+                                                      <SelectItem
+                                                        key={s.value}
+                                                        value={s.value}
+                                                        className="text-xs"
                                                       >
-                                                        {s.icon && <s.icon className="h-3 w-3" />}
-                                                        <span>{s.label}</span>
-                                                      </div>
-                                                    </SelectItem>
-                                                  ))}
-                                              </SelectContent>
-                                            </Select>
+                                                        <div
+                                                          className={cn("flex items-center gap-1 rounded-full px-2 py-1 font-medium", getWarehouseReceiptStatusColor(s.value))}
+                                                        >
+                                                          {s.icon && <s.icon className="h-3 w-3" />}
+                                                          <span>{s.label}</span>
+                                                        </div>
+                                                      </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
                                           </div>
                                         </div>
+                                        <div className="border-t pt-2 text-muted-foreground">
+                                          Ngày tạo:{' '}
+                                          <span className="font-medium text-foreground">
+                                            {dateFormat(receipt.createdAt, true)}
+                                          </span>
+                                        </div>
                                       </div>
-                                      <div className="border-t pt-2 text-muted-foreground">
-                                        Ngày tạo:{' '}
-                                        <span className="font-medium text-foreground">
-                                          {dateFormat(receipt.createdAt, true)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )
-                                })}
-                              </div>
+                                    )
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="py-8 text-center text-sm text-muted-foreground border rounded-lg bg-muted/20">
+                                  Chưa có phiếu xuất kho nào
+                                </div>
+                              )
                             )}
                           </div>
                         </>
@@ -1585,17 +1652,43 @@ const ViewSalesContractDialog = ({
           </div>
 
           <DialogFooter className={cn(!isDesktop && "pb-4 px-4 flex flex-row gap-2")}>
-            {contract?.status === 'confirmed' && (
-              <Button size="sm" onClick={() => setShowLiquidationDialog(true)} className={cn("bg-orange-600 hover:bg-orange-700 text-white", !isDesktop && "flex-1")}>
-                Thanh lý
-              </Button>
-            )}
+            <Button
+              size="sm"
+              onClick={() => {
+                if (contract?.status !== 'confirmed') {
+                  toast.warning('Chỉ có thể thanh lý hợp đồng đã xác nhận')
+                  return
+                }
+                setShowLiquidationDialog(true)
+              }}
+              className={cn("bg-orange-600 hover:bg-orange-700 text-white", !isDesktop && "flex-1")}
+            >
+              Thanh lý
+            </Button>
+
             <Button size="sm" onClick={handlePrintContract} loading={installmentExporting} className={cn("bg-blue-600 hover:bg-blue-700 text-white", !isDesktop && "flex-1")}>
               <Printer className="mr-2 h-4 w-4" />
               In Hợp Đồng
             </Button>
+
+            <Button
+              size="sm"
+              onClick={() => {
+                if (contract?.status !== 'draft') {
+                  toast.warning('Chỉ có thể xóa hợp đồng ở trạng thái nháp')
+                  return
+                }
+                setShowDeleteDialog(true)
+              }}
+              className={cn("bg-red-600 hover:bg-red-700 text-white", !isDesktop && "flex-1")}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Xóa
+            </Button>
+
             <DialogClose asChild>
               <Button type="button" variant="outline" size="sm" className={cn(!isDesktop && "flex-1")}>
+                <X className="mr-2 h-4 w-4" />
                 Đóng
               </Button>
             </DialogClose>
@@ -1637,6 +1730,17 @@ const ViewSalesContractDialog = ({
               overlayClassName="z-[10005]"
               onSuccess={() => {
                 fetchContractDetail()
+              }}
+            />
+          )}
+
+          {showDeleteDialog && contract?.status === 'draft' && (
+            <DeleteSalesContractDialog
+              open={showDeleteDialog}
+              onOpenChange={setShowDeleteDialog}
+              contractId={contractId}
+              onSuccess={() => {
+                onOpenChange(false)
               }}
             />
           )}
@@ -1693,15 +1797,19 @@ const ViewSalesContractDialog = ({
               open={showUpdateWarehouseReceiptStatus}
               onOpenChange={setShowUpdateWarehouseReceiptStatus}
               receiptId={selectedWarehouseReceipt.id}
-              receiptCode={selectedWarehouseReceipt.code}
-              currentStatus={selectedWarehouseReceipt.status}
-              statuses={warehouseReceiptStatuses}
-              onSubmit={handleUpdateWarehouseReceiptStatus}
               contentClassName="z-[100020]"
               overlayClassName="z-[100019]"
               selectContentClassName="z-[100050]"
             />
           )}
+
+          <PaymentQRCodeDialog
+            open={showQrDialog}
+            onOpenChange={setShowQrDialog}
+            qrCodeData={qrCodeData}
+            className="z-[100060]"
+            overlayClassName="z-[100059]"
+          />
 
           {/* Delete Warehouse Receipt Dialog */}
           {warehouseReceiptToDelete && (
@@ -1766,17 +1874,24 @@ const ViewSalesContractDialog = ({
           <CreateReceiptDialog
             open={showCreateReceiptDialog}
             onOpenChange={setShowCreateReceiptDialog}
-            invoice={contract?.invoices?.[0]}
+            invoices={contract?.invoices?.[0]?.id ? [contract.invoices[0].id] : []}
             contentClassName="z-[100020]"
             overlayClassName="z-[100019]"
+            showTrigger={false}
+            onSuccess={() => {
+              setShowCreateReceiptDialog(false)
+              fetchContractDetail()
+              toast.success('Tạo phiếu thu thành công')
+            }}
           />
 
           <ConfirmWarehouseReceiptDialog
             open={showConfirmWarehouseDialog}
             onOpenChange={setShowConfirmWarehouseDialog}
             onConfirm={handleConfirmCreateWarehouseReceipt}
-            invoice={contract?.invoices?.[0]}
+            invoice={warehouseDialogData}
             loading={warehouseLoading}
+            type="contract"
             contentClassName="z-[100020]"
             overlayClassName="z-[100019]"
           />

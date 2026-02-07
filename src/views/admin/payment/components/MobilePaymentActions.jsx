@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/custom/Button'
 import {
   Sheet,
@@ -15,6 +16,8 @@ const MobilePaymentActions = ({
   isMobile,
   handlePrintPayment,
   setShowDeleteDialog,
+  className,
+  overlayClassName
 }) => {
   const [open, setOpen] = useState(false)
 
@@ -34,7 +37,7 @@ const MobilePaymentActions = ({
   return (
     <>
       <Button
-        className="fixed bottom-4 right-4 h-12 w-12 rounded-full shadow-lg !z-[100020]"
+        className={cn("fixed bottom-4 right-4 h-12 w-12 rounded-full shadow-lg z-[100030]", className)}
         size="icon"
         onClick={() => setOpen(true)}
       >
@@ -44,8 +47,8 @@ const MobilePaymentActions = ({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="bottom"
-          className="!z-[100020] px-4 pb-6 pt-4 rounded-t-xl max-h-[80vh] overflow-y-auto"
-          overlayClassName="!z-[100019]"
+          className={cn("z-[100030] px-4 pb-6 pt-4 rounded-t-xl max-h-[80vh] overflow-y-auto", className)}
+          overlayClassName={cn("z-[100029]", overlayClassName)}
         >
           <SheetHeader className="mb-4 text-left">
             <SheetTitle>Thao tác phiếu chi</SheetTitle>

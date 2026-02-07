@@ -15,6 +15,7 @@ import {
   startOfMonth,
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
+import { useDebounce } from '@/hooks/useDebounce'
 
 const InvoicePage = () => {
   const dispatch = useDispatch()
@@ -22,22 +23,54 @@ const InvoicePage = () => {
   const loading = useSelector((state) => state.invoice.loading)
   const current = new Date()
 
+  const pagination = useSelector((state) => state.invoice.pagination)
+
   const [searchParams, setSearchParams] = useSearchParams()
   const [viewInvoiceId, setViewInvoiceId] = useState(null)
   const [updateInvoiceId, setUpdateInvoiceId] = useState(null)
   const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
+
+  // Pagination state
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(15)
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 500)
+
 
   const [filters, setFilters] = useState({
     fromDate: addHours(startOfDay(startOfMonth(current)), 12),
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
   })
 
+  // Fetch data when filters or pagination changes
   useEffect(() => {
     document.title = 'Danh sách đơn bán'
-    dispatch(getInvoices(filters))
-  }, [dispatch, filters])
+
+    // Convert date filters for API
+    const apiFilters = {
+      fromDate: filters.fromDate,
+      toDate: filters.toDate,
+      page: pageIndex + 1, // API uses 1-based indexing
+      limit: pageSize,
+      search: debouncedSearch
+    }
+
+    dispatch(getInvoices(apiFilters))
+  }, [dispatch, filters, pageIndex, pageSize, debouncedSearch])
+
+  const refreshData = () => {
+    const apiFilters = {
+      fromDate: filters.fromDate,
+      toDate: filters.toDate,
+      page: pageIndex + 1,
+      limit: pageSize,
+      search: debouncedSearch
+    }
+    dispatch(getInvoices(apiFilters))
+  }
 
   const handleInvoiceCreated = (newInvoice) => {
+    refreshData()
     if (newInvoice?.id) {
       setViewInvoiceId(newInvoice.id)
     }
@@ -70,6 +103,7 @@ const InvoicePage = () => {
                 to: filters?.toDate,
               }}
               onChange={(range) => {
+                setPageIndex(0) // Reset to first page on filter change
                 setFilters((prev) => ({
                   ...prev,
                   fromDate: range?.from
@@ -84,15 +118,28 @@ const InvoicePage = () => {
           </div>
         </div>
         <div className="-mx-4 flex-1 overflow-auto px-1 sm:px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
-          {invoices && (
-            <InvoiceDataTable
-              data={invoices}
-              columns={columns}
-              loading={loading}
-              onCreated={handleInvoiceCreated}
-              onView={(id) => setViewInvoiceId(id)}
-            />
-          )}
+          <InvoiceDataTable
+            data={invoices}
+            columns={columns}
+            loading={loading}
+            onCreated={handleInvoiceCreated}
+            onView={(id) => setViewInvoiceId(id)}
+
+            // Server-side pagination props
+            pageCount={pagination?.last_page || 1}
+            pagination={{
+              pageIndex,
+              pageSize,
+            }}
+            onPaginationChange={({ pageIndex, pageSize }) => {
+              setPageIndex(pageIndex)
+              setPageSize(pageSize)
+            }}
+            onSearchChange={(value) => {
+              setSearch(value)
+              setPageIndex(0) // Reset to first page on search
+            }}
+          />
         </div>
 
         {/* Auto-open ViewInvoiceDialog from QR code scan */}
@@ -128,6 +175,7 @@ const InvoicePage = () => {
             onOpenChange={setShowUpdateInvoiceDialog}
             invoiceId={updateInvoiceId}
             showTrigger={false}
+            onSuccess={refreshData}
           />
         )}
       </LayoutBody>

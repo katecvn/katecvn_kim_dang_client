@@ -14,8 +14,11 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { useDispatch } from 'react-redux'
 import { importProduct } from '@/stores/ProductSlice'
-import { FileSpreadsheet, Download } from 'lucide-react'
+import { FileSpreadsheet, Download, AlertCircle } from 'lucide-react'
 import api from '@/utils/axios'
+import ExcelJS from 'exceljs'
+import { format } from 'date-fns'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 const ImportProductDialog = ({
   open,
@@ -25,6 +28,7 @@ const ImportProductDialog = ({
   const dispatch = useDispatch()
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [errorList, setErrorList] = useState(null)
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
@@ -37,6 +41,7 @@ const ImportProductDialog = ({
         selectedFile.name.endsWith('.xls')
       ) {
         setFile(selectedFile)
+        setErrorList(null)
       } else {
         toast.error('Vui lòng chọn file Excel (.xlsx, .xls)')
         e.target.value = null
@@ -50,18 +55,127 @@ const ImportProductDialog = ({
       return
     }
 
+    setLoading(true)
+    setErrorList(null)
+
     try {
-      setLoading(true)
-      const formData = new FormData()
-      formData.append('file', file)
+      const arrayBuffer = await file.arrayBuffer()
+      const workbook = new ExcelJS.Workbook()
+      await workbook.xlsx.load(arrayBuffer)
 
-      await dispatch(importProduct(formData)).unwrap()
+      const worksheet = workbook.getWorksheet(1)
+      if (!worksheet) {
+        throw new Error('File Excel không có dữ liệu')
+      }
 
+      const items = []
+
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return
+
+        const getVal = (idx) => {
+          const val = row.getCell(idx).value
+          return val?.text || val || ''
+        }
+        const getNum = (idx) => {
+          const val = row.getCell(idx).value
+          return Number(val) || 0
+        }
+        const getUnitConversions = (idx) => {
+          const val = getVal(idx)
+          try {
+            return val ? JSON.parse(val) : []
+          } catch (e) {
+            console.warn('Error parsing unitConversions at row', rowNumber, e)
+            return []
+          }
+        }
+
+        let effectiveDate = row.getCell(11).value
+        if (effectiveDate instanceof Date) {
+          effectiveDate = format(effectiveDate, 'yyyy-MM-dd')
+        } else {
+          effectiveDate = String(effectiveDate || '')
+        }
+
+        const item = {
+          code: String(getVal(1)),
+          name: String(getVal(2)),
+          price: getNum(3),
+          basePrice: getNum(4),
+          categoryCode: String(getVal(5)),
+          unitCode: String(getVal(6)),
+          supplierCode: String(getVal(7)),
+          type: String(getVal(8) || 'physical'),
+          description: String(getVal(9)),
+          note: String(getVal(10)),
+          effectiveDate: effectiveDate,
+          unitConversions: getUnitConversions(12)
+        }
+
+        if (item.code) {
+          items.push(item)
+        }
+      })
+
+      if (items.length === 0) {
+        toast.warning('Không tìm thấy dữ liệu hợp lệ trong file Excel')
+        return
+      }
+
+      const payload = { items }
+      await dispatch(importProduct(payload)).unwrap()
+
+      toast.success(`Đã import thành công ${items.length} sản phẩm`)
       onOpenChange(false)
       setFile(null)
+
     } catch (error) {
       console.error('Import error:', error)
-      // Toast error is handled in slice
+
+      // Handle structured import errors
+      let importErrors = null
+
+      if (error?.message?.importErrors && Array.isArray(error.message.importErrors)) {
+        importErrors = error.message.importErrors
+      } else if (error?.importErrors && Array.isArray(error.importErrors)) {
+        importErrors = error.importErrors
+      } else if (error?.response?.data?.message?.importErrors && Array.isArray(error.response.data.message.importErrors)) {
+        importErrors = error.response.data.message.importErrors
+      }
+
+      if (importErrors && importErrors.length > 0) {
+        // Sanitize errors to ensure no objects are rendered
+        const sanitizedErrors = importErrors.map(err => ({
+          row: err.row,
+          errors: Array.isArray(err.errors) ? err.errors.map(e => ({
+            field: String(e.field || ''),
+            message: String(e.message || 'Lỗi không xác định')
+          })) : []
+        }))
+
+        setErrorList(sanitizedErrors)
+        toast.error('Import thất bại. Vui lòng kiểm tra lại lỗi chi tiết.')
+      } else {
+        let msg = 'Có lỗi xảy ra, vui lòng thử lại.'
+        if (typeof error === 'string') {
+          msg = error
+        } else if (typeof error?.message === 'string') {
+          msg = error.message
+        } else if (error?.message && typeof error.message === 'object') {
+          // If message is object (and not handled above), stringify it safely
+          try {
+            msg = JSON.stringify(error.message)
+          } catch (e) {
+            msg = 'Lỗi không xác định (Object)'
+          }
+        }
+
+        // Final safety Check
+        if (typeof msg !== 'string') msg = 'Lỗi không xác định'
+
+        toast.error(msg)
+      }
     } finally {
       setLoading(false)
     }
@@ -89,11 +203,13 @@ const ImportProductDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Import Excel Sản Phẩm</DialogTitle>
           <DialogDescription>
             Chọn file Excel chứa danh sách sản phẩm để nhập liệu.
+            <br />
+            <span className="text-xs text-muted-foreground">Đảm bảo file theo đúng mẫu template.</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -129,11 +245,34 @@ const ImportProductDialog = ({
               <span>{file.name}</span>
             </div>
           )}
+
+          {errorList && (
+            <div className="mt-4 rounded-md bg-destructive/15 p-3 text-destructive">
+              <div className="flex items-center gap-2 mb-2 font-semibold">
+                <AlertCircle className="h-4 w-4" />
+                <span>Có lỗi xảy ra khi import:</span>
+              </div>
+              <ScrollArea className="h-[200px] w-full rounded-md border p-2 bg-white">
+                {errorList.map((err, idx) => (
+                  <div key={idx} className="mb-2 text-sm border-b pb-2 last:border-0 last:pb-0">
+                    <div className="font-semibold text-red-600">Dòng {err.row}:</div>
+                    <ul className="list-disc pl-5 mt-1">
+                      {err.errors.map((e, i) => (
+                        <li key={i}>
+                          <span className="font-medium text-gray-700">{e.field}:</span> {e.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" onClick={() => setFile(null)}>
-              Hủy
+            <Button type="button" variant="outline" onClick={() => { setFile(null); setErrorList(null); }}>
+              Đóng
             </Button>
           </DialogClose>
           <Button type="button" onClick={handleImport} loading={loading} disabled={!file}>

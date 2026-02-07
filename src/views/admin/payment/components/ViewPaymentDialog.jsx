@@ -62,7 +62,6 @@ const ViewPaymentDialog = ({
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [fetchedPayment, setFetchedPayment] = useState(null)
-  console.log(fetchedPayment)
 
   const [loading, setLoading] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
@@ -365,7 +364,7 @@ const ViewPaymentDialog = ({
                               <div className="grid grid-cols-2 gap-2 text-sm">
                                 <div className="flex flex-col">
                                   <span className="text-muted-foreground text-xs">Số lượng</span>
-                                  <span className="font-medium">{item.quantity} {item.unitName || item.unit}</span>
+                                  <span className="font-medium">{Number(item.quantity || 0)} {item.unitName || item.unit}</span>
                                 </div>
                                 <div className="flex flex-col text-right">
                                   <span className="text-muted-foreground text-xs">Đơn giá</span>
@@ -469,9 +468,8 @@ const ViewPaymentDialog = ({
                                 payment?.status === 'completed' ? 'bg-green-500' : (payment?.status === 'canceled' || payment?.status === 'cancelled') ? 'bg-red-500' : 'bg-yellow-500'
                               )}
                             >
-                              {payment?.status === 'completed' ? 'Đã chi' : payment?.status === 'draft' ? 'Nháp' : payment?.status === 'canceled' ? 'Đã hủy' : payment?.status || 'Không xác định'}
+                              {payment?.status === 'completed' ? 'Đã chi' : payment?.status === 'draft' ? 'Nháp' : payment?.status === 'cancelled' ? 'Đã hủy' : payment?.status || 'Không xác định'}
                             </Badge>
-                            <Pencil className="h-3 w-3 text-muted-foreground" />
                           </div>
                         )}
                       </div>
@@ -701,6 +699,8 @@ const ViewPaymentDialog = ({
           isMobile={isMobile}
           handlePrintPayment={handlePrintPayment}
           setShowDeleteDialog={setShowDeleteDialog}
+          className="z-[100060]"
+          overlayClassName="z-[100059]"
         />
       </DialogContent>
 
@@ -710,8 +710,8 @@ const ViewPaymentDialog = ({
           onOpenChange={setShowViewProductDialog}
           productId={selectedProductId}
           showTrigger={false}
-          contentClassName="z-[100020]"
-          overlayClassName="z-[100019]"
+          contentClassName="z-[100050]"
+          overlayClassName="z-[100049]"
         />
       )}
 
@@ -721,8 +721,8 @@ const ViewPaymentDialog = ({
           onOpenChange={setShowViewContractDialog}
           contractId={selectedContractId}
           showTrigger={false}
-          contentClassName="z-[100020]"
-          overlayClassName="z-[100019]"
+          contentClassName="z-[100050]"
+          overlayClassName="z-[100049]"
         />
       )}
 
@@ -732,8 +732,8 @@ const ViewPaymentDialog = ({
           onOpenChange={setShowViewPurchaseOrderDialog}
           purchaseOrderId={selectedPurchaseOrderId}
           showTrigger={false}
-          contentClassName="!z-[100020]"
-          overlayClassName="!z-[100019]"
+          contentClassName="!z-[100040]"
+          overlayClassName="!z-[100039]"
         />
       )}
 

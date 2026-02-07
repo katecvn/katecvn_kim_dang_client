@@ -381,15 +381,33 @@ const ViewWarehouseReceiptDialog = ({
                                         onChange={(e) => handleDetailChange(index, 'qtyActual', e.target.value)}
                                       />
                                     </div>
+                                    {(detail.product?.currentStock !== undefined && detail.product?.currentStock !== null) && (
+                                      <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
+                                        <label className="text-xs text-muted-foreground">SL Tồn:</label>
+                                        <input
+                                          type="text"
+                                          className="w-20 h-8 rounded-md border px-2 text-sm text-right focus:outline-none bg-muted"
+                                          value={parseFloat(detail.product.currentStock).toLocaleString('vi-VN')}
+                                          readOnly
+                                        />
+                                      </div>
+                                    )}
                                   </div>
                                 ) : (
                                   <>
-                                    <div className="flex items-center justify-end gap-2 text-sm">
-                                      <span className="text-muted-foreground">CT: {parseFloat(detail.qtyDocument || 0).toLocaleString('vi-VN')}</span>
-                                      <span className="text-muted-foreground">|</span>
-                                      <Badge variant="outline">
-                                        TT: {parseFloat(detail.qtyActual).toLocaleString('vi-VN')} {detail.unitName}
-                                      </Badge>
+                                    <div className="flex flex-col items-end gap-1 text-sm">
+                                      <div className="flex items-center justify-end gap-2">
+                                        <span className="text-muted-foreground">CT: {parseFloat(detail.qtyDocument || 0).toLocaleString('vi-VN')}</span>
+                                        <span className="text-muted-foreground">|</span>
+                                        <Badge variant="outline">
+                                          TT: {parseFloat(detail.qtyActual).toLocaleString('vi-VN')} {detail.unitName}
+                                        </Badge>
+                                      </div>
+                                      {(detail.product?.currentStock !== undefined && detail.product?.currentStock !== null) && (
+                                        <div className="text-xs text-muted-foreground">
+                                          Tồn: {parseFloat(detail.product.currentStock).toLocaleString('vi-VN')}
+                                        </div>
+                                      )}
                                     </div>
                                   </>
                                 )}

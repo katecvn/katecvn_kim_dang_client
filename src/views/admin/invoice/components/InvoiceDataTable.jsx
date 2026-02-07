@@ -32,6 +32,12 @@ const InvoiceDataTable = ({
   isMyInvoice = false,
   onCreated,
   onView,
+  // Server-side pagination props
+  pageCount,
+  pagination,
+  onPaginationChange,
+  // Server-side search
+  onSearchChange,
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -40,20 +46,45 @@ const InvoiceDataTable = ({
   const [sorting, setSorting] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
 
+  // Default internal pagination state if not provided (fallback)
+  const [internalPagination, setInternalPagination] = useState({
+    pageIndex: 0,
+    pageSize: isMobile ? 15 : 30,
+  })
+
+  // Use props if provided, else internal state
+  const paginationState = pagination || internalPagination
+
   const table = useReactTable({
     data,
     columns,
-    initialState: {
-      pagination: {
-        pageSize: isMobile ? 15 : 30,
-      },
-    },
+    // Enable server-side pagination
+    manualPagination: !!pagination,
+    pageCount: pageCount ?? -1,
     state: {
       sorting,
       columnVisibility,
       rowSelection,
       columnFilters,
       globalFilter,
+      pagination: paginationState,
+    },
+    // Handle pagination changes
+    onPaginationChange: (updater) => {
+      if (typeof updater === 'function') {
+        const newState = updater(paginationState)
+        if (onPaginationChange) {
+          onPaginationChange(newState)
+        } else {
+          setInternalPagination(newState)
+        }
+      } else {
+        if (onPaginationChange) {
+          onPaginationChange(updater)
+        } else {
+          setInternalPagination(updater)
+        }
+      }
     },
     meta: {
       onView,
@@ -62,10 +93,17 @@ const InvoiceDataTable = ({
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
+    onGlobalFilterChange: (updater) => {
+      const value = typeof updater === 'function' ? updater(globalFilter) : updater
+      setGlobalFilter(value)
+      if (onSearchChange) {
+        onSearchChange(value)
+      }
+    },
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    // Standard pagination model is still needed for rows per page calculation etc
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),

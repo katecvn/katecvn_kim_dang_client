@@ -72,7 +72,9 @@ const DataTableToolbar = ({ table }) => {
               showTrigger={false}
             />
           )}
+        </Can>
 
+        <Can permission="CREATE_PRODUCT">
           {/* Mobile Import Dialog */}
           {showImportDialog && (
             <ImportProductDialog
@@ -143,13 +145,15 @@ const DataTableToolbar = ({ table }) => {
                 </>
               )}
 
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setShowImportDialog(true)}
-              >
-                <FileSpreadsheet className="mr-2 size-4" />
-                <span>Import Excel</span>
-              </DropdownMenuItem>
+              <Can permission="CREATE_PRODUCT">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setShowImportDialog(true)}
+                >
+                  <FileSpreadsheet className="mr-2 size-4" />
+                  <span>Import Excel</span>
+                </DropdownMenuItem>
+              </Can>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -237,6 +241,16 @@ const DataTableToolbar = ({ table }) => {
           Thêm mới
         </Button>
 
+        {showCreateProductDialog && (
+          <CreateProductDialog
+            open={showCreateProductDialog}
+            onOpenChange={setShowCreateProductDialog}
+            showTrigger={false}
+          />
+        )}
+      </Can>
+
+      <Can permission="CREATE_PRODUCT">
         <Button
           onClick={() => setShowImportDialog(true)}
           className="mx-2"
@@ -246,14 +260,6 @@ const DataTableToolbar = ({ table }) => {
           <FileSpreadsheet className="mr-2 size-4" aria-hidden="true" />
           Import Excel
         </Button>
-
-        {showCreateProductDialog && (
-          <CreateProductDialog
-            open={showCreateProductDialog}
-            onOpenChange={setShowCreateProductDialog}
-            showTrigger={false}
-          />
-        )}
 
         {/* Desktop Import Dialog */}
         {showImportDialog && (

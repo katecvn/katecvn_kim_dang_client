@@ -9,16 +9,34 @@ import { toast } from 'sonner'
 
 export const getInvoices = createAsyncThunk(
   'invoice/get-invoices',
-  async ({ fromDate = null, toDate = null }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
     try {
       const response = await api.get('/invoice', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
+          page,
+          limit,
+          search
         },
       })
-      const { data } = response.data
-      return data
+      const responseData = response.data
+      const { data, pagination } = responseData.data || {}
+
+      // Map pagination to internal structure
+      const meta = pagination ? {
+        ...pagination,
+        last_page: pagination.totalPages,
+        current_page: pagination.page,
+        per_page: pagination.limit
+      } : undefined
+
+      return { data, meta }
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -31,7 +49,7 @@ export const getInvoiceDetail = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const getAdminInvoice = JSON.parse(
-        localStorage.getItem('permissionCodes'),
+        localStorage.getItem('permissionCodes') || '[]',
       ).includes('GET_INVOICE')
 
       const response = getAdminInvoice
@@ -49,17 +67,35 @@ export const getInvoiceDetail = createAsyncThunk(
 
 export const getMyInvoices = createAsyncThunk(
   'invoice/get-my-invoices',
-  async ({ fromDate = null, toDate = null }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
     try {
       const response = await api.get('/invoice/by-user', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
+          page,
+          limit,
+          search
         },
       })
 
-      const { data } = response.data
-      return data
+      const responseData = response.data
+      const { data, pagination } = responseData.data || {}
+
+      // Map pagination to internal structure
+      const meta = pagination ? {
+        ...pagination,
+        last_page: pagination.totalPages,
+        current_page: pagination.page,
+        per_page: pagination.limit
+      } : undefined
+
+      return { data, meta }
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -72,26 +108,16 @@ export const deleteInvoice = createAsyncThunk(
   async (id, { rejectWithValue, dispatch }) => {
     try {
       const deleteAdminInvoices = JSON.parse(
-        localStorage.getItem('permissionCodes'),
+        localStorage.getItem('permissionCodes') || '[]',
       ).includes('DELETE_INVOICE')
 
       deleteAdminInvoices
         ? await api.delete(`/invoice/${id}/delete`)
         : await api.delete(`/invoice/${id}/delete-by-user`)
-      deleteAdminInvoices
-        ? await dispatch(
-          getInvoices({
-            fromDate: getStartOfCurrentMonth(),
-            toDate: getEndOfCurrentMonth(),
-          }),
-        ).unwrap()
-        : await dispatch(
-          getMyInvoices({
-            fromDate: getStartOfCurrentMonth(),
-            toDate: getEndOfCurrentMonth(),
-          }),
-        ).unwrap()
+
+      // Just notify success, let the component handle refresh with current pagination
       toast.success('Xóa thành công')
+      return id
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -101,15 +127,9 @@ export const deleteInvoice = createAsyncThunk(
 
 export const createInvoice = createAsyncThunk(
   'invoice/create-invoice',
-  async (dataToSend, { rejectWithValue, dispatch }) => {
+  async (dataToSend, { rejectWithValue }) => {
     try {
       const response = await api.post('/invoice/create', dataToSend)
-      await dispatch(
-        getMyInvoices({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      ).unwrap()
       toast.success('Tạo hóa đơn thành công')
       const { data } = response.data
       return data
@@ -122,18 +142,12 @@ export const createInvoice = createAsyncThunk(
 
 export const updateInvoice = createAsyncThunk(
   'invoice/update-invoice',
-  async (dataToSend, { rejectWithValue, dispatch }) => {
+  async (dataToSend, { rejectWithValue }) => {
     try {
       const response = await api.put(
         `/invoice/${dataToSend.invoiceId}/update-pending`,
         dataToSend,
       )
-      await dispatch(
-        getMyInvoices({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      ).unwrap()
       toast.success('Cập nhật thành công')
       const { data } = response.data
       return data
@@ -146,7 +160,7 @@ export const updateInvoice = createAsyncThunk(
 
 export const updateInvoiceStatus = createAsyncThunk(
   'invoice/update-invoice-status',
-  async (data, { rejectWithValue, dispatch }) => {
+  async (data, { rejectWithValue }) => {
     try {
       let response
       if (data.status === 'pending') {
@@ -154,12 +168,6 @@ export const updateInvoiceStatus = createAsyncThunk(
       } else {
         response = await api.put(`/invoice/${data.id}/update`, data)
       }
-      await dispatch(
-        getInvoices({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      ).unwrap()
       toast.success('Cập nhật trạng thái thành công')
 
       // Return response data including warehouseInfo
@@ -199,20 +207,11 @@ export const recordPrintSuccess = createAsyncThunk(
 
 export const importInvoice = createAsyncThunk(
   'invoice/import',
-  async (formData, { rejectWithValue, dispatch }) => {
+  async (data, { rejectWithValue, dispatch }) => {
     try {
-      await api.post('/invoice/import', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-      await dispatch(
-        getMyInvoices({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      ).unwrap()
-      toast.success('Import dữ liệu thành công')
+      await api.post('/invoice/import', data)
+      await dispatch(getInvoices({})).unwrap()
+      toast.success('Import hóa đơn thành công')
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -220,11 +219,21 @@ export const importInvoice = createAsyncThunk(
   },
 )
 
+
+
 const initialState = {
   invoices: [],
   invoice: null,
   loading: false,
   error: null,
+  pagination: {
+    total: 0,
+    per_page: 15,
+    current_page: 1,
+    last_page: 1,
+    from: 0,
+    to: 0
+  }
 }
 
 export const invoiceSlice = createSlice({
@@ -238,25 +247,31 @@ export const invoiceSlice = createSlice({
       })
       .addCase(getInvoices.fulfilled, (state, action) => {
         state.loading = false
-        state.invoices = action.payload
+        state.invoices = action.payload.data || []
+        state.pagination = action.payload.meta || initialState.pagination
       })
       .addCase(getInvoices.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
+        state.invoices = []
       })
       .addCase(getMyInvoices.pending, (state) => {
         state.loading = true
       })
       .addCase(getMyInvoices.fulfilled, (state, action) => {
         state.loading = false
-        state.invoices = action.payload
+        state.invoices = action.payload.data || []
+        state.pagination = action.payload.meta || initialState.pagination
       })
       .addCase(getMyInvoices.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
+        state.invoices = []
       })
-      .addCase(deleteInvoice.fulfilled, (state) => {
+      .addCase(deleteInvoice.fulfilled, (state, action) => {
         state.loading = false
+        // Optimistic update or just let refresh handle it
+        // We'll rely on the component to refresh the list 
       })
       .addCase(deleteInvoice.rejected, (state, action) => {
         state.loading = false
@@ -291,6 +306,18 @@ export const invoiceSlice = createSlice({
         state.loading = true
         state.error = null
       })
+      .addCase(importInvoice.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(importInvoice.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload.message || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+      .addCase(importInvoice.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
       .addCase(updateInvoiceStatus.fulfilled, (state) => {
         state.loading = false
       })
@@ -315,13 +342,13 @@ export const invoiceSlice = createSlice({
         state.error = action.payload
       })
       .addCase(recordPrintAttempt.pending, (state) => {
-        // Silent tracking, không set loading
+        // Silent tracking
       })
       .addCase(recordPrintAttempt.fulfilled, (state) => {
         // Silent success
       })
       .addCase(recordPrintAttempt.rejected, (state, action) => {
-        // Silent fail, chỉ log error
+        // Silent fail
         console.error('Failed to record print attempt:', action.payload)
       })
       .addCase(recordPrintSuccess.pending, (state) => {
@@ -334,17 +361,7 @@ export const invoiceSlice = createSlice({
         // Silent fail
         console.error('Failed to record print success:', action.payload)
       })
-      .addCase(importInvoice.pending, (state) => {
-        state.loading = true
-      })
-      .addCase(importInvoice.fulfilled, (state) => {
-        state.loading = false
-      })
-      .addCase(importInvoice.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
-        toast.error(state.error)
-      })
+
   },
 })
 

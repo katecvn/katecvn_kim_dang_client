@@ -92,13 +92,9 @@ export const getSupplierDetailWithProducts = createAsyncThunk(
 
 export const importSupplier = createAsyncThunk(
   'supplier/import',
-  async (formData, { rejectWithValue, dispatch }) => {
+  async (data, { rejectWithValue, dispatch }) => {
     try {
-      await api.post('/supplier/import', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      await api.post('/supplier/import', data)
       await dispatch(getSuppliers()).unwrap()
       toast.success('Import dữ liệu thành công')
     } catch (error) {

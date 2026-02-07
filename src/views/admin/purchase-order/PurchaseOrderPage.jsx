@@ -14,6 +14,7 @@ import {
   startOfMonth,
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
+import { useDebounce } from '@/hooks/useDebounce'
 
 const PurchaseOrderPage = () => {
   const dispatch = useDispatch()
@@ -26,6 +27,13 @@ const PurchaseOrderPage = () => {
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
   })
 
+  // Pagination state
+  const pagination = useSelector((state) => state.purchaseOrder.pagination)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(15)
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 500)
+
   const [viewPurchaseOrderId, setViewPurchaseOrderId] = useState(null)
   const [updatePurchaseOrderId, setUpdatePurchaseOrderId] = useState(null)
   const [showUpdatePurchaseOrderDialog, setShowUpdatePurchaseOrderDialog] = useState(false)
@@ -34,14 +42,27 @@ const PurchaseOrderPage = () => {
 
   useEffect(() => {
     document.title = 'Danh sách đơn đặt hàng'
-    dispatch(getPurchaseOrders(filters))
-  }, [dispatch, filters])
+    const apiFilters = {
+      ...filters,
+      page: pageIndex + 1,
+      limit: pageSize,
+      search: debouncedSearch
+    }
+    dispatch(getPurchaseOrders(apiFilters))
+  }, [dispatch, filters, pageIndex, pageSize, debouncedSearch])
 
   const handlePurchaseOrderCreated = (newPurchaseOrder) => {
     if (newPurchaseOrder?.id) {
       setViewPurchaseOrderId(newPurchaseOrder.id)
+      setViewPurchaseOrderId(newPurchaseOrder.id)
       // Refresh the list as Create Action in Slice might only refresh my-purchase-orders
-      dispatch(getPurchaseOrders(filters))
+      const apiFilters = {
+        ...filters,
+        page: pageIndex + 1,
+        limit: pageSize,
+        search: debouncedSearch
+      }
+      dispatch(getPurchaseOrders(apiFilters))
     }
   }
 
@@ -61,6 +82,7 @@ const PurchaseOrderPage = () => {
                 to: filters?.toDate,
               }}
               onChange={(range) => {
+                setPageIndex(0) // Reset to first page
                 setFilters((prev) => ({
                   ...prev,
                   fromDate: range?.from
@@ -82,6 +104,20 @@ const PurchaseOrderPage = () => {
               loading={loading}
               onCreated={handlePurchaseOrderCreated}
               onView={setViewPurchaseOrderId}
+              // Server-side pagination props
+              pageCount={pagination?.last_page || 1}
+              pagination={{
+                pageIndex,
+                pageSize,
+              }}
+              onPaginationChange={({ pageIndex, pageSize }) => {
+                setPageIndex(pageIndex)
+                setPageSize(pageSize)
+              }}
+              onSearchChange={(value) => {
+                setSearch(value)
+                setPageIndex(0) // Reset to first page on search
+              }}
             />
           )}
         </div>

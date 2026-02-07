@@ -6,9 +6,11 @@ import api from '@/utils/axios'
 import { moneyFormat } from '@/utils/money-format'
 import { IconArrowUp, IconArrowDown, IconShoppingCart, IconTruckDelivery } from '@tabler/icons-react'
 
-const DashboardSummary = ({ todayIncome = 0, todayExpense = 0 }) => {
+const DashboardSummary = ({ todayIncome = 0, todayExpense = 0, loading: parentLoading = false }) => {
   const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [internalLoading, setInternalLoading] = useState(true)
+
+  const isLoading = parentLoading || internalLoading
 
   useEffect(() => {
     const fetchData = async () => {
@@ -18,13 +20,13 @@ const DashboardSummary = ({ todayIncome = 0, todayExpense = 0 }) => {
       } catch (error) {
         console.error('Failed to fetch dashboard summary', error)
       } finally {
-        setLoading(false)
+        setInternalLoading(false)
       }
     }
     fetchData()
   }, [])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (

@@ -40,7 +40,7 @@ const DashboardPage = () => {
           api.get('/reports/sales/summary', { params: { fromDate, toDate } }),
           api.get('/reports/sales/backlog'),
           api.get('/reports/purchases/backlog'),
-          api.get('/invoice', { params: { limit: 5, sort: 'createdAt:desc' } }),
+          api.get('/invoice', { params: { limit: 10, sort: 'createdAt:desc' } }),
           api.get('/payment-vouchers', {
             params: {
               voucherType: 'receipt_in',
@@ -70,7 +70,7 @@ const DashboardPage = () => {
           items: item.purchaseOrders?.flatMap(po => po.items) || []
         }))
         setPurchaseBacklog(mappedPurchaseBacklog)
-        setRecentSales(recentRes.data.data || [])
+        setRecentSales(recentRes.data.data.data || [])
 
         // Handle paginated response structure if necessary, or just data array
         // ReceiptSlice says: response.data.data || response.data
@@ -107,6 +107,7 @@ const DashboardPage = () => {
               <DashboardSummary
                 todayIncome={todayIncome}
                 todayExpense={todayExpense}
+                loading={loading}
               />
 
               <DailyRevenueChart

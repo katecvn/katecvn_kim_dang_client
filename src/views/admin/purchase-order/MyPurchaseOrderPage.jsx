@@ -26,6 +26,11 @@ const MyPurchaseOrderPage = () => {
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
   })
 
+  /* Pagination state matching PurchaseOrderPage */
+  const pagination = useSelector((state) => state.purchaseOrder.pagination)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(15)
+
   const [viewPurchaseOrderId, setViewPurchaseOrderId] = useState(null)
   const [updatePurchaseOrderId, setUpdatePurchaseOrderId] = useState(null)
   const [showUpdatePurchaseOrderDialog, setShowUpdatePurchaseOrderDialog] = useState(false)
@@ -34,8 +39,13 @@ const MyPurchaseOrderPage = () => {
 
   useEffect(() => {
     document.title = 'Đơn đặt hàng của tôi'
-    dispatch(getMyPurchaseOrders(filters))
-  }, [dispatch, filters])
+    const apiFilters = {
+      ...filters,
+      page: pageIndex + 1,
+      limit: pageSize,
+    }
+    dispatch(getMyPurchaseOrders(apiFilters))
+  }, [dispatch, filters, pageIndex, pageSize])
 
   return (
     <Layout>
@@ -53,6 +63,7 @@ const MyPurchaseOrderPage = () => {
                 to: filters?.toDate,
               }}
               onChange={(range) => {
+                setPageIndex(0) // Reset to first page
                 setFilters((prev) => ({
                   ...prev,
                   fromDate: range?.from
@@ -74,6 +85,25 @@ const MyPurchaseOrderPage = () => {
               loading={loading}
               isMyPurchaseOrder={true}
               onView={setViewPurchaseOrderId}
+              /* Pagination Props */
+              pageCount={pagination?.last_page || -1}
+              pagination={{
+                pageIndex,
+                pageSize,
+              }}
+              onPaginationChange={(updater) => {
+                if (typeof updater === 'function') {
+                  const newState = updater({
+                    pageIndex,
+                    pageSize,
+                  })
+                  setPageIndex(newState.pageIndex)
+                  setPageSize(newState.pageSize)
+                } else {
+                  setPageIndex(updater.pageIndex)
+                  setPageSize(updater.pageSize)
+                }
+              }}
             />
           )}
         </div>
@@ -96,7 +126,14 @@ const MyPurchaseOrderPage = () => {
                 setShowUpdatePurchaseOrderDialog(true)
               }, 100)
             }}
-            onRefresh={() => dispatch(getMyPurchaseOrders(filters))}
+            onRefresh={() => {
+              const apiFilters = {
+                ...filters,
+                page: pageIndex + 1,
+                limit: pageSize,
+              }
+              dispatch(getMyPurchaseOrders(apiFilters))
+            }}
           />
         )}
 

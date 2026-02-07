@@ -75,16 +75,34 @@ const ConfirmImportWarehouseDialog = ({
     if (itemsToDisplay.length > 0) {
       const initialSelection = {}
       itemsToDisplay.forEach((item) => {
-        initialSelection[item.id] = true
+        const received = Number(item.receivedQuantity || 0)
+        const total = Number(item.quantity || 0)
+        if (received < total) {
+          initialSelection[item.id] = true
+        }
       })
       setSelectedItems(initialSelection)
     }
   }, [purchaseOrder])
 
   const itemsCount = itemsToDisplay.length || 0
+
+  // Calculate available items (not fully received)
+  const availableItemsCount = itemsToDisplay.filter(item => {
+    const received = Number(item.receivedQuantity || 0)
+    const total = Number(item.quantity || 0)
+    return received < total
+  }).length
+
   const selectedCount = Object.values(selectedItems).filter(Boolean).length
 
   const toggleItem = (itemId) => {
+    const item = itemsToDisplay.find(i => i.id === itemId)
+    const received = Number(item?.receivedQuantity || 0)
+    const total = Number(item?.quantity || 0)
+
+    if (received >= total) return // Prevent selecting fully received items
+
     setSelectedItems((prev) => ({
       ...prev,
       [itemId]: !prev[itemId],
@@ -94,7 +112,11 @@ const ConfirmImportWarehouseDialog = ({
   const toggleAll = (checked) => {
     const newSelection = {}
     itemsToDisplay.forEach((item) => {
-      newSelection[item.id] = checked
+      const received = Number(item.receivedQuantity || 0)
+      const total = Number(item.quantity || 0)
+      if (received < total) {
+        newSelection[item.id] = checked
+      }
     })
     setSelectedItems(newSelection)
   }
@@ -171,25 +193,27 @@ const ConfirmImportWarehouseDialog = ({
                     <TableRow className="bg-muted/50">
                       <TableHead className="w-12">
                         <Checkbox
-                          checked={selectedCount === itemsCount && itemsCount > 0}
+                          checked={selectedCount === availableItemsCount && availableItemsCount > 0}
                           onCheckedChange={toggleAll}
-                          disabled={itemsCount === 0}
+                          disabled={availableItemsCount === 0}
                         />
                       </TableHead>
                       <TableHead className="w-12">STT</TableHead>
                       <TableHead>Sản phẩm</TableHead>
                       <TableHead className="text-right">Số lượng</TableHead>
+                      <TableHead className="text-right">Đã nhập</TableHead>
                       <TableHead>Đơn vị</TableHead>
                       <TableHead className="text-right">Đơn giá</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {itemsToDisplay.map((item, index) => (
-                      <TableRow key={item.id}>
+                      <TableRow key={item.id} className={Number(item.receivedQuantity || 0) >= Number(item.quantity) ? "opacity-60 bg-muted/50" : ""}>
                         <TableCell>
                           <Checkbox
                             checked={!!selectedItems[item.id]}
                             onCheckedChange={() => toggleItem(item.id)}
+                            disabled={Number(item.receivedQuantity || 0) >= Number(item.quantity)}
                           />
                         </TableCell>
                         <TableCell>{index + 1}</TableCell>
@@ -208,11 +232,19 @@ const ConfirmImportWarehouseDialog = ({
                                 </div>
                               )}
                             </div>
-                            <div className="font-medium">{item.productName}</div>
+                            <div>
+                              <div className="font-medium">{item.productName}</div>
+                              {Number(item.receivedQuantity || 0) >= Number(item.quantity) && (
+                                <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Đã nhập đủ</span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-semibold text-blue-600">
                           {item.quantity}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {Number(item.receivedQuantity || 0)}
                         </TableCell>
                         <TableCell>{item.unitName || item.unit?.name || '—'}</TableCell>
                         <TableCell className="text-right">
@@ -233,13 +265,13 @@ const ConfirmImportWarehouseDialog = ({
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 p-3 bg-secondary/30 rounded-lg">
                     <Checkbox
-                      checked={selectedCount === itemsCount && itemsCount > 0}
+                      checked={selectedCount === availableItemsCount && availableItemsCount > 0}
                       onCheckedChange={toggleAll}
-                      disabled={itemsCount === 0}
+                      disabled={availableItemsCount === 0}
                       id="select-all-mobile"
                     />
                     <label htmlFor="select-all-mobile" className="text-sm font-medium">
-                      Chọn tất cả ({itemsCount} sản phẩm)
+                      Chọn tất cả ({availableItemsCount}/{itemsCount} khả dụng)
                     </label>
                   </div>
                   {itemsToDisplay.map((item, index) => (
@@ -253,6 +285,7 @@ const ConfirmImportWarehouseDialog = ({
                           checked={!!selectedItems[item.id]}
                           onCheckedChange={() => toggleItem(item.id)}
                           onClick={(e) => e.stopPropagation()}
+                          disabled={Number(item.receivedQuantity || 0) >= Number(item.quantity)}
                         />
                       </div>
                       <div className="flex-1 space-y-2">

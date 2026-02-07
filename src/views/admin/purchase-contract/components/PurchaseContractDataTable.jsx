@@ -31,13 +31,15 @@ const PurchaseContractDataTable = ({
   loading,
   pagination = { page: 1, limit: 20, totalPages: 1 },
   onPageChange,
-  onPageSizeChange
+  onPageSizeChange,
+  onSearchChange
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
   const [columnFilters, setColumnFilters] = useState([])
   const [sorting, setSorting] = useState([])
+  const [globalFilter, setGlobalFilter] = useState('')
   const [viewId, setViewId] = useState(null)
 
   const table = useReactTable({
@@ -50,7 +52,9 @@ const PurchaseContractDataTable = ({
       sorting,
       columnVisibility,
       rowSelection,
+      rowSelection,
       columnFilters,
+      globalFilter,
       pagination: {
         pageIndex: pagination.page - 1,
         pageSize: pagination.limit
@@ -77,6 +81,12 @@ const PurchaseContractDataTable = ({
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: (updater) => {
+      setGlobalFilter(updater)
+      if (typeof updater !== 'function') {
+        onSearchChange?.(updater)
+      }
+    },
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

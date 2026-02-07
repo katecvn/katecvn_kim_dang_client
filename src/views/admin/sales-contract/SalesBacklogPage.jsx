@@ -2,29 +2,19 @@
 import EmptyState from '@/components/custom/EmptyState'
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { Skeleton } from '@/components/ui/skeleton'
-import api from '@/utils/axios'
 import { moneyFormat } from '@/utils/money-format'
 import { format } from 'date-fns'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { getSalesBacklog } from '@/stores/ReportSlice'
 
 const SalesBacklogPage = () => {
-  const [loading, setLoading] = useState(false)
-  const [data, setData] = useState([])
+  const dispatch = useDispatch()
+  const { salesBacklog: data, loading } = useSelector((state) => state.report)
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      try {
-        const { data } = await api.get('/reports/sales/backlog')
-        setData(data.data || [])
-      } catch (error) {
-        console.log('Error fetching backlog: ', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
+    dispatch(getSalesBacklog())
+  }, [dispatch])
 
   return (
     <Layout>
@@ -61,40 +51,49 @@ const SalesBacklogPage = () => {
                     </tr>
                   ))
                 ) : data.length > 0 ? (
-                  data.map((item) => {
-                    const total = Number(item.totalAmount) || 0
-                    const paid = Number(item.paidAmount) || 0
-                    const remaining = total - paid
+                  data.flatMap((contract) =>
+                    contract.items?.map((item) => {
+                      // Calculate based on item-level data if available
+                      const orderedQty = Number(item.quantity) || 0
+                      const deliveredQty = Number(item.deliveredQuantity) || 0
+                      const remainingQty = orderedQty - deliveredQty
 
-                    return (
-                      <tr
-                        key={item.id}
-                        className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
-                      >
-                        <td className="p-4 align-middle font-medium">{item.code}</td>
-                        <td className="p-4 align-middle">
-                          <div className="font-semibold">{item.buyerName}</div>
-                          <div className="text-xs text-muted-foreground">{item.buyerPhone}</div>
-                        </td>
-                        <td className="p-4 align-middle">
-                          <ul className="list-disc pl-4 text-xs space-y-1">
-                            {item.items?.map((prod) => (
-                              <li key={prod.id}>
-                                {prod.productName}
-                                {Number(prod.quantity) > 1 && ` (x${Number(prod.quantity)})`}
-                              </li>
-                            ))}
-                          </ul>
-                        </td>
-                        <td className="p-4 align-middle text-center">
-                          {item.deliveryDate ? format(new Date(item.deliveryDate), 'dd/MM/yyyy') : '-'}
-                        </td>
-                        <td className="p-4 align-middle text-right">{moneyFormat(total)}</td>
-                        <td className="p-4 align-middle text-right text-green-600">{moneyFormat(paid)}</td>
-                        <td className="p-4 align-middle text-right text-red-600">{moneyFormat(remaining)}</td>
-                      </tr>
-                    )
-                  })
+                      // Use contract totals divided by number of items as approximation
+                      const contractTotal = Number(contract.totalAmount) || 0
+                      const contractPaid = Number(contract.paidAmount) || 0
+                      const itemCount = contract.items?.length || 1
+                      const itemTotal = contractTotal / itemCount
+                      const itemPaid = contractPaid / itemCount
+                      const itemRemaining = itemTotal - itemPaid
+
+                      return (
+                        <tr
+                          key={`${contract.id}-${item.id}`}
+                          className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                        >
+                          <td className="p-4 align-middle font-medium">{contract.code}</td>
+                          <td className="p-4 align-middle">
+                            <div className="font-semibold">{contract.buyerName}</div>
+                            <div className="text-xs text-muted-foreground">{contract.buyerPhone}</div>
+                          </td>
+                          <td className="p-4 align-middle">
+                            <div className="text-sm font-medium">{item.productName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Đã giao: {deliveredQty} / {orderedQty}
+                            </div>
+                          </td>
+                          <td className="p-4 align-middle text-center">
+                            {item.promisedDeliveryDate
+                              ? format(new Date(item.promisedDeliveryDate), 'dd/MM/yyyy')
+                              : (contract.deliveryDate ? format(new Date(contract.deliveryDate), 'dd/MM/yyyy') : '-')}
+                          </td>
+                          <td className="p-4 align-middle text-right">{moneyFormat(itemTotal)}</td>
+                          <td className="p-4 align-middle text-right text-green-600">{moneyFormat(itemPaid)}</td>
+                          <td className="p-4 align-middle text-right text-red-600">{moneyFormat(itemRemaining)}</td>
+                        </tr>
+                      )
+                    }) || []
+                  )
                 ) : (
                   <tr>
                     <td colSpan={7} className="p-4 text-center text-muted-foreground">

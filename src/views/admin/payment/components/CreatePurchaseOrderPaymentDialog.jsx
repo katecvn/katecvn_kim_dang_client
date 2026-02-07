@@ -9,6 +9,7 @@ import {
   DialogTrigger,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 import { toast } from 'sonner'
 
@@ -66,6 +67,7 @@ const CreatePurchaseOrderPaymentDialog = ({
   supplier: propSupplier,
   ...props
 }) => {
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const dispatch = useDispatch()
   const loading = useSelector((state) => state.payment.loading)
   const setting = useSelector((state) => state.setting.setting)
@@ -113,6 +115,15 @@ const CreatePurchaseOrderPaymentDialog = ({
 
 
   const onSubmit = async (data) => {
+    const amountToPay = parseFloat(data.paymentAmount) || 0
+    if (amountToPay > remainingAmount) {
+      form.setError('paymentAmount', {
+        type: 'manual',
+        message: `Số tiền chi không được vượt quá số nợ còn lại (${moneyFormat(remainingAmount)})`,
+      })
+      return
+    }
+
     const dataToSend = {
       ...data,
       purchaseOrderId: purchaseOrder.id,
@@ -166,60 +177,136 @@ const CreatePurchaseOrderPaymentDialog = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className={cn("md:h-auto md:max-w-full", contentClassName)} overlayClassName={overlayClassName}>
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          "md:h-auto md:max-w-full",
+          isMobile && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none translate-x-0 translate-y-0 flex flex-col",
+          contentClassName
+        )}
+        overlayClassName={overlayClassName}
+      >
+        <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
           <DialogTitle>Tạo phiếu chi mới</DialogTitle>
           <DialogDescription>
             Kiểm tra và hoàn thành thông tin bên dưới để tạo phiếu chi
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[65vh] overflow-auto md:max-h-[75vh]">
+        <div className={cn(
+          "overflow-auto",
+          isMobile ? "h-full px-4 pb-4 flex-1" : "max-h-[65vh] md:max-h-[75vh]"
+        )}>
           <Form {...form}>
             <form id="create-payment" onSubmit={form.handleSubmit(onSubmit)}>
               <div className="flex flex-col gap-6 lg:flex-row">
                 <div className="flex-1 space-y-6 rounded-lg border p-4">
                   <h2 className="text-lg font-semibold">
-                    Thông tin đơn đặt hàng: {purchaseOrder?.code}
+                    Thông tin chi tiết phiếu chi
                   </h2>
 
                   <div className="space-y-6">
-                    <div className="overflow-x-auto rounded-lg border">
-                      <Table className="min-w-full">
-                        <TableHeader>
-                          <TableRow className="bg-secondary text-xs">
-                            <TableHead className="w-8">TT</TableHead>
-                            <TableHead className="min-w-40">Sản phẩm</TableHead>
-                            <TableHead className="min-w-20">SL</TableHead>
-                            <TableHead className="min-w-16">ĐVT</TableHead>
-                            <TableHead className="min-w-20 text-right">Đơn giá</TableHead>
-                            {/* <TableHead className="min-w-16">Thuế</TableHead>
+                    <div className={cn("overflow-x-auto rounded-lg border", isMobile && "border-0 overflow-visible")}>
+                      {!isMobile ? (
+                        <Table className="min-w-full">
+                          <TableHeader>
+                            <TableRow className="bg-secondary text-xs">
+                              <TableHead className="w-8">TT</TableHead>
+                              <TableHead className="min-w-40">Sản phẩm</TableHead>
+                              <TableHead className="min-w-20">SL</TableHead>
+                              <TableHead className="min-w-16">ĐVT</TableHead>
+                              <TableHead className="min-w-20 text-right">Đơn giá</TableHead>
+                              {/* <TableHead className="min-w-16">Thuế</TableHead>
                               <TableHead className="min-w-28 md:w-16">Giảm giá</TableHead> */}
-                            <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
-                            <TableHead className="min-w-28">Ghi chú</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {items.map((item, index) => (
-                            <TableRow key={item.id}>
-                              <TableCell>{index + 1}</TableCell>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{item.productName}</div>
-                                  <div className="text-xs text-muted-foreground">{item.productCode}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell>{item.quantity}</TableCell>
-                              <TableCell>{item.unitName || '—'}</TableCell>
-                              <TableCell className="text-end">{moneyFormat(item.unitPrice)}</TableCell>
-                              {/* <TableCell className="text-end">{moneyFormat(item.taxAmount)}</TableCell>
-                                <TableCell className="text-end">{moneyFormat(item.discount)}</TableCell> */}
-                              <TableCell className="text-end">{moneyFormat(item.total || (item.quantity * item.unitPrice))}</TableCell>
-                              <TableCell>{item.note || '—'}</TableCell>
+                              <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
+                              <TableHead className="min-w-28">Ghi chú</TableHead>
                             </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {items.map((item, index) => (
+                              <TableRow key={item.id}>
+                                <TableCell>{index + 1}</TableCell>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">{item.productName}</div>
+                                    <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>{Number(item.quantity)}</TableCell>
+                                <TableCell>{item.unitName || '—'}</TableCell>
+                                <TableCell className="text-end">{moneyFormat(item.unitPrice)}</TableCell>
+                                {/* <TableCell className="text-end">{moneyFormat(item.taxAmount)}</TableCell>
+                                <TableCell className="text-end">{moneyFormat(item.discount)}</TableCell> */}
+                                <TableCell className="text-end">{moneyFormat(item.total || (item.quantity * item.unitPrice))}</TableCell>
+                                <TableCell>{item.note || '—'}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <div className="space-y-4">
+                          {items.map((item, index) => (
+                            <div
+                              key={item.id}
+                              className="rounded-lg border p-3 shadow-sm bg-card text-card-foreground"
+                            >
+                              <div className="flex items-start gap-3 mb-3">
+                                <Avatar className="h-12 w-12 rounded-lg border bg-muted/50 shrink-0">
+                                  <AvatarFallback className="rounded-lg text-xs">
+                                    {item.productName?.substring(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[10px] font-bold text-muted-foreground leading-none mb-1">
+                                    {item.productCode || '—'}
+                                  </div>
+                                  <div className="font-medium text-sm leading-tight line-clamp-2">
+                                    {item.productName}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <Separator className="my-2" />
+
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="flex flex-col">
+                                  <span className="text-muted-foreground text-xs">
+                                    Số lượng
+                                  </span>
+                                  <span className="font-medium">
+                                    {Number(item.quantity)} {item.unitName || '—'}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col text-right">
+                                  <span className="text-muted-foreground text-xs">
+                                    Đơn giá
+                                  </span>
+                                  <span className="font-medium">
+                                    {moneyFormat(item.unitPrice)}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="mt-2 flex justify-between items-end bg-secondary/30 p-2 rounded">
+                                <span className="font-semibold text-sm">
+                                  Thành tiền
+                                </span>
+                                <span className="font-bold text-primary">
+                                  {moneyFormat(item.total || (item.quantity * item.unitPrice))}
+                                </span>
+                              </div>
+
+                              {item.note && (
+                                <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                                  <div className="flex gap-1">
+                                    <span className="font-semibold">GC:</span>{' '}
+                                    {item.note}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           ))}
-                        </TableBody>
-                      </Table>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-[2fr,1fr]">
@@ -269,6 +356,7 @@ const CreatePurchaseOrderPaymentDialog = ({
                                     value={moneyFormat(field.value)}
                                     placeholder="0"
                                     className="w-full text-end font-bold"
+                                    onFocus={(e) => e.target.select()}
                                     onChange={(e) => {
                                       const rawValue = e.target.value.replace(/\D/g, '')
                                       form.setValue('paymentAmount', rawValue)
@@ -454,7 +542,7 @@ const CreatePurchaseOrderPaymentDialog = ({
           </Form>
         </div>
 
-        <DialogFooter className="flex gap-2 sm:space-x-0">
+        <DialogFooter className={cn("flex gap-2 sm:space-x-0", isMobile && "pb-4 px-4 flex-row")}>
           <DialogClose asChild>
             <Button
               type="button"
@@ -462,12 +550,13 @@ const CreatePurchaseOrderPaymentDialog = ({
               onClick={() => {
                 form.reset()
               }}
+              className={cn(isMobile && "flex-1")}
             >
               Hủy
             </Button>
           </DialogClose>
 
-          <Button form="create-payment" loading={loading}>
+          <Button form="create-payment" loading={loading} className={cn(isMobile && "flex-1")}>
             Tạo phiếu chi
           </Button>
         </DialogFooter>

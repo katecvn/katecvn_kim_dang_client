@@ -13,18 +13,21 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuShortcut,
 } from '@/components/ui/dropdown-menu'
-import { purchaseOrderStatuses } from '../../purchase-order/data' // Note: Check if paymentStatuses exists in purchase data, if not use common or skip
+import { purchaseContractStatuses } from '../data'
 import Can from '@/utils/can'
 import ViewPurchaseContractDialog from './ViewPurchaseContractDialog'
 import LiquidatePurchaseContractDialog from './LiquidatePurchaseContractDialog'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 import React from 'react'
-import { IconPackageImport } from '@tabler/icons-react'
+import { IconPackageImport, IconPencil, IconTrash, IconReceiptRefund } from '@tabler/icons-react'
 import ConfirmImportWarehouseDialog from '@/views/admin/warehouse-receipt/components/ConfirmImportWarehouseDialog'
 import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { getPurchaseContracts } from '@/stores/PurchaseContractSlice'
+import UpdatePurchaseContractDialog from './UpdatePurchaseContractDialog'
+import DeletePurchaseContractDialog from './DeletePurchaseContractDialog'
 
 const MobilePurchaseContractCard = ({
   contract,
@@ -36,6 +39,8 @@ const MobilePurchaseContractCard = ({
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const dispatch = useDispatch()
 
   const { supplierName, supplierPhone, supplierIdentityNo, supplierTaxCode, totalAmount, paidAmount, status, code, contractDate, paymentStatus } = contract
@@ -43,7 +48,7 @@ const MobilePurchaseContractCard = ({
   const remainingAmount = parseFloat(totalAmount || 0) - parseFloat(paidAmount || 0)
 
   const getStatusBadge = (statusValue) => {
-    const statusObj = purchaseOrderStatuses.find((s) => s.value === statusValue)
+    const statusObj = purchaseContractStatuses.find((s) => s.value === statusValue)
     return (
       <Badge
         variant="outline"
@@ -100,10 +105,32 @@ const MobilePurchaseContractCard = ({
         <ViewPurchaseContractDialog
           open={showViewDialog}
           onOpenChange={setShowViewDialog}
-          contractId={contract.id}
+          purchaseContractId={contract.id}
           showTrigger={false}
           contentClassName="z-[10006]"
           overlayClassName="z-[10005]"
+        />
+      )}
+
+      {showUpdateDialog && (
+        <UpdatePurchaseContractDialog
+          open={showUpdateDialog}
+          onOpenChange={setShowUpdateDialog}
+          contractId={contract.id}
+          onSuccess={() => {
+            if (onRowAction) onRowAction()
+          }}
+        />
+      )}
+
+      {showDeleteDialog && (
+        <DeletePurchaseContractDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          contractId={contract.id}
+          onSuccess={() => {
+            if (onRowAction) onRowAction()
+          }}
         />
       )}
 
@@ -183,36 +210,6 @@ const MobilePurchaseContractCard = ({
             <div className="text-xs text-muted-foreground">{dateFormat(contractDate)}</div>
           </div>
 
-          {/* Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => setShowViewDialog(true)}>
-                <Eye className="mr-2 h-4 w-4" />
-                Xem
-              </DropdownMenuItem>
-
-              {status === 'confirmed' && (
-                <DropdownMenuItem onClick={() => setShowLiquidationDialog(true)}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Thanh Lý
-                </DropdownMenuItem>
-              )}
-
-              {/* Import Action */}
-              {(status === 'confirmed' || status === 'shipping') && (
-                <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
-                  <IconPackageImport className="mr-2 h-4 w-4" />
-                  Nhập kho
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           {/* Expand Button */}
           <Button
             variant="ghost"
@@ -222,6 +219,83 @@ const MobilePurchaseContractCard = ({
           >
             <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
           </Button>
+
+          {/* Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[160px]">
+              <DropdownMenuItem onClick={() => setShowViewDialog(true)}>
+                Xem
+                <DropdownMenuShortcut>
+                  <Eye className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+
+              <Can permission={'UPDATE_PURCHASE_CONTRACT'}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (onRowAction) onRowAction()
+                    setShowUpdateDialog(true)
+                  }}
+                  className={`text-blue-600 ${status !== 'draft' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={status !== 'draft'}
+                >
+                  Sửa
+                  <DropdownMenuShortcut>
+                    <IconPencil className="h-4 w-4" />
+                  </DropdownMenuShortcut>
+                </DropdownMenuItem>
+              </Can>
+
+              <Can permission={'CREATE_WAREHOUSE_RECEIPT'}>
+                <DropdownMenuItem
+                  onClick={() => setShowImportDialog(true)}
+                  className={`text-emerald-600 ${!['confirmed', 'shipping'].includes(status) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={!['confirmed', 'shipping'].includes(status)}
+                >
+                  Nhập kho
+                  <DropdownMenuShortcut>
+                    <IconPackageImport className="h-4 w-4" />
+                  </DropdownMenuShortcut>
+                </DropdownMenuItem>
+              </Can>
+
+              <Can permission={'UPDATE_PURCHASE_CONTRACT'}>
+                <DropdownMenuItem
+                  onClick={() => setShowLiquidationDialog(true)}
+                  className={`text-orange-600 ${status !== 'confirmed' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={status !== 'confirmed'}
+                >
+                  Thanh lý
+                  <DropdownMenuShortcut>
+                    <IconReceiptRefund className="h-4 w-4" />
+                  </DropdownMenuShortcut>
+                </DropdownMenuItem>
+              </Can>
+
+              <DropdownMenuSeparator />
+
+              <Can permission={'DELETE_PURCHASE_CONTRACT'}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (onRowAction) onRowAction()
+                    setShowDeleteDialog(true)
+                  }}
+                  className={`text-red-600 ${status !== 'draft' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={status !== 'draft'}
+                >
+                  Xóa
+                  <DropdownMenuShortcut>
+                    <IconTrash className="h-4 w-4" />
+                  </DropdownMenuShortcut>
+                </DropdownMenuItem>
+              </Can>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Supplier Section */}

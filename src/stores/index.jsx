@@ -39,6 +39,7 @@ import warehouseReceiptReducer from './WarehouseReceiptSlice'
 import lotReducer from './LotSlice'
 import warehouseReportReducer from './WarehouseReportSlice'
 import systemLogReducer from './SystemLogSlice'
+import reportReducer from './ReportSlice'
 
 
 const persistConfig = { key: 'katec-vn', storage }
@@ -85,6 +86,7 @@ export const store = configureStore({
     lot: lotReducer,
     warehouseReport: warehouseReportReducer,
     systemLog: systemLogReducer,
+    report: reportReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ serializableCheck: false }),

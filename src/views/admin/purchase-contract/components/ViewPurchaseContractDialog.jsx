@@ -8,6 +8,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 import LiquidatePurchaseContractDialog from './LiquidatePurchaseContractDialog'
 import {
@@ -56,7 +63,12 @@ import { DeletePaymentDialog } from '../../payment/components/DeletePaymentDialo
 import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components/DeleteWarehouseReceiptDialog'
 import CreatePurchaseOrderPaymentDialog from '../../payment/components/CreatePurchaseOrderPaymentDialog'
 import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
-import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
+import {
+  createWarehouseReceipt,
+  cancelWarehouseReceipt,
+  postWarehouseReceipt,
+  updateWarehouseReceipt
+} from '@/stores/WarehouseReceiptSlice'
 import { IconPlus } from '@tabler/icons-react'
 
 const ViewPurchaseContractDialog = ({
@@ -666,12 +678,11 @@ const ViewPurchaseContractDialog = ({
                           <h3 className="font-semibold">Phiếu chi</h3>
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-8 gap-1"
+                            className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
                             onClick={handleCreatePayment}
                           >
-                            <IconPlus className="h-4 w-4 text-green-600" />
-                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                            <IconPlus className="h-4 w-4" />
+                            <span>
                               Thêm
                             </span>
                           </Button>
@@ -861,12 +872,11 @@ const ViewPurchaseContractDialog = ({
                           <h3 className="font-semibold">Phiếu nhập kho</h3>
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-8 gap-1"
+                            className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
                             onClick={handleCreateWarehouseReceipt}
                           >
-                            <IconPlus className="h-4 w-4 text-orange-600" />
-                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                            <IconPlus className="h-4 w-4" />
+                            <span>
                               Thêm
                             </span>
                           </Button>
@@ -1007,26 +1017,26 @@ const ViewPurchaseContractDialog = ({
                                         <span className="text-muted-foreground">
                                           Trạng thái:
                                         </span>
-                                        <div className='flex items-center justify-end'>
-                                          <Select value={receipt.status} onValueChange={(val) => handleUpdateWarehouseReceiptStatus(val, receipt.id)}>
-                                            <SelectTrigger className="h-6 w-auto border-0 p-0 focus:ring-0">
-                                              <SelectValue>
-                                                <span className={`inline-flex items-center gap-1 text-xs font-medium ${getWarehouseReceiptStatusColor(receipt.status).replace(/bg-[^ ]+/, '').trim()}`}>
-                                                  {receipt.status === 'draft' ? 'Nháp' :
-                                                    receipt.status === 'posted' ? 'Đã ghi sổ' :
-                                                      receipt.status === 'cancelled' ? 'Đã hủy' :
-                                                        receipt.status}
-                                                </span>
-                                              </SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent align="end" className="w-[140px] z-[100065]">
-                                              {warehouseReceiptStatuses.map((s) => (
-                                                <SelectItem key={s.value} value={s.value} className="text-xs">
-                                                  {s.label}
-                                                </SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
+                                        <div
+                                          className={cn(
+                                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 cursor-pointer hover:opacity-80",
+                                            receipt.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
+                                              receipt.status === 'posted' ? 'bg-green-100 text-green-700' :
+                                                receipt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                  'bg-gray-100 text-gray-700'
+                                          )}
+                                          onClick={() => {
+                                            setSelectedWarehouseReceiptForUpdate(receipt)
+                                            setShowUpdateWarehouseReceiptStatus(true)
+                                          }}
+                                          title="Bấm để cập nhật trạng thái"
+                                        >
+                                          <span className="truncate text-xs font-medium">
+                                            {receipt.status === 'draft' ? 'Nháp' :
+                                              receipt.status === 'posted' ? 'Đã ghi sổ' :
+                                                receipt.status === 'cancelled' ? 'Đã hủy' :
+                                                  receipt.status}
+                                          </span>
                                         </div>
                                       </div>
                                     </div>
@@ -1156,6 +1166,24 @@ const ViewPurchaseContractDialog = ({
             </Button>
           )}
 
+          <Button
+            size="sm"
+            onClick={handleCreatePayment}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <IconPlus className="h-4 w-4 mr-1" />
+            Tạo Phiếu Chi
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={handleCreateWarehouseReceipt}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <IconPlus className="h-4 w-4 mr-1" />
+            Tạo Phiếu Nhập Kho
+          </Button>
+
           <DialogClose asChild>
             <Button type="button" variant="outline" size="sm">
               Đóng
@@ -1243,6 +1271,21 @@ const ViewPurchaseContractDialog = ({
             currentStatus={selectedPaymentForUpdate.status}
             statuses={paymentStatus}
             onSubmit={(status) => handleUpdatePaymentStatus(status, selectedPaymentForUpdate.id)}
+            contentClassName="!z-[100060]"
+            overlayClassName="z-[100059]"
+            selectContentClassName="z-[100065]"
+          />
+        )}
+
+        {/* Update Warehouse Receipt Status Dialog */}
+        {selectedWarehouseReceiptForUpdate && (
+          <UpdateWarehouseReceiptStatusDialog
+            open={showUpdateWarehouseReceiptStatus}
+            onOpenChange={setShowUpdateWarehouseReceiptStatus}
+            receiptId={selectedWarehouseReceiptForUpdate.code || selectedWarehouseReceiptForUpdate.id}
+            currentStatus={selectedWarehouseReceiptForUpdate.status}
+            statuses={warehouseReceiptStatuses}
+            onSubmit={(status) => handleUpdateWarehouseReceiptStatus(status, selectedWarehouseReceiptForUpdate.id)}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
             selectContentClassName="z-[100065]"

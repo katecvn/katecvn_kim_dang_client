@@ -12,6 +12,7 @@ import {
   startOfMonth,
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
+import { useDebounce } from '@/hooks/useDebounce'
 
 const PurchaseContractPage = () => {
   const dispatch = useDispatch()
@@ -33,10 +34,19 @@ const PurchaseContractPage = () => {
     limit: 20
   })
 
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 500)
+
   useEffect(() => {
     document.title = 'Danh sách hợp đồng mua hàng'
-    dispatch(getPurchaseContracts({ ...filters, ...pageParams }))
-  }, [dispatch, filters, pageParams])
+    dispatch(getPurchaseContracts({ ...filters, ...pageParams, search: debouncedSearch }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, filters, pageParams.page, pageParams.limit, debouncedSearch])
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPageParams(prev => ({ ...prev, page: 1 }))
+  }, [debouncedSearch])
 
   return (
     <Layout>
@@ -78,6 +88,9 @@ const PurchaseContractPage = () => {
               pagination={pagination}
               onPageChange={(page) => setPageParams(prev => ({ ...prev, page }))}
               onPageSizeChange={(limit) => setPageParams(prev => ({ ...prev, limit, page: 1 }))}
+              onSearchChange={(value) => {
+                setSearch(value)
+              }}
             />
           )}
         </div>

@@ -107,14 +107,14 @@ export const columns = [
     enableHiding: false,
   },
   {
-    accessorKey: 'coefficient',
+    accessorKey: 'currentStock',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="HS Lương" />
+      <DataTableColumnHeader column={column} title="Tồn kho" />
     ),
     cell: ({ row }) => {
       return (
         <div className="w-16 text-center">
-          {row.original?.coefficient?.coefficient}
+          {Number(row.original?.currentStock)}
         </div>
       )
     },

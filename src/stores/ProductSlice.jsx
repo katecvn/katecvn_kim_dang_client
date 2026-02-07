@@ -223,15 +223,11 @@ export const getProductSaleHistory = createAsyncThunk(
 
 export const importProduct = createAsyncThunk(
   'product/import',
-  async (formData, { rejectWithValue, dispatch }) => {
+  async (data, { rejectWithValue, dispatch }) => {
     try {
-      await api.post('/product/import', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
+      await api.post('/product/import', data)
       await dispatch(getProducts()).unwrap()
-      toast.success('Import dữ liệu thành công')
+      // toast.success('Import dữ liệu thành công') // Toast handled in Dialog for better count info
     } catch (error) {
       return rejectWithValue(handleError(error))
     }
@@ -360,9 +356,23 @@ export const productSlice = createSlice({
       })
       .addCase(importProduct.rejected, (state, action) => {
         state.loading = false
-        state.error =
-          action.payload?.message || action.payload || 'Lỗi không xác định'
-        toast.error(state.error)
+        const payload = action.payload
+        state.error = payload?.message || payload || 'Lỗi không xác định'
+
+        // Only toast if it's a simple error message, not a structured error object
+        // The UI component (ImportProductDialog) handles structured 'importErrors'
+        const hasImportErrors =
+          payload?.importErrors ||
+          payload?.message?.importErrors ||
+          (typeof payload === 'object' && 'importErrors' in payload)
+
+        if (!hasImportErrors) {
+          let msg = state.error
+          if (typeof msg === 'object') {
+            try { msg = JSON.stringify(msg) } catch (e) { msg = 'Lỗi không xác định' }
+          }
+          toast.error(String(msg))
+        }
       })
 
       .addCase(getProductSaleHistory.pending, (state) => {

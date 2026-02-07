@@ -31,7 +31,8 @@ const SalesContractDataTable = ({
   loading = false,
   pagination = { page: 1, limit: 20, totalPages: 1 },
   onPageChange,
-  onPageSizeChange
+  onPageSizeChange,
+  onSearchChange
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -76,7 +77,13 @@ const SalesContractDataTable = ({
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: (updater) => {
+      setGlobalFilter(updater)
+      if (typeof updater !== 'function') {
+        onSearchChange?.(updater)
+      }
+    },
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

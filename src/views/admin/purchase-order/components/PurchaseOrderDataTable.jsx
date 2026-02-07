@@ -32,6 +32,12 @@ const PurchaseOrderDataTable = ({
   onCreated,
   isMyPurchaseOrder = false,
   onView,
+  // Server-side pagination
+  pageCount,
+  pagination,
+  onPaginationChange,
+  // Server-side search
+  onSearchChange,
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -57,12 +63,22 @@ const PurchaseOrderDataTable = ({
       rowSelection,
       columnFilters,
       globalFilter,
+      pagination, // server-side pagination state
     },
+    manualPagination: true, // Enable server-side pagination
+    pageCount: pageCount ?? -1,
+    onPaginationChange: onPaginationChange,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
+    onGlobalFilterChange: (updater) => {
+      const value = typeof updater === 'function' ? updater(globalFilter) : updater
+      setGlobalFilter(value)
+      if (onSearchChange) {
+        onSearchChange(value)
+      }
+    },
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

@@ -9,16 +9,34 @@ import { toast } from 'sonner'
 
 export const getPurchaseOrders = createAsyncThunk(
   'purchaseOrder/get-purchase-orders',
-  async ({ fromDate = null, toDate = null }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
     try {
       const response = await api.get('/purchase-orders', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
+          page,
+          limit,
+          search
         },
       })
-      const { data } = response.data.data
-      return data
+      const responseData = response.data
+      const { data, pagination } = responseData.data || {}
+
+      // Map pagination to internal structure
+      const meta = pagination ? {
+        ...pagination,
+        last_page: pagination.totalPages,
+        current_page: pagination.page,
+        per_page: pagination.limit
+      } : undefined
+
+      return { data, meta }
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -49,17 +67,35 @@ export const getPurchaseOrderDetail = createAsyncThunk(
 
 export const getMyPurchaseOrders = createAsyncThunk(
   'purchaseOrder/get-my-purchase-orders',
-  async ({ fromDate = null, toDate = null }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
     try {
       const response = await api.get('/purchase-orders', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
+          page,
+          limit,
+          search
         },
       })
 
-      const { data } = response.data.data
-      return data
+      const responseData = response.data
+      const { data, pagination } = responseData.data || {}
+
+      // Map pagination to internal structure
+      const meta = pagination ? {
+        ...pagination,
+        last_page: pagination.totalPages,
+        current_page: pagination.page,
+        per_page: pagination.limit
+      } : undefined
+
+      return { data, meta }
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -163,6 +199,25 @@ export const confirmPurchaseOrder = createAsyncThunk(
   },
 )
 
+export const importPurchaseOrder = createAsyncThunk(
+  'purchaseOrder/import',
+  async (data, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/purchase-orders/import', data)
+      await dispatch(
+        getPurchaseOrders({
+          fromDate: getStartOfCurrentMonth(),
+          toDate: getEndOfCurrentMonth(),
+        }),
+      ).unwrap()
+      toast.success('Import đơn hàng thành công')
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 // Cancel PO
 export const cancelPurchaseOrder = createAsyncThunk(
   'purchaseOrder/cancel',
@@ -215,34 +270,21 @@ export const updatePurchaseOrderStatus = createAsyncThunk(
   },
 )
 
-export const importPurchaseOrder = createAsyncThunk(
-  'purchaseOrder/import',
-  async (formData, { rejectWithValue, dispatch }) => {
-    try {
-      await api.post('/purchase-orders/import', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-      await dispatch(
-        getMyPurchaseOrders({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      ).unwrap()
-      toast.success('Import dữ liệu thành công')
-    } catch (error) {
-      const message = handleError(error)
-      return rejectWithValue(message)
-    }
-  },
-)
+
 
 const initialState = {
   purchaseOrders: [],
   purchaseOrder: null,
   loading: false,
   error: null,
+  pagination: {
+    total: 0,
+    per_page: 15,
+    current_page: 1,
+    last_page: 1,
+    from: 0,
+    to: 0
+  }
 }
 
 export const purchaseOrderSlice = createSlice({
@@ -256,22 +298,26 @@ export const purchaseOrderSlice = createSlice({
       })
       .addCase(getPurchaseOrders.fulfilled, (state, action) => {
         state.loading = false
-        state.purchaseOrders = action.payload
+        state.purchaseOrders = action.payload.data || []
+        state.pagination = action.payload.meta || initialState.pagination
       })
       .addCase(getPurchaseOrders.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
+        state.purchaseOrders = []
       })
       .addCase(getMyPurchaseOrders.pending, (state) => {
         state.loading = true
       })
       .addCase(getMyPurchaseOrders.fulfilled, (state, action) => {
         state.loading = false
-        state.purchaseOrders = action.payload
+        state.purchaseOrders = action.payload.data || []
+        state.pagination = action.payload.meta || initialState.pagination
       })
       .addCase(getMyPurchaseOrders.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
+        state.purchaseOrders = []
       })
       .addCase(deletePurchaseOrder.fulfilled, (state) => {
         state.loading = false
@@ -352,6 +398,14 @@ export const purchaseOrderSlice = createSlice({
         state.error = action.payload?.message || 'Lỗi không xác định'
         toast.error(state.error)
       })
+      // Import
+      .addCase(importPurchaseOrder.fulfilled, (state) => { state.loading = false })
+      .addCase(importPurchaseOrder.pending, (state) => { state.loading = true })
+      .addCase(importPurchaseOrder.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload?.message || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
       .addCase(getPurchaseOrderDetail.pending, (state) => {
         // Don't set global loading to true to avoid unmounting the list/dialog
         // The component should handle its own loading state
@@ -362,17 +416,7 @@ export const purchaseOrderSlice = createSlice({
       .addCase(getPurchaseOrderDetail.rejected, (state, action) => {
         state.error = action.payload
       })
-      .addCase(importPurchaseOrder.pending, (state) => {
-        state.loading = true
-      })
-      .addCase(importPurchaseOrder.fulfilled, (state) => {
-        state.loading = false
-      })
-      .addCase(importPurchaseOrder.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
-        toast.error(state.error)
-      })
+
   },
 })
 

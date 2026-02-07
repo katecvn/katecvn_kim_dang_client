@@ -368,7 +368,7 @@ const ViewReceiptDialog = ({
                                   Số lượng
                                 </span>
                                 <span className="font-medium">
-                                  {product.quantity} {product.unitName}
+                                  {Number(product.quantity)} {product.unitName}
                                 </span>
                               </div>
                               <div className="flex flex-col text-right">

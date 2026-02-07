@@ -11,17 +11,19 @@ import { useForm } from 'react-hook-form'
 import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/custom/PasswordInput'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   getAuthUserRolePermissions,
   login,
   redirectToGoogle,
+  callbackGoogle,
 } from '@/stores/AuthSlice'
 import { useEffect } from 'react'
 import { loginSchema } from '../schema'
 import { IconBrandGoogle } from '@tabler/icons-react'
+import { toast } from 'sonner'
 
 const AuthForm = ({ className, ...props }) => {
   const form = useForm({
@@ -35,6 +37,7 @@ const AuthForm = ({ className, ...props }) => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const loading = useSelector((state) => state.auth.loading)
+  const [searchParams] = useSearchParams()
 
   const onSubmit = async (data) => {
     try {
@@ -50,6 +53,55 @@ const AuthForm = ({ className, ...props }) => {
   useEffect(() => {
     document.title = 'Đăng nhập'
   }, [])
+
+  // Handle Google OAuth callback with code/state
+  useEffect(() => {
+    const code = searchParams.get('code')
+    const state = searchParams.get('state')
+
+    if (code && state) {
+      const handleGoogleCallback = async () => {
+        try {
+          await dispatch(callbackGoogle({ code, state })).unwrap()
+          await dispatch(getAuthUserRolePermissions()).unwrap()
+          navigate('/dashboard')
+        } catch (error) {
+          console.log('Google callback error: ', error)
+        }
+      }
+
+      handleGoogleCallback()
+    }
+  }, [searchParams, dispatch, navigate])
+
+  // Handle Google OAuth callback with accessToken (direct token)
+  useEffect(() => {
+    const accessToken = searchParams.get('accessToken')
+
+    if (accessToken) {
+      const handleDirectTokenCallback = async () => {
+        try {
+          // Save token to localStorage
+          localStorage.setItem('accessToken', accessToken)
+
+          // Fetch user permissions
+          await dispatch(getAuthUserRolePermissions()).unwrap()
+
+          // Show success message
+          toast.success('Đăng nhập thành công')
+
+          // Navigate to dashboard
+          navigate('/dashboard')
+        } catch (error) {
+          console.log('Direct token callback error: ', error)
+          // Clear invalid token
+          localStorage.removeItem('accessToken')
+        }
+      }
+
+      handleDirectTokenCallback()
+    }
+  }, [searchParams, dispatch, navigate])
 
   const handleRedirectToGoogle = async () => {
     try {

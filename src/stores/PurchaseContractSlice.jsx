@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 
 export const getPurchaseContracts = createAsyncThunk(
   'purchaseContract/get-purchase-contracts',
-  async ({ fromDate = null, toDate = null, page = 1, limit = 20 }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
     try {
       const response = await api.get('/purchase-contracts', {
         params: {
@@ -13,10 +13,21 @@ export const getPurchaseContracts = createAsyncThunk(
           toDate: toDate ?? undefined,
           page,
           limit,
+          search
         },
       })
-      const { data } = response.data
-      return data // Return { data: [...], pagination: {...} }
+      const responseData = response.data
+      const { data, pagination } = responseData.data || {}
+
+      // Map pagination to internal structure
+      const meta = pagination ? {
+        ...pagination,
+        last_page: pagination.totalPages,
+        current_page: pagination.page,
+        per_page: pagination.limit
+      } : undefined
+
+      return { data, meta }
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -136,22 +147,42 @@ export const cancelPurchaseContract = createAsyncThunk(
 
 export const getMyPurchaseContracts = createAsyncThunk(
   'purchaseContract/get-my-purchase-contracts',
-  async ({ fromDate = null, toDate = null }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
     try {
       const response = await api.get('/purchase-contracts/by-user', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
+          page,
+          limit,
+          search
         },
       })
-      const { data } = response.data
-      return data
+      const responseData = response.data
+      const { data, pagination } = responseData.data || {}
+
+      // Map pagination to internal structure
+      const meta = pagination ? {
+        ...pagination,
+        last_page: pagination.totalPages,
+        current_page: pagination.page,
+        per_page: pagination.limit
+      } : undefined
+
+      return { data, meta }
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
     }
   },
 )
+
+
 
 // Liquidation
 export const getLiquidationPreview = createAsyncThunk(
@@ -208,8 +239,8 @@ const purchaseContractSlice = createSlice({
       })
       .addCase(getPurchaseContracts.fulfilled, (state, action) => {
         state.loading = false
-        state.contracts = action.payload.data
-        state.pagination = action.payload.pagination
+        state.contracts = action.payload.data || []
+        state.pagination = action.payload.meta || state.pagination
       })
       .addCase(getPurchaseContracts.rejected, (state, action) => {
         state.loading = false
@@ -222,7 +253,8 @@ const purchaseContractSlice = createSlice({
       })
       .addCase(getMyPurchaseContracts.fulfilled, (state, action) => {
         state.loading = false
-        state.contracts = action.payload
+        state.contracts = action.payload.data || []
+        state.pagination = action.payload.meta || state.pagination
       })
       .addCase(getMyPurchaseContracts.rejected, (state, action) => {
         state.loading = false

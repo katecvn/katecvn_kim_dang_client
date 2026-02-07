@@ -156,6 +156,7 @@ const ViewPurchaseOrderDialog = ({
       }
       toast.success('Cập nhật trạng thái đơn mua hàng thành công')
       fetchData()
+      onRefresh?.()
     } catch (error) {
       console.error('Update status error:', error)
       toast.error('Cập nhật trạng thái thất bại')
@@ -168,6 +169,7 @@ const ViewPurchaseOrderDialog = ({
       toast.success('Cập nhật trạng thái phiếu chi thành công')
       setShowUpdatePaymentStatus(false)
       fetchData()
+      onRefresh?.()
     } catch (error) {
       console.error(error)
       // Toast handled in slice usually
@@ -187,6 +189,7 @@ const ViewPurchaseOrderDialog = ({
       toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
       setShowUpdateWarehouseReceiptStatus(false)
       fetchData()
+      onRefresh?.()
     } catch (error) {
       console.error(error)
     }
@@ -281,6 +284,7 @@ const ViewPurchaseOrderDialog = ({
       await dispatch(createWarehouseReceipt(payload)).unwrap()
       toast.success('Tạo phiếu nhập kho thành công')
       fetchData()
+      onRefresh?.()
     } catch (error) {
       console.error(error)
       toast.error('Tạo phiếu nhập kho thất bại')
@@ -787,7 +791,7 @@ const ViewPurchaseOrderDialog = ({
                                     </TableCell> */}
                                     <TableCell>{dateFormat(voucher.paymentDate, true)}</TableCell>
                                     <TableCell>
-                                      {voucher.status === 'draft' && (
+                                      {['draft', 'cancelled'].includes(voucher.status) && (
                                         <Button
                                           variant="ghost"
                                           size="icon"
@@ -823,14 +827,15 @@ const ViewPurchaseOrderDialog = ({
                                     >
                                       {voucher.code}
                                     </span>
-                                    {voucher.status === 'draft' && (
+                                    {['draft', 'cancelled'].includes(voucher.status) && (
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6 text-destructive hover:text-destructive/90 hover:bg-destructive/10 -mr-2"
                                         onClick={(e) => {
                                           e.stopPropagation()
-                                          toast.info("Tính năng xóa đang phát triển")
+                                          setPaymentToDelete(voucher)
+                                          setShowDeletePaymentDialog(true)
                                         }}
                                       >
                                         <Trash2 className="h-4 w-4" />
@@ -1037,7 +1042,9 @@ const ViewPurchaseOrderDialog = ({
                                         ? 'Nháp'
                                         : receipt.status === 'posted'
                                           ? 'Đã ghi sổ'
-                                          : receipt.status}
+                                          : receipt.status === 'cancelled'
+                                            ? 'Đã hủy'
+                                            : receipt.status}
                                     </span>
                                   </div>
                                 </div>
@@ -1367,7 +1374,10 @@ const ViewPurchaseOrderDialog = ({
           open={showCreatePaymentDialog}
           onOpenChange={setShowCreatePaymentDialog}
           purchaseOrder={purchaseOrder}
-          onSuccess={() => fetchData()}
+          onSuccess={() => {
+            fetchData()
+            onRefresh?.()
+          }}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
         />
@@ -1440,6 +1450,7 @@ const ViewPurchaseOrderDialog = ({
           onSuccess={() => {
             setShowDeletePaymentDialog(false)
             fetchData()
+            onRefresh?.()
           }}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
@@ -1472,6 +1483,7 @@ const ViewPurchaseOrderDialog = ({
           onSuccess={() => {
             setShowDeleteWarehouseReceiptDialog(false)
             fetchData()
+            onRefresh?.()
           }}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"

@@ -55,27 +55,33 @@ const ConfirmWarehouseReceiptDialog = ({
   // Fetch full details when opened
   useEffect(() => {
     if (open && invoice?.id) {
-      const fetchInvoiceDetails = async () => {
+      const fetchData = async () => {
         setIsLoadingDetails(true)
         try {
-          const permissionCodes = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
-          const isAdmin = permissionCodes.includes('GET_INVOICE')
+          let data = null
 
-          const data = isAdmin
-            ? await getInvoiceDetail(invoice.id)
-            : await getInvoiceDetailByUser(invoice.id)
+          if (type === 'contract') {
+            // In contract mode, use the passed invoice object (which contains contract data)
+            // Do NOT fetch invoice details from API as it would overwrite the contract mapping
+            data = { ...invoice }
+          } else {
+            // In retail mode, fetch fresh invoice details
+            const permissionCodes = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
+            const isAdmin = permissionCodes.includes('GET_INVOICE')
+
+            data = isAdmin
+              ? await getInvoiceDetail(invoice.id)
+              : await getInvoiceDetailByUser(invoice.id)
+          }
 
           // Fetch details for existing warehouse receipts if they exist but don't have details
           if (data.warehouseReceipts && data.warehouseReceipts.length > 0) {
             const receiptsWithDetails = await Promise.all(data.warehouseReceipts.map(async (receipt) => {
               try {
-                // Only fetch if details are missing or empty (though empty might mean 0 items, but usually API returns details array)
                 // If we already have details, skip
                 if (receipt.details && receipt.details.length > 0) return receipt;
 
                 const detail = await getWarehouseReceiptDetail(receipt.id);
-                // detail might be returned directly or wrapped in data.data
-                // Let's assume standard API response
                 return detail.data || detail;
               } catch (e) {
                 console.error(`Failed to fetch receipt ${receipt.id}`, e);
@@ -89,19 +95,19 @@ const ConfirmWarehouseReceiptDialog = ({
 
           setDetailInvoice(data)
         } catch (error) {
-          console.error('Failed to fetch invoice details:', error)
-          toast.error('Không thể tải chi tiết hóa đơn')
+          console.error('Failed to fetch details:', error)
+          toast.error('Không thể tải thông tin chi tiết')
         } finally {
           setIsLoadingDetails(false)
         }
       }
 
-      fetchInvoiceDetails()
+      fetchData()
     } else if (!open) {
       // Reset when closed
       setDetailInvoice(null)
     }
-  }, [open, invoice?.id])
+  }, [open, invoice?.id, type])
 
   // Helper to check if item is selectable
   const isItemSelectable = (item) => {
@@ -372,7 +378,7 @@ const ConfirmWarehouseReceiptDialog = ({
                               </div>
                             </TableCell>
                             <TableCell className="text-right font-semibold text-blue-600">
-                              <div>{item.quantity}</div>
+                              <div>{Number(item.quantity)}</div>
                               {totalShipped > 0 && (
                                 <div className="text-xs text-muted-foreground font-normal">
                                   Đã xuất: {totalShipped}
@@ -497,7 +503,7 @@ const ConfirmWarehouseReceiptDialog = ({
                               <div className="flex flex-col">
                                 <span className="text-muted-foreground">Số lượng</span>
                                 <span className="font-semibold text-blue-600 text-sm">
-                                  {item.quantity} {item.unitName}
+                                  {Number(item.quantity)} {item.unitName}
                                 </span>
                               </div>
                               <div className="flex flex-col text-right">

@@ -322,7 +322,7 @@ const ViewCategoryDialog = ({
                           <TableHead>Tên sản phẩm</TableHead>
                           <TableHead>Mã</TableHead>
                           <TableHead>Loại</TableHead>
-                          <TableHead>Nguồn</TableHead>
+                          {/* <TableHead>Nguồn</TableHead> */}
                           <TableHead className="text-right">
                             Giá niêm yết
                           </TableHead>
@@ -338,9 +338,9 @@ const ViewCategoryDialog = ({
                             <TableCell>
                               {PRODUCT_TYPE_LABEL[p.type] ?? '—'}
                             </TableCell>
-                            <TableCell>
+                            {/* <TableCell>
                               {PRODUCT_SOURCE_LABEL[p.source] ?? '—'}
-                            </TableCell>
+                            </TableCell> */}
                             <TableCell className="text-right">
                               {p.price != null ? moneyFormat(p.price) : '—'}
                             </TableCell>

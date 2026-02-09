@@ -184,6 +184,7 @@ const ViewSalesContractDialog = ({
       }
 
       toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
+      setShowUpdateWarehouseReceiptStatus(false)
       fetchContractDetail()
     } catch (error) {
       console.error(error)
@@ -273,25 +274,28 @@ const ViewSalesContractDialog = ({
 
     try {
       setWarehouseLoading(true)
-      // Fetch contract detail to ensure we have items
+      // Fetch contract detail to ensure we have items and warehouse receipts
       const contractDetail = await dispatch(getSalesContractDetail(contractId)).unwrap()
 
       // Map contract details to invoice items structure for the dialog
-      // This matches the logic in DataTableRowAction
       const mappedItems = contractDetail?.items?.map(item => ({
         id: item.id,
+        productId: item.productId,
         productName: item.product?.name,
         quantity: item.quantity,
         unitName: item.unit?.name,
+        unitId: item.unitId,
         salesContractItemId: item.id, // Mark as contract item
+        price: item.unitPrice,
       })) || []
 
       // Construct object data for dialog
       setWarehouseDialogData({
         ...firstInvoice,
-        code: firstInvoice.code,
+        code: contractDetail.code,
         customer: contract.customer,
-        invoiceItems: mappedItems
+        invoiceItems: mappedItems,
+        warehouseReceipts: contractDetail.warehouseReceipts || [] // Pass warehouse receipts from contract
       })
 
       setShowConfirmWarehouseDialog(true)

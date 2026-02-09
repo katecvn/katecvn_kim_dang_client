@@ -37,6 +37,8 @@ export const getWarehouseReceiptById = createAsyncThunk(
   },
 )
 
+export const getWarehouseReceiptDetail = getWarehouseReceiptById
+
 export const createWarehouseReceipt = createAsyncThunk(
   'warehouseReceipt/create-warehouse-receipt',
   async (data, { rejectWithValue }) => {

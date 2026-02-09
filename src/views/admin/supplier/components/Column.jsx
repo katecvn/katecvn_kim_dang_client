@@ -35,13 +35,13 @@ export const columns = [
     enableSorting: false,
     enableHiding: false,
   },
-  // {
-  //   accessorKey: 'id',
-  //   header: ({ column }) => (
-  //     <DataTableColumnHeader column={column} title="ID" />
-  //   ),
-  //   cell: ({ row }) => <div className="w-14">{row.index + 1}</div>,
-  // },
+  {
+    accessorKey: 'code',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Mã NCC" />
+    ),
+    cell: ({ row }) => <div className="w-14">{row.getValue('code')}</div>,
+  },
   {
     accessorKey: 'name',
     header: ({ column }) => (

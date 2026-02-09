@@ -1,6 +1,6 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '@/components/custom/Button'
 import {
   DropdownMenu,
@@ -12,11 +12,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   postWarehouseReceipt,
+  getWarehouseReceiptById,
 } from '@/stores/WarehouseReceiptSlice'
 import ViewWarehouseReceiptDialog from './ViewWarehouseReceiptDialog'
-import { IconCheck, IconTrash, IconCircleX } from '@tabler/icons-react'
+import { IconCheck, IconCircleX, IconEdit } from '@tabler/icons-react'
+import { Eye, Printer, Trash2, Pencil, FileSpreadsheet } from 'lucide-react'
 import { DeleteWarehouseReceiptDialog } from './DeleteWarehouseReceiptDialog'
 import { CancelWarehouseReceiptDialog } from './CancelWarehouseReceiptDialog'
+import PrintWarehouseReceiptView from './PrintWarehouseReceiptView'
+import ExportWarehouseReceiptPreview from './ExportWarehouseReceiptPreview'
+import { toast } from 'sonner'
 
 export function DataTableRowActions({ row }) {
   const dispatch = useDispatch()
@@ -24,16 +29,33 @@ export function DataTableRowActions({ row }) {
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [showExportPreview, setShowExportPreview] = useState(false)
+  const [exportData, setExportData] = useState(null)
+
+  // Print state
+  const setting = useSelector((state) => state.setting.setting)
+  const [printData, setPrintData] = useState(null)
+
+  const handlePrintReceipt = () => {
+    setPrintData(receipt)
+    setTimeout(() => setPrintData(null), 100)
+  }
+
+  const handleExportClick = async () => {
+    try {
+      const data = await dispatch(getWarehouseReceiptById(receipt.id)).unwrap()
+      setExportData(data)
+      setShowExportPreview(true)
+    } catch (error) {
+      console.error(error)
+      toast.error('Không thể lấy dữ liệu chi tiết')
+    }
+  }
 
   const handlePost = async () => {
     if (receipt.status === 'posted') {
       return
     }
-
-    // Validation removed as per user request to remove Lot functionality
-
-    // Using window.confirm for now as I haven't created a confirm dialog for Post, but could be added later.
-    // Ideally we should have a ConfirmPostDialog too, but sticking to the requested scope (delete & cancel).
     const confirm = window.confirm(
       'Bạn có chắc chắn muốn duyệt phiếu kho này không? Sau khi duyệt sẽ không thể chỉnh sửa.'
     )
@@ -71,6 +93,25 @@ export function DataTableRowActions({ row }) {
         />
       )}
 
+      {/* Print View */}
+      {printData && (
+        <PrintWarehouseReceiptView
+          receipt={printData}
+          setting={setting}
+        />
+      )}
+
+      {/* Export Preview Dialog */}
+      {showExportPreview && (
+        <ExportWarehouseReceiptPreview
+          open={showExportPreview}
+          onOpenChange={setShowExportPreview}
+          receipt={exportData}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -82,31 +123,62 @@ export function DataTableRowActions({ row }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
+          <DropdownMenuItem
+            onClick={() => setShowViewDialog(true)}
+            className="text-blue-600 hover:text-blue-700 focus:text-blue-700"
+          >
+            Xem
+            <DropdownMenuShortcut>
+              <Eye className="h-4 w-4" />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+
+          {receipt.status === 'draft' && (
+            <DropdownMenuItem
+              onClick={() => setShowViewDialog(true)}
+              className="text-orange-600 hover:text-orange-700 focus:text-orange-700"
+            >
+              Sửa
+              <DropdownMenuShortcut>
+                <Pencil className="h-4 w-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
+
+          <DropdownMenuItem
+            onClick={handlePrintReceipt}
+            className="text-violet-600 hover:text-violet-700 focus:text-violet-700"
+          >
+            In phiếu
+            <DropdownMenuShortcut>
+              <Printer className="h-4 w-4" />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={handleExportClick}
+            className="text-green-600 hover:text-green-700 focus:text-green-700"
+          >
+            Xuất Excel
+            <DropdownMenuShortcut>
+              <FileSpreadsheet className="h-4 w-4" />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+
           {(receipt.status === 'draft' || receipt.status === 'cancelled') && (
             <>
+              {receipt.status === 'draft' && <DropdownMenuSeparator />}
               <DropdownMenuItem
                 onClick={() => setShowDeleteDialog(true)}
                 className="text-destructive focus:text-destructive"
               >
                 Xóa
                 <DropdownMenuShortcut>
-                  <IconTrash className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
             </>
           )}
-
-          {/* {receipt.status === 'posted' && (
-            <DropdownMenuItem
-              onClick={() => setShowCancelDialog(true)}
-              className="text-destructive focus:text-destructive"
-            >
-              Hủy
-              <DropdownMenuShortcut>
-                <IconCircleX className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          )} */}
 
         </DropdownMenuContent>
       </DropdownMenu>

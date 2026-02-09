@@ -95,7 +95,8 @@ const DataTableToolbar = ({ table }) => {
 
         <Button
           onClick={() => setShowImportDialog(true)}
-          className="mx-2 bg-blue-600 hover:bg-blue-700 text-white"
+          className="mx-2 text-emerald-600 border-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+          variant="outline"
           size="sm"
         >
           <FileSpreadsheet className="mr-2 size-4" aria-hidden="true" />

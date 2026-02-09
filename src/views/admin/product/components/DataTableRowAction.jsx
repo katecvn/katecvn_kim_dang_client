@@ -62,7 +62,10 @@ const DataTableRowActions = ({ row }) => {
           </Can>
 
           <Can permission="DELETE_PRODUCT">
-            <DropdownMenuItem onSelect={() => setShowDeleteProductDialog(true)}>
+            <DropdownMenuItem
+              onSelect={() => setShowDeleteProductDialog(true)}
+              className="text-red-500 hover:text-red-600 focus:text-red-600 focus:bg-red-50"
+            >
               Xóa
               <DropdownMenuShortcut>
                 <IconTrash className="h-4 w-4" />

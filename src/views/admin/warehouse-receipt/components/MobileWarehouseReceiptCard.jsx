@@ -4,7 +4,7 @@ import { Button } from '@/components/custom/Button'
 import { moneyFormat } from '@/utils/money-format'
 import { dateFormat } from '@/utils/date-format'
 import { cn } from '@/lib/utils'
-import { ChevronDown, MoreVertical, Eye, Printer, Trash2 } from 'lucide-react'
+import { ChevronDown, MoreVertical, Eye, Printer, Trash2, Pencil, FileSpreadsheet } from 'lucide-react'
 import { useState } from 'react'
 import {
   DropdownMenu,
@@ -20,7 +20,8 @@ import ViewWarehouseReceiptDialog from './ViewWarehouseReceiptDialog'
 import PrintWarehouseReceiptView from './PrintWarehouseReceiptView'
 import { DeleteWarehouseReceiptDialog } from './DeleteWarehouseReceiptDialog'
 import { UpdateWarehouseReceiptStatusDialog } from './UpdateWarehouseReceiptStatusDialog'
-import { updateWarehouseReceipt, getWarehouseReceipts, cancelWarehouseReceipt, postWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
+import { updateWarehouseReceipt, getWarehouseReceipts, cancelWarehouseReceipt, postWarehouseReceipt, getWarehouseReceiptById } from '@/stores/WarehouseReceiptSlice'
+import ExportWarehouseReceiptPreview from './ExportWarehouseReceiptPreview'
 import {
   Select,
   SelectContent,
@@ -39,6 +40,8 @@ const MobileWarehouseReceiptCard = ({
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showExportPreview, setShowExportPreview] = useState(false)
+  const [exportData, setExportData] = useState(null)
   const [targetStatus, setTargetStatus] = useState(null)
 
   // Print state
@@ -75,6 +78,17 @@ const MobileWarehouseReceiptCard = ({
   const handlePrintReceipt = () => {
     setPrintData(receipt)
     setTimeout(() => setPrintData(null), 100)
+  }
+
+  const handleExportClick = async () => {
+    try {
+      const data = await dispatch(getWarehouseReceiptById(receipt.id)).unwrap()
+      setExportData(data)
+      setShowExportPreview(true)
+    } catch (error) {
+      console.error(error)
+      toast.error('Không thể lấy dữ liệu chi tiết')
+    }
   }
 
   // Helper for select display
@@ -129,6 +143,17 @@ const MobileWarehouseReceiptCard = ({
         />
       )}
 
+      {/* Export Preview Dialog */}
+      {showExportPreview && (
+        <ExportWarehouseReceiptPreview
+          open={showExportPreview}
+          onOpenChange={setShowExportPreview}
+          receipt={exportData}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
+
       <div className="border rounded-lg bg-card mb-3 overflow-hidden">
         {/* Header */}
         <div className="p-3 border-b bg-background/50 flex items-center gap-2">
@@ -166,19 +191,40 @@ const MobileWarehouseReceiptCard = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => setShowViewDialog(true)}>
+              <DropdownMenuItem
+                onClick={() => setShowViewDialog(true)}
+                className="text-blue-600 hover:text-blue-700 focus:text-blue-700"
+              >
                 <Eye className="mr-2 h-4 w-4" />
                 Xem
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={handlePrintReceipt}>
+              <DropdownMenuItem
+                onClick={handlePrintReceipt}
+                className="text-violet-600 hover:text-violet-700 focus:text-violet-700"
+              >
                 <Printer className="mr-2 h-4 w-4" />
                 In phiếu
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={handleExportClick}
+                className="text-green-600 hover:text-green-700 focus:text-green-700"
+              >
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Xuất Excel
               </DropdownMenuItem>
 
               {status === 'draft' && (
                 <>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setShowViewDialog(true)}
+                    className="text-orange-600 hover:text-orange-700 focus:text-orange-700"
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Sửa
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => setShowDeleteDialog(true)}
                     className="text-destructive focus:text-destructive"

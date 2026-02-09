@@ -62,7 +62,7 @@ const WarehouseReceiptDataTable = ({ columns, data, loading = false }) => {
     <div className="space-y-4">
       <DataTableToolbar table={table} />
 
-      <div className="rounded-md border">
+      <div className={isMobile ? '' : 'rounded-md border'}>
         {isMobile ? (
           <div className="space-y-4 border-none p-0">
             {loading ? (

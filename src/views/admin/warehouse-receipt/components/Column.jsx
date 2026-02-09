@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { CreditCard, Phone, Pencil } from 'lucide-react'
 
-export const getColumns = (onView) => [
+export const getColumns = (onView, type = 'all') => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -60,7 +60,7 @@ export const getColumns = (onView) => [
   {
     id: 'partner',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Khách hàng" />
+      <DataTableColumnHeader column={column} title={type === 'import' ? "Nhà cung cấp" : "Khách hàng"} />
     ),
     cell: ({ row }) => {
       const receiptType = row.original.receiptType
@@ -70,7 +70,7 @@ export const getColumns = (onView) => [
       // Nhập kho -> hiển thị supplier
       if (receiptType === 1 && supplier) {
         return (
-          <div className="w-48 truncate" title={supplier.name}>
+          <div className="w-48" title={supplier.name}>
             <span className="font-semibold">{supplier.name}</span>
             <div className="text-xs text-muted-foreground">{supplier.code}</div>
           </div>
@@ -80,7 +80,7 @@ export const getColumns = (onView) => [
       // Xuất kho -> hiển thị customer
       if (receiptType === 2 && customer) {
         return (
-          <div className="w-48 truncate" title={customer.name}>
+          <div className="w-48" title={customer.name}>
             <span className="font-semibold">{customer.name}</span>
 
             {customer.taxCode && (
@@ -107,17 +107,6 @@ export const getColumns = (onView) => [
       return <div className="w-48 text-muted-foreground">Không có</div>
     },
     enableSorting: false,
-    enableHiding: true,
-  },
-  {
-    accessorKey: 'receiptDate',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Ngày lập" />
-    ),
-    cell: ({ row }) => (
-      <div className="w-32">{dateFormat(row.getValue('receiptDate'), true)}</div>
-    ),
-    enableSorting: true,
     enableHiding: true,
   },
   {
@@ -234,6 +223,17 @@ export const getColumns = (onView) => [
       </div>
     ),
     enableSorting: false,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'receiptDate',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Ngày lập" />
+    ),
+    cell: ({ row }) => (
+      <div className="w-32">{dateFormat(row.getValue('receiptDate'), true)}</div>
+    ),
+    enableSorting: true,
     enableHiding: true,
   },
   {

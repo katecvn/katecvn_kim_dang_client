@@ -710,7 +710,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
         <DialogFooter className={cn(isMobile && "pb-4 px-4 flex flex-row gap-2")}>
           {product && (
             <Button
-              className={cn("bg-blue-600 text-white hover:bg-blue-700", isMobile && "flex-1")}
+              className={cn("bg-orange-600 text-white hover:bg-orange-700", isMobile && "flex-1")}
               onClick={() => setShowUpdateProductDialog(true)}
             >
               <Edit className="mr-2 h-4 w-4" />

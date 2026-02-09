@@ -1,6 +1,6 @@
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { getWarehouseReceipts } from '@/stores/WarehouseReceiptSlice'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { WarehouseReceiptDataTable } from './components/WarehouseReceiptDataTable'
 import { getColumns } from './components/Column'
@@ -39,12 +39,12 @@ const WarehouseOutPage = () => {
   const [selectedReceiptId, setSelectedReceiptId] = useState(null)
   const [showViewDialog, setShowViewDialog] = useState(false)
 
-  const handleView = (receipt) => {
+  const handleView = useCallback((receipt) => {
     setSelectedReceiptId(receipt.id)
     setShowViewDialog(true)
-  }
+  }, [])
 
-  const columns = useMemo(() => getColumns(handleView), [])
+  const columns = useMemo(() => getColumns(handleView), [handleView])
 
   useEffect(() => {
     document.title = 'Danh sách phiếu xuất kho'
@@ -94,14 +94,12 @@ const WarehouseOutPage = () => {
         </div>
 
         {showViewDialog && (
-          <Can permission="GET_WAREHOUSE_RECEIPT">
-            <ViewWarehouseReceiptDialog
-              open={showViewDialog}
-              onOpenChange={setShowViewDialog}
-              receiptId={selectedReceiptId}
-              showTrigger={false}
-            />
-          </Can>
+          <ViewWarehouseReceiptDialog
+            open={showViewDialog}
+            onOpenChange={setShowViewDialog}
+            receiptId={selectedReceiptId}
+            showTrigger={false}
+          />
         )}
       </LayoutBody>
     </Layout>

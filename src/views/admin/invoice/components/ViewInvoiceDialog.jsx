@@ -2333,6 +2333,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
       }
 
       {/* Create Warehouse Receipt Confirm Dialog */}
+      {/* Create Warehouse Receipt Confirm Dialog */}
       <ConfirmWarehouseReceiptDialog
         open={showConfirmWarehouseDialog}
         onOpenChange={setShowConfirmWarehouseDialog}

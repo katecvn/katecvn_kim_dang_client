@@ -50,7 +50,10 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           <Can permission="UPDATE_UNIT">
-            <DropdownMenuItem onSelect={() => setShowUpdateUnitDialog(true)}>
+            <DropdownMenuItem
+              onSelect={() => setShowUpdateUnitDialog(true)}
+              className="text-orange-500 hover:text-orange-600 focus:text-orange-600"
+            >
               Sửa
               <DropdownMenuShortcut>
                 <IconEdit className="h-4 w-4" />
@@ -59,7 +62,10 @@ const DataTableRowActions = ({ row }) => {
           </Can>
 
           <Can permission="DELETE_UNIT">
-            <DropdownMenuItem onSelect={() => setShowDeleteTaxDialog(true)}>
+            <DropdownMenuItem
+              onSelect={() => setShowDeleteTaxDialog(true)}
+              className="text-red-500 hover:text-red-600 focus:text-red-600"
+            >
               Xóa
               <DropdownMenuShortcut>
                 <IconTrash className="h-4 w-4" />

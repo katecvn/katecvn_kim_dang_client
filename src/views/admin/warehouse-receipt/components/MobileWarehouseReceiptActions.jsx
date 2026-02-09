@@ -7,7 +7,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { PlusIcon } from '@radix-ui/react-icons'
-import { Trash, Printer, FileSpreadsheet, X, Save } from 'lucide-react'
+import { Trash, Printer, FileSpreadsheet, X, Save, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import ConfirmActionButton from '@/components/custom/ConfirmActionButton'
 import { Separator } from '@/components/ui/separator'
@@ -55,13 +55,20 @@ const MobileWarehouseReceiptActions = ({
           <div className="flex flex-col gap-3">
             {/* Save Action */}
             {receipt.status === 'draft' && onSave && (
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 gap-1 flex"
                   onClick={() => handleAction(onSave)}
                 >
                   <Save className="h-5 w-5" />
-                  <span className="text-xs">Lưu thay đổi</span>
+                  <span className="text-xs">Lưu</span>
+                </Button>
+                <Button
+                  className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 gap-1 flex"
+                  onClick={() => handleAction(onEdit)}
+                >
+                  <Pencil className="h-5 w-5" />
+                  <span className="text-xs">Sửa</span>
                 </Button>
               </div>
             )}

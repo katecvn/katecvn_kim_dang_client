@@ -54,6 +54,7 @@ const DataTableRowActions = ({ row }) => {
           <Can permission="UPDATE_SUPPLIER">
             <DropdownMenuItem
               onSelect={() => setShowUpdateSupplierDialog(true)}
+              className="text-orange-500 hover:text-orange-600 focus:text-orange-600"
             >
               Sửa
               <DropdownMenuShortcut>
@@ -65,6 +66,7 @@ const DataTableRowActions = ({ row }) => {
           <Can permission="DELETE_SUPPLIER">
             <DropdownMenuItem
               onSelect={() => setShowDeleteSupplierDialog(true)}
+              className="text-red-500 hover:text-red-600 focus:text-red-600"
             >
               Xóa
               <DropdownMenuShortcut>

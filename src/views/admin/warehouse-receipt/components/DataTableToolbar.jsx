@@ -18,6 +18,8 @@ import { EllipsisVertical } from 'lucide-react'
 import CreateManualWarehouseReceiptDialog from './CreateManualWarehouseReceiptDialog'
 import { DeleteMultipleWarehouseReceiptsDialog } from './DeleteMultipleWarehouseReceiptsDialog'
 import { deleteMultipleWarehouseReceipts } from '@/stores/WarehouseReceiptSlice'
+import { useEffect, useState } from 'react'
+import { useDispatch } from 'react-redux'
 
 export function DataTableToolbar({ table }) {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -58,62 +60,76 @@ export function DataTableToolbar({ table }) {
   // Mobile Toolbar
   if (isMobile) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="space-y-2">
         <Input
           placeholder="Tìm kiếm..."
           value={table.getColumn('code')?.getFilterValue() || ''}
           onChange={(event) =>
             table.getColumn('code')?.setFilterValue(event.target.value)
           }
-          className="h-9 flex-1"
+          className="h-8 w-full text-sm"
         />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
-              <EllipsisVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[200px]">
-            <DropdownMenuItem
-              onClick={() => setShowCreateDialog(true)}
-              className="text-green-600 focus:text-green-700 focus:bg-green-50"
-            >
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Tạo phiếu mới
-            </DropdownMenuItem>
-            <div className="my-1 h-px bg-muted" />
-            {/* We can put filters here if needed, or simplified actions */}
-            {table.getColumn('status') && (
-              <>
-                <DropdownMenuItem disabled className="font-semibold opacity-100">
-                  Trạng thái
-                </DropdownMenuItem>
-                {warehouseReceiptStatuses.map((status) => (
-                  <DropdownMenuItem
-                    key={status.value}
-                    onClick={() => table.getColumn('status')?.setFilterValue([status.value])}
-                  >
-                    {status.label}
-                  </DropdownMenuItem>
-                ))}
-              </>
-            )}
+        <div className="flex gap-2">
+          <Button
+            className="flex-1 h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
+            size="sm"
+            onClick={() => setShowCreateDialog(true)}
+          >
+            <PlusIcon className="mr-1 h-3 w-3" />
+            Tạo phiếu mới
+          </Button>
 
-            {isFiltered && (
-              <>
-                <div className="my-1 h-px bg-muted" />
-                <DropdownMenuItem
-                  onClick={() => table.resetColumnFilters()}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Cross2Icon className="mr-2 h-4 w-4" />
-                  Đặt lại
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          {table.getColumn('status') && (
+            <DataTableFacetedFilter
+              column={table.getColumn('status')}
+              title="Trạng thái"
+              options={warehouseReceiptStatuses}
+            />
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 px-2">
+                <EllipsisVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuItem
+                onClick={() => {
+                  if (selectedReceipts.length > 0) {
+                    setShowDeleteDialog(true)
+                  } else {
+                    toast.warning('Vui lòng chọn ít nhất 1 phiếu')
+                  }
+                }}
+                disabled={selectedReceipts.length === 0}
+                className="text-destructive focus:text-destructive"
+              >
+                <TrashIcon className="mr-2 h-4 w-4" />
+                Xóa ({selectedReceipts.length})
+              </DropdownMenuItem>
+
+              {isFiltered && (
+                <>
+                  <div className="my-1 h-px bg-muted" />
+                  <DropdownMenuItem
+                    onClick={() => table.resetColumnFilters()}
+                  >
+                    <Cross2Icon className="mr-2 h-4 w-4" />
+                    Đặt lại
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <CreateManualWarehouseReceiptDialog
+            open={showCreateDialog}
+            onOpenChange={setShowCreateDialog}
+            showTrigger={false}
+          />
+        </div>
       </div>
     )
   }

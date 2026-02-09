@@ -348,13 +348,13 @@ const ViewWarehouseReceiptDialog = ({
 
                                 <div className="flex-1 min-w-0">
                                   <div
-                                    className="font-medium cursor-pointer text-primary hover:underline hover:text-blue-600 truncate"
+                                    className="font-medium cursor-pointer text-primary hover:underline hover:text-blue-600 break-words"
                                     onClick={() => {
                                       setSelectedProductId(detail.productId)
                                       setShowViewProductDialog(true)
                                     }}
                                   >{detail.productName}</div>
-                                  <div className="text-sm text-muted-foreground truncate">
+                                  <div className="text-sm text-muted-foreground break-words">
                                     Mã: {detail.productCode}
                                   </div>
                                 </div>
@@ -381,6 +381,7 @@ const ViewWarehouseReceiptDialog = ({
                                         className="w-20 h-8 rounded-md border px-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary"
                                         value={detail.qtyActual}
                                         onChange={(e) => handleDetailChange(index, 'qtyActual', e.target.value)}
+                                        onFocus={(e) => e.target.select()}
                                       />
                                     </div>
                                     {(detail.product?.currentStock !== undefined && detail.product?.currentStock !== null) && (
@@ -599,6 +600,16 @@ const ViewWarehouseReceiptDialog = ({
               <Printer className="h-4 w-4" />
               In phiếu
             </Button>
+            {receipt?.status === 'draft' && (
+              <Button
+                size="sm"
+                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white"
+                onClick={() => toast.info('Tính năng sửa đang phát triển')}
+              >
+                <Pencil className="h-4 w-4" />
+                Sửa
+              </Button>
+            )}
             <Button
               variant="destructive"
               size="sm"

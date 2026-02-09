@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { getPurchaseOrderDetail } from '@/stores/PurchaseOrderSlice'
 import { getPurchaseContractDetail } from '@/stores/PurchaseContractSlice'
+import { getWarehouseReceiptDetail } from '@/stores/WarehouseReceiptSlice'
 
 import {
   Dialog,
@@ -40,29 +41,58 @@ const ConfirmImportWarehouseDialog = ({
   const [purchaseOrder, setPurchaseOrder] = useState(null)
   const [loading, setLoading] = useState(false)
   const [selectedItems, setSelectedItems] = useState({})
+  const [receiptDetailsMap, setReceiptDetailsMap] = useState({})
   const dispatch = useDispatch()
   const isMobile = useMediaQuery('(max-width: 768px)')
 
+  // Fetch PO/Contract data and then Warehouse Receipt details
   useEffect(() => {
     if (open) {
       setLoading(true)
       setSelectedItems({})
+      setReceiptDetailsMap({})
 
-      if (purchaseOrderId) {
-        dispatch(getPurchaseOrderDetail(purchaseOrderId))
-          .unwrap()
-          .then((data) => {
+      const fetchData = async () => {
+        try {
+          let data = null
+          if (purchaseOrderId) {
+            data = await dispatch(getPurchaseOrderDetail(purchaseOrderId)).unwrap()
+          } else if (purchaseContractId) {
+            data = await dispatch(getPurchaseContractDetail(purchaseContractId)).unwrap()
+          }
+
+          if (data) {
             setPurchaseOrder(data)
-          })
-          .finally(() => setLoading(false))
-      } else if (purchaseContractId) {
-        dispatch(getPurchaseContractDetail(purchaseContractId))
-          .unwrap()
-          .then((data) => {
-            setPurchaseOrder(data)
-          })
-          .finally(() => setLoading(false))
+
+            // Fetch details for all related warehouse receipts to calculate accurate imported quantities
+            if (data.warehouseReceipts && data.warehouseReceipts.length > 0) {
+              const detailsMap = {}
+              await Promise.all(data.warehouseReceipts.map(async (receipt) => {
+                if (receipt.status === 'cancelled') return // Skip cancelled receipts
+
+                try {
+                  // If details are already present, use them
+                  if (receipt.details && receipt.details.length > 0) {
+                    detailsMap[receipt.id] = receipt.details
+                  } else {
+                    // Otherwise fetch them
+                    const detailRes = await dispatch(getWarehouseReceiptDetail(receipt.id)).unwrap()
+                    detailsMap[receipt.id] = detailRes.details || []
+                  }
+                } catch (err) {
+                  console.error(`Failed to fetch receipt details for ${receipt.id}`, err)
+                }
+              }))
+              setReceiptDetailsMap(detailsMap)
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch order/contract details", error)
+        } finally {
+          setLoading(false)
+        }
       }
+      fetchData()
     }
   }, [open, purchaseOrderId, purchaseContractId, dispatch])
 
@@ -71,37 +101,63 @@ const ConfirmImportWarehouseDialog = ({
     ? purchaseOrder.items
     : (purchaseOrder?.purchaseOrders ? purchaseOrder.purchaseOrders.flatMap(po => po.items.map(item => ({ ...item, purchaseOrderId: po.id }))) : [])
 
+  // Helper to calculate total imported quantity from receipts (including drafts)
+  const calculateTotalImported = (item) => {
+    let totalImported = 0
+    if (purchaseOrder?.warehouseReceipts) {
+      purchaseOrder.warehouseReceipts.forEach(receipt => {
+        if (receipt.status !== 'cancelled' && receiptDetailsMap[receipt.id]) {
+          const details = receiptDetailsMap[receipt.id]
+          // Find matching detail item
+          // Match by ID if possible, otherwise by ProductID + UnitID
+          const matches = details.filter(d =>
+            (d.purchaseOrderItemId && d.purchaseOrderItemId === item.id) ||
+            (d.purchaseContractItemId && d.purchaseContractItemId === item.id) ||
+            (!d.purchaseOrderItemId && !d.purchaseContractItemId && d.productId === item.productId && d.unitId === item.unitId)
+          )
+
+          matches.forEach(m => {
+            totalImported += Number(m.qtyActual || m.quantity || 0)
+          })
+        }
+      })
+    }
+    return totalImported
+  }
+
+  // Initial selection based on calculated quantities
   useEffect(() => {
-    if (itemsToDisplay.length > 0) {
+    if (itemsToDisplay.length > 0 && !loading) {
       const initialSelection = {}
       itemsToDisplay.forEach((item) => {
-        const received = Number(item.receivedQuantity || 0)
+        const imported = calculateTotalImported(item)
         const total = Number(item.quantity || 0)
-        if (received < total) {
+        // Auto-select if not fully imported
+        if (imported < total) {
           initialSelection[item.id] = true
         }
       })
       setSelectedItems(initialSelection)
     }
-  }, [purchaseOrder])
+  }, [purchaseOrder, receiptDetailsMap, loading])
 
   const itemsCount = itemsToDisplay.length || 0
 
   // Calculate available items (not fully received)
   const availableItemsCount = itemsToDisplay.filter(item => {
-    const received = Number(item.receivedQuantity || 0)
+    const imported = calculateTotalImported(item)
     const total = Number(item.quantity || 0)
-    return received < total
+    return imported < total
   }).length
 
   const selectedCount = Object.values(selectedItems).filter(Boolean).length
 
   const toggleItem = (itemId) => {
     const item = itemsToDisplay.find(i => i.id === itemId)
-    const received = Number(item?.receivedQuantity || 0)
+    const imported = calculateTotalImported(item)
     const total = Number(item?.quantity || 0)
 
-    if (received >= total) return // Prevent selecting fully received items
+    if (imported >= total) return // Prevent selecting fully received items
 
     setSelectedItems((prev) => ({
       ...prev,
@@ -112,9 +168,9 @@ const ConfirmImportWarehouseDialog = ({
   const toggleAll = (checked) => {
     const newSelection = {}
     itemsToDisplay.forEach((item) => {
-      const received = Number(item.receivedQuantity || 0)
+      const imported = calculateTotalImported(item)
       const total = Number(item.quantity || 0)
-      if (received < total) {
+      if (imported < total) {
         newSelection[item.id] = checked
       }
     })
@@ -128,8 +184,7 @@ const ConfirmImportWarehouseDialog = ({
       setLoading(true)
       const selectedIds = Object.keys(selectedItems).filter((id) => selectedItems[id])
 
-      // Get the actual item objects with Safe ID comparison
-      // Get the actual item objects with Safe ID comparison
+      // Get the actual item objects
       const selectedItemObjects = itemsToDisplay.filter(item =>
         selectedIds.includes(String(item.id))
       )
@@ -207,51 +262,57 @@ const ConfirmImportWarehouseDialog = ({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {itemsToDisplay.map((item, index) => (
-                      <TableRow key={item.id} className={Number(item.receivedQuantity || 0) >= Number(item.quantity) ? "opacity-60 bg-muted/50" : ""}>
-                        <TableCell>
-                          <Checkbox
-                            checked={!!selectedItems[item.id]}
-                            onCheckedChange={() => toggleItem(item.id)}
-                            disabled={Number(item.receivedQuantity || 0) >= Number(item.quantity)}
-                          />
-                        </TableCell>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border">
-                              {item?.product?.image ? (
-                                <img
-                                  src={getPublicUrl(item.product.image)}
-                                  alt={item.productName}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center bg-secondary">
-                                  <Package className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                              )}
+                    {itemsToDisplay.map((item, index) => {
+                      const imported = calculateTotalImported(item)
+                      const total = Number(item.quantity || 0)
+                      const isFullyImported = imported >= total
+
+                      return (
+                        <TableRow key={item.id} className={isFullyImported ? "opacity-60 bg-muted/50" : ""}>
+                          <TableCell>
+                            <Checkbox
+                              checked={!!selectedItems[item.id]}
+                              onCheckedChange={() => toggleItem(item.id)}
+                              disabled={isFullyImported}
+                            />
+                          </TableCell>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border">
+                                {item?.product?.image ? (
+                                  <img
+                                    src={getPublicUrl(item.product.image)}
+                                    alt={item.productName}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                    <Package className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <div className="font-medium">{item.productName}</div>
+                                {isFullyImported && (
+                                  <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Đã nhập đủ</span>
+                                )}
+                              </div>
                             </div>
-                            <div>
-                              <div className="font-medium">{item.productName}</div>
-                              {Number(item.receivedQuantity || 0) >= Number(item.quantity) && (
-                                <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">Đã nhập đủ</span>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-blue-600">
-                          {Number(item.quantity)}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {Number(item.receivedQuantity || 0)}
-                        </TableCell>
-                        <TableCell>{item.unitName || item.unit?.name || '—'}</TableCell>
-                        <TableCell className="text-right">
-                          {Number(item.unitPrice).toLocaleString('vi-VN')}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-blue-600">
+                            {Number(item.quantity)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {Number(imported)}
+                          </TableCell>
+                          <TableCell>{item.unitName || item.unit?.name || '—'}</TableCell>
+                          <TableCell className="text-right">
+                            {Number(item.unitPrice).toLocaleString('vi-VN')}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                     {itemsToDisplay.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
@@ -274,62 +335,68 @@ const ConfirmImportWarehouseDialog = ({
                       Chọn tất cả ({availableItemsCount}/{itemsCount} khả dụng)
                     </label>
                   </div>
-                  {itemsToDisplay.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="flex gap-3 rounded-lg border p-3 shadow-sm bg-card"
-                      onClick={() => toggleItem(item.id)}
-                    >
-                      <div className="flex pt-1">
-                        <Checkbox
-                          checked={!!selectedItems[item.id]}
-                          onCheckedChange={() => toggleItem(item.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          disabled={Number(item.receivedQuantity || 0) >= Number(item.quantity)}
-                        />
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-start gap-3">
-                          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-muted/50">
-                            {item?.product?.image ? (
-                              <img
-                                src={getPublicUrl(item.product.image)}
-                                alt={item.productName}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center bg-secondary">
-                                <Package className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[10px] font-bold text-muted-foreground leading-none mb-1">
-                              {item.product?.code || item.productCode || '—'}
-                            </div>
-                            <div className="font-medium text-sm leading-tight">
-                              {item.productName}
-                            </div>
-                          </div>
-                        </div>
+                  {itemsToDisplay.map((item, index) => {
+                    const imported = calculateTotalImported(item)
+                    const total = Number(item.quantity || 0)
+                    const isFullyImported = imported >= total
 
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex flex-col">
-                            <span className="text-muted-foreground">Số lượng</span>
-                            <span className="font-semibold text-blue-600 text-sm">
-                              {item.quantity} {item.unitName || item.unit?.name}
-                            </span>
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex gap-3 rounded-lg border p-3 shadow-sm bg-card"
+                        onClick={() => toggleItem(item.id)}
+                      >
+                        <div className="flex pt-1">
+                          <Checkbox
+                            checked={!!selectedItems[item.id]}
+                            onCheckedChange={() => toggleItem(item.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            disabled={isFullyImported}
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-start gap-3">
+                            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-muted/50">
+                              {item?.product?.image ? (
+                                <img
+                                  src={getPublicUrl(item.product.image)}
+                                  alt={item.productName}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                  <Package className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[10px] font-bold text-muted-foreground leading-none mb-1">
+                                {item.product?.code || item.productCode || '—'}
+                              </div>
+                              <div className="font-medium text-sm leading-tight">
+                                {item.productName}
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex flex-col text-right">
-                            <span className="text-muted-foreground">Đơn giá</span>
-                            <span className="font-medium">
-                              {Number(item.unitPrice).toLocaleString('vi-VN')}
-                            </span>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex flex-col">
+                              <span className="text-muted-foreground">Số lượng</span>
+                              <span className="font-semibold text-blue-600 text-sm">
+                                {item.quantity} {item.unitName || item.unit?.name}
+                              </span>
+                            </div>
+                            <div className="flex flex-col text-right">
+                              <span className="text-muted-foreground">Đã nhập</span>
+                              <span className="font-medium">
+                                {imported} {isFullyImported && '(Đủ)'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
 
                   {itemsToDisplay.length === 0 && (
                     <div className="text-center py-4 text-muted-foreground text-sm">

@@ -156,6 +156,7 @@ const DataTableToolbar = ({ table }) => {
                     console.log(error)
                   }
                 }}
+                className="text-cyan-600 focus:text-cyan-600 focus:bg-cyan-50"
               >
                 <IconCopyCheck className="mr-2 size-4" />
                 <span>Sao chép</span>
@@ -188,6 +189,7 @@ const DataTableToolbar = ({ table }) => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => setShowImportDialog(true)}
+                  className="text-emerald-600 focus:text-emerald-600 focus:bg-emerald-50"
                 >
                   <FileSpreadsheet className="mr-2 size-4" />
                   <span>Import Excel</span>
@@ -257,7 +259,7 @@ const DataTableToolbar = ({ table }) => {
 
       {/* Sao chép sản phẩm */}
       <Button
-        className="mx-0 sm:mx-2"
+        className="mx-0 sm:mx-2 text-cyan-600 border-cyan-600 hover:bg-cyan-50 hover:text-cyan-700"
         variant="outline"
         size="sm"
         onClick={async () => {
@@ -311,7 +313,7 @@ const DataTableToolbar = ({ table }) => {
       <Can permission="CREATE_PRODUCT">
         <Button
           onClick={() => setShowImportDialog(true)}
-          className="mx-2"
+          className="mx-2 text-emerald-600 border-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
           variant="outline"
           size="sm"
         >

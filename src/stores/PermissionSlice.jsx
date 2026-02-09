@@ -6,7 +6,7 @@ export const getPermission = createAsyncThunk(
   'permission',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/permission')
+      const response = await api.get('/permission/tree')
       const { data } = response.data
       return data
     } catch (error) {

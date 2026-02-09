@@ -66,61 +66,126 @@ const CreateRoleDialog = ({
     dispatch(getPermission())
   }, [dispatch])
 
-  const handleCheck = (permissionId, isChecked, children = [], parentId) => {
-    let updatedCheckedPermissions = [...checkedPermissions]
-
-    // Handle current permission and its children
-    const processPermissions = (id, add) => {
-      updatedCheckedPermissions = add
-        ? [...updatedCheckedPermissions, id]
-        : updatedCheckedPermissions.filter((checkedId) => checkedId !== id)
+  // Helper to get all permission IDs from a group or item
+  const getAllPermissionIds = (node) => {
+    let ids = []
+    if (node.permissions) {
+      ids = [...ids, ...node.permissions.map((p) => p.id)]
     }
+    if (node.items) {
+      node.items.forEach((item) => {
+        ids = [...ids, ...getAllPermissionIds(item)]
+      })
+    }
+    return ids
+  }
 
-    processPermissions(permissionId, isChecked)
-    children.forEach((child) => processPermissions(child.id, isChecked))
+  const handleCheck = (isChecked, node, type) => {
+    let updatedCheckedPermissions = [...checkedPermissions]
+    const idsToToggle = getAllPermissionIds(node)
 
-    // Handle parent permission based on children
-    if (parentId) {
-      const parent = permissions.find(
-        (permission) => permission.id === parentId,
-      )
-      const allChildrenChecked = parent?.children?.every((child) =>
-        updatedCheckedPermissions.includes(child.id),
-      )
-
-      processPermissions(parentId, allChildrenChecked)
+    if (type === 'permission') {
+      // Single permission toggle
+      if (isChecked) {
+        updatedCheckedPermissions.push(node.id)
+      } else {
+        updatedCheckedPermissions = updatedCheckedPermissions.filter(
+          (id) => id !== node.id,
+        )
+      }
+    } else {
+      // Group/Item toggle
+      if (isChecked) {
+        // Add all distinct IDs
+        const newIds = idsToToggle.filter(
+          (id) => !updatedCheckedPermissions.includes(id),
+        )
+        updatedCheckedPermissions = [...updatedCheckedPermissions, ...newIds]
+      } else {
+        // Remove all IDs
+        updatedCheckedPermissions = updatedCheckedPermissions.filter(
+          (id) => !idsToToggle.includes(id),
+        )
+      }
     }
 
     setCheckedPermissions(updatedCheckedPermissions)
   }
 
-  const renderPermission = (permissions, parentId = null) => {
-    return permissions.map((permission) => (
-      <div key={permission.id} className="mb-1 ml-4">
-        <div className="items-top mb-2 flex space-x-2">
+  // Check if all permissions in a node are checked
+  const isAllChecked = (node) => {
+    const allIds = getAllPermissionIds(node)
+    if (allIds.length === 0) return false
+    return allIds.every((id) => checkedPermissions.includes(id))
+  }
+
+  const renderPermission = (groups) => {
+    return groups.map((group) => (
+      <div key={group.key} className="col-span-full mb-6">
+        {/* Group Header */}
+        <div className="mb-4 flex items-center space-x-2 border-b pb-2">
           <Checkbox
-            checked={checkedPermissions.includes(permission.id)}
-            onCheckedChange={(isChecked) =>
-              handleCheck(
-                permission.id,
-                isChecked,
-                permission.children,
-                parentId,
-              )
-            }
-            id={permission.code}
+            id={`group-${group.key}`}
+            checked={isAllChecked(group)}
+            // indeterminate={isIndeterminate(group)} // shadcn checkbox might not support indeterminate prop directly in strict mode or needs ref
+            onCheckedChange={(checked) => handleCheck(checked, group, 'group')}
           />
-          <div className="grid items-center gap-1.5">
-            <label
-              htmlFor={permission.code}
-              className="text-xs leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              {permission.name}
-            </label>
-          </div>
+          <label
+            htmlFor={`group-${group.key}`}
+            className="text-lg font-semibold cursor-pointer"
+          >
+            {group.label}
+          </label>
         </div>
-        {permission.children &&
-          renderPermission(permission.children, permission.id)}
+
+        {/* Group Items */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {group.items?.map((item) => (
+            <div
+              key={item.key}
+              className="rounded-lg border p-4 shadow-sm transition-all hover:shadow-md"
+            >
+              <div className="mb-3 flex items-center space-x-2 border-b pb-2">
+                <Checkbox
+                  id={`item-${item.key}`}
+                  checked={isAllChecked(item)}
+                  onCheckedChange={(checked) =>
+                    handleCheck(checked, item, 'item')
+                  }
+                />
+                <label
+                  htmlFor={`item-${item.key}`}
+                  className="font-medium cursor-pointer"
+                >
+                  {item.label}
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                {item.permissions?.map((permission) => (
+                  <div
+                    key={permission.id}
+                    className="flex items-center space-x-2"
+                  >
+                    <Checkbox
+                      id={`perm-${permission.id}`}
+                      checked={checkedPermissions.includes(permission.id)}
+                      onCheckedChange={(checked) =>
+                        handleCheck(checked, permission, 'permission')
+                      }
+                    />
+                    <label
+                      htmlFor={`perm-${permission.id}`}
+                      className="text-sm cursor-pointer text-muted-foreground"
+                    >
+                      {permission.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     ))
   }

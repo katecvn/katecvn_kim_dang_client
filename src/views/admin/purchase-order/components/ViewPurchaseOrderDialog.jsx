@@ -101,6 +101,7 @@ const ViewPurchaseOrderDialog = ({
 
   const [showPaymentDetail, setShowPaymentDetail] = useState(false)
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState(null)
+  const [selectedPaymentForEdit, setSelectedPaymentForEdit] = useState(null)
 
   // Product View State
   const [showViewProductDialog, setShowViewProductDialog] = useState(false)
@@ -108,7 +109,7 @@ const ViewPurchaseOrderDialog = ({
 
   const [showPrintOrder, setShowPrintOrder] = useState(false)
 
-  // Status Update Dialog States (Sub-items)
+  // Status Update Dialog States (Sub-items)`
   const [showUpdatePaymentStatus, setShowUpdatePaymentStatus] = useState(false)
   const [selectedPaymentForUpdate, setSelectedPaymentForUpdate] = useState(null)
 
@@ -792,6 +793,19 @@ const ViewPurchaseOrderDialog = ({
                                     </TableCell> */}
                                     <TableCell>{dateFormat(voucher.paymentDate, true)}</TableCell>
                                     <TableCell>
+                                      {['draft'].includes(voucher.status) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50 mr-1"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            setSelectedPaymentForEdit(voucher)
+                                          }}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                      )}
                                       {['draft', 'cancelled'].includes(voucher.status) && (
                                         <Button
                                           variant="ghost"
@@ -828,6 +842,19 @@ const ViewPurchaseOrderDialog = ({
                                     >
                                       {voucher.code}
                                     </span>
+                                    {['draft'].includes(voucher.status) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-orange-600 hover:text-orange-700 hover:bg-orange-50 mr-1"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setSelectedPaymentForEdit(voucher)
+                                        }}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    )}
                                     {['draft', 'cancelled'].includes(voucher.status) && (
                                       <Button
                                         variant="ghost"
@@ -1383,6 +1410,21 @@ const ViewPurchaseOrderDialog = ({
           open={showCreatePaymentDialog}
           onOpenChange={setShowCreatePaymentDialog}
           purchaseOrder={purchaseOrder}
+          onSuccess={() => {
+            fetchData()
+            onRefresh?.()
+          }}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
+
+      {/* Edit Payment Dialog */}
+      {selectedPaymentForEdit && (
+        <PaymentFormDialog
+          open={!!selectedPaymentForEdit}
+          onOpenChange={(open) => !open && setSelectedPaymentForEdit(null)}
+          paymentId={selectedPaymentForEdit.id}
           onSuccess={() => {
             fetchData()
             onRefresh?.()

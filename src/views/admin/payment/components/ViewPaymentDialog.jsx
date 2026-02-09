@@ -683,7 +683,7 @@ const ViewPaymentDialog = ({
             {payment?.status === 'draft' && (
               <Button
                 size="sm"
-                className="gap-2 w-full sm:w-auto"
+                className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
                 onClick={() => setShowUpdatePaymentDialog(true)}
               >
                 <Pencil className="h-4 w-4" />
@@ -774,7 +774,7 @@ const ViewPaymentDialog = ({
         <PaymentFormDialog
           open={showUpdatePaymentDialog}
           onOpenChange={setShowUpdatePaymentDialog}
-          payment={payment}
+          paymentId={payment?.id}
           onSuccess={() => {
             // Refetch payment
             if (paymentId) {

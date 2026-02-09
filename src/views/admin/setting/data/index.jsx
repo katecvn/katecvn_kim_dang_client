@@ -17,14 +17,14 @@ const settings = [
     description:
       'Cài đặt thông tin cơ bản cho hệ thống (bao gồm tên, email, số điện thoại, địa chỉ, mã số thuế...)',
   },
-  {
-    name: 'Tỉ lệ hưởng doanh số',
-    icon: <IconPercentage />,
-    link: '/setting/sharing-ratio',
-    action: 'Thiết lập',
-    description:
-      'Cài đặt tỉ lệ hưởng doanh số cho các thành viên trong hệ thống',
-  },
+  // {
+  //   name: 'Tỉ lệ hưởng doanh số',
+  //   icon: <IconPercentage />,
+  //   link: '/setting/sharing-ratio',
+  //   action: 'Thiết lập',
+  //   description:
+  //     'Cài đặt tỉ lệ hưởng doanh số cho các thành viên trong hệ thống',
+  // },
   {
     name: 'Lịch sử đăng nhập',
     icon: <IconLogs />,
@@ -32,14 +32,14 @@ const settings = [
     action: 'Quản lý',
     description: 'Xem lịch sử đăng nhập của bản thân mình',
   },
-  {
-    name: 'Cài đặt thông báo',
-    icon: <IconNotification />,
-    link: '/setting/notification',
-    action: 'Thiết lập',
-    description:
-      'Cài đặt nhận thông báo qua tin nhắn Zalo khi có đơn hàng mới, thông qua tài khoản ZaloOA (Official Account) của bạn, cũng như các kênh khác',
-  },
+  // {
+  //   name: 'Cài đặt thông báo',
+  //   icon: <IconNotification />,
+  //   link: '/setting/notification',
+  //   action: 'Thiết lập',
+  //   description:
+  //     'Cài đặt nhận thông báo qua tin nhắn Zalo khi có đơn hàng mới, thông qua tài khoản ZaloOA (Official Account) của bạn, cũng như các kênh khác',
+  // },
   {
     name: 'Thông tin hệ thống',
     icon: <IconInfoSquareRounded />,
@@ -47,21 +47,21 @@ const settings = [
     action: 'Xem',
     description: 'Cài đặt thông tin hệ thống',
   },
-  {
-    name: 'Kế hoạch kinh doanh',
-    icon: <IconBusinessplan />,
-    link: '/setting/business-plan',
-    action: 'Quản lý',
-    description:
-      'Cài đặt kế hoạch kinh doanh theo từng năm, phân kỳ theo tháng',
-  },
-  {
-    name: 'Hóa đơn điện tử Viettel',
-    icon: <IconReceiptDollar />,
-    link: '/setting/s-invoice',
-    action: 'Thiết lập',
-    description: 'Cài đặt kế cấu hình hóa đơn điện tử Viettel',
-  },
+  // {
+  //   name: 'Kế hoạch kinh doanh',
+  //   icon: <IconBusinessplan />,
+  //   link: '/setting/business-plan',
+  //   action: 'Quản lý',
+  //   description:
+  //     'Cài đặt kế hoạch kinh doanh theo từng năm, phân kỳ theo tháng',
+  // },
+  // {
+  //   name: 'Hóa đơn điện tử Viettel',
+  //   icon: <IconReceiptDollar />,
+  //   link: '/setting/s-invoice',
+  //   action: 'Thiết lập',
+  //   description: 'Cài đặt kế cấu hình hóa đơn điện tử Viettel',
+  // },
 ]
 
 export { settings }

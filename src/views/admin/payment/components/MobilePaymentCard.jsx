@@ -11,7 +11,7 @@ import {
 import { moneyFormat } from '@/utils/money-format'
 import { dateFormat } from '@/utils/date-format'
 import { cn } from '@/lib/utils'
-import { ChevronDown, MoreVertical, Eye, Trash2 } from 'lucide-react'
+import { ChevronDown, MoreVertical, Eye, Trash2, Pencil } from 'lucide-react'
 import { useState } from 'react'
 import {
   DropdownMenu,
@@ -28,6 +28,7 @@ import { toast } from 'sonner'
 import UpdatePaymentStatusDialog from './UpdatePaymentStatusDialog'
 import { DeletePaymentDialog } from './DeletePaymentDialog'
 import ViewPaymentDialog from './ViewPaymentDialog'
+import PaymentDialog from './PaymentDialog'
 
 const MobilePaymentCard = ({
   payment,
@@ -37,6 +38,7 @@ const MobilePaymentCard = ({
   const dispatch = useDispatch()
   const [expanded, setExpanded] = useState(false)
   const [showViewDialog, setShowViewDialog] = useState(false)
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [targetStatus, setTargetStatus] = useState(null)
@@ -98,6 +100,15 @@ const MobilePaymentCard = ({
         <ViewPaymentDialog
           open={showViewDialog}
           onOpenChange={setShowViewDialog}
+          paymentId={payment.id}
+          showTrigger={false}
+        />
+      )}
+
+      {showUpdateDialog && (
+        <PaymentDialog
+          open={showUpdateDialog}
+          onOpenChange={setShowUpdateDialog}
           paymentId={payment.id}
           showTrigger={false}
         />
@@ -169,6 +180,15 @@ const MobilePaymentCard = ({
                 <Eye className="mr-2 h-4 w-4" />
                 Xem
               </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onSelect={() => setShowUpdateDialog(true)}
+                className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+              >
+                <Pencil className="mr-2 h-4 w-4 text-orange-600" />
+                Chỉnh sửa
+              </DropdownMenuItem>
+
               {(status === 'draft' || status === 'cancelled') && (
                 <>
                   <DropdownMenuSeparator />

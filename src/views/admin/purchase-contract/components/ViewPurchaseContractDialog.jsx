@@ -39,7 +39,7 @@ import { cn } from '@/lib/utils'
 import { PlusIcon, MobileIcon } from '@radix-ui/react-icons'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import React from 'react'
-import { Package, Mail, MapPin, CreditCard, Trash2, X, FileCheck } from 'lucide-react'
+import { Package, Mail, MapPin, CreditCard, Trash2, X, FileCheck, Pencil } from 'lucide-react'
 import { getPublicUrl } from '@/utils/file'
 import { purchaseContractStatuses } from '../data'
 import { toast } from 'sonner'
@@ -96,6 +96,7 @@ const ViewPurchaseContractDialog = ({
 
   const [showViewPaymentDialog, setShowViewPaymentDialog] = useState(false)
   const [selectedPaymentId, setSelectedPaymentId] = useState(null)
+  const [selectedPaymentForEdit, setSelectedPaymentForEdit] = useState(null)
 
   const [showUpdatePurchaseOrderStatus, setShowUpdatePurchaseOrderStatus] = useState(false)
   const [selectedPurchaseOrderForUpdate, setSelectedPurchaseOrderForUpdate] = useState(null)
@@ -751,9 +752,21 @@ const ViewPurchaseContractDialog = ({
                                         </TableCell>
                                         <TableCell>{dateFormat(voucher.paymentDate, true)}</TableCell>
                                         <TableCell>
+                                          {['draft'].includes(voucher.status) && (
+                                            <div
+                                              className="inline-flex items-center justify-center cursor-pointer text-orange-600 hover:text-orange-700 hover:bg-orange-50 p-1 rounded-md mr-1 transition-colors"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                setSelectedPaymentForEdit(voucher)
+                                              }}
+                                              title="Chỉnh sửa phiếu chi"
+                                            >
+                                              <Pencil className="h-4 w-4" />
+                                            </div>
+                                          )}
                                           {['draft', 'cancelled'].includes(voucher.status) && (
                                             <div
-                                              className="flex items-center justify-center cursor-pointer text-red-500 hover:text-red-600 transition-colors"
+                                              className="inline-flex items-center justify-center cursor-pointer text-red-500 hover:text-red-600 p-1 rounded-md transition-colors"
                                               onClick={(e) => {
                                                 e.stopPropagation()
                                                 setPaymentToDelete(voucher)
@@ -801,9 +814,21 @@ const ViewPurchaseContractDialog = ({
                                     >
                                       {voucher.code}
                                     </div>
+                                    {['draft'].includes(voucher.status) && (
+                                      <div
+                                        className="absolute top-3 right-10 text-orange-600 hover:text-orange-700 cursor-pointer p-1"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setSelectedPaymentForEdit(voucher)
+                                        }}
+                                        title="Chỉnh sửa"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </div>
+                                    )}
                                     {['draft', 'cancelled'].includes(voucher.status) && (
                                       <div
-                                        className="absolute top-3 right-3 text-red-500 hover:text-red-600 cursor-pointer"
+                                        className="absolute top-3 right-3 text-red-500 hover:text-red-600 cursor-pointer p-1"
                                         onClick={(e) => {
                                           e.stopPropagation()
                                           setPaymentToDelete(voucher)
@@ -1342,6 +1367,21 @@ const ViewPurchaseContractDialog = ({
             onOpenChange={setShowCreatePaymentDialog}
             purchaseOrder={contract?.purchaseOrders?.[0]}
             supplier={contract?.supplier}
+            onSuccess={() => {
+              fetchContractDetail()
+              onSuccess?.()
+            }}
+            contentClassName="!z-[100060]"
+            overlayClassName="z-[100059]"
+          />
+        )}
+
+        {/* Edit Payment Dialog */}
+        {selectedPaymentForEdit && (
+          <PaymentFormDialog
+            open={!!selectedPaymentForEdit}
+            onOpenChange={(open) => !open && setSelectedPaymentForEdit(null)}
+            paymentId={selectedPaymentForEdit.id}
             onSuccess={() => {
               fetchContractDetail()
               onSuccess?.()

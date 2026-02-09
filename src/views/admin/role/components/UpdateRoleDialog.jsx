@@ -39,6 +39,9 @@ const UpdateRoleDialog = ({
 }) => {
   const loading = useSelector((state) => state.role.loading)
   const permissions = useSelector((state) => state.permission.permissions)
+  console.log('permissions from redux: ', permissions)
+  console.log('role data passed to dialog: ', role)
+  console.log('role.permissions: ', role.permissions)
 
   const form = useForm({
     resolver: zodResolver(updateRoleSchema),

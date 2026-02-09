@@ -78,7 +78,6 @@ const SalesContractDataTable = ({
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: (updater) => {
       setGlobalFilter(updater)
       if (typeof updater !== 'function') {

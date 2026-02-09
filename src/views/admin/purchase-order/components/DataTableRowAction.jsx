@@ -137,7 +137,7 @@ const DataTableRowActions = ({ row, table }) => {
   const canDelete = ['draft', 'cancelled', 'canceled'].includes(purchaseOrder?.status)
   const canCancel = !['draft', 'cancelled', 'completed'].includes(purchaseOrder?.status)
 
-  const canImportWarehouse = ['ordered', 'confirmed', 'partial'].includes(purchaseOrder?.status)
+  const canImportWarehouse = ['ordered', 'confirmed', 'partial'].includes(purchaseOrder?.status) && !purchaseOrder?.warehouseReceiptId
   const canPayment = !['draft', 'cancelled'].includes(purchaseOrder?.status) && purchaseOrder.paymentStatus !== 'paid'
 
   return (

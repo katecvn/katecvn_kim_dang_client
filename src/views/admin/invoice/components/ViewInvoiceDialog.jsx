@@ -4,19 +4,11 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
 import {
   Table,
   TableBody,
@@ -58,12 +50,10 @@ import {
 } from '@/stores/CreditNoteSlice'
 import { updateInvoiceStatus, deleteInvoice } from '@/stores/InvoiceSlice'
 import {
-  updateSalesContract,
   increasePrintAttempt,
   increasePrintSuccess
 } from '@/stores/SalesContractSlice'
 import {
-  deleteWarehouseReceipt,
   updateWarehouseReceipt,
   postWarehouseReceipt,
   cancelWarehouseReceipt,
@@ -137,10 +127,6 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
   const [openUpdateCN, setOpenUpdateCN] = useState(false)
   const [editingCN, setEditingCN] = useState(null)
   const isViewInvoiceDialog = true
-
-
-
-
 
   // State for updating invoice status
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)

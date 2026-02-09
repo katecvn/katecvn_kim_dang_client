@@ -33,7 +33,7 @@ const DataTableRowActions = ({ row }) => {
         <PaymentFormDialog
           open={showUpdatePaymentDialog}
           onOpenChange={setShowUpdatePaymentDialog}
-          payment={row.original}
+          paymentId={row.original.id}
           contentClassName="z-[100060]"
           overlayClassName="z-[100059]"
         />
@@ -55,10 +55,11 @@ const DataTableRowActions = ({ row }) => {
           {row.original.status === 'draft' && (
             <DropdownMenuItem
               onSelect={() => setShowUpdatePaymentDialog(true)}
+              className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
             >
               Chỉnh sửa
               <DropdownMenuShortcut>
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-4 w-4 text-orange-600" />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
           )}

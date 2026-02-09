@@ -49,14 +49,15 @@ import {
 import { paymentMethods } from '../../receipt/data'
 import { createPaymentSchema } from '../../receipt/schema'
 import { useDispatch, useSelector } from 'react-redux'
-import { createPayment, updatePayment } from '@/stores/PaymentSlice'
+import { createPayment, updatePayment, getPaymentById } from '@/stores/PaymentSlice'
 import { Input } from '@/components/ui/input'
 import { getSetting } from '@/stores/SettingSlice'
 import { cn } from '@/lib/utils'
 import { getPublicUrl } from '@/utils/file'
 
 const PaymentDialog = ({
-  payment, // If provided, edit mode
+  paymentId, // Optional: for Edit mode
+  payment: propPayment, // Legacy: may contains object with id
   purchaseOrder, // If provided (and no payment), create mode from PO
   open,
   onOpenChange,
@@ -73,7 +74,15 @@ const PaymentDialog = ({
   const setting = useSelector((state) => state.setting.setting)
   const banks = setting?.payload?.banks || []
 
-  const isEditMode = !!payment
+  const effectivePaymentId = paymentId || propPayment?.id
+  const isEditMode = !!effectivePaymentId
+
+  // State for fetched payment data
+  const [fetchedPayment, setFetchedPayment] = useState(null)
+  console.log(fetchedPayment)
+  const payment = fetchedPayment || propPayment
+
+  const [isFetching, setIsFetching] = useState(false)
 
   // Determine source of items and supplier/receiver
   const effectivePurchaseOrder = payment?.purchaseOrder || purchaseOrder
@@ -89,6 +98,8 @@ const PaymentDialog = ({
   } else if (payment?.products?.length > 0) {
     items = payment.products
   }
+
+
 
   // Calculate totals
   const totalAmount = parseFloat(effectivePurchaseOrder?.totalAmount || salesContract?.totalAmount || payment?.amount || 0)
@@ -111,22 +122,55 @@ const PaymentDialog = ({
     },
   })
 
+  // Fetch Payment Detail on Open if Edit Mode
   useEffect(() => {
-    dispatch(getSetting('general_information'))
-  }, [dispatch])
+    if (open && effectivePaymentId) {
+      setIsFetching(true)
+      dispatch(getPaymentById(effectivePaymentId))
+        .unwrap()
+        .then((data) => {
+          setFetchedPayment(data)
+          setIsFetching(false)
+        })
+        .catch((error) => {
+          console.error('Failed to fetch payment details:', error)
+          setIsFetching(false)
+        })
+    } else if (!open) {
+      setFetchedPayment(null)
+    }
+  }, [open, effectivePaymentId, dispatch])
 
   useEffect(() => {
     if (open) {
-      if (isEditMode) {
-        // Edit Mode
+      dispatch(getSetting('general_information'))
+    }
+  }, [open, dispatch])
+
+  useEffect(() => {
+    if (open) {
+      if (isEditMode && payment) {
+        // Edit Mode: Prioritize fetchedPayment if available
+        const dataToUse = payment
+
+        let bankAccount = dataToUse.bankAccount
+        if (!bankAccount && dataToUse.bankAccountNumber) {
+          bankAccount = {
+            bankName: dataToUse.bankName,
+            accountNumber: dataToUse.bankAccountNumber,
+            accountName: dataToUse.bankAccountName,
+            bankBranch: dataToUse.bankBranch,
+          }
+        }
+
         form.reset({
-          note: payment.reason || '',
-          paymentAmount: parseFloat(payment.amount || 0),
-          paymentMethod: payment.paymentMethod || 'cash',
-          paymentNote: payment.note || '',
-          bankAccount: payment.bankAccount || null,
-          status: payment.status || 'draft',
-          dueDate: payment.dueDate || null,
+          note: dataToUse.reason || '',
+          paymentAmount: parseFloat(dataToUse.amount || 0),
+          paymentMethod: dataToUse.paymentMethod || 'cash',
+          paymentNote: dataToUse.note || '',
+          bankAccount: bankAccount || null,
+          status: dataToUse.status || 'draft',
+          dueDate: dataToUse.dueDate || null,
         })
       } else if (effectivePurchaseOrder) {
         // Create Mode
@@ -141,7 +185,7 @@ const PaymentDialog = ({
         })
       }
     }
-  }, [open, isEditMode, payment, effectivePurchaseOrder, remainingAmount, form])
+  }, [open, isEditMode, payment, fetchedPayment, effectivePurchaseOrder, remainingAmount, form])
 
 
   const onSubmit = async (data) => {
@@ -177,7 +221,7 @@ const PaymentDialog = ({
         // UPDATE
         const dataToSend = {
           ...data, // includes status etc from form if needed
-          id: payment.id,
+          id: effectivePaymentId,
           ...commonData
         }
         await dispatch(updatePayment(dataToSend)).unwrap()
@@ -279,9 +323,20 @@ const PaymentDialog = ({
                               <TableRow key={item.id || index}>
                                 <TableCell>{index + 1}</TableCell>
                                 <TableCell>
-                                  <div>
-                                    <div className="font-medium">{item.productName || item.name}</div>
-                                    <div className="text-xs text-muted-foreground">{item.productCode || item.code}</div>
+                                  <div className="flex items-center gap-3">
+                                    <Avatar className="h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-muted/50">
+                                      {item.product?.image ? (
+                                        <AvatarImage src={getPublicUrl(item.product.image)} alt={item.productName || item.name} className="object-cover h-full w-full" />
+                                      ) : (
+                                        <AvatarFallback className="rounded-md text-xs">
+                                          {(item.productName || item.name)?.substring(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                      )}
+                                    </Avatar>
+                                    <div>
+                                      <div className="font-medium">{item.productName || item.name}</div>
+                                      <div className="text-xs text-muted-foreground">{item.productCode || item.code}</div>
+                                    </div>
                                   </div>
                                 </TableCell>
                                 <TableCell>{Number(item.quantity)}</TableCell>
@@ -440,14 +495,14 @@ const PaymentDialog = ({
                                   <FormLabel required={true}>Phương thức</FormLabel>
                                   <Select
                                     onValueChange={field.onChange}
-                                    defaultValue={field.value}
+                                    value={field.value}
                                   >
                                     <FormControl>
                                       <SelectTrigger>
                                         <SelectValue placeholder="Chọn phương thức" />
                                       </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent className="z-[100020]">
+                                    <SelectContent className="z-[100100]">
                                       <SelectGroup>
                                         {paymentMethods.map((method) => (
                                           <SelectItem
@@ -492,7 +547,7 @@ const PaymentDialog = ({
                                         </SelectTrigger>
                                       </FormControl>
 
-                                      <SelectContent className="z-[100020]">
+                                      <SelectContent className="z-[100100]">
                                         <SelectGroup>
                                           {banks.map((bank, index) => (
                                             <SelectItem

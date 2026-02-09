@@ -18,6 +18,9 @@ import { purchaseOrderStatuses } from '../data'
 import { useDispatch, useSelector } from 'react-redux'
 import { getUsers } from '@/stores/UserSlice'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import { DeleteMultiplePurchaseOrdersDialog } from './DeleteMultiplePurchaseOrdersDialog'
+import { deleteMultiplePurchaseOrders } from '@/stores/PurchaseOrderSlice'
+import { TrashIcon } from '@radix-ui/react-icons'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +36,28 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [showReceiptReminderDialog, setShowReceiptReminderDialog] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const selectedRows = table.getSelectedRowModel().rows
+
+  const handleDelete = async () => {
+    const selectedIds = selectedRows.map((row) => row.original.id)
+    // Filter out orders that are not draft or cancelled
+    const invalidOrders = selectedRows.filter(row => !['draft', 'cancelled'].includes(row.original.status))
+
+    if (invalidOrders.length > 0) {
+      toast.error('Chỉ có thể xóa các đơn hàng ở trạng thái Nháp hoặc Đã hủy')
+      return
+    }
+
+    try {
+      await dispatch(deleteMultiplePurchaseOrders(selectedIds)).unwrap()
+      table.resetRowSelection()
+      setShowDeleteDialog(false)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   const users = useSelector((state) => state.user.users)
 
@@ -266,6 +291,18 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
           Import Excel
         </Button>
 
+        {selectedRows.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+            Xóa ({selectedRows.length})
+          </Button>
+        )}
+
         {/* Tạo đơn đặt hàng */}
         <Can permission={['CREATE_PURCHASE_ORDER']}>
           <Button
@@ -313,6 +350,13 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
             onOpenChange={setShowImportDialog}
           />
         )}
+
+        <DeleteMultiplePurchaseOrdersDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          count={selectedRows.length}
+        />
 
         <DataTableViewOptions table={table} />
       </div>

@@ -18,47 +18,49 @@ const BacklogWidget = ({ title, data = [], type, loading = false, description })
     const isOverdue = deliveryDate && isPast(deliveryDate) && !isToday(deliveryDate)
 
     return (
-      <div className="flex items-start gap-3 p-3 border-b last:border-0 hover:bg-muted/30 transition-colors group">
-        {/* Icon Badge */}
-        <div className={`
+      <div className="p-3 border-b last:border-0 hover:bg-muted/30 transition-colors group">
+        <div className="flex items-start gap-3">
+          {/* Icon Badge */}
+          <div className={`
           flex-none w-10 h-10 rounded-full flex items-center justify-center
           ${isSale ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}
         `}>
-          {isSale ? <IconShoppingCart size={18} /> : <IconTruckDelivery size={18} />}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
-          {/* Row 1: Code and Amount */}
-          <div className="flex items-center justify-between">
-            <Link
-              to={linkPath}
-              className="font-bold text-sm hover:underline hover:text-primary truncate transition-colors"
-            >
-              {item.code}
-            </Link>
-            <span className="font-semibold text-sm">{moneyFormat(item.totalAmount)}</span>
+            {isSale ? <IconShoppingCart size={18} /> : <IconTruckDelivery size={18} />}
           </div>
 
-          {/* Row 2: Customer Name */}
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <IconUser size={12} className="flex-none" />
-            <span className="truncate" title={name}>{name || 'Khách lẻ'}</span>
-          </div>
-
-          {/* Row 3: Product Info (Optional) */}
-          {item.items && item.items.length > 0 && (
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 mt-0.5">
-              <IconPackage size={12} className="flex-none" />
-              <span className="truncate max-w-[200px]">
-                {item.items[0].productName} {item.items.length > 1 ? `(+${item.items.length - 1})` : ''}
-              </span>
+          {/* Content */}
+          <div className="flex-1 min-w-0 flex flex-col gap-1">
+            {/* Row 1: Code */}
+            <div className="flex items-center">
+              <Link
+                to={linkPath}
+                className="font-bold text-sm hover:underline hover:text-primary truncate transition-colors"
+              >
+                {item.code}
+              </Link>
             </div>
-          )}
+
+            {/* Row 2: Customer Name */}
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <IconUser size={12} className="flex-none" />
+              <span className="truncate" title={name}>{name || 'Khách lẻ'}</span>
+            </div>
+
+            {/* Row 3: Product Info (Optional) */}
+            {item.items && item.items.length > 0 && (
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 mt-0.5">
+                <IconPackage size={12} className="flex-none" />
+                <span className="truncate">
+                  {item.items[0].productName} {item.items.length > 1 ? `(+${item.items.length - 1})` : ''}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Date / Status */}
-        <div className="flex-none flex flex-col items-end gap-1">
+        {/* Date / Status & Amount - New Row */}
+        <div className="flex items-center justify-between mt-2 pl-[52px]">
+          <span className="font-bold text-sm">{moneyFormat(item.totalAmount)}</span>
           {deliveryDate ? (
             <div className={`
               flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border

@@ -31,6 +31,19 @@ export const deleteSupplier = createAsyncThunk(
   },
 )
 
+export const deleteMultipleSuppliers = createAsyncThunk(
+  'supplier/deleteMultiple',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/supplier/bulk-delete', { ids })
+      await dispatch(getSuppliers()).unwrap()
+      toast.success('Xóa các nhà cung cấp đã chọn thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
 export const createSupplier = createAsyncThunk(
   'supplier/create',
   async (data, { rejectWithValue, dispatch }) => {

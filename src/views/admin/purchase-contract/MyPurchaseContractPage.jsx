@@ -12,29 +12,22 @@ import {
   startOfMonth,
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
+import { useDebounce } from '@/hooks/useDebounce'
 
 const MyPurchaseContractPage = () => {
   const dispatch = useDispatch()
+  const pagination = useSelector((state) => state.purchaseContract.pagination)
   const contracts = useSelector((state) => state.purchaseContract.contracts)
   const loading = useSelector((state) => state.purchaseContract.loading)
-  // My contracts usually don't have pagination in some impls, 
-  // but slice 'pagination' state is shared or overridden.
-  // getMyPurchaseContracts in slice updates 'contracts' but maybe not pagination?
-  // Checking slice: getMyPurchaseContracts.fulfilled updates state.contracts = action.payload
-  // It assumes payload is array? SalesContractSlice: 
-  // .addCase(getMySalesContracts.fulfilled, (state, action) => { state.contracts = action.payload })
-  // So likely no server pagination for "My" view or it's handled differently.
-  // I will assume no pagination for now or client side if data is array.
-  // But PurchaseContractDataTable handles pagination.
-  // If no pagination provided, it defaults to page 1.
-
-  const pagination = { page: 1, limit: 100, totalPages: 1 } // Dummy or derived?
-  // Actually, let's look at SalesContractSlice again.
-  // getMySalesContracts returns 'data' which is action.payload.
-  // If contracts is just array, the table might crash if it expects object?
-  // Table expcets 'data' prop to be array.
-
   const current = new Date()
+
+  const [pageParams, setPageParams] = useState({
+    page: 1,
+    limit: 20
+  })
+
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 500)
 
   // Filters state
   const [filters, setFilters] = useState({
@@ -44,22 +37,27 @@ const MyPurchaseContractPage = () => {
 
   useEffect(() => {
     document.title = 'Hợp đồng mua hàng của tôi'
-    dispatch(getMyPurchaseContracts(filters))
-  }, [dispatch, filters])
+    dispatch(getMyPurchaseContracts({ ...filters, ...pageParams, search: debouncedSearch }))
+  }, [dispatch, filters, pageParams, debouncedSearch])
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPageParams(prev => ({ ...prev, page: 1 }))
+  }, [debouncedSearch])
 
   return (
     <Layout>
       <LayoutBody className="flex flex-col" fixedHeight>
-        <div className="mb-2 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
-          <div>
+        <div className="mb-2 -mx-4 px-1 flex flex-col sm:mx-0 sm:px-0 sm:flex-row sm:items-center justify-between gap-2">
+          <div className="w-full sm:w-auto">
             <h2 className="text-2xl font-bold tracking-tight">
               Hợp đồng mua hàng của tôi
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground hidden sm:block">
               Quản lý các hợp đồng mua hàng do bạn tạo
             </p>
           </div>
-          <div>
+          <div className="w-full sm:w-auto">
             <DateRange
               defaultValue={{
                 from: filters?.fromDate,
@@ -75,18 +73,24 @@ const MyPurchaseContractPage = () => {
                     ? addHours(endOfDay(range.to), 0)
                     : addHours(endOfDay(endOfMonth(current)), 0),
                 }))
+                // Reset to page 1 on filter change
+                setPageParams(prev => ({ ...prev, page: 1 }))
               }}
             />
           </div>
         </div>
-        <div className="-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
+        <div className="-mx-4 flex-1 overflow-auto px-1 sm:px-4 py-1 lg:flex-row lg:space-x-12 lg:space-y-0">
           {contracts && (
             <PurchaseContractDataTable
               data={contracts}
               columns={columns}
               loading={loading}
               pagination={pagination}
-            // No paging controls for "My" if API doesn't support it
+              onPageChange={(page) => setPageParams(prev => ({ ...prev, page }))}
+              onPageSizeChange={(limit) => setPageParams(prev => ({ ...prev, limit, page: 1 }))}
+              onSearchChange={(value) => {
+                setSearch(value)
+              }}
             />
           )}
         </div>

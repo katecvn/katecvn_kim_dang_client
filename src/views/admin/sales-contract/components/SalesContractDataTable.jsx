@@ -46,6 +46,7 @@ const SalesContractDataTable = ({
     columns,
     pageCount: pagination.totalPages,
     manualPagination: true,
+    manualFiltering: true,
     state: {
       sorting,
       columnVisibility,

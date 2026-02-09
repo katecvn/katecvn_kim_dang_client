@@ -8,7 +8,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { PlusIcon } from '@radix-ui/react-icons'
-import { Printer, Trash2 } from 'lucide-react'
+import { Pencil, Printer, Trash2 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 
 const MobilePaymentActions = ({
@@ -16,6 +16,7 @@ const MobilePaymentActions = ({
   isMobile,
   handlePrintPayment,
   setShowDeleteDialog,
+  setShowUpdateDialog,
   className,
   overlayClassName
 }) => {
@@ -33,6 +34,11 @@ const MobilePaymentActions = ({
     payment.status === 'draft' ||
     payment.status === 'cancelled' ||
     payment.status === 'canceled'
+
+  payment.status === 'cancelled' ||
+    payment.status === 'canceled'
+
+  const canEdit = payment.status === 'draft'
 
   return (
     <>
@@ -67,6 +73,18 @@ const MobilePaymentActions = ({
                 </Button>
               </div>
             </div>
+
+            {canEdit && (
+              <div className="grid grid-cols-1 gap-2">
+                <Button
+                  className="justify-start w-full"
+                  onClick={() => handleAction(() => setShowUpdateDialog(true))}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Chỉnh Sửa
+                </Button>
+              </div>
+            )}
 
             {canDelete && (
               <>

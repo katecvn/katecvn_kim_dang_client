@@ -8,14 +8,40 @@ import { useState } from 'react'
 import UpdateSupplierStatusDialog from './UpdateSupplierStatusDialog'
 import ViewSupplierDialog from './ViewSupplierDialog'
 
+import { Checkbox } from '@/components/ui/checkbox'
+
 export const columns = [
   {
-    accessorKey: 'id',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="ID" />
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+        className="translate-y-[2px]"
+      />
     ),
-    cell: ({ row }) => <div className="w-14">{row.index + 1}</div>,
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+        className="translate-y-[2px]"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
   },
+  // {
+  //   accessorKey: 'id',
+  //   header: ({ column }) => (
+  //     <DataTableColumnHeader column={column} title="ID" />
+  //   ),
+  //   cell: ({ row }) => <div className="w-14">{row.index + 1}</div>,
+  // },
   {
     accessorKey: 'name',
     header: ({ column }) => (
@@ -107,7 +133,12 @@ export const columns = [
           >
             <span>
               <Badge
-                variant={status.value !== 'published' ? 'destructive' : ''}
+                variant="outline"
+                className={
+                  status.value === 'published'
+                    ? 'border-green-600 text-green-600'
+                    : 'border-red-600 text-red-600'
+                }
               >
                 {status.icon && <status.icon className="mr-2 h-4 w-4" />}
                 {status.label}

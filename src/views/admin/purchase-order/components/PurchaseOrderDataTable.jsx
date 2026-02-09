@@ -65,7 +65,8 @@ const PurchaseOrderDataTable = ({
       globalFilter,
       pagination, // server-side pagination state
     },
-    manualPagination: true, // Enable server-side pagination
+    manualPagination: true,
+    manualFiltering: true, // Enable server-side pagination
     pageCount: pageCount ?? -1,
     onPaginationChange: onPaginationChange,
     enableRowSelection: true,

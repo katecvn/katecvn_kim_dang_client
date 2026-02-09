@@ -16,8 +16,8 @@ const createReceiptSchema = z
     totalAmount: z
       .union([z.string(), z.number()])
       .transform((val) => (typeof val === 'string' ? parseFloat(val) : val))
-      .refine((val) => !isNaN(val) && val >= 0, {
-        message: 'Số tiền không hợp lệ',
+      .refine((val) => !isNaN(val) && val > 0, {
+        message: 'Số tiền phải lớn hơn 0',
       }),
 
     note: z.string().max(190, 'Tối đa 190 ký tự').optional().nullable(),

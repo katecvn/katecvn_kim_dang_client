@@ -49,9 +49,11 @@ const ViewWarehouseReceiptDialog = ({
   isViewWarehouseDialog = true,
   contentClassName,
   overlayClassName,
+  onSuccess,
   ...props
 }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const dispatch = useDispatch()
   const [receipt, setReceipt] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -177,7 +179,7 @@ const ViewWarehouseReceiptDialog = ({
     setTimeout(() => setPrintData(null), 100)
   }
 
-  const isMobile = useMediaQuery('(max-width: 768px)')
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
@@ -652,8 +654,9 @@ const ViewWarehouseReceiptDialog = ({
           targetStatus={targetStatus}
           statuses={warehouseReceiptStatuses}
           onSubmit={handleUpdateStatus}
-          contentClassName="z-[10006]"
-          overlayClassName="z-[10005]"
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+          selectContentClassName="z-[100080]"
         />
       )}
 
@@ -698,8 +701,8 @@ const ViewWarehouseReceiptDialog = ({
             onOpenChange={setShowViewProductDialog}
             productId={selectedProductId}
             showTrigger={false}
-            contentClassName="z-[100020]"
-            overlayClassName="z-[100019]"
+            contentClassName="z-[100070]"
+            overlayClassName="z-[100069]"
           />
         )
       }
@@ -710,8 +713,8 @@ const ViewWarehouseReceiptDialog = ({
           open={showExportPreview}
           onOpenChange={setShowExportPreview}
           receipt={receipt}
-          contentClassName="z-[100020]"
-          overlayClassName="z-[100019]"
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
         />
       )}
 
@@ -722,9 +725,12 @@ const ViewWarehouseReceiptDialog = ({
           onOpenChange={setShowDeleteDialog}
           receipt={receipt}
           showTrigger={false}
-          contentClassName="z-[10006]"
-          overlayClassName="z-[10005]"
-          onSuccess={() => onOpenChange?.(false)}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+          onSuccess={() => {
+            onOpenChange?.(false)
+            onSuccess?.()
+          }}
         />
       )}
 

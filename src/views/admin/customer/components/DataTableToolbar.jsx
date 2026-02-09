@@ -9,12 +9,31 @@ import CreateCustomerDialog from './CreateCustomerDialog'
 import ImportCustomerDialog from './ImportCustomerDialog'
 import { types } from '../data'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
+import { DeleteMultipleCustomersDialog } from './DeleteMultipleCustomersDialog'
+import { deleteMultipleCustomers } from '@/stores/CustomerSlice'
+import { useDispatch } from 'react-redux'
+import { TrashIcon } from '@radix-ui/react-icons'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showCreateCustomerDialog, setShowCreateCustomerDialog] =
     useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const dispatch = useDispatch()
+  const selectedRows = table.getSelectedRowModel().rows
+
+  const handleDelete = async () => {
+    const selectedIds = selectedRows.map((row) => row.original.id)
+    try {
+      await dispatch(deleteMultipleCustomers(selectedIds)).unwrap()
+      table.resetRowSelection()
+      setShowDeleteDialog(false)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   return (
     <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-1">
@@ -49,6 +68,20 @@ const DataTableToolbar = ({ table }) => {
           </Button>
         )}
       </div>
+
+      {
+        selectedRows.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+            Xóa ({selectedRows.length})
+          </Button>
+        )
+      }
 
       <Can permission={'CREATE_CUSTOMER'}>
         <Button
@@ -86,8 +119,15 @@ const DataTableToolbar = ({ table }) => {
         )}
       </Can>
 
+      <DeleteMultipleCustomersDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDelete}
+        count={selectedRows.length}
+      />
+
       <DataTableViewOptions table={table} />
-    </div>
+    </div >
   )
 }
 

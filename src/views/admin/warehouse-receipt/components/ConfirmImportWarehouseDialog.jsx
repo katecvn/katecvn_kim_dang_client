@@ -241,7 +241,7 @@ const ConfirmImportWarehouseDialog = ({
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-semibold text-blue-600">
-                          {item.quantity}
+                          {Number(item.quantity)}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {Number(item.receivedQuantity || 0)}

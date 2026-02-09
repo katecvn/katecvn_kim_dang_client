@@ -43,7 +43,7 @@ import { Mail, MapPin, Pencil, Trash2, Printer, X, CreditCard, PackagePlus } fro
 import { IconPlus, IconPencil, IconCheck } from '@tabler/icons-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
-import CreatePurchaseOrderPaymentDialog from '../../payment/components/CreatePurchaseOrderPaymentDialog'
+import PaymentFormDialog from '../../payment/components/PaymentDialog'
 import ViewPurchaseContractDialog from '../../purchase-contract/components/ViewPurchaseContractDialog'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
@@ -157,6 +157,7 @@ const ViewPurchaseOrderDialog = ({
       toast.success('Cập nhật trạng thái đơn mua hàng thành công')
       fetchData()
       onRefresh?.()
+      setShowUpdateStatusDialog(false)
     } catch (error) {
       console.error('Update status error:', error)
       toast.error('Cập nhật trạng thái thất bại')
@@ -1353,6 +1354,10 @@ const ViewPurchaseOrderDialog = ({
           receiptId={selectedReceiptDetail?.id}
           contentClassName="z-[100030]"
           overlayClassName="z-[100029]"
+          onSuccess={() => {
+            fetchData()
+            onRefresh?.()
+          }}
         />
       )}
 
@@ -1365,12 +1370,16 @@ const ViewPurchaseOrderDialog = ({
 
           contentClassName="z-[100030]"
           overlayClassName="z-[100029]"
+          onSuccess={() => {
+            fetchData()
+            onRefresh?.()
+          }}
         />
       )}
 
       {/* Create Payment Dialog */}
       {showCreatePaymentDialog && (
-        <CreatePurchaseOrderPaymentDialog
+        <PaymentFormDialog
           open={showCreatePaymentDialog}
           onOpenChange={setShowCreatePaymentDialog}
           purchaseOrder={purchaseOrder}
@@ -1392,6 +1401,10 @@ const ViewPurchaseOrderDialog = ({
           showTrigger={false}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
+          onSuccess={() => {
+            fetchData()
+            onRefresh?.()
+          }}
         />
       )}
 

@@ -39,7 +39,7 @@ import { cn } from '@/lib/utils'
 import { PlusIcon, MobileIcon } from '@radix-ui/react-icons'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import React from 'react'
-import { Package, Mail, MapPin, CreditCard, Trash2 } from 'lucide-react'
+import { Package, Mail, MapPin, CreditCard, Trash2, X, FileCheck } from 'lucide-react'
 import { getPublicUrl } from '@/utils/file'
 import { purchaseContractStatuses } from '../data'
 import { toast } from 'sonner'
@@ -61,7 +61,7 @@ import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/comp
 import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
 import { DeletePaymentDialog } from '../../payment/components/DeletePaymentDialog'
 import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components/DeleteWarehouseReceiptDialog'
-import CreatePurchaseOrderPaymentDialog from '../../payment/components/CreatePurchaseOrderPaymentDialog'
+import PaymentFormDialog from '../../payment/components/PaymentDialog'
 import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
 import {
   createWarehouseReceipt,
@@ -78,6 +78,7 @@ const ViewPurchaseContractDialog = ({
   showTrigger = true,
   contentClassName,
   overlayClassName,
+  onSuccess,
   ...props
 }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -187,6 +188,7 @@ const ViewPurchaseContractDialog = ({
       await dispatch(createWarehouseReceipt(payload)).unwrap()
       toast.success('Tạo phiếu nhập kho thành công')
       fetchContractDetail()
+      onSuccess?.()
     } catch (error) {
       console.error(error)
       toast.error('Tạo phiếu nhập kho thất bại')
@@ -216,6 +218,7 @@ const ViewPurchaseContractDialog = ({
 
       fetchContractDetail()
       setShowUpdatePurchaseOrderStatus(false)
+      onSuccess?.()
     } catch (error) {
       console.error('Update PO status error:', error)
     }
@@ -227,6 +230,7 @@ const ViewPurchaseContractDialog = ({
       toast.success('Cập nhật trạng thái phiếu chi thành công')
       setShowUpdatePaymentStatus(false)
       fetchContractDetail()
+      onSuccess?.()
     } catch (error) {
       console.error(error)
     }
@@ -245,6 +249,7 @@ const ViewPurchaseContractDialog = ({
       toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
       setShowUpdateWarehouseReceiptStatus(false)
       fetchContractDetail()
+      onSuccess?.()
     } catch (error) {
       console.error(error)
     }
@@ -1162,6 +1167,7 @@ const ViewPurchaseContractDialog = ({
         <DialogFooter className="flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0 p-4 pt-0">
           {contract?.status === 'confirmed' && (
             <Button size="sm" onClick={() => setShowLiquidationDialog(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
+              <FileCheck className="mr-2 h-4 w-4" />
               Thanh lý
             </Button>
           )}
@@ -1171,7 +1177,7 @@ const ViewPurchaseContractDialog = ({
             onClick={handleCreatePayment}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
-            <IconPlus className="h-4 w-4 mr-1" />
+            <CreditCard className="h-4 w-4 mr-1" />
             Tạo Phiếu Chi
           </Button>
 
@@ -1180,12 +1186,13 @@ const ViewPurchaseContractDialog = ({
             onClick={handleCreateWarehouseReceipt}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            <IconPlus className="h-4 w-4 mr-1" />
+            <Package className="h-4 w-4 mr-1" />
             Tạo Phiếu Nhập Kho
           </Button>
 
           <DialogClose asChild>
             <Button type="button" variant="outline" size="sm">
+              <X className="mr-2 h-4 w-4" />
               Đóng
             </Button>
           </DialogClose>
@@ -1196,8 +1203,8 @@ const ViewPurchaseContractDialog = ({
             open={showLiquidationDialog}
             onOpenChange={setShowLiquidationDialog}
             contractId={purchaseContractId}
-            contentClassName="z-[10006]"
-            overlayClassName="z-[10005]"
+            contentClassName="z-[100070]"
+            overlayClassName="z-[100069]"
             onSuccess={() => {
               fetchContractDetail()
             }}
@@ -1245,6 +1252,9 @@ const ViewPurchaseContractDialog = ({
             showTrigger={false}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
+            onSuccess={() => {
+              fetchContractDetail()
+            }}
           />
         )}
 
@@ -1302,6 +1312,7 @@ const ViewPurchaseContractDialog = ({
             onSuccess={() => {
               setShowDeletePaymentDialog(false)
               fetchContractDetail()
+              onSuccess?.()
             }}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
@@ -1318,6 +1329,7 @@ const ViewPurchaseContractDialog = ({
             onSuccess={() => {
               setShowDeleteWarehouseReceiptDialog(false)
               fetchContractDetail()
+              onSuccess?.()
             }}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
@@ -1325,13 +1337,14 @@ const ViewPurchaseContractDialog = ({
         )}
 
         {showCreatePaymentDialog && (
-          <CreatePurchaseOrderPaymentDialog
+          <PaymentFormDialog
             open={showCreatePaymentDialog}
             onOpenChange={setShowCreatePaymentDialog}
             purchaseOrder={contract?.purchaseOrders?.[0]}
             supplier={contract?.supplier}
             onSuccess={() => {
               fetchContractDetail()
+              onSuccess?.()
             }}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"

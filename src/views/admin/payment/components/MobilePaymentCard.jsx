@@ -138,10 +138,9 @@ const MobilePaymentCard = ({
             className="h-4 w-4"
           />
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0" onClick={() => setShowViewDialog(true)}>
             <div
               className="font-semibold text-sm truncate text-primary cursor-pointer hover:underline"
-              onClick={() => setShowViewDialog(true)}
             >
               <div className="flex items-center gap-2">
                 <span>{code}</span>

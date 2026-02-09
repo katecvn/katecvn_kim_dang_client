@@ -38,7 +38,7 @@ import { createWarehouseReceipt, postWarehouseReceipt } from '@/stores/Warehouse
 import { purchaseOrderStatuses } from '../data'
 import { toast } from 'sonner'
 import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
-import CreatePurchaseOrderPaymentDialog from '../../payment/components/CreatePurchaseOrderPaymentDialog'
+import PaymentFormDialog from '../../payment/components/PaymentDialog'
 import PrintPurchaseOrderView from './PrintPurchaseOrderView'
 
 const DataTableRowActions = ({ row, table }) => {
@@ -214,7 +214,7 @@ const DataTableRowActions = ({ row, table }) => {
             </Can>
           )}
 
-          {canCancel && (
+          {/* {canCancel && (
             <Can permission="UPDATE_PURCHASE_ORDER">
               <DropdownMenuItem onClick={() => setShowUpdateStatusDialog(true)} className="text-red-600">
                 Hủy
@@ -223,7 +223,7 @@ const DataTableRowActions = ({ row, table }) => {
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
             </Can>
-          )}
+          )} */}
 
           {canDelete && (
             <Can permission="DELETE_PURCHASE_ORDER">
@@ -316,7 +316,7 @@ const DataTableRowActions = ({ row, table }) => {
       )}
 
       {showPaymentDialog && (
-        <CreatePurchaseOrderPaymentDialog
+        <PaymentFormDialog
           open={showPaymentDialog}
           onOpenChange={setShowPaymentDialog}
           purchaseOrder={purchaseOrder}

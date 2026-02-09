@@ -43,7 +43,7 @@ import { toast } from 'sonner'
 import PrintPurchaseOrderView from './PrintPurchaseOrderView'
 import PurchaseContractPreviewDialog from './PurchaseContractPreviewDialog'
 import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
-import CreatePurchaseOrderPaymentDialog from '../../payment/components/CreatePurchaseOrderPaymentDialog'
+import PaymentFormDialog from '../../payment/components/PaymentDialog'
 import { buildPurchaseContractData } from '../helpers/BuildPurchaseContractData'
 import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 
@@ -245,7 +245,7 @@ const MobilePurchaseOrderCard = ({
       )}
 
       {showPaymentDialog && (
-        <CreatePurchaseOrderPaymentDialog
+        <PaymentFormDialog
           open={showPaymentDialog}
           onOpenChange={setShowPaymentDialog}
           purchaseOrder={purchaseOrder}

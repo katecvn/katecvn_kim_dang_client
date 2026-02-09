@@ -46,6 +46,19 @@ export const deleteCustomer = createAsyncThunk(
   },
 )
 
+export const deleteMultipleCustomers = createAsyncThunk(
+  'customer/deleteMultiple',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/customer/bulk-delete', { ids })
+      await dispatch(getCustomers()).unwrap()
+      toast.success('Xóa các khách hàng đã chọn thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
 export const updateCustomer = createAsyncThunk(
   'customer/update',
   async (updateData, { rejectWithValue, dispatch }) => {

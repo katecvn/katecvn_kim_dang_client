@@ -60,6 +60,7 @@ const InvoiceDataTable = ({
     columns,
     // Enable server-side pagination
     manualPagination: !!pagination,
+    manualFiltering: !!onSearchChange,
     pageCount: pageCount ?? -1,
     state: {
       sorting,

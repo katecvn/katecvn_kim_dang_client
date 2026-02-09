@@ -79,18 +79,34 @@ export const updatePaymentStatus = createAsyncThunk(
   },
 )
 
-export const createPayment = createAsyncThunk(
-  'payment/create-payment',
-  async (data, { rejectWithValue }) => {
+
+export const updatePayment = createAsyncThunk(
+  'payment/update-payment',
+  async ({ id, ...data }, { rejectWithValue }) => {
     try {
-      await api.post('/payment-vouchers', data)
-      toast.success('Tạo thanh toán thành công')
+      const response = await api.put(`/payment-vouchers/${id}`, data)
+      toast.success('Cập nhật phiếu chi thành công')
+      return response.data.data || response.data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
     }
   },
 )
+
+export const createPayment = createAsyncThunk
+  (
+    'payment/create-payment',
+    async (data, { rejectWithValue }) => {
+      try {
+        await api.post('/payment-vouchers', data)
+        toast.success('Tạo thanh toán thành công')
+      } catch (error) {
+        const message = handleError(error)
+        return rejectWithValue(message)
+      }
+    },
+  )
 
 export const deletePayment = createAsyncThunk(
   'payment/delete-payment',
@@ -106,6 +122,27 @@ export const deletePayment = createAsyncThunk(
         ? await dispatch(getPayments()).unwrap()
         : await dispatch(getMyPayments()).unwrap()
       toast.success('Xóa thanh toán thành công')
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+export const deleteMultiplePayments = createAsyncThunk(
+  'payment/delete-multiple-payments',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await Promise.all(ids.map((id) => api.delete(`/payment-vouchers/${id}`)))
+
+      const deleteAdminPayments = JSON.parse(
+        localStorage.getItem('permissionCodes'),
+      ).includes('DELETE_PAYMENT')
+
+      deleteAdminPayments
+        ? await dispatch(getPayments()).unwrap()
+        : await dispatch(getMyPayments()).unwrap()
+      toast.success(`Đã xóa ${ids.length} phiếu chi thành công`)
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -232,6 +269,23 @@ export const paymentSlice = createSlice({
         state.loading = false
       })
       .addCase(updatePaymentDueDate.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload.message || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+
+      .addCase(updatePayment.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(updatePayment.fulfilled, (state, action) => {
+        state.loading = false
+        const updatedPayment = action.payload
+        const index = state.payments.findIndex((p) => p.id === updatedPayment.id)
+        if (index !== -1) {
+          state.payments[index] = { ...state.payments[index], ...updatedPayment }
+        }
+      })
+      .addCase(updatePayment.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload.message || 'Lỗi không xác định'
         toast.error(state.error)

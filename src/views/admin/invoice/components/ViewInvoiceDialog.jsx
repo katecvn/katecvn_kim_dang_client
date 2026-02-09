@@ -101,7 +101,7 @@ import MobileInvoiceActions from './MobileInvoiceActions'
 import PaymentQRCodeDialog from '../../receipt/components/PaymentQRCodeDialog'
 import { Badge } from '@/components/ui/badge'
 
-const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClassName, overlayClassName, ...props }) => {
+const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, contentClassName, overlayClassName, ...props }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const [invoice, setInvoice] = useState(null)
 
@@ -211,6 +211,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
     try {
       await dispatch(deleteInvoice(invoiceId)).unwrap()
       toast.success('Xóa đơn bán thành công')
+      onSuccess?.()
       props.onOpenChange(false) // Close the ViewInvoiceDialog
     } catch (error) {
       console.error('Delete invoice error:', error)
@@ -259,6 +260,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
       await dispatch(updateCreditNoteStatus(dataToSend)).unwrap()
       toast.success(`Đã duyệt đơn bán âm ${creditNote.code}`)
       await dispatch(getCreditNotesByInvoiceId(invoiceId)).unwrap()
+      onSuccess?.()
     } catch (err) {
       toast.error('Không thể duyệt đơn bán. Vui lòng thử lại.')
     }
@@ -274,6 +276,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
       await dispatch(deleteCreditNoteById(creditNote.id)).unwrap()
       toast.success(`Đã xóa đơn bán điều chỉnh ${creditNote.code}`)
       await dispatch(getCreditNotesByInvoiceId(invoiceId)).unwrap()
+      onSuccess?.()
     } catch (err) {
       toast.error('Xóa thất bại. Vui lòng thử lại.')
     }
@@ -291,7 +294,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
       }
 
       toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
+      setShowUpdateWarehouseReceiptStatus(false)
       fetchData()
+      onSuccess?.()
     } catch (error) {
       console.error(error)
       // Toast error is usually handled in the slice
@@ -357,6 +362,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
       await dispatch(updateInvoiceStatus({ id, status })).unwrap()
       toast.success('Cập nhật trạng thái đơn bán thành công')
       fetchData()
+      onSuccess?.()
     } catch (error) {
       console.log('Update status error: ', error)
       toast.error('Cập nhật trạng thái thất bại')
@@ -369,6 +375,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
       setShowUpdateReceiptStatus(false)
       // Refresh invoice data to reflect new receipt status
       fetchData()
+      onSuccess?.()
     } catch (error) {
       // toast handled in slice
     }
@@ -430,9 +437,19 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
       return
     }
 
+    // Check if fully exported
+    // Logic moved to ConfirmWarehouseReceiptDialog to allow partial exports and visual filtering
+
+
     if (invoice?.warehouseReceiptId) {
-      toast.warning('Đơn hàng này đã có phiếu xuất kho')
-      return
+      // Logic for legacy or inconsistent data
+      const hasReceiptInArray = invoice?.warehouseReceipts?.some(r => r.id === invoice.warehouseReceiptId && (r.status !== 'cancelled' && r.status !== 'canceled'));
+
+      // If not already caught by the array check above (e.g. array missing but ID present)
+      if (!hasReceiptInArray) {
+        toast.warning('Đơn hàng này đã có phiếu xuất kho')
+        return
+      }
     }
 
     // Show confirmation dialog
@@ -483,6 +500,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
 
       // Refresh invoice data
       fetchData()
+      onSuccess?.()
     } catch (error) {
       console.error('Create warehouse receipt error:', error)
       toast.error('Tạo phiếu xuất kho thất bại')
@@ -2242,6 +2260,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
             onSuccess={() => {
               setShowDeleteReceiptDialog(false)
               fetchData()
+              onSuccess?.()
             }}
             contentClassName="z-[10003]"
             overlayClassName="z-[10002]"
@@ -2319,6 +2338,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
             onSuccess={() => {
               setShowDeleteWarehouseReceiptDialog(false)
               fetchData()
+              onSuccess?.()
             }}
             contentClassName="z-[10003]"
             overlayClassName="z-[10002]"
@@ -2347,6 +2367,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, contentClass
         onSuccess={() => {
           fetchData()
           setShowCreateReceiptDialog(false)
+          onSuccess?.()
         }}
         contentClassName="z-[100010]"
         overlayClassName="z-[100009]"

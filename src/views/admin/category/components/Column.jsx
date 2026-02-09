@@ -7,7 +7,33 @@ import { normalizeText } from '@/utils/normalize-text'
 import ViewCategoryDialog from './ViewCategoryDialog'
 import { useState } from 'react'
 
+import { Checkbox } from '@/components/ui/checkbox'
+
 export const columns = [
+  {
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && 'indeterminate')
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+        className="translate-y-[2px]"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+        className="translate-y-[2px]"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
   {
     accessorKey: 'code',
     header: ({ column }) => (
@@ -81,12 +107,17 @@ export const columns = [
 
       return (
         <div className="flex w-[150px] items-center">
-          <span>
-            <Badge variant={status.value !== 'published' ? 'destructive' : ''}>
-              {status.icon && <status.icon className="mr-2 h-4 w-4" />}
-              {status.label}
-            </Badge>
-          </span>
+          <Badge
+            variant="outline"
+            className={
+              status.value === 'published'
+                ? 'border-green-600 text-green-600'
+                : 'border-red-600 text-red-600'
+            }
+          >
+            {status.icon && <status.icon className="mr-2 h-4 w-4" />}
+            {status.label}
+          </Badge>
         </div>
       )
     },

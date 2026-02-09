@@ -14,6 +14,7 @@ import {
   startOfMonth,
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
+import { useDebounce } from '@/hooks/useDebounce'
 
 const MyPurchaseOrderPage = () => {
   const dispatch = useDispatch()
@@ -31,6 +32,10 @@ const MyPurchaseOrderPage = () => {
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(15)
 
+  /* Search state */
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 500)
+
   const [viewPurchaseOrderId, setViewPurchaseOrderId] = useState(null)
   const [updatePurchaseOrderId, setUpdatePurchaseOrderId] = useState(null)
   const [showUpdatePurchaseOrderDialog, setShowUpdatePurchaseOrderDialog] = useState(false)
@@ -43,9 +48,15 @@ const MyPurchaseOrderPage = () => {
       ...filters,
       page: pageIndex + 1,
       limit: pageSize,
+      search: debouncedSearch
     }
     dispatch(getMyPurchaseOrders(apiFilters))
-  }, [dispatch, filters, pageIndex, pageSize])
+  }, [dispatch, filters, pageIndex, pageSize, debouncedSearch])
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPageIndex(0)
+  }, [debouncedSearch])
 
   return (
     <Layout>
@@ -97,12 +108,14 @@ const MyPurchaseOrderPage = () => {
                     pageIndex,
                     pageSize,
                   })
-                  setPageIndex(newState.pageIndex)
                   setPageSize(newState.pageSize)
                 } else {
                   setPageIndex(updater.pageIndex)
                   setPageSize(updater.pageSize)
                 }
+              }}
+              onSearchChange={(value) => {
+                setSearch(value)
               }}
             />
           )}

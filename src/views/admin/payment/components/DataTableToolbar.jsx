@@ -1,11 +1,18 @@
 import { Cross2Icon } from '@radix-ui/react-icons'
+import { useState } from 'react'
 
 import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
 import { DataTableViewOptions } from './DataTableViewOption'
+import DeleteMultiplePaymentsDialog from './DeleteMultiplePaymentsDialog'
+import {
+  TrashIcon,
+} from '@radix-ui/react-icons'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
+  const selectedRows = table.getFilteredSelectedRowModel().rows
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   return (
     <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-0 sm:p-1">
@@ -32,6 +39,32 @@ const DataTableToolbar = ({ table }) => {
       </div>
 
       <DataTableViewOptions table={table} />
+
+      {selectedRows.length > 0 && (
+        <>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="ml-2 h-8 px-2 lg:px-3"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <TrashIcon className="mr-2 h-4 w-4" />
+            Xóa ({selectedRows.length})
+          </Button>
+
+          <DeleteMultiplePaymentsDialog
+            open={showDeleteDialog}
+            onOpenChange={setShowDeleteDialog}
+            payments={selectedRows.map((row) => row.original)}
+            onSuccess={() => {
+              table.toggleAllPageRowsSelected(false)
+              setShowDeleteDialog(false)
+            }}
+            contentClassName="z-[100060]"
+            overlayClassName="z-[100059]"
+          />
+        </>
+      )}
     </div>
   )
 }

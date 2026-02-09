@@ -17,14 +17,31 @@ export const getSalesContracts = createAsyncThunk(
         },
       })
       const responseData = response.data
-      const { data, pagination } = responseData.data || {}
+
+      // Robust extraction of data and pagination
+      let data = responseData?.data?.data
+      let pagination = responseData?.data?.pagination
+
+      // Fallback: if data is directly in responseData.data (and it's an array)
+      if (!Array.isArray(data) && Array.isArray(responseData?.data)) {
+        data = responseData.data
+        // Pagination might be at root or missing
+        pagination = responseData.pagination || responseData
+      }
+
+      // Fallback: if responseData itself is the array
+      if (!data && Array.isArray(responseData)) {
+        data = responseData
+      }
+
+      data = data || []
 
       // Map pagination to internal structure
       const meta = pagination ? {
         ...pagination,
-        last_page: pagination.totalPages,
-        current_page: pagination.page,
-        per_page: pagination.limit
+        last_page: pagination.totalPages || pagination.last_page || 1,
+        current_page: pagination.page || pagination.current_page || 1,
+        per_page: pagination.limit || pagination.per_page || 10
       } : undefined
 
       return { data, meta }
@@ -164,14 +181,30 @@ export const getMySalesContracts = createAsyncThunk(
         },
       })
       const responseData = response.data
-      const { data, pagination } = responseData.data || {}
+
+      // Robust extraction of data and pagination
+      let data = responseData?.data?.data
+      let pagination = responseData?.data?.pagination
+
+      // Fallback: if data is directly in responseData.data (and it's an array)
+      if (!Array.isArray(data) && Array.isArray(responseData?.data)) {
+        data = responseData.data
+        pagination = responseData.pagination || responseData
+      }
+
+      // Fallback: if responseData itself is the array
+      if (!data && Array.isArray(responseData)) {
+        data = responseData
+      }
+
+      data = data || []
 
       // Map pagination to internal structure
       const meta = pagination ? {
         ...pagination,
-        last_page: pagination.totalPages,
-        current_page: pagination.page,
-        per_page: pagination.limit
+        last_page: pagination.totalPages || pagination.last_page || 1,
+        current_page: pagination.page || pagination.current_page || 1,
+        per_page: pagination.limit || pagination.per_page || 10
       } : undefined
 
       return { data, meta }

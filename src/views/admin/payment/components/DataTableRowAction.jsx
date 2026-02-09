@@ -11,9 +11,12 @@ import {
 import { IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { DeletePaymentDialog } from './DeletePaymentDialog'
+import PaymentFormDialog from './PaymentDialog'
+import { Pencil } from 'lucide-react'
 
 const DataTableRowActions = ({ row }) => {
   const [showDeletePaymentDialog, setShowDeletePaymentDialog] = useState(false)
+  const [showUpdatePaymentDialog, setShowUpdatePaymentDialog] = useState(false)
 
   return (
     <>
@@ -23,6 +26,16 @@ const DataTableRowActions = ({ row }) => {
           onOpenChange={setShowDeletePaymentDialog}
           payment={row.original}
           showTrigger={false}
+        />
+      )}
+
+      {showUpdatePaymentDialog && (
+        <PaymentFormDialog
+          open={showUpdatePaymentDialog}
+          onOpenChange={setShowUpdatePaymentDialog}
+          payment={row.original}
+          contentClassName="z-[100060]"
+          overlayClassName="z-[100059]"
         />
       )}
 
@@ -38,6 +51,17 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           {/* Placeholder View/Edit actions can remain if needed, or remove if unused effectively */}
+
+          {row.original.status === 'draft' && (
+            <DropdownMenuItem
+              onSelect={() => setShowUpdatePaymentDialog(true)}
+            >
+              Chỉnh sửa
+              <DropdownMenuShortcut>
+                <Pencil className="h-4 w-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
 
           {(row.original.status === 'draft' || row.original.status === 'cancelled') && (
             <DropdownMenuItem

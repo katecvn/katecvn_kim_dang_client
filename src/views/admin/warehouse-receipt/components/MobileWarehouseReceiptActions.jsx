@@ -46,8 +46,8 @@ const MobileWarehouseReceiptActions = ({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="bottom"
-          className="!z-[100020] px-4 pb-6 pt-4 rounded-t-xl max-h-[80vh] overflow-y-auto"
-          overlayClassName="!z-[100019]"
+          className="!z-[100050] px-4 pb-6 pt-4 rounded-t-xl max-h-[80vh] overflow-y-auto"
+          overlayClassName="!z-[100049]"
         >
           <SheetHeader className="mb-4 text-left">
             <SheetTitle>Thao tác phiếu kho</SheetTitle>

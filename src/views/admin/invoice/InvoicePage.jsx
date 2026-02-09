@@ -165,6 +165,7 @@ const InvoicePage = () => {
                 setShowUpdateInvoiceDialog(true)
               }, 100)
             }}
+            onSuccess={refreshData}
           />
         )}
 

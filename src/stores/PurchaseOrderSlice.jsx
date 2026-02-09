@@ -26,7 +26,23 @@ export const getPurchaseOrders = createAsyncThunk(
         },
       })
       const responseData = response.data
-      const { data, pagination } = responseData.data || {}
+      // Robust extraction of data and pagination
+      let data = responseData?.data?.data
+      let pagination = responseData?.data?.pagination
+
+      // Fallback: if data is directly in responseData.data (and it's an array)
+      if (!Array.isArray(data) && Array.isArray(responseData?.data)) {
+        data = responseData.data
+        // Pagination might be at root or missing
+        pagination = responseData.pagination || responseData
+      }
+
+      // Fallback: if responseData itself is the array
+      if (!data && Array.isArray(responseData)) {
+        data = responseData
+      }
+
+      data = data || []
 
       // Map pagination to internal structure
       const meta = pagination ? {
@@ -69,7 +85,7 @@ export const getMyPurchaseOrders = createAsyncThunk(
   'purchaseOrder/get-my-purchase-orders',
   async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
     try {
-      const response = await api.get('/purchase-orders', {
+      const response = await api.get('/purchase-orders/by-user', {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache',
@@ -85,7 +101,23 @@ export const getMyPurchaseOrders = createAsyncThunk(
       })
 
       const responseData = response.data
-      const { data, pagination } = responseData.data || {}
+      // Robust extraction of data and pagination
+      let data = responseData?.data?.data
+      let pagination = responseData?.data?.pagination
+
+      // Fallback: if data is directly in responseData.data (and it's an array)
+      if (!Array.isArray(data) && Array.isArray(responseData?.data)) {
+        data = responseData.data
+        // Pagination might be at root or missing
+        pagination = responseData.pagination || responseData
+      }
+
+      // Fallback: if responseData itself is the array
+      if (!data && Array.isArray(responseData)) {
+        data = responseData
+      }
+
+      data = data || []
 
       // Map pagination to internal structure
       const meta = pagination ? {
@@ -131,6 +163,36 @@ export const deletePurchaseOrder = createAsyncThunk(
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
+    }
+  },
+)
+
+export const deleteMultiplePurchaseOrders = createAsyncThunk(
+  'purchaseOrder/deleteMultiple',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/purchase-orders/bulk-delete', { ids })
+
+      const deleteAdminPurchaseOrders = JSON.parse(
+        localStorage.getItem('permissionCodes'),
+      ).includes('DELETE_PURCHASE_ORDER')
+
+      deleteAdminPurchaseOrders
+        ? await dispatch(
+          getPurchaseOrders({
+            fromDate: getStartOfCurrentMonth(),
+            toDate: getEndOfCurrentMonth(),
+          }),
+        ).unwrap()
+        : await dispatch(
+          getMyPurchaseOrders({
+            fromDate: getStartOfCurrentMonth(),
+            toDate: getEndOfCurrentMonth(),
+          }),
+        ).unwrap()
+      toast.success('Xóa các đơn mua hàng đã chọn thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
     }
   },
 )

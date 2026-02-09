@@ -23,18 +23,35 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 
+import { DeleteMultipleProductsDialog } from './DeleteMultipleProductsDialog'
+import { deleteMultipleProducts } from '@/stores/ProductSlice'
+import { TrashIcon } from '@radix-ui/react-icons'
+
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showCreateProductDialog, setShowCreateProductDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const dispatch = useDispatch()
   const categories = useSelector((state) => state.category.categories)
   const loading = useSelector((state) => state.product.loading)
   const isDesktop = useMediaQuery('(min-width: 768px)')
+  const selectedRows = table.getSelectedRowModel().rows
 
   useEffect(() => {
     dispatch(getCategories())
   }, [dispatch])
+
+  const handleDelete = async () => {
+    const selectedIds = selectedRows.map((row) => row.original.id)
+    try {
+      await dispatch(deleteMultipleProducts(selectedIds)).unwrap()
+      table.resetRowSelection()
+      setShowDeleteDialog(false)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   // Mobile view - Search + Menu
   if (!isDesktop) {
@@ -49,30 +66,42 @@ const DataTableToolbar = ({ table }) => {
           className="h-8 flex-1 text-xs"
         />
 
-        <Can
-          permission={[
-            'CREATE_PRODUCT',
-            'GET_SUPPLIER',
-            'GET_CATEGORY',
-            'GET_UNIT',
-          ]}
-        >
+        {selectedRows.length > 0 ? (
           <Button
             size="sm"
-            onClick={() => setShowCreateProductDialog(true)}
-            className="h-8 px-2 bg-green-600 hover:bg-green-700 text-white"
+            variant="destructive"
+            onClick={() => setShowDeleteDialog(true)}
+            className="h-8 px-2"
           >
-            <PlusIcon className="size-4" aria-hidden="true" />
+            <TrashIcon className="size-4" aria-hidden="true" />
+            <span className="ml-2 font-bold">{selectedRows.length}</span>
           </Button>
+        ) : (
+          <Can
+            permission={[
+              'CREATE_PRODUCT',
+              'GET_SUPPLIER',
+              'GET_CATEGORY',
+              'GET_UNIT',
+            ]}
+          >
+            <Button
+              size="sm"
+              onClick={() => setShowCreateProductDialog(true)}
+              className="h-8 px-2 bg-green-600 hover:bg-green-700 text-white"
+            >
+              <PlusIcon className="size-4" aria-hidden="true" />
+            </Button>
 
-          {showCreateProductDialog && (
-            <CreateProductDialog
-              open={showCreateProductDialog}
-              onOpenChange={setShowCreateProductDialog}
-              showTrigger={false}
-            />
-          )}
-        </Can>
+            {showCreateProductDialog && (
+              <CreateProductDialog
+                open={showCreateProductDialog}
+                onOpenChange={setShowCreateProductDialog}
+                showTrigger={false}
+              />
+            )}
+          </Can>
+        )}
 
         <Can permission="CREATE_PRODUCT">
           {/* Mobile Import Dialog */}
@@ -132,6 +161,16 @@ const DataTableToolbar = ({ table }) => {
                 <span>Sao chép</span>
               </DropdownMenuItem>
 
+              {selectedRows.length > 0 && (
+                <DropdownMenuItem
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <TrashIcon className="mr-2 size-4" />
+                  <span>Xóa ({selectedRows.length})</span>
+                </DropdownMenuItem>
+              )}
+
               {/* Reset filter */}
               {isFiltered && (
                 <>
@@ -157,6 +196,13 @@ const DataTableToolbar = ({ table }) => {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <DeleteMultipleProductsDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          count={selectedRows.length}
+        />
       </div>
     )
   }
@@ -196,6 +242,18 @@ const DataTableToolbar = ({ table }) => {
           </Button>
         )}
       </div>
+
+      {selectedRows.length > 0 && (
+        <Button
+          variant="destructive"
+          size="sm"
+          className="h-8"
+          onClick={() => setShowDeleteDialog(true)}
+        >
+          <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+          Xóa ({selectedRows.length})
+        </Button>
+      )}
 
       {/* Sao chép sản phẩm */}
       <Button
@@ -269,6 +327,13 @@ const DataTableToolbar = ({ table }) => {
           />
         )}
       </Can>
+
+      <DeleteMultipleProductsDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDelete}
+        count={selectedRows.length}
+      />
 
       <DataTableViewOptions table={table} />
     </div>

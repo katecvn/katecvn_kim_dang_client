@@ -50,7 +50,10 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           <Can permission="UPDATE_PRODUCT">
-            <DropdownMenuItem onClick={() => setShowUpdateProductDialog(true)}>
+            <DropdownMenuItem
+              onClick={() => setShowUpdateProductDialog(true)}
+              className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+            >
               Sửa
               <DropdownMenuShortcut>
                 <IconEdit className="h-4 w-4" />

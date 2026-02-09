@@ -29,6 +29,19 @@ export const deleteProduct = createAsyncThunk(
   },
 )
 
+export const deleteMultipleProducts = createAsyncThunk(
+  'product/deleteMultiple',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/product/bulk-delete', { ids })
+      await dispatch(getProducts()).unwrap()
+      toast.success('Xóa các sản phẩm đã chọn thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
 // =====================
 // NEW: form-data helpers (support nested arrays/objects)
 // =====================

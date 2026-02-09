@@ -26,7 +26,23 @@ export const getInvoices = createAsyncThunk(
         },
       })
       const responseData = response.data
-      const { data, pagination } = responseData.data || {}
+      // Robust extraction of data and pagination
+      let data = responseData?.data?.data
+      let pagination = responseData?.data?.pagination
+
+      // Fallback: if data is directly in responseData.data (and it's an array)
+      if (!Array.isArray(data) && Array.isArray(responseData?.data)) {
+        data = responseData.data
+        // Pagination might be at root or missing
+        pagination = responseData.pagination || responseData
+      }
+
+      // Fallback: if responseData itself is the array
+      if (!data && Array.isArray(responseData)) {
+        data = responseData
+      }
+
+      data = data || []
 
       // Map pagination to internal structure
       const meta = pagination ? {
@@ -85,7 +101,23 @@ export const getMyInvoices = createAsyncThunk(
       })
 
       const responseData = response.data
-      const { data, pagination } = responseData.data || {}
+      // Robust extraction of data and pagination
+      let data = responseData?.data?.data
+      let pagination = responseData?.data?.pagination
+
+      // Fallback: if data is directly in responseData.data (and it's an array)
+      if (!Array.isArray(data) && Array.isArray(responseData?.data)) {
+        data = responseData.data
+        // Pagination might be at root or missing
+        pagination = responseData.pagination || responseData
+      }
+
+      // Fallback: if responseData itself is the array
+      if (!data && Array.isArray(responseData)) {
+        data = responseData
+      }
+
+      data = data || []
 
       // Map pagination to internal structure
       const meta = pagination ? {

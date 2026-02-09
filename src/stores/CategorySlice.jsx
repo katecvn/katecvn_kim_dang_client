@@ -32,6 +32,19 @@ export const deleteCategory = createAsyncThunk(
   },
 )
 
+export const deleteMultipleCategories = createAsyncThunk(
+  'category/deleteMultiple',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/category/bulk-delete', { ids })
+      await dispatch(getCategories()).unwrap()
+      toast.success('Xóa các danh mục đã chọn thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
 export const createCategory = createAsyncThunk(
   'category/create',
   async (data, { rejectWithValue, dispatch }) => {

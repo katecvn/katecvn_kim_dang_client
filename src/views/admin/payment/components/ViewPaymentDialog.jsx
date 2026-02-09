@@ -41,6 +41,7 @@ import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { getPublicUrl } from '@/utils/file'
 import { getPaymentById, updatePaymentStatus } from '@/stores/PaymentSlice'
 import UpdatePaymentStatusDialog from './UpdatePaymentStatusDialog'
+import PaymentFormDialog from './PaymentDialog'
 import { DeletePaymentDialog } from './DeletePaymentDialog'
 import { paymentMethods } from '../../receipt/data'
 import { paymentStatus } from '../data'
@@ -58,6 +59,7 @@ const ViewPaymentDialog = ({
   showTrigger = true,
   contentClassName,
   overlayClassName,
+  onSuccess,
   ...props
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -65,6 +67,7 @@ const ViewPaymentDialog = ({
 
   const [loading, setLoading] = useState(false)
   const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+  const [showUpdatePaymentDialog, setShowUpdatePaymentDialog] = useState(false)
   const [printData, setPrintData] = useState(null)
 
   const setting = useSelector((state) => state.setting.setting)
@@ -125,6 +128,7 @@ const ViewPaymentDialog = ({
       if (paymentId) {
         const result = await dispatch(getPaymentById(paymentId)).unwrap()
         setFetchedPayment(result)
+        onSuccess?.()
       }
     } catch (error) {
       console.error(error)
@@ -482,9 +486,9 @@ const ViewPaymentDialog = ({
                           currentStatus={payment?.status}
                           statuses={paymentStatus}
                           onSubmit={handleUpdateStatus}
-                          contentClassName="z-[100060]"
-                          overlayClassName="z-[100059]"
-                          selectContentClassName="z-[100070]"
+                          contentClassName="z-[100070]"
+                          overlayClassName="z-[100069]"
+                          selectContentClassName="z-[100080]"
                         />
                       )}
 
@@ -673,7 +677,19 @@ const ViewPaymentDialog = ({
             >
               <Printer className="h-4 w-4" />
               In phiếu
+              In phiếu
             </Button>
+
+            {payment?.status === 'draft' && (
+              <Button
+                size="sm"
+                className="gap-2 w-full sm:w-auto"
+                onClick={() => setShowUpdatePaymentDialog(true)}
+              >
+                <Pencil className="h-4 w-4" />
+                Chỉnh sửa
+              </Button>
+            )}
 
             {(payment?.status === 'draft' || payment?.status === 'cancelled' || payment?.status === 'canceled') && (
               <Button
@@ -699,8 +715,9 @@ const ViewPaymentDialog = ({
           isMobile={isMobile}
           handlePrintPayment={handlePrintPayment}
           setShowDeleteDialog={setShowDeleteDialog}
-          className="z-[100060]"
-          overlayClassName="z-[100059]"
+          setShowUpdateDialog={setShowUpdatePaymentDialog}
+          className="z-[100070]"
+          overlayClassName="z-[100069]"
         />
       </DialogContent>
 
@@ -710,8 +727,8 @@ const ViewPaymentDialog = ({
           onOpenChange={setShowViewProductDialog}
           productId={selectedProductId}
           showTrigger={false}
-          contentClassName="z-[100050]"
-          overlayClassName="z-[100049]"
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
         />
       )}
 
@@ -721,8 +738,8 @@ const ViewPaymentDialog = ({
           onOpenChange={setShowViewContractDialog}
           contractId={selectedContractId}
           showTrigger={false}
-          contentClassName="z-[100050]"
-          overlayClassName="z-[100049]"
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
         />
       )}
 
@@ -732,8 +749,8 @@ const ViewPaymentDialog = ({
           onOpenChange={setShowViewPurchaseOrderDialog}
           purchaseOrderId={selectedPurchaseOrderId}
           showTrigger={false}
-          contentClassName="!z-[100040]"
-          overlayClassName="!z-[100039]"
+          contentClassName="!z-[100070]"
+          overlayClassName="!z-[100069]"
         />
       )}
 
@@ -746,11 +763,31 @@ const ViewPaymentDialog = ({
           onSuccess={() => {
             setShowDeleteDialog(false)
             onOpenChange(false)
+            onSuccess?.()
           }}
-          contentClassName="z-[100060]"
-          overlayClassName="z-[100059]"
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
         />
       )}
+
+      {showUpdatePaymentDialog && (
+        <PaymentFormDialog
+          open={showUpdatePaymentDialog}
+          onOpenChange={setShowUpdatePaymentDialog}
+          payment={payment}
+          onSuccess={() => {
+            // Refetch payment
+            if (paymentId) {
+              dispatch(getPaymentById(paymentId)).then((result) => {
+                setFetchedPayment(result.payload)
+              })
+            }
+          }}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
+
       {/* Print View */}
       {printData && (
         <PrintPaymentView

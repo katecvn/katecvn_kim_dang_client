@@ -52,7 +52,6 @@ const PurchaseContractDataTable = ({
       sorting,
       columnVisibility,
       rowSelection,
-      rowSelection,
       columnFilters,
       globalFilter,
       pagination: {
@@ -62,6 +61,7 @@ const PurchaseContractDataTable = ({
     },
     pageCount: pagination.totalPages,
     manualPagination: true,
+    manualFiltering: true,
     onPaginationChange: (updater) => {
       if (typeof updater === 'function') {
         const newState = updater({

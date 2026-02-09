@@ -1,4 +1,4 @@
-import { Cross2Icon } from '@radix-ui/react-icons'
+import { Cross2Icon, PlusIcon, TrashIcon } from '@radix-ui/react-icons'
 
 import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
@@ -16,12 +16,43 @@ import {
 import { EllipsisVertical } from 'lucide-react'
 
 import CreateManualWarehouseReceiptDialog from './CreateManualWarehouseReceiptDialog'
-import { useState } from 'react'
-import { PlusIcon } from '@radix-ui/react-icons'
+import { DeleteMultipleWarehouseReceiptsDialog } from './DeleteMultipleWarehouseReceiptsDialog'
+import { deleteMultipleWarehouseReceipts } from '@/stores/WarehouseReceiptSlice'
 
-const DataTableToolbar = ({ table }) => {
+export function DataTableToolbar({ table }) {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const isFiltered = table.getState().columnFilters.length > 0
+  const [selectedReceiptIds, setSelectedReceiptIds] = useState([])
+  const [selectedReceipts, setSelectedReceipts] = useState([])
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const selectedRows = table.getSelectedRowModel().rows
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    const receipts = selectedRows.map((row) => row.original)
+    setSelectedReceipts(receipts)
+    setSelectedReceiptIds(receipts.map((inv) => inv.id))
+  }, [selectedRows])
+
+  const handleDelete = async () => {
+    const selectedIds = selectedReceipts.map((inv) => inv.id)
+    // Filter out receipts that are not draft or cancelled
+    const invalidReceipts = selectedReceipts.filter(inv => !['draft', 'cancelled'].includes(inv.status))
+
+    if (invalidReceipts.length > 0) {
+      toast.error('Chỉ có thể xóa các phiếu kho ở trạng thái Nháp hoặc Đã hủy')
+      return
+    }
+
+    try {
+      await dispatch(deleteMultipleWarehouseReceipts(selectedIds)).unwrap()
+      table.resetRowSelection()
+      setShowDeleteDialog(false)
+    } catch (error) {
+      console.log(error)
+    }
+  }
   const isMobile = useMediaQuery('(max-width: 768px)')
 
   // Mobile Toolbar
@@ -122,24 +153,44 @@ const DataTableToolbar = ({ table }) => {
         )}
       </div>
 
-      <DataTableViewOptions table={table} />
+      <div className="flex items-center gap-2">
+        {selectedReceipts.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+            Xóa ({selectedReceipts.length})
+          </Button>
+        )}
 
-      <Button
-        size="sm"
-        className="bg-green-600 hover:bg-green-700 text-white"
-        onClick={() => setShowCreateDialog(true)}
-      >
-        <PlusIcon className="mr-2 h-4 w-4" />
-        Tạo phiếu
-      </Button>
+        <DeleteMultipleWarehouseReceiptsDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          count={selectedReceipts.length}
+        />
 
-      <CreateManualWarehouseReceiptDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        showTrigger={false}
-      />
+        <DataTableViewOptions table={table} />
+
+        <Button
+          size="sm"
+          className="bg-green-600 hover:bg-green-700 text-white h-8"
+          onClick={() => setShowCreateDialog(true)}
+        >
+          <PlusIcon className="mr-2 h-4 w-4" />
+          Tạo phiếu
+        </Button>
+
+        <CreateManualWarehouseReceiptDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          showTrigger={false}
+        />
+      </div>
     </div>
   )
 }
 
-export { DataTableToolbar }

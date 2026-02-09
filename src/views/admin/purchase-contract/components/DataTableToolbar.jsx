@@ -5,9 +5,11 @@ import { DataTableViewOptions } from './DataTableViewOption'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { purchaseContractStatuses } from '../data'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
-import { TruckIcon, EllipsisVertical } from 'lucide-react'
+import { TruckIcon, EllipsisVertical, TrashIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { DeleteMultiplePurchaseContractsDialog } from './DeleteMultiplePurchaseContractsDialog'
+import { deleteMultiplePurchaseContracts } from '@/stores/PurchaseContractSlice'
 import ContractReminderDialog from './ContractReminderDialog'
 import {
   DropdownMenu,
@@ -15,6 +17,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useDispatch } from 'react-redux'
+import { useEffect } from 'react'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -23,6 +27,37 @@ const DataTableToolbar = ({ table }) => {
   // The user asked to make it "like sales contract". Sales contract has explicit mobile check.
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [showReminderDialog, setShowReminderDialog] = useState(false)
+  const [selectedContractIds, setSelectedContractIds] = useState([])
+  const [selectedContracts, setSelectedContracts] = useState([])
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const selectedRows = table.getSelectedRowModel().rows
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    const contracts = selectedRows.map((row) => row.original)
+    setSelectedContracts(contracts)
+    setSelectedContractIds(contracts.map((inv) => inv.id))
+  }, [selectedRows])
+
+  const handleDelete = async () => {
+    const selectedIds = selectedContracts.map((inv) => inv.id)
+    // Filter out contracts that are not draft
+    const invalidContracts = selectedContracts.filter(inv => inv.status !== 'draft')
+
+    if (invalidContracts.length > 0) {
+      toast.error('Chỉ có thể xóa các hợp đồng ở trạng thái Nháp')
+      return
+    }
+
+    try {
+      await dispatch(deleteMultiplePurchaseContracts(selectedIds)).unwrap()
+      table.resetRowSelection()
+      setShowDeleteDialog(false)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   // Sales Contract Mobile Layout
   if (isMobile) {
@@ -135,6 +170,25 @@ const DataTableToolbar = ({ table }) => {
           <TruckIcon className="mr-2 size-4" aria-hidden="true" />
           Gửi nhắc hàng
         </Button>
+        {selectedContracts.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+            Xóa ({selectedContracts.length})
+          </Button>
+        )}
+
+        <DeleteMultiplePurchaseContractsDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          count={selectedContracts.length}
+        />
+
         <DataTableViewOptions table={table} />
 
         {showReminderDialog && (

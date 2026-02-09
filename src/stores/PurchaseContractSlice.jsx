@@ -108,8 +108,21 @@ export const deletePurchaseContract = createAsyncThunk(
       return id
     } catch (error) {
       const message = handleError(error)
-      toast.error(message)
+      toast.error(message?.message || 'Có lỗi xảy ra')
       return rejectWithValue(message)
+    }
+  },
+)
+
+export const deleteMultiplePurchaseContracts = createAsyncThunk(
+  'purchaseContract/deleteMultiple',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/purchase-contracts/bulk-delete', { ids })
+      await dispatch(getPurchaseContracts({}))
+      toast.success('Xóa các hợp đồng đã chọn thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
     }
   },
 )

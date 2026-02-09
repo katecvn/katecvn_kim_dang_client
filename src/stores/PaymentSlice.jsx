@@ -133,7 +133,7 @@ export const deleteMultiplePayments = createAsyncThunk(
   'payment/delete-multiple-payments',
   async (ids, { rejectWithValue, dispatch }) => {
     try {
-      await Promise.all(ids.map((id) => api.delete(`/payment-vouchers/${id}`)))
+      await api.post('/payment-vouchers/bulk-delete', { ids })
 
       const deleteAdminPayments = JSON.parse(
         localStorage.getItem('permissionCodes'),

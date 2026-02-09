@@ -157,6 +157,19 @@ export const deleteInvoice = createAsyncThunk(
   },
 )
 
+export const deleteMultipleInvoices = createAsyncThunk(
+  'invoice/deleteMultiple',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/invoice/bulk-delete', { ids })
+      await dispatch(getInvoices({})).unwrap()
+      toast.success('Xóa các hóa đơn đã chọn thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
 export const createInvoice = createAsyncThunk(
   'invoice/create-invoice',
   async (dataToSend, { rejectWithValue }) => {

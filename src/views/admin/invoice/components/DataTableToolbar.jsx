@@ -30,6 +30,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { EllipsisVertical, TruckIcon } from 'lucide-react'
 import DeliveryReminderDialog from './DeliveryReminderDialog'
+import { DeleteMultipleInvoicesDialog } from './DeleteMultipleInvoicesDialog'
+import { deleteMultipleInvoices } from '@/stores/InvoiceSlice'
+import { TrashIcon } from '@radix-ui/react-icons'
 
 const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -41,6 +44,34 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
   const [showCreateSalesContractDialog, setShowCreateSalesContractDialog] = useState(false)
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([])
   const [selectedInvoices, setSelectedInvoices] = useState([])
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const selectedRows = table.getSelectedRowModel().rows
+
+  useEffect(() => {
+    const invoices = selectedRows.map((row) => row.original)
+    setSelectedInvoices(invoices)
+    setSelectedInvoiceIds(invoices.map((inv) => inv.id))
+  }, [selectedRows])
+
+  const handleDelete = async () => {
+    const selectedIds = selectedInvoices.map((inv) => inv.id)
+    // Filter out invoices that are not draft or refused
+    const invalidInvoices = selectedInvoices.filter(inv => !['draft', 'refused'].includes(inv.status))
+
+    if (invalidInvoices.length > 0) {
+      toast.error('Chỉ có thể xóa các hóa đơn ở trạng thái Nháp hoặc Từ chối')
+      return
+    }
+
+    try {
+      await dispatch(deleteMultipleInvoices(selectedIds)).unwrap()
+      table.resetRowSelection()
+      setShowDeleteDialog(false)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   const [showDeliveryReminderDialog, setShowDeliveryReminderDialog] = useState(false)
 
@@ -298,6 +329,18 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
             />
           )}
 
+          {selectedInvoices.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-8"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+              Xóa ({selectedInvoices.length})
+            </Button>
+          )}
+
           {/* Gửi nhắc giao hàng */}
           <Button
             className="text-orange-600 border-orange-200 hover:bg-orange-50"
@@ -377,6 +420,13 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
               selectedInvoices={table.getSelectedRowModel().rows.map((r) => r.original)}
             />
           )}
+
+          <DeleteMultipleInvoicesDialog
+            open={showDeleteDialog}
+            onOpenChange={setShowDeleteDialog}
+            onConfirm={handleDelete}
+            count={selectedInvoices.length}
+          />
 
           <DataTableViewOptions table={table} />
         </div>

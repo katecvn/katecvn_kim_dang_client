@@ -4,13 +4,17 @@ import { Input } from '@/components/ui/input'
 import { DataTableViewOptions } from './DataTableViewOption'
 import Can from '@/utils/can'
 import { TruckIcon, EllipsisVertical } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { DeleteMultipleSalesContractsDialog } from './DeleteMultipleSalesContractsDialog'
+import { deleteMultipleSalesContracts } from '@/stores/SalesContractSlice'
+import { TrashIcon } from '@radix-ui/react-icons'
 import DeliveryReminderDialog from '../../invoice/components/DeliveryReminderDialog'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { statuses, paymentStatuses } from '../data'
 import { toast } from 'sonner'
 import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import { useDispatch } from 'react-redux'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,8 +27,39 @@ const DataTableToolbar = ({ table }) => {
   const [showDeliveryReminderDialog, setShowDeliveryReminderDialog] = useState(false)
   const isMobile = useMediaQuery('(max-width: 768px)')
 
+  const [selectedContractIds, setSelectedContractIds] = useState([])
+  const [selectedContracts, setSelectedContracts] = useState([])
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const selectedRows = table.getSelectedRowModel().rows
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    const contracts = selectedRows.map((row) => row.original)
+    setSelectedContracts(contracts)
+    setSelectedContractIds(contracts.map((inv) => inv.id))
+  }, [selectedRows])
+
+  const handleDelete = async () => {
+    const selectedIds = selectedContracts.map((inv) => inv.id)
+    // Filter out contracts that are not draft
+    const invalidContracts = selectedContracts.filter(inv => inv.status !== 'draft')
+
+    if (invalidContracts.length > 0) {
+      toast.error('Chỉ có thể xóa các hợp đồng ở trạng thái Nháp')
+      return
+    }
+
+    try {
+      await dispatch(deleteMultipleSalesContracts(selectedIds)).unwrap()
+      table.resetRowSelection()
+      setShowDeleteDialog(false)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   const handleShowDeliveryReminderDialog = () => {
-    const selectedRows = table.getSelectedRowModel().rows
     if (selectedRows.length === 0) {
       toast.warning('Vui lòng chọn ít nhất 1 hợp đồng')
       return
@@ -162,6 +197,24 @@ const DataTableToolbar = ({ table }) => {
           />
         )}
 
+        {selectedContracts.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+            Xóa ({selectedContracts.length})
+          </Button>
+        )}
+
+        <DeleteMultipleSalesContractsDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          count={selectedContracts.length}
+        />
         <DataTableViewOptions table={table} />
       </div>
     </div>

@@ -77,6 +77,19 @@ export const deleteWarehouseReceipt = createAsyncThunk(
   },
 )
 
+export const deleteMultipleWarehouseReceipts = createAsyncThunk(
+  'warehouseReceipt/deleteMultiple',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/warehouse-receipts/bulk-delete', { ids })
+      await dispatch(getWarehouseReceipts()).unwrap()
+      toast.success('Xóa các phiếu kho đã chọn thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
 export const postWarehouseReceipt = createAsyncThunk(
   'warehouseReceipt/post-warehouse-receipt',
   async (id, { rejectWithValue, dispatch }) => {

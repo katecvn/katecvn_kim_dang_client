@@ -1,18 +1,50 @@
-import { Cross2Icon } from '@radix-ui/react-icons'
-import { useState } from 'react'
+import { Cross2Icon, TrashIcon } from '@radix-ui/react-icons'
+import { useState, useRef, useEffect } from 'react'
+import { useDispatch } from 'react-redux'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
+import { deleteMultiplePayments } from '@/stores/PaymentSlice'
 import { DataTableViewOptions } from './DataTableViewOption'
-import DeleteMultiplePaymentsDialog from './DeleteMultiplePaymentsDialog'
-import {
-  TrashIcon,
-} from '@radix-ui/react-icons'
+import { DataTableFacetedFilter } from './DataTableFacetedFilter'
+import { DeleteMultiplePaymentVouchersDialog } from './DeleteMultiplePaymentVouchersDialog'
+import { paymentStatus as paymentStatuses } from '../data'
 
-const DataTableToolbar = ({ table }) => {
+
+export function DataTableToolbar({ table }) {
   const isFiltered = table.getState().columnFilters.length > 0
-  const selectedRows = table.getFilteredSelectedRowModel().rows
+  const [selectedPaymentIds, setSelectedPaymentIds] = useState([])
+  const [selectedPayments, setSelectedPayments] = useState([])
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  const selectedRows = table.getSelectedRowModel().rows
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    const payments = selectedRows.map((row) => row.original)
+    setSelectedPayments(payments)
+    setSelectedPaymentIds(payments.map((inv) => inv.id))
+  }, [selectedRows])
+
+  const handleDelete = async () => {
+    const selectedIds = selectedPayments.map((inv) => inv.id)
+    // Filter out payments that are not draft or cancelled
+    const invalidPayments = selectedPayments.filter(inv => !['draft', 'cancelled'].includes(inv.status))
+
+    if (invalidPayments.length > 0) {
+      toast.error('Chỉ có thể xóa các phiếu ở trạng thái Nháp hoặc Đã hủy')
+      return
+    }
+
+    try {
+      await dispatch(deleteMultiplePayments(selectedIds)).unwrap()
+      table.resetRowSelection()
+      setShowDeleteDialog(false)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   return (
     <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-0 sm:p-1">
@@ -32,41 +64,35 @@ const DataTableToolbar = ({ table }) => {
             onClick={() => table.resetColumnFilters()}
             className="h-8 px-2 lg:px-3"
           >
-            Đặt lại
+            Reset
             <Cross2Icon className="ml-2 h-4 w-4" />
           </Button>
         )}
       </div>
 
-      <DataTableViewOptions table={table} />
-
-      {selectedRows.length > 0 && (
-        <>
+      <div className="flex items-center gap-2">
+        {selectedPayments.length > 0 && (
           <Button
             variant="destructive"
             size="sm"
-            className="ml-2 h-8 px-2 lg:px-3"
+            className="h-8"
             onClick={() => setShowDeleteDialog(true)}
           >
             <TrashIcon className="mr-2 h-4 w-4" />
-            Xóa ({selectedRows.length})
+            Xóa ({selectedPayments.length})
           </Button>
+        )}
 
-          <DeleteMultiplePaymentsDialog
-            open={showDeleteDialog}
-            onOpenChange={setShowDeleteDialog}
-            payments={selectedRows.map((row) => row.original)}
-            onSuccess={() => {
-              table.toggleAllPageRowsSelected(false)
-              setShowDeleteDialog(false)
-            }}
-            contentClassName="z-[100060]"
-            overlayClassName="z-[100059]"
-          />
-        </>
-      )}
+        <DeleteMultiplePaymentVouchersDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          count={selectedPayments.length}
+        />
+        <DataTableViewOptions table={table} />
+      </div>
     </div>
   )
 }
 
-export { DataTableToolbar }
+

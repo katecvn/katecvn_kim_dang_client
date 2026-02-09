@@ -114,6 +114,19 @@ export const deleteSalesContract = createAsyncThunk(
   },
 )
 
+export const deleteMultipleSalesContracts = createAsyncThunk(
+  'salesContract/deleteMultiple',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/sales-contracts/bulk-delete', { ids })
+      await dispatch(getSalesContracts({}))
+      toast.success('Xóa các hợp đồng đã chọn thành công')
+    } catch (error) {
+      return rejectWithValue(handleError(error))
+    }
+  },
+)
+
 export const updateSalesContractStatus = createAsyncThunk(
   'salesContract/update-status',
   async ({ id, status }, { rejectWithValue, dispatch }) => {

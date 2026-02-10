@@ -18,7 +18,15 @@ import {
 
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { X, Search } from 'lucide-react'
+import { X, Search, Check, ChevronsUpDown } from 'lucide-react'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import { useDispatch, useSelector } from 'react-redux'
 import { getProducts, updateProductInStore } from '@/stores/ProductSlice'
 import { Input } from '@/components/ui/input'
@@ -38,6 +46,7 @@ import { getUsers } from '@/stores/UserSlice'
 import { createInvoice, updateInvoice } from '@/stores/InvoiceSlice'
 import { toast } from 'sonner'
 import { paymentMethods } from '../../receipt/data'
+import { moneyFormat } from '@/utils/money-format'
 import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
 import PrintInvoiceView from './PrintInvoiceView'
 import CreateOtherExpenses from './CreateOtherExpenses'
@@ -65,6 +74,14 @@ const InvoiceDialog = ({
 }) => {
   const dispatch = useDispatch()
   const products = useSelector((state) => state.product.products)
+  // Ensure products have currentStock (defaulting to 0 if missing)
+  const processedProducts = useMemo(() => {
+    return products.map(p => ({
+      ...p,
+      currentStock: Number(p.currentStock || 0)
+    }))
+  }, [products])
+
   const customers = useSelector((state) => state.customer.customers)
   const loading = useSelector((state) => state.invoice.loading)
   const authUserWithRoleHasPermissions =
@@ -388,6 +405,7 @@ const InvoiceDialog = ({
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [filteredProducts, setFilteredProducts] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [openCombobox, setOpenCombobox] = useState(false)
 
   // =========================
   // UNIT CONVERSION HELPERS
@@ -1738,16 +1756,67 @@ const InvoiceDialog = ({
                 {/* LEFT SECTION: Category + Products */}
                 <div className="flex flex-col w-[700px]">
                   {/* UNIFIED SEARCH BAR spanning columns 1 & 2 */}
-                  <div className="p-4 border-b bg-background/80 backdrop-blur-sm">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Tìm kiếm sản phẩm..."
-                        className="pl-9"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
+                  <div className="p-4 border-b bg-background/80 backdrop-blur-sm z-20 relative">
+                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openCombobox}
+                          className="w-full justify-between"
+                        >
+                          {searchQuery ? searchQuery : "Tìm kiếm sản phẩm..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[660px] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Nhập tên hoặc mã sản phẩm..."
+                            value={searchQuery}
+                            onValueChange={setSearchQuery} // Updates query state
+                          />
+                          <CommandList>
+                            <CommandEmpty>Không tìm thấy sản phẩm.</CommandEmpty>
+                            <CommandGroup heading="Gợi ý">
+                              {filteredProducts.slice(0, 10).map((product) => {
+                                const isSelected = selectedProducts.some(p => p.id === product.id)
+                                return (
+                                  <CommandItem
+                                    key={product.id}
+                                    value={product.name} // Needed for internal logic, but we handle select manually
+                                    onSelect={() => {
+                                      handleAddProduct(product)
+                                      setOpenCombobox(false)
+                                      setSearchQuery('')
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-2 w-full">
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          isSelected ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <div className='flex-1'>
+                                        <div className='font-medium'>{product.name}</div>
+                                        <div className='text-xs text-muted-foreground flex gap-2'>
+                                          <span>{product.code}</span>
+                                          <span>•</span>
+                                          <span>Tồn: {product.currentStock}</span>
+                                          <span>•</span>
+                                          <span className='text-primary'>{moneyFormat(product.price)}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CommandItem>
+                                )
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <div className="mt-3 text-xs text-muted-foreground">
                       Hiển thị {filteredProducts.length} / {products.length} sản phẩm
                     </div>

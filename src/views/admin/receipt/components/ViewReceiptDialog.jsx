@@ -528,7 +528,6 @@ const ViewReceiptDialog = ({
                             >
                               {receipt?.status === 'completed' ? 'Đã thu' : receipt?.status === 'draft' ? 'Nháp' : (receipt?.status === 'cancelled' || receipt?.status === 'canceled') ? 'Đã hủy' : receipt?.status || 'Không xác định'}
                             </Badge>
-                            <Pencil className="h-3 w-3 text-muted-foreground" />
                           </div>
                         )}
                       </div>
@@ -557,7 +556,13 @@ const ViewReceiptDialog = ({
                             const paid = parseFloat(receipt?.invoice?.paidAmount ?? receipt?.invoice?.paid_amount ?? 0)
                             const remaining = total - paid
                             return (
-                              <Badge className={remaining > 0 ? 'bg-destructive' : 'bg-green-500'}>
+                              <Badge
+                                className={
+                                  remaining > 0
+                                    ? 'border border-destructive text-destructive bg-transparent hover:bg-transparent'
+                                    : 'border border-green-600 text-green-600 bg-transparent hover:bg-transparent'
+                                }
+                              >
                                 {remaining > 0 ? moneyFormat(remaining) : 'Đã thanh toán hết'}
                               </Badge>
                             )
@@ -574,7 +579,7 @@ const ViewReceiptDialog = ({
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between">
                       <strong>Phương thức:</strong>
-                      <Badge variant="outline">
+                      <Badge className="border border-primary text-primary bg-transparent hover:bg-transparent">
                         {receipt?.paymentMethod === 'cash' ? 'Tiền mặt' : receipt?.paymentMethod === 'transfer' ? 'Chuyển khoản' : receipt?.paymentMethod || 'Không xác định'}
                       </Badge>
                     </div>

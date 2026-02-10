@@ -234,7 +234,7 @@ const InventorySummaryPage = () => {
             </TableHeader>
             <TableBody>
               {/* Total Row */}
-              <TableRow className="font-bold bg-muted/50 text-red-600 sticky top-[calc(theme(spacing.10)*2)] z-10 shadow-sm">
+              <TableRow className="font-bold bg-white hover:bg-white text-red-600 sticky top-[calc(theme(spacing.10)*2-2px)] z-10 shadow-sm">
                 <TableCell className="border-r"></TableCell>
                 <TableCell className="border-r text-center">Cộng</TableCell>
                 <TableCell className="border-r"></TableCell>

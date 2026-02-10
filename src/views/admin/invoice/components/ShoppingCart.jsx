@@ -216,6 +216,9 @@ const ShoppingCart = ({
                             })}
                           </p>
                         )}
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">
+                          Tồn kho: {Number(product.currentStock) || 0}
+                        </p>
                       </div>
                       <Button
                         type="button"

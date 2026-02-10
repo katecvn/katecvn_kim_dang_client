@@ -29,7 +29,7 @@ import { Separator } from '@/components/ui/separator'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
 import { PlusIcon, MobileIcon } from '@radix-ui/react-icons'
-import { Mail, MapPin, CreditCard, Printer, X } from 'lucide-react'
+import { Mail, MapPin, CreditCard, Printer, X, FileCheck } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import React from 'react'
 import ViewInvoiceDialog from '@/views/admin/invoice/components/ViewInvoiceDialog'
@@ -853,7 +853,6 @@ const ViewSalesContractDialog = ({
                                                   <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium border ${sObj.color} ${isEditable ? 'hover:opacity-80' : ''}`}>
                                                     {sObj.icon && React.createElement(sObj.icon, { className: "h-3 w-3" })}
                                                     {sObj.label}
-                                                    {isEditable && <IconPencil className="h-3 w-3 ml-0.5" />}
                                                   </span>
                                                 ) : (
                                                   <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
@@ -1657,6 +1656,24 @@ const ViewSalesContractDialog = ({
           <DialogFooter className={cn(!isDesktop && "pb-4 px-4 flex flex-row gap-2")}>
             <Button
               size="sm"
+              onClick={handleCreateReceipt}
+              className={cn("bg-green-600 hover:bg-green-700 text-white", !isDesktop && "flex-1")}
+            >
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Tạo Phiếu Thu
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={handleCreateWarehouseReceipt}
+              className={cn("bg-blue-600 hover:bg-blue-700 text-white", !isDesktop && "flex-1")}
+            >
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Tạo Phiếu xuất kho
+            </Button>
+
+            <Button
+              size="sm"
               onClick={() => {
                 if (contract?.status !== 'confirmed') {
                   toast.warning('Chỉ có thể thanh lý hợp đồng đã xác nhận')
@@ -1666,10 +1683,17 @@ const ViewSalesContractDialog = ({
               }}
               className={cn("bg-orange-600 hover:bg-orange-700 text-white", !isDesktop && "flex-1")}
             >
+              <FileCheck className="mr-2 h-4 w-4" />
               Thanh lý
             </Button>
 
-            <Button size="sm" onClick={handlePrintContract} loading={installmentExporting} className={cn("bg-blue-600 hover:bg-blue-700 text-white", !isDesktop && "flex-1")}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePrintContract}
+              loading={installmentExporting}
+              className={cn("border-blue-600 text-blue-600 hover:bg-blue-50", !isDesktop && "flex-1")}
+            >
               <Printer className="mr-2 h-4 w-4" />
               In Hợp Đồng
             </Button>
@@ -1781,11 +1805,7 @@ const ViewSalesContractDialog = ({
               currentStatus={invoiceToUpdateStatus.status}
               statuses={invoiceStatuses}
               paymentStatus={invoiceToUpdateStatus.paymentStatus}
-              onSuccess={() => {
-                fetchContractDetail()
-                // If the dialog doesn't close automatically on success, close it here
-                setShowUpdateInvoiceStatusDialog(false)
-              }}
+              onSubmit={handleUpdateStatus}
               contentClassName="z-[100030]"
               className="z-[100030]"
               overlayClassName="z-[100029]"

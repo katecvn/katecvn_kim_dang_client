@@ -238,8 +238,9 @@ export const importProduct = createAsyncThunk(
   'product/import',
   async (data, { rejectWithValue, dispatch }) => {
     try {
-      await api.post('/product/import', data)
+      const response = await api.post('/product/import', data)
       await dispatch(getProducts()).unwrap()
+      return response.data
       // toast.success('Import dữ liệu thành công') // Toast handled in Dialog for better count info
     } catch (error) {
       return rejectWithValue(handleError(error))

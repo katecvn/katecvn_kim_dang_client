@@ -124,11 +124,33 @@ const ImportProductDialog = ({
       }
 
       const payload = { items }
-      await dispatch(importProduct(payload)).unwrap()
+      const response = await dispatch(importProduct(payload)).unwrap()
 
-      toast.success(`Đã import thành công ${items.length} sản phẩm`)
-      onOpenChange(false)
-      setFile(null)
+      // Handle structured response even on success (200 OK)
+      if (response?.data?.counts && (response.data.counts.failed > 0 || response.data.failed?.length > 0)) {
+        const failedItems = response.data.failed || []
+        const formattedErrors = failedItems.map((item) => ({
+          row: item.row,
+          errors: item.error
+            ? item.error.split(';').map((e) => ({
+              field: 'Lỗi',
+              message: e.trim(),
+            }))
+            : [{ field: 'Lỗi', message: 'Lỗi không xác định' }],
+        }))
+
+        setErrorList(formattedErrors)
+        toast.warning(
+          response.message ||
+          `Import hoàn tất với ${response.data.counts.failed} lỗi`,
+        )
+      } else {
+        toast.success(
+          response.message || `Đã import thành công ${items.length} sản phẩm`,
+        )
+        onOpenChange(false)
+        setFile(null)
+      }
 
     } catch (error) {
       console.error('Import error:', error)

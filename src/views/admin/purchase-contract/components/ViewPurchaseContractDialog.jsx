@@ -18,6 +18,7 @@ import {
 
 import LiquidatePurchaseContractDialog from './LiquidatePurchaseContractDialog'
 import DeletePurchaseContractDialog from './DeletePurchaseContractDialog'
+import MobilePurchaseContractActions from './MobilePurchaseContractActions'
 import {
   Table,
   TableBody,
@@ -1217,7 +1218,7 @@ const ViewPurchaseContractDialog = ({
           )}
         </div>
 
-        <DialogFooter className="flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0 p-4 pt-0">
+        <DialogFooter className="hidden md:flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0 p-4 pt-0">
           <Button size="sm" onClick={handleLiquidate} className="bg-orange-600 hover:bg-orange-700 text-white">
             <FileCheck className="mr-2 h-4 w-4" />
             Thanh lý
@@ -1438,6 +1439,16 @@ const ViewPurchaseContractDialog = ({
             overlayClassName="z-[100059]"
           />
         )}
+
+        <MobilePurchaseContractActions
+          contract={contract}
+          isDesktop={isDesktop}
+          handleLiquidate={handleLiquidate}
+          handleCreatePayment={handleCreatePayment}
+          handleCreateWarehouseReceipt={handleCreateWarehouseReceipt}
+          handleDeleteClick={handleDeleteClick}
+          onOpenChange={onOpenChange}
+        />
 
         {showDeleteDialog && (
           <DeletePurchaseContractDialog

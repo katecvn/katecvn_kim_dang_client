@@ -40,13 +40,6 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Mã NCC" />
     ),
-    cell: ({ row }) => <div className="w-14">{row.getValue('code')}</div>,
-  },
-  {
-    accessorKey: 'name',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Tên nhà cung cấp" />
-    ),
     cell: function Cell({ row }) {
       const [showViewSupplierDialog, setShowViewSupplierDialog] =
         useState(false)
@@ -62,15 +55,22 @@ export const columns = [
             />
           )}
 
-          <span
-            className="w-44 cursor-pointer text-primary hover:underline"
+          <div
+            className="w-[150px] cursor-pointer text-primary hover:underline"
             onClick={() => setShowViewSupplierDialog(true)}
           >
-            {row.getValue('name')}
-          </span>
+            {row.getValue('code')}
+          </div>
         </>
       )
     },
+  },
+  {
+    accessorKey: 'name',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Tên nhà cung cấp" />
+    ),
+    cell: ({ row }) => <div>{row.getValue('name')}</div>,
     enableSorting: true,
     enableHiding: true,
     filterFn: (row, id, value) => {
@@ -168,8 +168,8 @@ export const columns = [
     cell: ({ row }) => {
       return (
         <div className="flex space-x-2">
-          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
-            {dateFormat(row.getValue('createdAt'))}
+          <span className="max-w-32 sm:max-w-72 md:max-w-[31rem]">
+            {dateFormat(row.getValue('createdAt'), true)}
           </span>
         </div>
       )
@@ -183,8 +183,8 @@ export const columns = [
     cell: ({ row }) => {
       return (
         <div className="flex space-x-2">
-          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
-            {dateFormat(row.getValue('updatedAt'))}
+          <span className="max-w-32 sm:max-w-72 md:max-w-[31rem]">
+            {dateFormat(row.getValue('updatedAt'), true)}
           </span>
         </div>
       )

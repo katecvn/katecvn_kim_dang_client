@@ -29,7 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { moneyFormat } from '@/utils/money-format'
-import { exportGeneralInventoryToExcel } from '@/utils/export-general-inventory'
+import ExportInventorySummaryPreviewDialog from './components/ExportInventorySummaryPreviewDialog'
 
 const InventorySummaryPage = () => {
   const dispatch = useDispatch()
@@ -40,6 +40,7 @@ const InventorySummaryPage = () => {
     fromDate: startOfMonth(current),
     toDate: endOfMonth(current),
   })
+  const [showExportPreview, setShowExportPreview] = useState(false)
 
   // Calculate totals
   const totals = inventorySummary.reduce((acc, item) => {
@@ -187,11 +188,19 @@ const InventorySummaryPage = () => {
               variant="outline"
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white gap-2"
-              onClick={() => exportGeneralInventoryToExcel(inventorySummary, filters)}
+              onClick={() => setShowExportPreview(true)}
             >
               <FileSpreadsheet className="h-4 w-4" />
               Xuất Báo Cáo Tổng Hợp
             </Button>
+            {showExportPreview && (
+              <ExportInventorySummaryPreviewDialog
+                open={showExportPreview}
+                onOpenChange={setShowExportPreview}
+                data={inventorySummary}
+                filters={filters}
+              />
+            )}
           </div>
         </div>
 

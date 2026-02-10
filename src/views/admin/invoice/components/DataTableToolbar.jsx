@@ -56,11 +56,11 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
 
   const handleDelete = async () => {
     const selectedIds = selectedInvoices.map((inv) => inv.id)
-    // Filter out invoices that are not draft or refused
-    const invalidInvoices = selectedInvoices.filter(inv => !['draft', 'refused'].includes(inv.status))
+    // Filter out invoices that are not draft, pending or rejected
+    const invalidInvoices = selectedInvoices.filter(inv => !['draft', 'pending', 'rejected'].includes(inv.status))
 
     if (invalidInvoices.length > 0) {
-      toast.error('Chỉ có thể xóa các hóa đơn ở trạng thái Nháp hoặc Từ chối')
+      toast.error('Chỉ có thể xóa các hóa đơn ở trạng thái Nháp, Chờ xác nhận hoặc Từ chối')
       return
     }
 

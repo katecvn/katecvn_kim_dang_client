@@ -363,8 +363,13 @@ export const invoiceSlice = createSlice({
         state.loading = true
         state.error = null
       })
-      .addCase(updateInvoiceStatus.fulfilled, (state) => {
+      .addCase(updateInvoiceStatus.fulfilled, (state, action) => {
         state.loading = false
+        const { id, status } = action.meta.arg
+        const index = state.invoices.findIndex((inv) => inv.id === id)
+        if (index !== -1) {
+          state.invoices[index].status = status
+        }
       })
       .addCase(updateInvoiceStatus.rejected, (state, action) => {
         state.loading = false

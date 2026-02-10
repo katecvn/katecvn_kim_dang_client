@@ -84,45 +84,42 @@ const ImportPurchaseOrderDialog = ({
         }
         const getDateVal = (idx) => parseDate(row.getCell(idx).value)
 
-        // Mapping Assumption (Flattened Structure):
-        // 1. Mã NCC (Supplier Code)
-        // 2. Mã số thuế NCC
-        // 3. Tên NCC
-        // 4. SĐT NCC
-        // 5. Email NCC
-        // 6. Địa chỉ NCC
-        // 7. Người đại diện NCC
-        // 8. Ngày đặt hàng (Order Date)
-        // 9. Ngày giao dự kiến
-        // 10. Mã đơn hàng NCC (External Code)
-        // 11. Ghi chú
-        // 12. Mã sản phẩm (Product Code)
-        // 13. Tên sản phẩm
-        // 14. Số lượng
-        // 15. Đơn giá
-        // 16. % Chiết khấu
-        // 17. Mã đơn vị (Unit Code)
+        // Mapping:
+        // 1. Mã nhóm đơn mua (purchaseNo)
+        // 2. Mã đơn đối tác (externalOrderCode)
+        // 3. Ngày đặt hàng (*)
+        // 4. Ngày dự kiến nhận hàng (*)
+        // 5. Ghi chú
+        // 6. Tên nhà cung cấp (*)
+        // 7. SĐT nhà cung cấp
+        // 8. Email nhà cung cấp
+        // 9. Địa chỉ nhà cung cấp
+        // 10. Mã số thuế NCC
+        // 11. Người đại diện NCC
+        // 12. Mã sản phẩm (*)
+        // 13. Số lượng (*)
+        // 14. Mã đơn vị (*)
+        // 15. Đơn giá (*)
+        // 16. Chiết khấu (%)
 
         rows.push({
           rowNumber,
-          supplierCode: String(getVal(1)),
-          supplierTax: String(getVal(2)),
-          supplierName: String(getVal(3)),
-          supplierPhone: String(getVal(4)),
-          supplierEmail: String(getVal(5)),
-          supplierAddress: String(getVal(6)),
-          supplierRep: String(getVal(7)),
-          orderDate: getDateVal(8),
-          expectedDeliveryDate: getDateVal(9),
-          externalOrderCode: String(getVal(10)),
-          note: String(getVal(11)),
-          // Product Info
+          purchaseNo: String(getVal(1)),
+          externalOrderCode: String(getVal(2)),
+          orderDate: getDateVal(3),
+          expectedDeliveryDate: getDateVal(4),
+          note: String(getVal(5)),
+          supplierName: String(getVal(6)),
+          supplierPhone: String(getVal(7)),
+          supplierEmail: String(getVal(8)),
+          supplierAddress: String(getVal(9)),
+          supplierTax: String(getVal(10)),
+          supplierRep: String(getVal(11)),
           productCode: String(getVal(12)),
-          productName: String(getVal(13)),
-          quantity: Number(getVal(14)) || 0,
+          quantity: Number(getVal(13)) || 0,
+          unitCode: String(getVal(14)),
           unitPrice: Number(getVal(15)) || 0,
           discountRate: Number(getVal(16)) || 0,
-          unitCode: String(getVal(17))
         })
       })
 
@@ -132,18 +129,22 @@ const ImportPurchaseOrderDialog = ({
       }
 
       // Grouping Logic:
-      // Group by: supplierCode + externalOrderCode
+      // Group by: purchaseNo
       const ordersMap = new Map()
 
       rows.forEach(row => {
-        if (!row.supplierCode || !row.externalOrderCode) return // Requires minimum key info? 
-        // Or maybe just mandatory fields. Let's assume SupplierCode and ExternalOrderCode are key.
+        if (!row.purchaseNo) return
 
-        const key = `${row.supplierCode}_${row.externalOrderCode}`
+        const key = row.purchaseNo
 
         if (!ordersMap.has(key)) {
           ordersMap.set(key, {
-            supplierCode: row.supplierCode,
+            purchaseNo: row.purchaseNo,
+            externalOrderCode: row.externalOrderCode,
+            orderDate: row.orderDate,
+            expectedDeliveryDate: row.expectedDeliveryDate,
+            note: row.note,
+            supplierCode: '', // Not provided in 16 columns
             supplierTax: row.supplierTax,
             supplierInfo: {
               name: row.supplierName,
@@ -152,10 +153,6 @@ const ImportPurchaseOrderDialog = ({
               address: row.supplierAddress,
               representative: row.supplierRep
             },
-            orderDate: row.orderDate,
-            expectedDeliveryDate: row.expectedDeliveryDate,
-            externalOrderCode: row.externalOrderCode,
-            note: row.note,
             items: [],
             rowNumbers: []
           })
@@ -167,7 +164,7 @@ const ImportPurchaseOrderDialog = ({
         if (row.productCode) {
           order.items.push({
             productCode: row.productCode,
-            productName: row.productName,
+            productName: '', // Not provided in 16 columns, backend likely looks it up
             quantity: row.quantity,
             unitPrice: row.unitPrice,
             discountRate: row.discountRate,

@@ -3,6 +3,14 @@ import { DateRange } from '@/components/custom/DateRange'
 import EmptyState from '@/components/custom/EmptyState'
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import api from '@/utils/axios'
 import { moneyFormat } from '@/utils/money-format'
 import { endOfMonth, format, startOfMonth } from 'date-fns'
@@ -93,77 +101,75 @@ const PurchaseReportPage = () => {
 
           {/* Daily Sales Table */}
           <div className="rounded-md border">
-            <div className="relative w-full overflow-auto">
-              <table className="w-full caption-bottom text-sm">
-                <thead className="[&_tr]:border-b">
-                  <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                      Ngày
-                    </th>
-                    <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
-                      Số đơn mua
-                    </th>
-                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                      Tiền mua
-                    </th>
-                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                      Đã thanh toán
-                    </th>
-                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                      Chưa thanh toán
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="[&_tr:last-child]:border-0">
-                  {loading ? (
-                    Array.from({ length: 5 }).map((_, index) => (
-                      <tr key={index} className="border-b transition-colors">
-                        <td className="p-4"><Skeleton className="h-4 w-[100px]" /></td>
-                        <td className="p-4"><Skeleton className="h-4 w-[50px] mx-auto" /></td>
-                        <td className="p-4"><Skeleton className="h-4 w-[100px] ml-auto" /></td>
-                        <td className="p-4"><Skeleton className="h-4 w-[100px] ml-auto" /></td>
-                        <td className="p-4"><Skeleton className="h-4 w-[100px] ml-auto" /></td>
-                      </tr>
-                    ))
-                  ) : data?.data && data.data.length > 0 ? (
-                    data.data.map((item, index) => {
-                      const totalPurchase = Number(item.totalPurchase) || 0
-                      const totalPaid = Number(item.totalPaid) || 0
-                      const unpaid = totalPurchase - totalPaid
+            <Table>
+              <TableHeader className="sticky top-0 z-10 bg-secondary">
+                <TableRow>
+                  <TableHead className="w-[150px]">Ngày</TableHead>
+                  <TableHead className="text-center">Số đơn mua</TableHead>
+                  <TableHead className="text-right">Tiền mua</TableHead>
+                  <TableHead className="text-right">Đã thanh toán</TableHead>
+                  <TableHead className="text-right">Chưa thanh toán</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Skeleton className="h-4 w-[100px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="mx-auto h-4 w-[50px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="ml-auto h-4 w-[100px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="ml-auto h-4 w-[100px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="ml-auto h-4 w-[100px]" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : data?.data && data.data.length > 0 ? (
+                  data.data.map((item, index) => {
+                    const totalPurchase = Number(item.totalPurchase) || 0
+                    const totalPaid = Number(item.totalPaid) || 0
+                    const unpaid = totalPurchase - totalPaid
 
-                      return (
-                        <tr
-                          key={index}
-                          className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
-                        >
-                          <td className="p-4 align-middle">
-                            {format(new Date(item.period), 'dd/MM/yyyy')}
-                          </td>
-                          <td className="p-4 align-middle text-center">
-                            {item.orderCount}
-                          </td>
-                          <td className="p-4 align-middle text-right font-medium">
-                            {moneyFormat(totalPurchase)}
-                          </td>
-                          <td className="p-4 align-middle text-right text-green-600">
-                            {moneyFormat(totalPaid)}
-                          </td>
-                          <td className="p-4 align-middle text-right text-red-600">
-                            {moneyFormat(unpaid)}
-                          </td>
-                        </tr>
-                      )
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="p-4 text-center text-muted-foreground">
-                        <EmptyState />
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    return (
+                      <TableRow key={index}>
+                        <TableCell>
+                          {format(new Date(item.period), 'dd/MM/yyyy')}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {item.orderCount}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {moneyFormat(totalPurchase)}
+                        </TableCell>
+                        <TableCell className="text-right text-green-600">
+                          {moneyFormat(totalPaid)}
+                        </TableCell>
+                        <TableCell className="text-right text-red-600">
+                          {moneyFormat(unpaid)}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      <EmptyState />
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </div>
       </LayoutBody>

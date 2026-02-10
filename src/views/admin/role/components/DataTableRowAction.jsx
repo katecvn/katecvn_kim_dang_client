@@ -50,7 +50,7 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           <Can permission="UPDATE_ROLE">
-            <DropdownMenuItem onSelect={() => setShowUpdateRoleDialog(true)}>
+            <DropdownMenuItem onSelect={() => setShowUpdateRoleDialog(true)} className="text-orange-600">
               Sửa
               <DropdownMenuShortcut>
                 <IconEdit className="h-4 w-4" />
@@ -59,7 +59,7 @@ const DataTableRowActions = ({ row }) => {
           </Can>
 
           <Can permission="DELETE_ROLE">
-            <DropdownMenuItem onSelect={() => setShowDeleteRoleDialog(true)}>
+            <DropdownMenuItem onSelect={() => setShowDeleteRoleDialog(true)} className="text-red-600">
               Xóa
               <DropdownMenuShortcut>
                 <IconTrash className="h-4 w-4" />

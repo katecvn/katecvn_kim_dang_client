@@ -69,6 +69,7 @@ const formSchema = z.object({
 })
 
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import { getPublicUrl } from '@/utils/file'
 
 const CreateManualWarehouseReceiptDialog = ({
   open,
@@ -349,14 +350,23 @@ const CreateManualWarehouseReceiptDialog = ({
                   )}
                 />
 
-                <div className="flex flex-col space-y-2">
-                  <FormLabel>Ngày tạo</FormLabel>
-                  <Input
-                    type="date"
-                    value={form.watch('receiptDate').toISOString().split('T')[0]}
-                    onChange={(e) => form.setValue('receiptDate', new Date(e.target.value))}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="receiptDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ngày tạo</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          value={field.value ? field.value.toISOString().split('T')[0] : ''}
+                          onChange={(e) => field.onChange(new Date(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <FormField
@@ -425,9 +435,24 @@ const CreateManualWarehouseReceiptDialog = ({
                           <div key={item.productId} className="p-3 space-y-3 bg-card">
                             {/* Row 1: Info & Remove */}
                             <div className="flex justify-between items-start gap-2">
-                              <div>
-                                <div className="font-medium text-sm">{item.productName}</div>
-                                <div className="text-xs text-muted-foreground">{item.code}</div>
+                              <div className="flex items-center gap-2">
+                                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-muted">
+                                  {item.image ? (
+                                    <img
+                                      src={getPublicUrl(item.image)}
+                                      alt={item.productName}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+                                      <span className="text-[10px]">No img</span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="font-medium text-sm">{item.productName}</div>
+                                  <div className="text-xs text-muted-foreground">{item.code}</div>
+                                </div>
                               </div>
                               <Button
                                 variant="ghost"
@@ -487,6 +512,7 @@ const CreateManualWarehouseReceiptDialog = ({
                                   className="h-8 text-sm"
                                   value={item.quantity}
                                   onChange={(e) => handleProductChange(index, 'quantity', Number(e.target.value))}
+                                  onFocus={(e) => e.target.select()}
                                 />
                               </div>
                               <div className="space-y-1">
@@ -498,6 +524,7 @@ const CreateManualWarehouseReceiptDialog = ({
                                   value={item.price}
                                   type="number"
                                   onChange={(e) => handleProductChange(index, 'price', Number(e.target.value))}
+                                  onFocus={(e) => e.target.select()}
                                 />
                               </div>
                             </div>
@@ -522,6 +549,7 @@ const CreateManualWarehouseReceiptDialog = ({
                         <TableHeader>
                           <TableRow>
                             <TableHead className="w-[50px]">#</TableHead>
+                            <TableHead className="w-[60px]">Ảnh</TableHead>
                             <TableHead>Sản phẩm</TableHead>
                             <TableHead className="w-[100px]">ĐVT</TableHead>
                             {receiptType === 3 && <TableHead className="w-[120px]">Điều chỉnh</TableHead>}
@@ -536,7 +564,7 @@ const CreateManualWarehouseReceiptDialog = ({
                         <TableBody>
                           {selectedProducts.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={receiptType === 3 ? 8 : 7} className="text-center h-24 text-muted-foreground">
+                              <TableCell colSpan={receiptType === 3 ? 9 : 8} className="text-center h-24 text-muted-foreground">
                                 Chưa có sản phẩm nào được chọn
                               </TableCell>
                             </TableRow>
@@ -544,6 +572,21 @@ const CreateManualWarehouseReceiptDialog = ({
                             selectedProducts.map((item, index) => (
                               <TableRow key={item.productId}>
                                 <TableCell>{index + 1}</TableCell>
+                                <TableCell>
+                                  <div className="h-10 w-10 overflow-hidden rounded-md border bg-muted">
+                                    {item.image ? (
+                                      <img
+                                        src={getPublicUrl(item.image)}
+                                        alt={item.productName}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+                                        <span className="text-[10px]">No img</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
                                 <TableCell>
                                   <div className="font-medium">{item.productName}</div>
                                   <div className="text-xs text-muted-foreground">{item.code}</div>
@@ -588,6 +631,7 @@ const CreateManualWarehouseReceiptDialog = ({
                                     className="h-8"
                                     value={item.quantity}
                                     onChange={(e) => handleProductChange(index, 'quantity', Number(e.target.value))}
+                                    onFocus={(e) => e.target.select()}
                                   />
                                 </TableCell>
                                 <TableCell>
@@ -597,6 +641,7 @@ const CreateManualWarehouseReceiptDialog = ({
                                     value={item.price}
                                     type="number"
                                     onChange={(e) => handleProductChange(index, 'price', Number(e.target.value))}
+                                    onFocus={(e) => e.target.select()}
                                   />
                                 </TableCell>
                                 <TableCell>

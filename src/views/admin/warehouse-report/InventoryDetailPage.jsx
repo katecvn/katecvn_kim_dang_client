@@ -39,6 +39,7 @@ import {
 import { moneyFormat } from '@/utils/money-format'
 import { exportDetailedLedgerToExcel } from '@/utils/export-detailed-ledger'
 import { dateFormat } from '@/utils/date-format'
+import ExportInventoryDetailPreviewDialog from './components/ExportInventoryDetailPreviewDialog'
 
 const InventoryDetailPage = () => {
   const dispatch = useDispatch()
@@ -53,6 +54,7 @@ const InventoryDetailPage = () => {
   })
 
   const [openCombobox, setOpenCombobox] = useState(false)
+  const [showExportPreview, setShowExportPreview] = useState(false)
 
   // Fetch products on mount
   useEffect(() => {
@@ -106,11 +108,13 @@ const InventoryDetailPage = () => {
                   variant="outline"
                   role="combobox"
                   aria-expanded={openCombobox}
-                  className="w-[250px] justify-between"
+                  className="w-[300px] justify-between"
                 >
-                  {filters.productId
-                    ? products.find((product) => product.id === filters.productId)?.name
-                    : "Chọn sản phẩm..."}
+                  <span className="truncate flex-1 text-left">
+                    {filters.productId
+                      ? products.find((product) => product.id === filters.productId)?.name
+                      : "Chọn sản phẩm..."}
+                  </span>
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -234,16 +238,26 @@ const InventoryDetailPage = () => {
               </form>
             </Form>
 
+
             <Button
               variant="outline"
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white gap-2"
-              onClick={() => exportDetailedLedgerToExcel({ productName }, filters)}
+              onClick={() => setShowExportPreview(true)}
               disabled={!filters.productId}
             >
               <FileSpreadsheet className="h-4 w-4" />
               Xuất Excel
             </Button>
+            {showExportPreview && (
+              <ExportInventoryDetailPreviewDialog
+                open={showExportPreview}
+                onOpenChange={setShowExportPreview}
+                data={inventoryDetail?.data}
+                filters={filters}
+                productName={productName}
+              />
+            )}
           </div>
         </div>
 

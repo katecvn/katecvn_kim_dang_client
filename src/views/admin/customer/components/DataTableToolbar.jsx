@@ -3,7 +3,7 @@ import { Button } from '@/components/custom/Button'
 import { Input } from '@/components/ui/input'
 import { DataTableViewOptions } from './DataTableViewOption'
 import Can from '@/utils/can'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, FileSpreadsheet } from 'lucide-react'
 import { useState } from 'react'
 import CreateCustomerDialog from './CreateCustomerDialog'
 import ImportCustomerDialog from './ImportCustomerDialog'
@@ -95,11 +95,11 @@ const DataTableToolbar = ({ table }) => {
 
         <Button
           onClick={() => setShowImportDialog(true)}
-          className="mx-2"
+          className="mx-2 text-emerald-600 border-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
           variant="outline"
           size="sm"
         >
-          <PlusIcon className="mr-2 size-4" aria-hidden="true" />
+          <FileSpreadsheet className="mr-2 size-4" aria-hidden="true" />
           Import Excel
         </Button>
 

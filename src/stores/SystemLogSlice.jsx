@@ -36,7 +36,14 @@ export const systemLogSlice = createSlice({
       .addCase(getSystemLogs.fulfilled, (state, action) => {
         state.loading = false
         state.logs = action.payload.data.logs
-        state.meta = action.payload.data.meta || action.payload.meta || {}
+        const pagination = action.payload.data.pagination || action.payload.pagination || action.payload.data.meta || {}
+        state.meta = {
+          ...pagination,
+          last_page: pagination.totalPages || pagination.last_page,
+          current_page: pagination.page || pagination.current_page,
+          per_page: pagination.limit || pagination.per_page,
+          total: pagination.total
+        }
       })
       .addCase(getSystemLogs.rejected, (state, action) => {
         state.loading = false

@@ -98,7 +98,7 @@ const DataTableToolbar = ({ table }) => {
 
         <Button
           onClick={handleRefreshExpiry}
-          className="mx-2 hover:bg-primary hover:text-primary-foreground"
+          className="mx-2 text-primary border-primary hover:bg-primary/10 hover:text-primary"
           variant="outline"
           size="sm"
           loading={loading}

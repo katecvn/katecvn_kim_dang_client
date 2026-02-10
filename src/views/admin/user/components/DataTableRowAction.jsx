@@ -49,7 +49,7 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           <Can permission="UPDATE_USER">
-            <DropdownMenuItem onSelect={() => setShowUpdateUserDialog(true)}>
+            <DropdownMenuItem onSelect={() => setShowUpdateUserDialog(true)} className="text-orange-600">
               Sửa
               <DropdownMenuShortcut>
                 <IconEdit className="h-4 w-4" />
@@ -58,7 +58,7 @@ const DataTableRowActions = ({ row }) => {
           </Can>
 
           <Can permission="DELETE_USER">
-            <DropdownMenuItem onSelect={() => setShowDeleteUserDialog(true)}>
+            <DropdownMenuItem onSelect={() => setShowDeleteUserDialog(true)} className="text-red-600">
               Xóa
               <DropdownMenuShortcut>
                 <IconTrash className="h-4 w-4" />

@@ -51,7 +51,10 @@ const DataTableRowActions = ({ row }) => {
 
         <DropdownMenuContent align="end" className="w-40">
           <Can permission="UPDATE_TASK">
-            <DropdownMenuItem onSelect={() => setShowUpdateTaskDialog(true)}>
+            <DropdownMenuItem
+              onSelect={() => setShowUpdateTaskDialog(true)}
+              className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+            >
               Sửa
               <DropdownMenuShortcut>
                 <IconEdit className="h-4 w-4" />
@@ -60,7 +63,10 @@ const DataTableRowActions = ({ row }) => {
           </Can>
 
           <Can permission="DELETE_TASK">
-            <DropdownMenuItem onSelect={() => setShowDeleteTaskDialog(true)}>
+            <DropdownMenuItem
+              onSelect={() => setShowDeleteTaskDialog(true)}
+              className="text-red-600 focus:text-red-600 focus:bg-red-50"
+            >
               Xóa
               <DropdownMenuShortcut>
                 <IconTrash className="h-4 w-4" />

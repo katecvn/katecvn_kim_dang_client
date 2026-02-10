@@ -13,7 +13,7 @@ import { dateFormat } from '@/utils/date-format'
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getSystemLogs } from '@/stores/SystemLogSlice'
-import Pagination from '@/components/custom/Pagination'
+import { SystemLogPagination } from './SystemLogPagination'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -114,27 +114,27 @@ const SystemLogPage = () => {
     CREATE: {
       label: 'CREATE',
       icon: Plus,
-      color: 'border-green-300 bg-green-50 text-green-700',
+      color: 'border-green-700 bg-transparent text-green-700',
     },
     UPDATE: {
       label: 'UPDATE',
       icon: Edit3,
-      color: 'border-blue-300 bg-blue-50 text-blue-700',
+      color: 'border-blue-700 bg-transparent text-blue-700',
     },
     DELETE: {
       label: 'DELETE',
       icon: Trash2,
-      color: 'border-red-300 bg-red-50 text-red-700',
+      color: 'border-red-700 bg-transparent text-red-700',
     },
     LOGIN: {
       label: 'LOGIN',
       icon: LogIn,
-      color: 'border-purple-300 bg-purple-50 text-purple-700',
+      color: 'border-purple-700 bg-transparent text-purple-700',
     },
     LOGOUT: {
       label: 'LOGOUT',
       icon: LogOut,
-      color: 'border-orange-300 bg-orange-50 text-orange-700',
+      color: 'border-orange-700 bg-transparent text-orange-700',
     },
   }
 
@@ -147,15 +147,15 @@ const SystemLogPage = () => {
           </h2>
         </div>
 
-        {/* Filters Bar */}
-        <div className="grid gap-4 rounded-md border bg-card p-4 md:grid-cols-4 lg:grid-cols-6">
-          {/* User Filter */}
-          <div className="md:col-span-1">
+        {/* Toolbar */}
+        <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-1">
+          <div className="flex flex-1 items-center space-x-2">
+            {/* User Select */}
             <Select
               value={filters.userId?.toString()}
               onValueChange={(val) => handleFilterChange('userId', val)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-8 w-[150px] lg:w-[200px]">
                 <SelectValue placeholder="Người dùng" />
               </SelectTrigger>
               <SelectContent>
@@ -169,15 +169,13 @@ const SystemLogPage = () => {
                 </SelectGroup>
               </SelectContent>
             </Select>
-          </div>
 
-          {/* Action Filter */}
-          <div className="md:col-span-1">
+            {/* Action Select */}
             <Select
               value={filters.action}
               onValueChange={(val) => handleFilterChange('action', val)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-8 w-[150px]">
                 <SelectValue placeholder="Hành động" />
               </SelectTrigger>
               <SelectContent>
@@ -191,54 +189,63 @@ const SystemLogPage = () => {
                 </SelectGroup>
               </SelectContent>
             </Select>
-          </div>
 
-          {/* Entity Input */}
-          <div className="md:col-span-1">
+            {/* Entity Input */}
             <Input
-              placeholder="Đối tượng (Entity)"
+              placeholder="Đối tượng..."
               value={filters.entity}
               onChange={(e) => handleFilterChange('entity', e.target.value)}
+              className="h-8 w-[150px] lg:w-[200px]"
             />
-          </div>
 
-          {/* IP Input */}
-          <div className="md:col-span-1">
+            {/* IP Input */}
             <Input
-              placeholder="IP Address"
+              placeholder="IP Address..."
               value={filters.ipAddress}
               onChange={(e) => handleFilterChange('ipAddress', e.target.value)}
+              className="h-8 w-[150px]"
             />
-          </div>
 
-          {/* Date Range */}
-          <div className="md:col-span-2">
-            <DateRange
-              defaultValue={{ from: filters.fromDate, to: filters.toDate }}
-              onUpdate={({ range }) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  fromDate: range?.from,
-                  toDate: range?.to,
-                  page: 1,
-                }))
-              }}
-              align="start"
-            />
-          </div>
+            {/* Date Range */}
+            <div className="w-[250px]">
+              <DateRange
+                className="h-8"
+                defaultValue={{ from: filters.fromDate, to: filters.toDate }}
+                onChange={(range) => {
+                  setFilters((prev) => ({
+                    ...prev,
+                    fromDate: range?.from,
+                    toDate: range?.to,
+                    page: 1,
+                  }))
+                }}
+                align="start"
+              />
+            </div>
 
-          {/* Clear Buttons */}
-          <div className="md:col-span-full flex justify-end">
-            <Button variant="outline" size="sm" onClick={clearFilters}>
-              <X className="mr-2 h-4 w-4" /> Xóa bộ lọc
-            </Button>
+            {/* Reset Button */}
+            {(filters.userId !== 'all' ||
+              filters.action !== 'all' ||
+              filters.entity ||
+              filters.ipAddress ||
+              filters.fromDate ||
+              filters.toDate) && (
+                <Button
+                  variant="ghost"
+                  onClick={clearFilters}
+                  className="h-8 px-2 lg:px-3"
+                >
+                  Đặt lại
+                  <X className="ml-2 h-4 w-4" />
+                </Button>
+              )}
           </div>
         </div>
 
         {/* Data Table */}
-        <div className="rounded-md border bg-card">
+        <div className="rounded-md border">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-secondary">
               <TableRow>
                 <TableHead className="w-[50px] text-center">STT</TableHead>
                 <TableHead>Người dùng</TableHead>
@@ -322,10 +329,13 @@ const SystemLogPage = () => {
 
         {meta && meta.last_page > 1 && (
           <div className="flex justify-end pt-4">
-            <Pagination
+            <SystemLogPagination
               currentPage={filters.page}
-              totalPages={meta.last_page}
+              totalPages={meta.last_page || 1}
+              pageSize={filters.limit}
+              totalItems={meta.total || 0}
               onPageChange={handlePageChange}
+              onPageSizeChange={(val) => handleFilterChange('limit', val)}
             />
           </div>
         )}

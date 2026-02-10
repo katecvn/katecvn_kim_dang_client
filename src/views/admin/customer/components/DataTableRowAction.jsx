@@ -55,6 +55,7 @@ const DataTableRowActions = ({ row }) => {
           <Can permission="UPDATE_CUSTOMER">
             <DropdownMenuItem
               onSelect={() => setShowUpdateCustomerDialog(true)}
+              className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
             >
               Sửa
               <DropdownMenuShortcut>
@@ -66,6 +67,7 @@ const DataTableRowActions = ({ row }) => {
           <Can permission="DELETE_CUSTOMER">
             <DropdownMenuItem
               onSelect={() => setShowDeleteCustomerDialog(true)}
+              className="text-red-600 focus:text-red-600 focus:bg-red-50"
             >
               Xóa
               <DropdownMenuShortcut>

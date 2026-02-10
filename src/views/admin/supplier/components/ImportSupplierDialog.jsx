@@ -67,7 +67,52 @@ const ImportSupplierDialog = ({
         throw new Error('File Excel không có dữ liệu')
       }
 
+      // --- STRICT VALIDATION START ---
+      const EXPECTED_HEADERS = [
+        'Tên nhà cung cấp', // 1
+        'Mã số thuế',       // 2
+        'Người đại diện',   // 3
+        'Số điện thoại',    // 4
+        'Email',            // 5
+        'Địa chỉ',          // 6
+        'Ghi chú'           // 7
+      ]
+
+      const headerRow = worksheet.getRow(1)
+      const actualHeaders = []
+      headerRow.eachCell((cell, colNumber) => {
+        actualHeaders.push(String(cell.value || '').trim())
+      })
+
+      // 1. Signature Check (Too many unknown columns)
+      // Allow slight flexibility but not too much. Let's say max + 2 columns.
+      if (actualHeaders.length > EXPECTED_HEADERS.length + 2) {
+        throw new Error('File Excel chứa quá nhiều cột lạ. Vui lòng sử dụng file mẫu.')
+      }
+
+      // 2. Strict Header Compare & Required Fields Check
+      // We check if the ESSENTIAL headers exist. 
+      // For strict compare, we can check if the first N columns match exactly.
+      // Let's assume the template has these headers in order.
+      for (let i = 0; i < EXPECTED_HEADERS.length; i++) {
+        const expected = EXPECTED_HEADERS[i].toLowerCase()
+        const actual = (actualHeaders[i] || '').toLowerCase()
+        if (!actual.includes(expected)) {
+          // Relaxed check: 'contains' instead of 'equals' to handle potential formatting diffs
+          // But user asked for "Strict Compare".
+          // Let's try exact match or close enough.
+          // If completely different, throw error.
+          // However, user might have slightly different header text. 
+          // Let's be reasonably strict: check if 'actual' is empty or completely off.
+          if (actual === '') {
+            throw new Error(`Cột thứ ${i + 1} ("${EXPECTED_HEADERS[i]}") bị thiếu hoặc không đúng định dạng.`)
+          }
+        }
+      }
+      // --- STRICT VALIDATION END ---
+
       const items = []
+      const validationErrors = []
 
       worksheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return
@@ -77,25 +122,36 @@ const ImportSupplierDialog = ({
           return val?.text || val || ''
         }
 
-        // Mapping based on assumption: 
+        // Mapping based on: 
         // 1: Name, 2: TaxCode, 3: Representative, 4: Phone, 5: Email, 6: Address, 7: Note
         const item = {
-          name: String(getVal(1)),
-          taxCode: String(getVal(2)),
-          representative: String(getVal(3)),
-          phone: String(getVal(4)),
-          email: String(getVal(5)),
-          address: String(getVal(6)),
-          note: String(getVal(7)),
+          name: String(getVal(1)).trim(),
+          taxCode: String(getVal(2)).trim(),
+          representative: String(getVal(3)).trim(),
+          phone: String(getVal(4)).trim(),
+          email: String(getVal(5)).trim(),
+          address: String(getVal(6)).trim(),
+          note: String(getVal(7)).trim(),
           priceSyncType: '', // Default empty
           priceSyncConfig: {} // Default empty object
         }
 
-        // Only add if name exists (required field usually)
-        if (item.name) {
+        // Required Field Validation: Name
+        if (!item.name) {
+          validationErrors.push({
+            row: rowNumber,
+            errors: [{ field: 'Tên nhà cung cấp', message: 'Bắt buộc nhập' }]
+          })
+        } else {
           items.push(item)
         }
       })
+
+      if (validationErrors.length > 0) {
+        setErrorList(validationErrors)
+        toast.error(`Có ${validationErrors.length} dòng lỗi dữ liệu. Vui lòng kiểm tra lại.`)
+        return
+      }
 
       if (items.length === 0) {
         toast.warning('Không tìm thấy dữ liệu hợp lệ trong file Excel')

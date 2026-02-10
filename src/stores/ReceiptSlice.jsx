@@ -95,6 +95,27 @@ export const deleteReceipt = createAsyncThunk(
   },
 )
 
+export const deleteMultipleReceipts = createAsyncThunk(
+  'receipt/delete-multiple-receipts',
+  async (ids, { rejectWithValue, dispatch }) => {
+    try {
+      await api.post('/payment-vouchers/bulk-delete', { ids })
+
+      const deleteAdminInvoices = JSON.parse(
+        localStorage.getItem('permissionCodes'),
+      ).includes('DELETE_RECEIPT')
+
+      deleteAdminInvoices
+        ? await dispatch(getReceipts()).unwrap()
+        : await dispatch(getMyReceipts()).unwrap()
+      toast.success(`Đã xóa ${ids.length} phiếu thu thành công`)
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 export const getReceiptQRCode = createAsyncThunk(
   'receipt/get-qr-code',
   async (receiptId, { rejectWithValue }) => {

@@ -1,4 +1,4 @@
-import { Cross2Icon } from '@radix-ui/react-icons'
+import { Cross2Icon, TrashIcon } from '@radix-ui/react-icons'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import {
   DropdownMenu,
@@ -16,7 +16,7 @@ import PaymentReminderDialog from './PaymentReminderDialog'
 import { useState } from 'react'
 import { BellIcon, QrCode } from 'lucide-react'
 import { useDispatch } from 'react-redux'
-import { getReceiptQRCode } from '@/stores/ReceiptSlice'
+import { getReceiptQRCode, deleteMultipleReceipts } from '@/stores/ReceiptSlice'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -29,16 +29,44 @@ import {
 import { moneyFormat } from '@/utils/money-format'
 import PaymentQRCodeDialog from './PaymentQRCodeDialog'
 
+import { DeleteMultipleReceiptsDialog } from './DeleteMultipleReceiptsDialog'
+
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const selectedRows = table.getSelectedRowModel().rows
   const [openReminder, setOpenReminder] = useState(false)
   const [openQrDialog, setOpenQrDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [qrCodeData, setQrCodeData] = useState(null)
   const [qrLoading, setQrLoading] = useState(false)
   const dispatch = useDispatch()
   const isMobile = useMediaQuery('(max-width: 768px)')
   const canRemind = selectedRows.length === 1
+
+  const handleDelete = async () => {
+    const selectedIds = selectedRows.map((row) => row.original.id)
+    const selectedReceipts = selectedRows.map((row) => row.original)
+
+    // Filter out receipts that are not draft or cancelled
+    // Assuming same logic as Payment: only delete draft or cancelled? 
+    // User requested "bulk delete" - usually implies same rules.
+    // Let's check permissions/rules. Payment said "!['draft', 'cancelled'].includes(inv.status)" -> invalid.
+    // So only draft and cancelled can be deleted.
+    const invalidReceipts = selectedReceipts.filter(r => !['draft', 'cancelled'].includes(r.status))
+
+    if (invalidReceipts.length > 0) {
+      toast.error('Chỉ có thể xóa các phiếu ở trạng thái Nháp hoặc Đã hủy')
+      return
+    }
+
+    try {
+      await dispatch(deleteMultipleReceipts(selectedIds)).unwrap()
+      table.resetRowSelection()
+      setShowDeleteDialog(false)
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   const handleGenerateQR = async () => {
     if (selectedRows.length !== 1) {
@@ -146,6 +174,17 @@ const DataTableToolbar = ({ table }) => {
       </div>
 
       <div className="flex items-center gap-2">
+        {selectedRows.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <TrashIcon className="mr-2 h-4 w-4" />
+            Xóa ({selectedRows.length})
+          </Button>
+        )}
         <Button
           size="sm"
           variant="outline"
@@ -185,6 +224,12 @@ const DataTableToolbar = ({ table }) => {
       />
 
       <DataTableViewOptions table={table} />
+      <DeleteMultipleReceiptsDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDelete}
+        count={selectedRows.length}
+      />
     </div>
   )
 }

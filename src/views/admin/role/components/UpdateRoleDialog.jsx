@@ -1,4 +1,5 @@
 import { Button } from '@/components/custom/Button'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogClose,
@@ -27,7 +28,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useDispatch, useSelector } from 'react-redux'
 import { updateRole } from '@/stores/RoleSlice'
 import { updateRoleSchema } from '../schema'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { getPermission } from '@/stores/PermissionSlice'
 import { Checkbox } from '@/components/ui/checkbox'
 const UpdateRoleDialog = ({
@@ -84,6 +85,23 @@ const UpdateRoleDialog = ({
     return ids
   }
 
+  // Create a map of permission code to ID for dependency logic
+  const codeToIdMap = useMemo(() => {
+    const map = {}
+    const traverse = (nodes) => {
+      nodes.forEach((node) => {
+        if (node.permissions) {
+          node.permissions.forEach((p) => {
+            if (p.code) map[p.code] = p.id
+          })
+        }
+        if (node.items) traverse(node.items)
+      })
+    }
+    traverse(permissions)
+    return map
+  }, [permissions])
+
   const handleCheck = (isChecked, node, type) => {
     let updatedCheckedPermissions = [...checkedPermissions]
     const idsToToggle = getAllPermissionIds(node)
@@ -92,7 +110,31 @@ const UpdateRoleDialog = ({
       // Single permission toggle
       if (isChecked) {
         updatedCheckedPermissions.push(node.id)
+
+        // Custom Logic: If GET_INVOICE or PURCHASE_ORDER_VIEW_ALL is checked, auto-check GET_USER
+        if (node.code === 'GET_INVOICE' || node.code === 'PURCHASE_ORDER_VIEW_ALL') {
+          const getUserId = codeToIdMap['GET_USER']
+          if (getUserId && !updatedCheckedPermissions.includes(getUserId)) {
+            updatedCheckedPermissions.push(getUserId)
+          }
+        }
       } else {
+        // Validation: Cannot uncheck GET_USER if dependent permissions are active
+        if (node.code === 'GET_USER') {
+          const getInvoiceId = codeToIdMap['GET_INVOICE']
+          const getPurchaseOrderId = codeToIdMap['PURCHASE_ORDER_VIEW_ALL']
+
+          const hasDependentPermissions = updatedCheckedPermissions.some(id =>
+            (getInvoiceId && id === getInvoiceId) ||
+            (getPurchaseOrderId && id === getPurchaseOrderId)
+          )
+
+          if (hasDependentPermissions) {
+            toast.warning('Bạn đang chọn quyền xem đơn bán / đơn mua thì bắt buộc phải chọn quyền xem người dùng')
+            return // Stop execution, do not uncheck
+          }
+        }
+
         updatedCheckedPermissions = updatedCheckedPermissions.filter(
           (id) => id !== node.id,
         )
@@ -105,7 +147,41 @@ const UpdateRoleDialog = ({
           (id) => !updatedCheckedPermissions.includes(id),
         )
         updatedCheckedPermissions = [...updatedCheckedPermissions, ...newIds]
+
+        // Custom Logic: Check if GET_INVOICE or PURCHASE_ORDER_VIEW_ALL was added
+        const getInvoiceId = codeToIdMap['GET_INVOICE']
+        const getPurchaseOrderId = codeToIdMap['PURCHASE_ORDER_VIEW_ALL']
+
+        if (
+          (getInvoiceId && newIds.includes(getInvoiceId)) ||
+          (getPurchaseOrderId && newIds.includes(getPurchaseOrderId))
+        ) {
+          const getUserId = codeToIdMap['GET_USER']
+          if (getUserId && !updatedCheckedPermissions.includes(getUserId)) {
+            updatedCheckedPermissions.push(getUserId)
+          }
+        }
       } else {
+        // Validation: Check if GET_USER is being removed via group uncheck
+        const getUserId = codeToIdMap['GET_USER']
+        if (getUserId && idsToToggle.includes(getUserId)) {
+          const getInvoiceId = codeToIdMap['GET_INVOICE']
+          const getPurchaseOrderId = codeToIdMap['PURCHASE_ORDER_VIEW_ALL']
+
+          // Let's look at remaining permissions AFTER removal
+          const remainingPermissions = updatedCheckedPermissions.filter(id => !idsToToggle.includes(id))
+
+          const hasDependent = remainingPermissions.some(id =>
+            (getInvoiceId && id === getInvoiceId) ||
+            (getPurchaseOrderId && id === getPurchaseOrderId)
+          )
+
+          if (hasDependent) {
+            toast.warning('Bạn đang chọn quyền xem đơn bán / đơn mua thì bắt buộc phải chọn quyền xem người dùng')
+            return
+          }
+        }
+
         // Remove all IDs
         updatedCheckedPermissions = updatedCheckedPermissions.filter(
           (id) => !idsToToggle.includes(id),

@@ -38,6 +38,7 @@ import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData
 import InstallmentPreviewDialog from '../../invoice/components/InstallmentPreviewDialog'
 import LiquidateContractDialog from './LiquidateContractDialog'
 import DeleteSalesContractDialog from './DeleteSalesContractDialog'
+import MobileSalesContractActions from './MobileSalesContractActions'
 import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWord'
 import { Package } from 'lucide-react'
 import { getPublicUrl } from '@/utils/file'
@@ -1653,11 +1654,35 @@ const ViewSalesContractDialog = ({
             )}
           </div>
 
-          <DialogFooter className={cn(!isDesktop && "pb-4 px-4 flex flex-row gap-2")}>
+          <MobileSalesContractActions
+            contract={contract}
+            isDesktop={isDesktop}
+            handleLiquidate={() => {
+              if (contract?.status !== 'confirmed') {
+                toast.warning('Chỉ có thể thanh lý hợp đồng đã xác nhận')
+                return
+              }
+              setShowLiquidationDialog(true)
+            }}
+            handleCreateReceipt={handleCreateReceipt}
+            handleCreateWarehouseReceipt={handleCreateWarehouseReceipt}
+            handlePrintContract={handlePrintContract}
+            handleDeleteClick={() => {
+              if (contract?.status !== 'draft') {
+                toast.warning('Chỉ có thể xóa hợp đồng ở trạng thái nháp')
+                return
+              }
+              setShowDeleteDialog(true)
+            }}
+            onOpenChange={onOpenChange}
+            isExporting={installmentExporting}
+          />
+
+          <DialogFooter className="hidden md:flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0 p-4 pt-0">
             <Button
               size="sm"
               onClick={handleCreateReceipt}
-              className={cn("bg-green-600 hover:bg-green-700 text-white", !isDesktop && "flex-1")}
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               <PlusIcon className="mr-2 h-4 w-4" />
               Tạo Phiếu Thu
@@ -1666,7 +1691,7 @@ const ViewSalesContractDialog = ({
             <Button
               size="sm"
               onClick={handleCreateWarehouseReceipt}
-              className={cn("bg-blue-600 hover:bg-blue-700 text-white", !isDesktop && "flex-1")}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <PlusIcon className="mr-2 h-4 w-4" />
               Tạo Phiếu xuất kho
@@ -1681,7 +1706,7 @@ const ViewSalesContractDialog = ({
                 }
                 setShowLiquidationDialog(true)
               }}
-              className={cn("bg-orange-600 hover:bg-orange-700 text-white", !isDesktop && "flex-1")}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
             >
               <FileCheck className="mr-2 h-4 w-4" />
               Thanh lý
@@ -1692,7 +1717,7 @@ const ViewSalesContractDialog = ({
               variant="outline"
               onClick={handlePrintContract}
               loading={installmentExporting}
-              className={cn("border-blue-600 text-blue-600 hover:bg-blue-50", !isDesktop && "flex-1")}
+              className="border-blue-600 text-blue-600 hover:bg-blue-50"
             >
               <Printer className="mr-2 h-4 w-4" />
               In Hợp Đồng
@@ -1707,7 +1732,7 @@ const ViewSalesContractDialog = ({
                 }
                 setShowDeleteDialog(true)
               }}
-              className={cn("bg-red-600 hover:bg-red-700 text-white", !isDesktop && "flex-1")}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Xóa

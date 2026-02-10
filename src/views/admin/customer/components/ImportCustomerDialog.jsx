@@ -68,7 +68,46 @@ const ImportCustomerDialog = ({
         throw new Error('File Excel không có dữ liệu')
       }
 
+      // --- STRICT VALIDATION START ---
+      const EXPECTED_HEADERS = [
+        'Tên khách hàng',   // 1
+        'Điện thoại',       // 2
+        'Email',            // 3
+        'Địa chỉ',          // 4
+        'Người đại diện',   // 5
+        'Ghi chú',          // 6
+        'Loại khách hàng',  // 7
+        'Mã số thuế',       // 8
+        'CMND/CCCD',        // 9
+        'Ngày cấp',         // 10
+        'Nơi cấp'           // 11
+      ]
+
+      const headerRow = worksheet.getRow(1)
+      const actualHeaders = []
+      headerRow.eachCell((cell, colNumber) => {
+        actualHeaders.push(String(cell.value || '').trim())
+      })
+
+      // 1. Signature Check
+      if (actualHeaders.length > EXPECTED_HEADERS.length + 2) {
+        throw new Error('File Excel chứa quá nhiều cột lạ. Vui lòng sử dụng file mẫu.')
+      }
+
+      // 2. Strict Header Compare
+      for (let i = 0; i < EXPECTED_HEADERS.length; i++) {
+        const expected = EXPECTED_HEADERS[i].toLowerCase()
+        const actual = (actualHeaders[i] || '').toLowerCase()
+
+        // Use 'includes' to allow minor differences (e.g. "Tên khách hàng *" vs "Tên khách hàng")
+        if (!actual.includes(expected)) {
+          throw new Error(`Cột thứ ${i + 1} ("${EXPECTED_HEADERS[i]}") bị thiếu hoặc không đúng định dạng.`)
+        }
+      }
+      // --- STRICT VALIDATION END ---
+
       const items = []
+      const validationErrors = []
 
       worksheet.eachRow((row, rowNumber) => {
         if (rowNumber === 1) return
@@ -91,29 +130,39 @@ const ImportCustomerDialog = ({
         // 1: Name, 2: Phone, 3: Email, 4: Address, 5: Represent, 
         // 6: Note, 7: Type, 8: TaxCode, 9: IdentityCard, 10: IdentityDate, 11: IdentityPlace
         const item = {
-          name: String(getVal(1)),
-          phone: String(getVal(2)),
-          email: String(getVal(3)),
-          address: String(getVal(4)),
-          represent: String(getVal(5)),
-          note: String(getVal(6)),
-          type: String(getVal(7) || 'company'), // Default to company if empty? Or let backend handle valid types
-          taxCode: String(getVal(8)),
-          identityCard: String(getVal(9)),
+          name: String(getVal(1)).trim(),
+          phone: String(getVal(2)).trim(),
+          email: String(getVal(3)).trim(),
+          address: String(getVal(4)).trim(),
+          represent: String(getVal(5)).trim(),
+          note: String(getVal(6)).trim(),
+          type: String(getVal(7) || 'company').trim(),
+          taxCode: String(getVal(8)).trim(),
+          identityCard: String(getVal(9)).trim(),
           identityDate: getDateVal(10),
-          identityPlace: String(getVal(11))
+          identityPlace: String(getVal(11)).trim()
         }
 
-        // Clean up empty strings to null/undefined if needed, but string casting above makes them ""
-        // If taxCode is "null" string, convert to null? No, assumption is empty string.
+        // Clean up empty strings to null
         if (item.taxCode === 'null' || item.taxCode === '') item.taxCode = null
         if (item.identityCard === 'null' || item.identityCard === '') item.identityCard = null
 
-        // Only add if name exists
-        if (item.name) {
+        // Required Field Validation: Name
+        if (!item.name) {
+          validationErrors.push({
+            row: rowNumber,
+            errors: [{ field: 'Tên khách hàng', message: 'Bắt buộc nhập' }]
+          })
+        } else {
           items.push(item)
         }
       })
+
+      if (validationErrors.length > 0) {
+        setErrorList(validationErrors)
+        toast.error(`Có ${validationErrors.length} dòng lỗi dữ liệu. Vui lòng kiểm tra lại.`)
+        return
+      }
 
       if (items.length === 0) {
         toast.warning('Không tìm thấy dữ liệu hợp lệ trong file Excel')

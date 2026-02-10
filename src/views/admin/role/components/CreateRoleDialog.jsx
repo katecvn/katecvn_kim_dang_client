@@ -1,4 +1,5 @@
 import { Button } from '@/components/custom/Button'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogClose,
@@ -27,7 +28,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useDispatch, useSelector } from 'react-redux'
 import { createRole } from '@/stores/RoleSlice'
 import { createRoleSchema } from '../schema'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { getPermission } from '@/stores/PermissionSlice'
 import { Checkbox } from '@/components/ui/checkbox'
 
@@ -80,6 +81,23 @@ const CreateRoleDialog = ({
     return ids
   }
 
+  // Create a map of permission code to ID for dependency logic
+  const codeToIdMap = useMemo(() => {
+    const map = {}
+    const traverse = (nodes) => {
+      nodes.forEach((node) => {
+        if (node.permissions) {
+          node.permissions.forEach((p) => {
+            if (p.code) map[p.code] = p.id
+          })
+        }
+        if (node.items) traverse(node.items)
+      })
+    }
+    traverse(permissions)
+    return map
+  }, [permissions])
+
   const handleCheck = (isChecked, node, type) => {
     let updatedCheckedPermissions = [...checkedPermissions]
     const idsToToggle = getAllPermissionIds(node)
@@ -88,7 +106,31 @@ const CreateRoleDialog = ({
       // Single permission toggle
       if (isChecked) {
         updatedCheckedPermissions.push(node.id)
+
+        // Custom Logic: If GET_INVOICE or PURCHASE_ORDER_VIEW_ALL is checked, auto-check GET_USER
+        if (node.code === 'GET_INVOICE' || node.code === 'PURCHASE_ORDER_VIEW_ALL') {
+          const getUserId = codeToIdMap['GET_USER']
+          if (getUserId && !updatedCheckedPermissions.includes(getUserId)) {
+            updatedCheckedPermissions.push(getUserId)
+          }
+        }
       } else {
+        // Validation: Cannot uncheck GET_USER if dependent permissions are active
+        if (node.code === 'GET_USER') {
+          const getInvoiceId = codeToIdMap['GET_INVOICE']
+          const getPurchaseOrderId = codeToIdMap['PURCHASE_ORDER_VIEW_ALL']
+
+          const hasDependentPermissions = updatedCheckedPermissions.some(id =>
+            (getInvoiceId && id === getInvoiceId) ||
+            (getPurchaseOrderId && id === getPurchaseOrderId)
+          )
+
+          if (hasDependentPermissions) {
+            toast.warning('Bạn đang chọn quyền xem đơn bán / đơn mua thì bắt buộc phải chọn quyền xem người dùng')
+            return // Stop execution, do not uncheck
+          }
+        }
+
         updatedCheckedPermissions = updatedCheckedPermissions.filter(
           (id) => id !== node.id,
         )
@@ -101,7 +143,55 @@ const CreateRoleDialog = ({
           (id) => !updatedCheckedPermissions.includes(id),
         )
         updatedCheckedPermissions = [...updatedCheckedPermissions, ...newIds]
+
+        // Custom Logic: Check if GET_INVOICE or PURCHASE_ORDER_VIEW_ALL was added
+        const getInvoiceId = codeToIdMap['GET_INVOICE']
+        const getPurchaseOrderId = codeToIdMap['PURCHASE_ORDER_VIEW_ALL']
+
+        if (
+          (getInvoiceId && newIds.includes(getInvoiceId)) ||
+          (getPurchaseOrderId && newIds.includes(getPurchaseOrderId))
+        ) {
+          const getUserId = codeToIdMap['GET_USER']
+          if (getUserId && !updatedCheckedPermissions.includes(getUserId)) {
+            updatedCheckedPermissions.push(getUserId)
+          }
+        }
       } else {
+        // Validation: Check if GET_USER is being removed via group uncheck (unlikely for group, but possible if GET_USER is in the group being unchecked)
+        // If unchecking a group that contains GET_USER? 
+        // Logic: if unchecking a group, we are removing all IDs in that group.
+        // We need to check if we are removing GET_USER while keeping GET_INVOICE/PURCHASE_ORDER outside?
+        // Actually, if we uncheck a group, we remove EVERYTHING in that group.
+        // If GET_USER is in the group, we remove it. 
+        // Whatever, the requirement is likely about individual uncheck or if the group ONLY contains GET_USER (which is rare).
+        // Let's safe guard: if any of the removed IDs is GET_USER, and we STILL have GET_INVOICE key in the remainings?
+
+        const getUserId = codeToIdMap['GET_USER']
+        if (getUserId && idsToToggle.includes(getUserId)) {
+          const getInvoiceId = codeToIdMap['GET_INVOICE']
+          const getPurchaseOrderId = codeToIdMap['PURCHASE_ORDER_VIEW_ALL']
+
+          // Check if we are keeping the dependent permissions?
+          // Access updatedCheckedPermissions (which currently HAS everything, before filter)
+          // We need to see if after filter, do we still have dependent permissions?
+          // Wait, if we uncheck a group, usually we uncheck the whole module. 
+          // But if GET_INVOICE is in ANOTHER group?
+
+          // Let's look at remaining permissions AFTER removal
+          const remainingPermissions = updatedCheckedPermissions.filter(id => !idsToToggle.includes(id))
+
+          const hasDependent = remainingPermissions.some(id =>
+            (getInvoiceId && id === getInvoiceId) ||
+            (getPurchaseOrderId && id === getPurchaseOrderId)
+          )
+
+          if (hasDependent) {
+            toast.warning('Bạn đang chọn quyền xem đơn bán / đơn mua thì bắt buộc phải chọn quyền xem người dùng')
+            return
+          }
+        }
+
         // Remove all IDs
         updatedCheckedPermissions = updatedCheckedPermissions.filter(
           (id) => !idsToToggle.includes(id),

@@ -106,6 +106,25 @@ const DataTableToolbar = ({ table }) => {
                   <TruckIcon className="mr-2 h-3 w-3" />
                   Gửi nhắc hàng
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    const selectedRows = table.getSelectedRowModel().rows
+                    if (selectedRows.length === 0) {
+                      toast.warning('Vui lòng chọn ít nhất 1 hợp đồng')
+                      return
+                    }
+                    const invalidContracts = selectedRows.filter(row => row.original.status !== 'draft')
+                    if (invalidContracts.length > 0) {
+                      toast.warning('Chỉ có thể xóa các hợp đồng ở trạng thái Nháp')
+                      return
+                    }
+                    setShowDeleteDialog(true)
+                  }}
+                  className="text-xs text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
+                  <TrashIcon className="mr-2 h-3 w-3" />
+                  Xóa ({table.getSelectedRowModel().rows.length})
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -116,6 +135,13 @@ const DataTableToolbar = ({ table }) => {
                 selectedContracts={table.getSelectedRowModel().rows.map(r => r.original)}
               />
             )}
+
+            <DeleteMultiplePurchaseContractsDialog
+              open={showDeleteDialog}
+              onOpenChange={setShowDeleteDialog}
+              onConfirm={handleDelete}
+              count={table.getSelectedRowModel().rows.length}
+            />
           </div>
         </div>
       </div>

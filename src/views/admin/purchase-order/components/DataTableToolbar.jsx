@@ -143,6 +143,25 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
                 <TruckIcon className="mr-2 h-3 w-3" />
                 Gửi nhắc hàng
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  const selectedRows = table.getSelectedRowModel().rows
+                  if (selectedRows.length === 0) {
+                    toast.warning('Vui lòng chọn ít nhất 1 đơn hàng')
+                    return
+                  }
+                  const invalidOrders = selectedRows.filter(row => !['draft', 'cancelled'].includes(row.original.status))
+                  if (invalidOrders.length > 0) {
+                    toast.warning('Chỉ có thể xóa các đơn hàng ở trạng thái Nháp hoặc Đã hủy')
+                    return
+                  }
+                  setShowDeleteDialog(true)
+                }}
+                className="text-xs text-red-600 focus:text-red-600 focus:bg-red-50"
+              >
+                <TrashIcon className="mr-2 h-3 w-3" />
+                Xóa ({table.getSelectedRowModel().rows.length})
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -182,6 +201,13 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
             onOpenChange={setShowImportDialog}
           />
         )}
+        {/* Dialog Xóa nhiều */}
+        <DeleteMultiplePurchaseOrdersDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          count={table.getSelectedRowModel().rows.length}
+        />
       </div>
     )
   }

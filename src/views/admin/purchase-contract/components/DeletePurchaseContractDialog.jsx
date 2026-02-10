@@ -10,7 +10,7 @@ import { useDispatch } from 'react-redux'
 import { deletePurchaseContract } from '@/stores/PurchaseContractSlice'
 import { useState } from 'react'
 
-const DeletePurchaseContractDialog = ({ open, onOpenChange, contractId }) => {
+const DeletePurchaseContractDialog = ({ open, onOpenChange, contractId, onSuccess, contentClassName, overlayClassName }) => {
   const dispatch = useDispatch()
   const [loading, setLoading] = useState(false)
 
@@ -19,6 +19,7 @@ const DeletePurchaseContractDialog = ({ open, onOpenChange, contractId }) => {
     try {
       await dispatch(deletePurchaseContract(contractId)).unwrap()
       onOpenChange(false)
+      if (onSuccess) onSuccess()
     } catch (error) {
       console.error('Delete error:', error)
     } finally {
@@ -28,7 +29,7 @@ const DeletePurchaseContractDialog = ({ open, onOpenChange, contractId }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className={contentClassName} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Xác nhận xóa hợp đồng</DialogTitle>
           <DialogDescription>

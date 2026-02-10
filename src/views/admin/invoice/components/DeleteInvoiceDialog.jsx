@@ -20,6 +20,9 @@ const DeleteInvoiceDialog = ({ invoice, showTrigger = true, ...props }) => {
   const destroy = async (id) => {
     try {
       await dispatch(deleteInvoice(id)).unwrap()
+      if (props.onSuccess) {
+        props.onSuccess()
+      }
     } catch (error) {
       console.log('Submit error: ', error)
     }

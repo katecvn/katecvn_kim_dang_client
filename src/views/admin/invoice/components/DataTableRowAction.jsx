@@ -330,6 +330,11 @@ const DataTableRowActions = ({ row, table }) => {
           onOpenChange={setShowDeleteInvoiceDialog}
           invoice={row.original}
           showTrigger={false}
+          onSuccess={() => {
+            if (table.options.meta?.onDeleted) {
+              table.options.meta.onDeleted()
+            }
+          }}
         />
       )}
       {showRejectInvoiceDialog && (

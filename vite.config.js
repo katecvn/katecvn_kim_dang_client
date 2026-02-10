@@ -19,6 +19,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@tabler/icons-react': '@tabler/icons-react/dist/esm/icons/index.mjs',
+      'react-day-picker': 'react-day-picker/dist/index.esm.js',
     },
   },
 })

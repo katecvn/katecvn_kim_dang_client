@@ -124,6 +124,7 @@ const InvoicePage = () => {
             loading={loading}
             onCreated={handleInvoiceCreated}
             onView={(id) => setViewInvoiceId(id)}
+            onDeleted={refreshData}
 
             // Server-side pagination props
             pageCount={pagination?.last_page || 1}

@@ -134,9 +134,29 @@ const ImportProductDialog = ({
       console.error('Import error:', error)
 
       // Handle structured import errors
+      // Handle structured import errors
       let importErrors = null
 
-      if (error?.message?.importErrors && Array.isArray(error.message.importErrors)) {
+      // Check for backend structured errors (errors array)
+      if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        // Transform flat errors to grouped errors
+        const flatErrors = error.response.data.errors;
+        const groupedErrors = {};
+
+        flatErrors.forEach(err => {
+          if (!groupedErrors[err.row]) {
+            groupedErrors[err.row] = { row: err.row, errors: [] };
+          }
+          groupedErrors[err.row].errors.push({
+            field: err.field,
+            message: err.message
+          });
+        });
+
+        importErrors = Object.values(groupedErrors);
+      }
+      // Fallback for previous error structures if any
+      else if (error?.message?.importErrors && Array.isArray(error.message.importErrors)) {
         importErrors = error.message.importErrors
       } else if (error?.importErrors && Array.isArray(error.importErrors)) {
         importErrors = error.importErrors

@@ -38,6 +38,7 @@ const InvoiceDataTable = ({
   onPaginationChange,
   // Server-side search
   onSearchChange,
+  onDeleted,
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -89,6 +90,7 @@ const InvoiceDataTable = ({
     },
     meta: {
       onView,
+      onDeleted,
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,

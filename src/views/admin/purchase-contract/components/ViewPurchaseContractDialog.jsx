@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 
 import LiquidatePurchaseContractDialog from './LiquidatePurchaseContractDialog'
+import DeletePurchaseContractDialog from './DeletePurchaseContractDialog'
 import {
   Table,
   TableBody,
@@ -114,6 +115,7 @@ const ViewPurchaseContractDialog = ({
   const [paymentToDelete, setPaymentToDelete] = useState(null)
   const [showDeleteWarehouseReceiptDialog, setShowDeleteWarehouseReceiptDialog] = useState(false)
   const [warehouseReceiptToDelete, setWarehouseReceiptToDelete] = useState(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false)
   const [showConfirmImportDialog, setShowConfirmImportDialog] = useState(false)
@@ -158,6 +160,22 @@ const ViewPurchaseContractDialog = ({
       return
     }
     setShowConfirmImportDialog(true)
+  }
+
+  const handleLiquidate = () => {
+    if (contract?.status !== 'confirmed') {
+      toast.warning('Chỉ có thể thanh lý hợp đồng đã duyệt')
+      return
+    }
+    setShowLiquidationDialog(true)
+  }
+
+  const handleDeleteClick = () => {
+    if (!['draft', 'cancelled'].includes(contract?.status)) {
+      toast.warning('Chỉ có thể xóa hợp đồng ở trạng thái nháp hoặc đã hủy')
+      return
+    }
+    setShowDeleteDialog(true)
   }
 
   const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
@@ -253,6 +271,16 @@ const ViewPurchaseContractDialog = ({
       onSuccess?.()
     } catch (error) {
       console.error(error)
+    }
+  }
+
+  const getReceiptStatusColor = (statusValue) => {
+    switch (statusValue) {
+      case 'draft': return 'bg-yellow-100 text-yellow-700'
+      case 'completed': return 'bg-green-100 text-green-700'
+      case 'canceled':
+      case 'cancelled': return 'bg-red-100 text-red-700'
+      default: return 'bg-gray-100 text-gray-700'
     }
   }
 
@@ -1190,12 +1218,10 @@ const ViewPurchaseContractDialog = ({
         </div>
 
         <DialogFooter className="flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0 p-4 pt-0">
-          {contract?.status === 'confirmed' && (
-            <Button size="sm" onClick={() => setShowLiquidationDialog(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
-              <FileCheck className="mr-2 h-4 w-4" />
-              Thanh lý
-            </Button>
-          )}
+          <Button size="sm" onClick={handleLiquidate} className="bg-orange-600 hover:bg-orange-700 text-white">
+            <FileCheck className="mr-2 h-4 w-4" />
+            Thanh lý
+          </Button>
 
           <Button
             size="sm"
@@ -1213,6 +1239,16 @@ const ViewPurchaseContractDialog = ({
           >
             <Package className="h-4 w-4 mr-1" />
             Tạo Phiếu Nhập Kho
+          </Button>
+
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteClick}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Xóa
           </Button>
 
           <DialogClose asChild>
@@ -1400,6 +1436,20 @@ const ViewPurchaseContractDialog = ({
             loading={warehouseLoading}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
+          />
+        )}
+
+        {showDeleteDialog && (
+          <DeletePurchaseContractDialog
+            open={showDeleteDialog}
+            onOpenChange={setShowDeleteDialog}
+            contractId={purchaseContractId}
+            onSuccess={() => {
+              onOpenChange(false)
+              onSuccess?.()
+            }}
+            contentClassName="!z-[100070]"
+            overlayClassName="z-[100069]"
           />
         )}
       </DialogContent>

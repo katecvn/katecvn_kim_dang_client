@@ -411,17 +411,19 @@ const CreateProductDialog = ({
                   name="categoryId"
                   render={({ field }) => (
                     <FormItem className="mb-2 space-y-1">
-                      <FormLabel required={true}>Danh mục</FormLabel>
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        className="h-7 ps-3 text-xs"
-                        onClick={() => setShowCreateCategoryDialog(true)}
-                      >
-                        <PlusIcon className="mr-1 h-3 w-3" />
-                        Thêm mới
-                      </Button>
+                      <div className="flex items-center justify-between">
+                        <FormLabel required={true}>Danh mục</FormLabel>
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => setShowCreateCategoryDialog(true)}
+                        >
+                          <PlusIcon className="mr-1 h-3 w-3" />
+                          Thêm mới
+                        </Button>
+                      </div>
 
                       <Select
                         onValueChange={field.onChange}
@@ -460,17 +462,19 @@ const CreateProductDialog = ({
                   name="unitId"
                   render={({ field }) => (
                     <FormItem className="mb-2 space-y-1">
-                      <FormLabel required={true}>Đơn vị tính (gốc)</FormLabel>
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        className="h-7 ps-3 text-xs"
-                        onClick={() => setShowCreateUnitDialog(true)}
-                      >
-                        <PlusIcon className="mr-1 h-3 w-3" />
-                        Thêm mới
-                      </Button>
+                      <div className="flex items-center justify-between">
+                        <FormLabel required={true}>Đơn vị tính (gốc)</FormLabel>
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => setShowCreateUnitDialog(true)}
+                        >
+                          <PlusIcon className="mr-1 h-3 w-3" />
+                          Thêm mới
+                        </Button>
+                      </div>
 
                       <Select
                         onValueChange={field.onChange}
@@ -504,17 +508,19 @@ const CreateProductDialog = ({
                   name="supplierId"
                   render={({ field }) => (
                     <FormItem className="mb-2 space-y-1">
-                      <FormLabel required={true}>Nhà cung cấp</FormLabel>
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        className="h-7 ps-3 text-xs"
-                        onClick={() => setShowCreateSupplierDialog(true)}
-                      >
-                        <PlusIcon className="mr-1 h-3 w-3" />
-                        Thêm mới
-                      </Button>
+                      <div className="flex items-center justify-between">
+                        <FormLabel required={true}>Nhà cung cấp</FormLabel>
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => setShowCreateSupplierDialog(true)}
+                        >
+                          <PlusIcon className="mr-1 h-3 w-3" />
+                          Thêm mới
+                        </Button>
+                      </div>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}

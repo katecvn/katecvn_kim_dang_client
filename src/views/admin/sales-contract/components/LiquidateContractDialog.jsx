@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { MoneyInputQuick } from '@/components/custom/MoneyInputQuick'
 
 const LiquidateContractDialog = ({
   open,
@@ -228,11 +229,10 @@ const LiquidateContractDialog = ({
                             {moneyFormat(item.contractPrice)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Input
-                              type="number"
+                            <MoneyInputQuick
                               className="text-right h-8"
                               value={item.marketPrice}
-                              onChange={(e) => handlePriceChange(item.productId, e.target.value)}
+                              onChange={(value) => handlePriceChange(item.productId, value)}
                               onFocus={(e) => e.target.select()}
                               min={0}
                             />
@@ -270,11 +270,10 @@ const LiquidateContractDialog = ({
 
                       <div>
                         <label className="text-xs text-muted-foreground mb-1 block">Giá thị trường</label>
-                        <Input
-                          type="number"
-                          className="text-right h-9"
+                        <MoneyInputQuick
+                          className="text-right h-9 w-full"
                           value={item.marketPrice}
-                          onChange={(e) => handlePriceChange(item.productId, e.target.value)}
+                          onChange={(value) => handlePriceChange(item.productId, value)}
                           onFocus={(e) => e.target.select()}
                           min={0}
                         />

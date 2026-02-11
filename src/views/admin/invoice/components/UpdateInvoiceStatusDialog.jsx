@@ -78,16 +78,22 @@ const UpdateInvoiceStatusDialog = ({
     const permissions = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
     const canReject = permissions.includes('REJECT_INVOICE')
     const canRevert = permissions.includes('REVERT_INVOICE')
+    const canApprove = permissions.includes('APPROVE_INVOICE')
 
     return statuses.filter((s) => {
       // Hide 'completed' status as it is automated
       if (s.value === 'delivered') return false
 
+      // Permission check for 'accepted' (approve)
+      if (s.value === 'accepted') {
+        if (!canApprove) return false
+      }
+
       // Permission check for 'rejected'
       if (s.value === 'rejected') {
         if (!canReject) return false
         // Only allow switching to 'rejected' if current status is 'pending'
-        if (currentStatus !== 'pending') return false
+        // if (currentStatus !== 'pending') return false
       }
 
       // Permission check for 'pending' (revert)

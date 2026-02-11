@@ -60,7 +60,7 @@ export const columns = [
 
       return (
         <>
-          <Can permission={'GET_INVOICE'}>
+          <Can permission={'CREATE_INVOICE'}>
             {showUpdateInvoiceDialog && (
               <InvoiceDialog
                 open={showUpdateInvoiceDialog}

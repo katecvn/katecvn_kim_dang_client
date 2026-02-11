@@ -220,7 +220,7 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can> */}
 
-          <Can permission={'CREATE_INVOICE'}>
+          <Can permission={'SALES_CONTRACT_UPDATE'}>
             <DropdownMenuItem
               onClick={handleCreateWarehouseReceipt}
               disabled={warehouseLoading || !contract.invoices?.[0] || contract.invoices?.[0]?.warehouseReceipts?.length > 0}
@@ -234,7 +234,7 @@ const DataTableRowActions = ({ row }) => {
           </Can>
 
           {contract.status === 'confirmed' && (
-            <Can permission={'UPDATE_SALES_CONTRACT'}>
+            <Can permission={'SALES_CONTRACT_LIQUIDATE'}>
               <DropdownMenuItem
                 onClick={() => setShowLiquidationDialog(true)}
                 className="text-orange-600"

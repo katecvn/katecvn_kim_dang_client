@@ -11,14 +11,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import api from '@/utils/axios'
+import { getPurchaseSummary } from '@/stores/ReportSlice'
 import { moneyFormat } from '@/utils/money-format'
 import { endOfMonth, format, startOfMonth } from 'date-fns'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 
 const PurchaseReportPage = () => {
-  const [loading, setLoading] = useState(false)
-  const [data, setData] = useState(null)
+  const dispatch = useDispatch()
+  const { purchaseSummary: data, loading } = useSelector(
+    (state) => state.report,
+  )
 
   const current = new Date()
   const [filters, setFilters] = useState({
@@ -26,26 +29,14 @@ const PurchaseReportPage = () => {
     toDate: endOfMonth(current),
   })
 
-  const fetchRevenue = useCallback(async () => {
-    setLoading(true)
-    try {
-      const { data } = await api.get('/reports/purchases/summary', {
-        params: {
-          fromDate: filters.fromDate,
-          toDate: filters.toDate,
-        },
-      })
-      setData(data.data)
-      setLoading(false)
-    } catch (error) {
-      console.log('Submit error: ', error)
-      setLoading(false)
-    }
-  }, [filters])
-
   useEffect(() => {
-    fetchRevenue()
-  }, [fetchRevenue])
+    dispatch(
+      getPurchaseSummary({
+        fromDate: filters.fromDate,
+        toDate: filters.toDate,
+      }),
+    )
+  }, [dispatch, filters])
 
   return (
     <Layout>

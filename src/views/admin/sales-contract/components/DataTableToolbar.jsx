@@ -198,15 +198,17 @@ const DataTableToolbar = ({ table }) => {
         )}
 
         {selectedContracts.length > 0 && (
-          <Button
-            variant="destructive"
-            size="sm"
-            className="h-8"
-            onClick={() => setShowDeleteDialog(true)}
-          >
-            <TrashIcon className="mr-2 size-4" aria-hidden="true" />
-            Xóa ({selectedContracts.length})
-          </Button>
+          <Can permission="SALES_CONTRACT_DELETE">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-8"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+              Xóa ({selectedContracts.length})
+            </Button>
+          </Can>
         )}
 
         <DeleteMultipleSalesContractsDialog

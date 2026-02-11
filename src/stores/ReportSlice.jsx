@@ -4,6 +4,23 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 
 // Purchase Backlog Report
 // Purchase Backlog Report
+export const getPurchaseSummary = createAsyncThunk(
+  'report/get-purchase-summary',
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/reports/purchases/summary', {
+        params,
+      })
+      console.log('rss', response.data)
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
+// Purchase Backlog Report
 export const getPurchaseBacklog = createAsyncThunk(
   'report/get-purchase-backlog',
   async ({ page = 1, limit = 50 } = {}, { rejectWithValue }) => {
@@ -94,6 +111,7 @@ export const getSalesBacklog = createAsyncThunk(
 const reportSlice = createSlice({
   name: 'report',
   initialState: {
+    purchaseSummary: null,
     purchaseBacklog: [],
     purchaseBacklogPagination: {
       total: 0,
@@ -114,6 +132,20 @@ const reportSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Get Purchase Summary
+      .addCase(getPurchaseSummary.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getPurchaseSummary.fulfilled, (state, action) => {
+        state.loading = false
+        state.purchaseSummary = action.payload.data
+      })
+      .addCase(getPurchaseSummary.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+
       // Get Purchase Backlog
       .addCase(getPurchaseBacklog.pending, (state) => {
         state.loading = true

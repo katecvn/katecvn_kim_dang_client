@@ -47,7 +47,7 @@ export const columns = [
 
       return (
         <>
-          <Can permission={'GET_SALES_CONTRACT'}>
+          <Can permission={'SALES_CONTRACT_VIEW_ALL'}>
             {showViewDialog && (
               <ViewSalesContractDialog
                 open={showViewDialog}
@@ -73,28 +73,44 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Khách hàng" />
     ),
-    cell: function Cell({ row }) {
-      return (
-        <div className="flex w-40 flex-col break-words" title={row.original.buyerName}>
-          <span className="font-semibold">{row.original.buyerName}</span>
+    cell: function Cell({ row, table }) {
+      const { buyerName, buyerPhone, buyerIdentityNo, buyerTaxCode, contractDate, id } = row.original
+      const rows = table.getPrePaginationRowModel().rows.map((r) => r.original)
 
-          {row.original.buyerIdentityNo && (
+      const isDuplicate = rows.some(
+        (r) =>
+          r.buyerPhone === buyerPhone &&
+          new Date(r.contractDate).getMonth() === new Date(contractDate).getMonth() &&
+          new Date(r.contractDate).getFullYear() ===
+          new Date(contractDate).getFullYear() &&
+          r.id !== id,
+      )
+
+      return (
+        <div
+          className={`flex w-40 flex-col break-words ${isDuplicate ? 'bg-yellow-200 p-2' : ''
+            }`}
+          title={buyerName}
+        >
+          <span className="font-semibold">{buyerName}</span>
+
+          {buyerIdentityNo && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <CreditCard className="h-3 w-3" />
-              {row.original.buyerIdentityNo}
+              {buyerIdentityNo}
             </span>
           )}
 
-          {(row.original.buyerTaxCode || row.original.customer?.taxCode) && (
+          {(buyerTaxCode || row.original.customer?.taxCode) && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <CreditCard className="h-3 w-3" />
-              MST: {row.original.buyerTaxCode || row.original.customer?.taxCode}
+              MST: {buyerTaxCode || row.original.customer?.taxCode}
             </span>
           )}
 
           <span className="text-primary underline hover:text-secondary-foreground flex items-center gap-1">
             <Phone className="h-3 w-3" />
-            <a href={`tel:${row.original.buyerPhone}`}>{row.original.buyerPhone}</a>
+            <a href={`tel:${buyerPhone}`}>{buyerPhone}</a>
           </span>
         </div>
       )

@@ -56,7 +56,7 @@ export const sideLinks = [
         title: 'Hợp đồng của tôi',
         href: '/sales-contract-user',
         icon: <IconReceiptRupee size={18} />,
-        permission: ['SALES_CONTRACT_VIEW_OWN', 'SALES_CONTRACT_VIEW_ALL'],
+        permission: ['SALES_CONTRACT_VIEW_ALL'],
       },
       {
         title: 'Phiếu thu',
@@ -82,7 +82,7 @@ export const sideLinks = [
   {
     title: 'Đơn mua & Chi',
     icon: <IconReceiptDollar size={18} />,
-    permission: ['PURCHASE_ORDER_VIEW_ALL', 'PURCHASE_ORDER_VIEW_OWN'],
+    permission: ['PURCHASE_ORDER_VIEW_ALL'],
     sub: [
       {
         title: 'Đơn mua',
@@ -94,7 +94,7 @@ export const sideLinks = [
         title: 'Đơn mua của tôi',
         href: '/purchase-order-user',
         icon: <IconReceiptPound size={18} />,
-        permission: ['PURCHASE_ORDER_VIEW_OWN', 'PURCHASE_ORDER_VIEW_ALL'],
+        permission: ['PURCHASE_ORDER_VIEW_ALL'],
       },
       {
         title: 'Hợp đồng mua hàng',
@@ -106,7 +106,7 @@ export const sideLinks = [
         title: 'Hợp đồng của tôi',
         href: '/purchase-contract-user',
         icon: <IconReceiptRupee size={18} />,
-        permission: ['PURCHASE_CONTRACT_VIEW_USER', 'PURCHASE_CONTRACT_VIEW_ALL'],
+        permission: ['PURCHASE_CONTRACT_VIEW_ALL'],
       },
       {
         title: 'Phiếu chi',

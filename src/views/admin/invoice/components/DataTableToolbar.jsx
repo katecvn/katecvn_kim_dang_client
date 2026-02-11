@@ -330,15 +330,17 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
           )}
 
           {selectedInvoices.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-8"
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              <TrashIcon className="mr-2 size-4" aria-hidden="true" />
-              Xóa ({selectedInvoices.length})
-            </Button>
+            <Can permission="DELETE_INVOICE">
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-8"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+                Xóa ({selectedInvoices.length})
+              </Button>
+            </Can>
           )}
 
           {/* Gửi nhắc giao hàng */}

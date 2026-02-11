@@ -159,7 +159,12 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
   const isActionDisabled = isPaid || isLocked
 
   const permissions = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
-  const canDelete = permissions.includes('DELETE_INVOICE')
+  const canDeleteAll = permissions.includes('DELETE_INVOICE')
+  const canDeleteMine = permissions.includes('DELETE_INVOICE_USER')
+  const isOwner = invoice?.createdById === JSON.parse(localStorage.getItem('user'))?.id ||
+    invoice?.user?.id === JSON.parse(localStorage.getItem('user'))?.id
+
+  const canDelete = canDeleteAll || (canDeleteMine && isOwner)
 
   const filteredStatuses = useMemo(() => {
     if (!invoice) return []

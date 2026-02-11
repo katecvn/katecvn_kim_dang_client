@@ -399,7 +399,7 @@ const DataTableRowActions = ({ row, table }) => {
           </DropdownMenuItem>
 
           {row?.original?.status === 'pending' && (
-            <Can permission="GET_INVOICE">
+            <Can permission="CREATE_INVOICE">
               <DropdownMenuItem
                 onClick={() => setShowUpdatePendingInvoiceDialog(true)}
                 className="text-blue-600"
@@ -440,60 +440,6 @@ const DataTableRowActions = ({ row, table }) => {
 
           <DropdownMenuSeparator />
 
-          {row?.original?.status === 'accepted' && (
-            <Can permission="CREATE_INVOICE">
-              <DropdownMenuItem
-                onClick={() => setShowCreateCreditNoteDialog(true)}
-                className="text-indigo-600"
-              >
-                HĐ điều chỉnh
-                <DropdownMenuShortcut>
-                  <IconPlus className="h-4 w-4" />
-                </DropdownMenuShortcut>
-              </DropdownMenuItem>
-            </Can>
-          )}
-          {/* Xem trước HĐĐT */}
-          <Can permission="PREVIEW_SINVOICE_HIDE">
-            <DropdownMenuItem onClick={handleDownloadPreviewSInvoice} className="text-sky-600">
-              Xem trước HĐĐT
-              <DropdownMenuShortcut>
-                <IconFileTypePdf className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </Can>
-
-          {/* Phát hành HĐĐT */}
-          <Can permission="ISSUE_SINVOICE_HIDE">
-            <DropdownMenuItem onClick={handleOpenPublishEInvoice} className="text-cyan-600">
-              Phát hành HĐĐT
-              <DropdownMenuShortcut>
-                <IconFileTypePdf className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </Can>
-
-          {/* In hợp đồng (nếu invoice từ contract) */}
-          {invoice?.salesContractId && (
-            <Can permission="VIEW_SALES_CONTRACT">
-              <DropdownMenuItem
-                onClick={() => {
-                  window.open(`/sales-contracts?view=${invoice.salesContractId}`, '_blank')
-                }}
-                className="text-violet-600"
-              >
-                In hợp đồng
-                <DropdownMenuShortcut>
-                  <IconFileTypePdf className="h-4 w-4" />
-                </DropdownMenuShortcut>
-              </DropdownMenuItem>
-            </Can>
-          )}
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuSeparator />
-
           {/* Create Receipt */}
           {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && (
             <Can permission="CREATE_RECEIPT">
@@ -505,18 +451,6 @@ const DataTableRowActions = ({ row, table }) => {
               </DropdownMenuItem>
             </Can>
           )}
-
-          {/* Create Sales Contract */}
-          {/* {invoice?.status === 'accepted' && !invoice?.salesContract && (
-            <Can permission="CREATE_SALES_CONTRACT">
-              <DropdownMenuItem onClick={handleCreateSalesContract} className="text-indigo-600">
-                Tạo Hợp Đồng
-                <DropdownMenuShortcut>
-                  <IconPlus className="h-4 w-4" />
-                </DropdownMenuShortcut>
-              </DropdownMenuItem>
-            </Can>
-          )} */}
 
           {/* ===== WAREHOUSE RECEIPT ACTIONS ===== */}
           {/* Tạo Phiếu Xuất Kho - Chỉ hiển thị khi status = accepted */}
@@ -535,43 +469,10 @@ const DataTableRowActions = ({ row, table }) => {
             </Can>
           )}
 
-          {/* Ghi Sổ Kho - Chỉ hiển thị khi có phiếu kho DRAFT */}
-          {row?.original?.warehouseReceipt?.status === 'DRAFT' && (
-            <Can permission="CREATE_INVOICE">
-              <DropdownMenuItem
-                onClick={handlePostWarehouseReceipt}
-                disabled={warehouseLoading}
-                className="text-orange-600"
-              >
-                Ghi Sổ Kho
-                <DropdownMenuShortcut>
-                  <IconCheck className="h-4 w-4" />
-                </DropdownMenuShortcut>
-              </DropdownMenuItem>
-            </Can>
-          )}
-
-          {/* Xem Phiếu Kho - Hiển thị khi đã có phiếu kho */}
-          {row?.original?.warehouseReceiptId && (
-            <DropdownMenuItem
-              onClick={() => {
-                toast.info(`Phiếu kho: ${invoice?.warehouseReceipt?.code || invoice?.warehouseReceiptId}`)
-                // TODO: Navigate to warehouse receipt detail page when available
-                // window.open(`/warehouse-receipts?view=${invoice.warehouseReceiptId}`, '_blank')
-              }}
-              className="text-orange-600"
-            >
-              Xem Phiếu Kho
-              <DropdownMenuShortcut>
-                <IconPackage className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          )}
-
           <DropdownMenuSeparator />
 
           {row?.original?.status === 'pending' && (
-            <Can permission="DELETE_INVOICE">
+            <Can permission="DELETE_INVOICE" permission2="DELETE_INVOICE_USER" isOwner={true} ownerId={row?.original?.createdById || row?.original?.user?.id}>
               <DropdownMenuItem
                 onSelect={() => setShowDeleteInvoiceDialog(true)}
                 className="text-red-600"
@@ -601,45 +502,6 @@ const DataTableRowActions = ({ row, table }) => {
           showTrigger={false}
           originalInvoice={row.original}
           type={row.original.type}
-        />
-      )}
-
-      {/* Dialog phát hành HĐĐT */}
-      {eInvoicePreviewData && (
-        <EInvoicePublishDialog
-          open={showEInvoiceDialog}
-          onOpenChange={(open) => {
-            if (!open) setShowEInvoiceDialog(false)
-          }}
-          initialData={eInvoicePreviewData}
-          onConfirm={async (overridePayload) => {
-            try {
-              setEInvoiceLoading(true)
-              await createSInvoice({
-                invoiceId: invoice?.id,
-                overrides: { ...overridePayload },
-              })
-              toast.success('Phát hành hóa đơn điện tử thành công')
-
-              await dispatch(
-                getInvoices({
-                  fromDate: getStartOfCurrentMonth(),
-                  toDate: getEndOfCurrentMonth(),
-                }),
-              ).unwrap()
-
-              setShowEInvoiceDialog(false)
-            } catch (error) {
-              console.error('Create e-invoice error: ', error)
-              toast.error(
-                error?.response?.data?.message ||
-                'Phát hành hóa đơn điện tử thất bại',
-              )
-            } finally {
-              setEInvoiceLoading(false)
-            }
-          }}
-          loading={loading || eInvoiceLoading}
         />
       )}
 

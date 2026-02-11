@@ -17,7 +17,6 @@ import { useDebounce } from '@/hooks/useDebounce'
 const PurchaseContractPage = () => {
   const dispatch = useDispatch()
   const contracts = useSelector((state) => state.purchaseContract.contracts)
-  console.log(contracts)
   const loading = useSelector((state) => state.purchaseContract.loading)
   const pagination = useSelector((state) => state.purchaseContract.pagination) // Use pagination from slice
   const current = new Date()

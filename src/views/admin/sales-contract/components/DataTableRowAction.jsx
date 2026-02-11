@@ -194,7 +194,7 @@ const DataTableRowActions = ({ row }) => {
         <DropdownMenuContent align="end" className="w-[160px]">
 
 
-          <Can permission={'UPDATE_SALES_CONTRACT'}>
+          <Can permission={'SALES_CONTRACT_VIEW_ALL'}>
             <DropdownMenuItem
               onClick={handlePrintContract}
               className="text-orange-600"
@@ -220,7 +220,7 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can> */}
 
-          <Can permission={'SALES_CONTRACT_UPDATE'}>
+          <Can permission={'WAREHOUSE_EXPORT_CREATE'}>
             <DropdownMenuItem
               onClick={handleCreateWarehouseReceipt}
               disabled={warehouseLoading || !contract.invoices?.[0] || contract.invoices?.[0]?.warehouseReceipts?.length > 0}
@@ -249,7 +249,7 @@ const DataTableRowActions = ({ row }) => {
 
           <DropdownMenuSeparator />
 
-          <Can permission={'DELETE_SALES_CONTRACT'}>
+          <Can permission={'SALES_CONTRACT_DELETE'}>
             <DropdownMenuItem
               onClick={() => setShowDeleteDialog(true)}
               className={`text-red-600 ${!canDelete ? 'opacity-50 cursor-not-allowed' : ''}`}

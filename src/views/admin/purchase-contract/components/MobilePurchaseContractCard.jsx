@@ -235,7 +235,7 @@ const MobilePurchaseContractCard = ({
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
 
-              <Can permission={'UPDATE_PURCHASE_CONTRACT'}>
+              <Can permission={'PURCHASE_CONTRACT_UPDATE'}>
                 <DropdownMenuItem
                   onClick={() => {
                     if (onRowAction) onRowAction()
@@ -251,7 +251,7 @@ const MobilePurchaseContractCard = ({
                 </DropdownMenuItem>
               </Can>
 
-              <Can permission={'CREATE_WAREHOUSE_RECEIPT'}>
+              <Can permission={'WAREHOUSE_IMPORT_CREATE'}>
                 <DropdownMenuItem
                   onClick={() => setShowImportDialog(true)}
                   className={`text-emerald-600 ${!['confirmed', 'shipping'].includes(status) ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -264,7 +264,7 @@ const MobilePurchaseContractCard = ({
                 </DropdownMenuItem>
               </Can>
 
-              <Can permission={'UPDATE_PURCHASE_CONTRACT'}>
+              <Can permission={'PURCHASE_CONTRACT_LIQUIDATE'}>
                 <DropdownMenuItem
                   onClick={() => setShowLiquidationDialog(true)}
                   className={`text-orange-600 ${status !== 'confirmed' ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -279,7 +279,7 @@ const MobilePurchaseContractCard = ({
 
               <DropdownMenuSeparator />
 
-              <Can permission={'DELETE_PURCHASE_CONTRACT'}>
+              <Can permission={'PURCHASE_CONTRACT_DELETE'}>
                 <DropdownMenuItem
                   onClick={() => {
                     if (onRowAction) onRowAction()

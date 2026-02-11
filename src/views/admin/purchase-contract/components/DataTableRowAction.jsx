@@ -101,7 +101,7 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuShortcut>
           </DropdownMenuItem> */}
 
-          <Can permission={'UPDATE_PURCHASE_CONTRACT'}>
+          <Can permission={'PURCHASE_CONTRACT_UPDATE'}>
             <DropdownMenuItem
               onClick={() => setShowUpdateDialog(true)}
               className={`text-blue-600 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -114,7 +114,7 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can>
 
-          <Can permission={'CREATE_WAREHOUSE_RECEIPT'}>
+          <Can permission={'WAREHOUSE_IMPORT_CREATE'}>
             <DropdownMenuItem
               onClick={() => setShowImportDialog(true)}
               className={`text-emerald-600 ${!canImport ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -127,7 +127,7 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can>
 
-          <Can permission={'UPDATE_PURCHASE_CONTRACT'}>
+          <Can permission={'PURCHASE_CONTRACT_LIQUIDATE'}>
             <DropdownMenuItem
               onClick={() => setShowLiquidationDialog(true)}
               className={`text-orange-600 ${!canLiquidate ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -142,7 +142,7 @@ const DataTableRowActions = ({ row }) => {
 
           <DropdownMenuSeparator />
 
-          <Can permission={'DELETE_PURCHASE_CONTRACT'}>
+          <Can permission={'PURCHASE_CONTRACT_DELETE'}>
             <DropdownMenuItem
               onClick={() => setShowDeleteDialog(true)}
               className={`text-red-600 ${!canDelete ? 'opacity-50 cursor-not-allowed' : ''}`}

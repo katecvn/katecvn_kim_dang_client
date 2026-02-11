@@ -47,7 +47,7 @@ export const columns = [
 
       return (
         <>
-          <Can permission={'GET_PURCHASE_CONTRACT'}>
+          <Can permission={'PURCHASE_CONTRACT_VIEW_ALL'}>
             {showViewDialog && (
               <ViewPurchaseContractDialog
                 open={showViewDialog}

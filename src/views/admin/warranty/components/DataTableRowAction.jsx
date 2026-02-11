@@ -49,7 +49,7 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="w-40">
-          <Can permission="DELETE_WARRANTY">
+          <Can permission="UPDATE_WARRANTY">
             <DropdownMenuItem onSelect={() => setShowUpdateDialog(true)}>
               Cập nhật
               <DropdownMenuShortcut>
@@ -58,7 +58,7 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can>
 
-          <Can permission="DELETE_WARRANTY">
+          <Can permission="UPDATE_WARRANTY">
             <DropdownMenuItem onSelect={() => setShowDeleteDialog(true)}>
               Xóa
               <DropdownMenuShortcut>

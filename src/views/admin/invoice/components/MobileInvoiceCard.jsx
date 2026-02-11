@@ -504,7 +504,7 @@ const MobileInvoiceCard = ({
               </DropdownMenuItem>
 
               {status !== 'accepted' && (
-                <Can permission="GET_INVOICE">
+                <Can permission="CREATE_INVOICE">
                   <DropdownMenuItem onClick={() => setShowUpdateDialog(true)} className="text-blue-600">
                     <Pencil className="mr-2 h-4 w-4" />
                     Sửa
@@ -536,7 +536,7 @@ const MobileInvoiceCard = ({
 
               {/* Create Receipt */}
               {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && (
-                <Can permission="CREATE_RECEIPT">
+                <Can permission="RECEIPT_CREATE">
                   <DropdownMenuItem onClick={handleCreateReceipt} className="text-emerald-600">
                     <IconPlus className="mr-2 h-4 w-4" />
                     Tạo Phiếu Thu
@@ -546,7 +546,7 @@ const MobileInvoiceCard = ({
 
               {/* Create Sales Contract */}
               {invoice?.status === 'accepted' && !invoice?.salesContract && (
-                <Can permission="CREATE_SALES_CONTRACT">
+                <Can permission="SALES_CONTRACT_CREATE">
                   <DropdownMenuItem onClick={handleCreateSalesContract} className="text-indigo-600">
                     <IconPlus className="mr-2 h-4 w-4" />
                     Tạo Hợp Đồng
@@ -558,7 +558,7 @@ const MobileInvoiceCard = ({
 
               {/* Warehouse Actions */}
               {invoice?.status === 'accepted' && !invoice?.warehouseReceiptId && (
-                <Can permission="CREATE_INVOICE">
+                <Can permission="WAREHOUSE_EXPORT_CREATE">
                   <DropdownMenuItem
                     onClick={handleCreateWarehouseReceipt}
                     className="text-orange-600"
@@ -569,7 +569,7 @@ const MobileInvoiceCard = ({
                 </Can>
               )}
 
-              {invoice?.warehouseReceipt?.status === 'DRAFT' && (
+              {/* {invoice?.warehouseReceipt?.status === 'DRAFT' && (
                 <Can permission="CREATE_INVOICE">
                   <DropdownMenuItem
                     onClick={handlePostWarehouseReceipt}
@@ -579,7 +579,7 @@ const MobileInvoiceCard = ({
                     Ghi Sổ Kho
                   </DropdownMenuItem>
                 </Can>
-              )}
+              )} */}
 
               {invoice?.warehouseReceiptId && (
                 <DropdownMenuItem

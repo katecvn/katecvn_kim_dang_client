@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
-import { receiptTypes, warehouseReceiptStatuses } from '../data'
+import { warehouseReceiptStatuses } from '../data'
 import { cn } from '@/lib/utils'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { useState, useEffect, useCallback } from 'react'
@@ -34,12 +34,10 @@ import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
 import InvoiceDialog from '../../invoice/components/InvoiceDialog'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import Can from '@/utils/can'
 
 const ViewWarehouseReceiptDialog = ({
   receiptId,
@@ -572,15 +570,17 @@ const ViewWarehouseReceiptDialog = ({
         >
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
             {receipt?.status === 'draft' && (
-              <Button
-                size="sm"
-                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                onClick={handleSaveChanges}
-                disabled={loading}
-              >
-                <Save className="h-4 w-4" />
-                Lưu
-              </Button>
+              <Can permission={receipt.receiptType === 1 ? 'WAREHOUSE_IMPORT_UPDATE' : 'WAREHOUSE_EXPORT_UPDATE'}>
+                <Button
+                  size="sm"
+                  className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  onClick={handleSaveChanges}
+                  disabled={loading}
+                >
+                  <Save className="h-4 w-4" />
+                  Lưu
+                </Button>
+              </Can>
             )}
             <Button
               size="sm"
@@ -601,30 +601,34 @@ const ViewWarehouseReceiptDialog = ({
               In phiếu
             </Button>
             {receipt?.status === 'draft' && (
-              <Button
-                size="sm"
-                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white"
-                onClick={() => toast.info('Tính năng sửa đang phát triển')}
-              >
-                <Pencil className="h-4 w-4" />
-                Sửa
-              </Button>
+              <Can permission={receipt.receiptType === 1 ? 'WAREHOUSE_IMPORT_UPDATE' : 'WAREHOUSE_EXPORT_UPDATE'}>
+                <Button
+                  size="sm"
+                  className="gap-2 bg-orange-600 hover:bg-orange-700 text-white"
+                  onClick={() => toast.info('Tính năng sửa đang phát triển')}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Sửa
+                </Button>
+              </Can>
             )}
-            <Button
-              variant="destructive"
-              size="sm"
-              className="gap-2"
-              onClick={() => {
-                if (['draft', 'cancelled'].includes(receipt?.status)) {
-                  setShowDeleteDialog(true)
-                } else {
-                  toast.warning('Chỉ có thể xóa phiếu kho ở trạng thái nháp hoặc đã hủy')
-                }
-              }}
-            >
-              <Trash className="h-4 w-4" />
-              Xóa
-            </Button>
+            <Can permission={receipt?.receiptType === 1 ? 'WAREHOUSE_IMPORT_DELETE' : 'WAREHOUSE_EXPORT_DELETE'}>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  if (['draft', 'cancelled'].includes(receipt?.status)) {
+                    setShowDeleteDialog(true)
+                  } else {
+                    toast.warning('Chỉ có thể xóa phiếu kho ở trạng thái nháp hoặc đã hủy')
+                  }
+                }}
+              >
+                <Trash className="h-4 w-4" />
+                Xóa
+              </Button>
+            </Can>
             <DialogClose asChild>
               <Button type="button" variant="outline" size="sm" className="gap-2">
                 <X className="h-4 w-4" />

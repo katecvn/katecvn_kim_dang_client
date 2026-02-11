@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { DeletePaymentDialog } from './DeletePaymentDialog'
 import PaymentFormDialog from './PaymentDialog'
 import { Pencil } from 'lucide-react'
+import Can from '@/utils/can'
 
 const DataTableRowActions = ({ row }) => {
   const [showDeletePaymentDialog, setShowDeletePaymentDialog] = useState(false)
@@ -53,27 +54,31 @@ const DataTableRowActions = ({ row }) => {
           {/* Placeholder View/Edit actions can remain if needed, or remove if unused effectively */}
 
           {row.original.status === 'draft' && (
-            <DropdownMenuItem
-              onSelect={() => setShowUpdatePaymentDialog(true)}
-              className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
-            >
-              Chỉnh sửa
-              <DropdownMenuShortcut>
-                <Pencil className="h-4 w-4 text-orange-600" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
+            <Can permission="PAYMENT_UPDATE">
+              <DropdownMenuItem
+                onSelect={() => setShowUpdatePaymentDialog(true)}
+                className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+              >
+                Chỉnh sửa
+                <DropdownMenuShortcut>
+                  <Pencil className="h-4 w-4 text-orange-600" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
           )}
 
           {(row.original.status === 'draft' || row.original.status === 'cancelled') && (
-            <DropdownMenuItem
-              onSelect={() => setShowDeletePaymentDialog(true)}
-              className="text-destructive focus:text-destructive"
-            >
-              Xóa
-              <DropdownMenuShortcut>
-                <IconTrash className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
+            <Can permission="PAYMENT_DELETE">
+              <DropdownMenuItem
+                onSelect={() => setShowDeletePaymentDialog(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                Xóa
+                <DropdownMenuShortcut>
+                  <IconTrash className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

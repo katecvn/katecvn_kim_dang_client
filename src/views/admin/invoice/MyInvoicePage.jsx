@@ -2,6 +2,7 @@ import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import InvoiceDataTable from './components/InvoiceDataTable'
+import ViewInvoiceDialog from './components/ViewInvoiceDialog'
 import { getMyInvoices } from '@/stores/InvoiceSlice'
 import { columns } from './components/Column'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -27,6 +28,9 @@ const MyInvoicePage = () => {
     fromDate: addHours(startOfDay(startOfMonth(current)), 12),
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
   })
+
+  // State for ViewInvoiceDialog
+  const [viewInvoiceId, setViewInvoiceId] = useState(null)
 
   const pagination = useSelector((state) => state.invoice.pagination)
 
@@ -91,6 +95,22 @@ const MyInvoicePage = () => {
               onPageSizeChange={(limit) => setPageParams(prev => ({ ...prev, limit, page: 1 }))}
               onSearchChange={(value) => {
                 setSearch(value)
+              }}
+              onView={(id) => setViewInvoiceId(id)}
+            />
+          )}
+
+          {/* View Dialog */}
+          {viewInvoiceId && (
+            <ViewInvoiceDialog
+              open={!!viewInvoiceId}
+              onOpenChange={(open) => {
+                if (!open) setViewInvoiceId(null)
+              }}
+              invoiceId={viewInvoiceId}
+              showTrigger={false}
+              onSuccess={() => {
+                dispatch(getMyInvoices({ ...filters, ...pageParams, search: debouncedSearch }))
               }}
             />
           )}

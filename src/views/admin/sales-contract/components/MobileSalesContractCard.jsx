@@ -388,7 +388,7 @@ const MobileSalesContractCard = ({
 
               <DropdownMenuSeparator />
 
-              <Can permission={'DELETE_SALES_CONTRACT'}>
+              <Can permission={'SALES_CONTRACT_DELETE'}>
                 <DropdownMenuItem
                   onClick={() => setShowDeleteDialog(true)}
                   className={`text-red-600 ${!canDelete ? 'opacity-50 cursor-not-allowed' : ''}`}

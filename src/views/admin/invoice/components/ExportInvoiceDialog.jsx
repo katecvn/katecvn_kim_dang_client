@@ -41,13 +41,26 @@ const ExportInvoiceDialog = ({
       const url = isMyInvoice ? '/invoice/by-user' : '/invoice'
 
       const { data } = await api.get(url, {
-        params: { fromDate: filters.fromDate, toDate: filters.toDate },
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+        params: {
+          fromDate: filters.fromDate,
+          toDate: filters.toDate,
+          limit: 100 // Get all records for export
+        },
       })
-      if (!data.data.length) {
-        toast.warning('Danh sách hóa đơn trống')
+
+      // Robust extraction similar to slice
+      const list = data?.data?.data || data?.data || []
+
+      if (!list.length) {
+        toast.warning('Danh sách đơn bán trống')
         return
       }
-      setExportData(data.data)
+      setExportData(list)
       setShowExportReview(true)
     } catch (error) {
       console.log('Submit error: ', error)

@@ -14,7 +14,7 @@ import { IdCardIcon, MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCallback, useEffect, useState } from 'react'
-import { reviewReceipt } from '@/api/receipt'
+import { getInvoiceDetail } from '@/stores/InvoiceSlice'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -111,13 +111,19 @@ const CreateReceiptDialog = ({
     }),
   })
 
+  // Create a stable key for invoices to prevent infinite loop
+  const invoicesKey = JSON.stringify(invoices)
+
   const fetchData = useCallback(async () => {
     const validInvoices = invoices?.filter((id) => id)
     if (!validInvoices || validInvoices.length === 0) return
 
     setLoading(true)
     try {
-      const data = await reviewReceipt(validInvoices)
+      const promises = validInvoices.map((id) =>
+        dispatch(getInvoiceDetail(id)).unwrap(),
+      )
+      const data = await Promise.all(promises)
       setInvoiceData(data || [])
     } catch (error) {
       setLoading(false)
@@ -125,12 +131,14 @@ const CreateReceiptDialog = ({
     } finally {
       setLoading(false)
     }
-  }, [invoices])
+    // eslint-disable-next-line react-hook/exhaustive-deps
+  }, [invoicesKey, dispatch])
 
   useEffect(() => {
     fetchData()
     table?.resetRowSelection?.()
-  }, [invoices, fetchData, table])
+    // eslint-disable-next-line react-hook/exhaustive-deps
+  }, [fetchData, table])
 
   useEffect(() => {
     dispatch(getSetting('general_information'))

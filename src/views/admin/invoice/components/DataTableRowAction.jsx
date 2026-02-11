@@ -15,9 +15,6 @@ import {
   IconTrash,
   IconEye,
   IconPackageExport,
-  IconCheck,
-  IconPackage,
-  IconCircleX,
 } from '@tabler/icons-react'
 import Can from '@/utils/can'
 import { useState } from 'react'
@@ -25,20 +22,17 @@ import DeleteInvoiceDialog from './DeleteInvoiceDialog'
 import RejectInvoiceDialog from './RejectInvoiceDialog'
 import InvoiceDialog from './InvoiceDialog'
 import CreateCreditNoteDialog from './CreateCreditNoteDialog'
-import ViewInvoiceDialog from './ViewInvoiceDialog'
-import EInvoicePublishDialog from './EInvoicePublishDialog'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
 import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
 import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
 import {
   downloadPreviewDraftInvoice,
   getPreviewData,
-  createSInvoice,
 } from '@/api/s_invoice'
 import {
   createWarehouseReceipt,
 } from '@/stores/WarehouseReceiptSlice'
-import { getInvoices, updateInvoiceStatus } from '@/stores/InvoiceSlice'
+import { getInvoices } from '@/stores/InvoiceSlice'
 import { increasePrintAttempt, increasePrintSuccess } from '@/stores/SalesContractSlice'
 import {
   getEndOfCurrentMonth,
@@ -66,9 +60,6 @@ const DataTableRowActions = ({ row, table }) => {
     useState(false)
   const [showCreateCreditNoteDialog, setShowCreateCreditNoteDialog] =
     useState(false)
-  const [showEInvoiceDialog, setShowEInvoiceDialog] = useState(false)
-  const [eInvoicePreviewData, setEInvoicePreviewData] = useState(null)
-  const [eInvoiceLoading, setEInvoiceLoading] = useState(false)
   const [warehouseLoading, setWarehouseLoading] = useState(false)
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
   const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
@@ -94,36 +85,6 @@ const DataTableRowActions = ({ row, table }) => {
     } catch (error) {
       console.error('Download preview error: ', error)
       toast.error('Không tải được file xem trước hóa đơn điện tử')
-    }
-  }
-
-  const handleOpenPublishEInvoice = async () => {
-    const invoiceId = invoice?.id
-    if (!invoiceId) return
-
-    const eInvoiceStatus = invoice?.sInvoiceStatus || invoice?.sInvoice?.status
-    const invoiceStatus = invoice?.status
-
-    if (eInvoiceStatus === 'published') {
-      toast.warning('Hóa đơn điện tử này đã được phát hành')
-      return
-    }
-
-    if (invoiceStatus !== 'accepted') {
-      toast.warning('Hóa đơn chưa được duyệt, không thể phát hành HĐĐT')
-      return
-    }
-
-    try {
-      setEInvoiceLoading(true)
-      const data = await getPreviewData(invoiceId)
-      setEInvoicePreviewData(data)
-      setShowEInvoiceDialog(true)
-    } catch (error) {
-      console.error('Load e-invoice preview error: ', error)
-      toast.error('Không lấy được dữ liệu xem trước hóa đơn điện tử')
-    } finally {
-      setEInvoiceLoading(false)
     }
   }
 
@@ -194,40 +155,6 @@ const DataTableRowActions = ({ row, table }) => {
     } catch (error) {
       console.error('Create warehouse receipt error:', error)
       toast.error('Tạo phiếu xuất kho thất bại')
-    } finally {
-      setWarehouseLoading(false)
-    }
-  }
-
-  const handlePostWarehouseReceipt = async () => {
-    const warehouseReceiptId = invoice?.warehouseReceiptId
-    if (!warehouseReceiptId) {
-      toast.warning('Không tìm thấy phiếu xuất kho')
-      return
-    }
-
-    const warehouseStatus = invoice?.warehouseReceipt?.status
-    if (warehouseStatus === 'POSTED') {
-      toast.warning('Phiếu xuất kho đã được ghi sổ')
-      return
-    }
-
-    try {
-      setWarehouseLoading(true)
-      await dispatch(postWarehouseReceipt(warehouseReceiptId)).unwrap()
-      // Toast is handled in slice for postWarehouseReceipt ("Duyệt phiếu thành công")
-      // toast.success('Đã ghi sổ kho thành công')
-
-      // Refresh invoice list
-      await dispatch(
-        getInvoices({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      ).unwrap()
-    } catch (error) {
-      console.error('Post warehouse receipt error:', error)
-      // Error toast is handled in slice
     } finally {
       setWarehouseLoading(false)
     }
@@ -442,7 +369,7 @@ const DataTableRowActions = ({ row, table }) => {
 
           {/* Create Receipt */}
           {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && (
-            <Can permission="CREATE_RECEIPT">
+            <Can permission="RECEIPT_CREATE">
               <DropdownMenuItem onClick={handleCreateReceipt} className="text-emerald-600">
                 Tạo Phiếu Thu
                 <DropdownMenuShortcut>
@@ -455,7 +382,7 @@ const DataTableRowActions = ({ row, table }) => {
           {/* ===== WAREHOUSE RECEIPT ACTIONS ===== */}
           {/* Tạo Phiếu Xuất Kho - Chỉ hiển thị khi status = accepted */}
           {row?.original?.status === 'accepted' && (
-            <Can permission="CREATE_INVOICE">
+            <Can permission="WAREHOUSE_EXPORT_CREATE">
               <DropdownMenuItem
                 onClick={handleCreateWarehouseReceipt}
                 disabled={warehouseLoading}

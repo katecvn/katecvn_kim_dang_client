@@ -297,7 +297,7 @@ const ExportInvoiceView = ({
                       <TableCell>{invoice.customerName}</TableCell>
                       <TableCell>{invoice.customerPhone}</TableCell>
                       <TableCell>{invoice.customerAddress}</TableCell>
-                      <TableCell>{invoice.user.fullName}</TableCell>
+                      <TableCell>{invoice.user?.fullName}</TableCell>
                       <TableCell>{invoiceItem.productName}</TableCell>
                       <TableCell>{invoiceItem.quantity}</TableCell>
                       <TableCell>{invoiceItem.giveaway}</TableCell>
@@ -320,19 +320,19 @@ const ExportInvoiceView = ({
                       <TableCell>
                         {invoice.invoiceRevenueShare
                           ? invoice.invoiceRevenueShare?.sharePercentage * 100 +
-                            '%'
+                          '%'
                           : 0}
                       </TableCell>
                       <TableCell>
                         {invoice.invoiceRevenueShare
                           ? moneyFormat(
-                              invoice.invoiceRevenueShare?.amount,
-                              false,
-                            )
+                            invoice.invoiceRevenueShare?.amount,
+                            false,
+                          )
                           : 0}
                       </TableCell>
                       <TableCell>
-                        {invoice.invoiceRevenueShare?.user.fullName ||
+                        {invoice.invoiceRevenueShare?.user?.fullName ||
                           'Không có'}
                       </TableCell>
                       <TableCell>

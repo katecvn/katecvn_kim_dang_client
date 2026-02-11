@@ -11,11 +11,10 @@ import {
   DropdownMenuShortcut,
 } from '@/components/ui/dropdown-menu'
 import {
-  postWarehouseReceipt,
   getWarehouseReceiptById,
 } from '@/stores/WarehouseReceiptSlice'
 import ViewWarehouseReceiptDialog from './ViewWarehouseReceiptDialog'
-import { IconCheck, IconCircleX, IconEdit } from '@tabler/icons-react'
+import Can from '@/utils/can'
 import { Eye, Printer, Trash2, Pencil, FileSpreadsheet } from 'lucide-react'
 import { DeleteWarehouseReceiptDialog } from './DeleteWarehouseReceiptDialog'
 import { CancelWarehouseReceiptDialog } from './CancelWarehouseReceiptDialog'
@@ -134,15 +133,17 @@ export function DataTableRowActions({ row }) {
           </DropdownMenuItem>
 
           {receipt.status === 'draft' && (
-            <DropdownMenuItem
-              onClick={() => setShowViewDialog(true)}
-              className="text-orange-600 hover:text-orange-700 focus:text-orange-700"
-            >
-              Sửa
-              <DropdownMenuShortcut>
-                <Pencil className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
+            <Can permission={receipt.receiptType === 1 ? 'WAREHOUSE_IMPORT_UPDATE' : 'WAREHOUSE_EXPORT_UPDATE'}>
+              <DropdownMenuItem
+                onClick={() => setShowViewDialog(true)}
+                className="text-orange-600 hover:text-orange-700 focus:text-orange-700"
+              >
+                Sửa
+                <DropdownMenuShortcut>
+                  <Pencil className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
           )}
 
           <DropdownMenuItem
@@ -168,15 +169,17 @@ export function DataTableRowActions({ row }) {
           {(receipt.status === 'draft' || receipt.status === 'cancelled') && (
             <>
               {receipt.status === 'draft' && <DropdownMenuSeparator />}
-              <DropdownMenuItem
-                onClick={() => setShowDeleteDialog(true)}
-                className="text-destructive focus:text-destructive"
-              >
-                Xóa
-                <DropdownMenuShortcut>
-                  <Trash2 className="h-4 w-4" />
-                </DropdownMenuShortcut>
-              </DropdownMenuItem>
+              <Can permission={receipt.receiptType === 1 ? 'WAREHOUSE_IMPORT_DELETE' : 'WAREHOUSE_EXPORT_DELETE'}>
+                <DropdownMenuItem
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  Xóa
+                  <DropdownMenuShortcut>
+                    <Trash2 className="h-4 w-4" />
+                  </DropdownMenuShortcut>
+                </DropdownMenuItem>
+              </Can>
             </>
           )}
 

@@ -304,7 +304,7 @@ const MobilePurchaseOrderCard = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <Can permission="GET_PURCHASE_ORDER">
+              <Can permission="PURCHASE_ORDER_VIEW_ALL">
                 <DropdownMenuItem onClick={() => setShowViewDialog(true)} className="text-slate-600">
                   <IconEye className="mr-2 h-4 w-4" />
                   Xem
@@ -326,7 +326,7 @@ const MobilePurchaseOrderCard = ({
               <DropdownMenuSeparator />
 
               {canImportWarehouse && (
-                <Can permission="CREATE_WAREHOUSE_RECEIPT">
+                <Can permission="WAREHOUSE_IMPORT_CREATE">
                   <DropdownMenuItem onClick={() => setShowImportWarehouseDialog(true)} className="text-orange-600">
                     <IconPackageImport className="mr-2 h-4 w-4" />
                     Tạo phiếu nhập
@@ -335,7 +335,7 @@ const MobilePurchaseOrderCard = ({
               )}
 
               {canPayment && (
-                <Can permission="CREATE_PAYMENT">
+                <Can permission="PAYMENT_CREATE">
                   <DropdownMenuItem onClick={() => setShowPaymentDialog(true)} className="text-emerald-600">
                     <IconCreditCard className="mr-2 h-4 w-4" />
                     Tạo phiếu chi
@@ -346,7 +346,7 @@ const MobilePurchaseOrderCard = ({
               <DropdownMenuSeparator />
 
               {canEdit && (
-                <Can permission="UPDATE_PURCHASE_ORDER">
+                <Can permission="PURCHASE_ORDER_UPDATE">
                   <DropdownMenuItem onClick={() => setShowUpdateDialog(true)} className="text-blue-600">
                     <IconPencil className="mr-2 h-4 w-4" />
                     Sửa
@@ -355,7 +355,7 @@ const MobilePurchaseOrderCard = ({
               )}
 
               {canCancel && (
-                <Can permission="UPDATE_PURCHASE_ORDER">
+                <Can permission="PURCHASE_ORDER_CANCEL">
                   <DropdownMenuItem onClick={() => setShowUpdateStatusDialog(true)} className="text-red-600">
                     <IconCircleX className="mr-2 h-4 w-4" />
                     Hủy
@@ -365,7 +365,7 @@ const MobilePurchaseOrderCard = ({
 
 
               {canDelete && (
-                <Can permission="DELETE_PURCHASE_ORDER">
+                <Can permission="PURCHASE_ORDER_DELETE">
                   <DropdownMenuItem
                     onClick={() => setShowDeleteDialog(true)}
                     className="text-red-600"

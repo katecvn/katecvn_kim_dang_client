@@ -98,7 +98,7 @@ const CreatePaymentDialog = ({
     try {
       const getAdminReceipts = JSON.parse(
         localStorage.getItem('permissionCodes'),
-      ).includes('GET_RECEIPT')
+      ).includes('RECEIPT_VIEW_ALL')
 
       await dispatch(createPayment(dataToSend)).unwrap()
       if (location.pathname === '/receipts' && getAdminReceipts) {

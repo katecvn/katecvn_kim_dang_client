@@ -63,7 +63,10 @@ const TaskStatusDialog = ({ taskId, currentStatus, children }) => {
               <SelectContent>
                 {taskStatuses.map((s) => (
                   <SelectItem key={s.value} value={s.value}>
-                    {s.label}
+                    <div className="flex items-center gap-2">
+                      {s.icon && <s.icon className={`h-4 w-4 ${s.color}`} />}
+                      <span className={s.color}>{s.label}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>

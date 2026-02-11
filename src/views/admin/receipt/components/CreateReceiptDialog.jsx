@@ -221,7 +221,7 @@ const CreateReceiptDialog = ({
 
     const getAdminReceipt = JSON.parse(
       localStorage.getItem('permissionCodes'),
-    ).includes('GET_RECEIPT')
+    ).includes('RECEIPT_VIEW_ALL')
     getAdminReceipt ? navigate('/receipt') : navigate('/receipt-user')
     form.reset()
     onOpenChange?.(false)

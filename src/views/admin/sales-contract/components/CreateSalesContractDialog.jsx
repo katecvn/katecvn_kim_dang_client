@@ -168,7 +168,7 @@ const CreateSalesContractDialog = ({
       await dispatch(createSalesContract(dataToSend)).unwrap()
       const getAdminContract = JSON.parse(
         localStorage.getItem('permissionCodes') || '[]'
-      ).includes('GET_SALES_CONTRACT')
+      ).includes('SALES_CONTRACT_VIEW_ALL')
       getAdminContract ? navigate('/sales-contracts') : navigate('/sales-contract-user')
       form.reset()
       onOpenChange?.(false)

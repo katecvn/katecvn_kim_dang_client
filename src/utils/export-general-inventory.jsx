@@ -76,33 +76,52 @@ export const exportGeneralInventoryToExcel = async (snapshots, dateRange) => {
       bottom: { style: 'thin' },
       right: { style: 'thin' }
     }
-    
+
     for (let r = headerRow1; r <= headerRow2; r++) {
-       const row = worksheet.getRow(r)
-       row.eachCell((cell) => {
-          cell.font = { name: 'Times New Roman', bold: true }
-          cell.alignment = { horizontal: 'center', vertical: 'middle' }
-          cell.border = borderStyle
-       })
+      const row = worksheet.getRow(r)
+      row.eachCell((cell) => {
+        cell.font = { name: 'Times New Roman', bold: true }
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+        cell.border = borderStyle
+      })
     }
 
     // 3. Data Body
-    // NOTE: productStockSnapshots currently might not have all fields (Opening, In, Out).
-    // We will map available data and leave others blank or 0 for now.
-    // Assuming 'quantity' in snapshot is 'Closing Stock' (Tồn cuối).
-    
-    // Calculate Total Tồn Cuối (Col J / 10)
-    const totalQuantity = snapshots.reduce((sum, item) => sum + (item.quantity || 0), 0)
-    
+    // Calculate Totals correctly
+    const totals = snapshots.reduce((acc, item) => {
+      return {
+        openingQty: acc.openingQty + (item.openingQuantity || 0),
+        openingAmount: acc.openingAmount + (item.openingAmount || 0),
+        inQty: acc.inQty + (item.quantityIn || 0),
+        inAmount: acc.inAmount + (item.amountIn || 0),
+        outQty: acc.outQty + (item.quantityOut || 0),
+        outAmount: acc.outAmount + (item.amountOut || 0),
+        closingQty: acc.closingQty + (item.closingQuantity || 0),
+        closingAmount: acc.closingAmount + (item.closingAmount || 0),
+      }
+    }, {
+      openingQty: 0, openingAmount: 0,
+      inQty: 0, inAmount: 0,
+      outQty: 0, outAmount: 0,
+      closingQty: 0, closingAmount: 0
+    })
+
     let currentRow = 9
     // "Cộng" Row
     worksheet.getCell(`B${currentRow}`).value = 'Cộng'
-    
-    // Set Total Quantity in Col J (for Closing Stock) or D (Opening) based on sample image logic?
-    // Sample shows summation in Col D (Opening). But our data is likely Closing.
-    // I will put it in Col J (Closing) as that's the data we have and it makes sense.
-    // However, user pointed to sample having it in D. I'll put in J for accuracy with current data.
-    worksheet.getCell(`J${currentRow}`).value = totalQuantity
+
+    // Set Totals
+    worksheet.getCell(`D${currentRow}`).value = totals.openingQty
+    worksheet.getCell(`E${currentRow}`).value = totals.openingAmount
+
+    worksheet.getCell(`F${currentRow}`).value = totals.inQty
+    worksheet.getCell(`G${currentRow}`).value = totals.inAmount
+
+    worksheet.getCell(`H${currentRow}`).value = totals.outQty
+    worksheet.getCell(`I${currentRow}`).value = totals.outAmount
+
+    worksheet.getCell(`J${currentRow}`).value = totals.closingQty
+    worksheet.getCell(`K${currentRow}`).value = totals.closingAmount
 
     // Apply Styles to "Cộng" Row (Borders + Red Text)
     const rowTotal = worksheet.getRow(currentRow)
@@ -110,79 +129,77 @@ export const exportGeneralInventoryToExcel = async (snapshots, dateRange) => {
     rowTotal.alignment = { vertical: 'middle', horizontal: 'center' }
 
     // Apply borders to A9:L9
-    for(let c = 1; c <= 12; c++) {
-        const cell = rowTotal.getCell(c)
-        cell.border = borderStyle
-        if(c === 10) { // Total Quantity Column
-             cell.numFmt = '#,##0'
-        }
-        if (!cell.value && c !== 1 && c !== 2 && c !== 3 && c !== 12 && c !== 10) {
-             cell.value = '-' // Fill empty number fields with dash like sample
-        }
+    for (let c = 1; c <= 12; c++) {
+      const cell = rowTotal.getCell(c)
+      cell.border = borderStyle
+      // Apply number format to Cols 4 to 12
+      if (c >= 4 && c <= 12) {
+        cell.numFmt = '#,##0'
+      }
     }
-    
+
     // Data Rows
     // Start data immediately after "Cộng" row (Row 9) to maintain table continuity
     currentRow = 10
 
     snapshots.forEach((item, index) => {
-        const row = worksheet.getRow(currentRow + index)
-        row.font = { name: 'Times New Roman', size: 11 }
-        
-        row.getCell(1).value = index + 1 // STT
-        row.getCell(2).value = item.product?.name || item.productName || '' // Tên
-        row.getCell(3).value = item.unitName || '' // ĐVT
+      const row = worksheet.getRow(currentRow + index)
+      row.font = { name: 'Times New Roman', size: 11 }
 
-        // Tồn đầu (Missing in snapshot data?)
-        row.getCell(4).value = 0 
-        row.getCell(5).value = 0
+      row.getCell(1).value = index + 1 // STT
+      row.getCell(2).value = item.product?.name || item.productName || '' // Tên
+      row.getCell(3).value = item.product?.unit?.name || item.unitName || '' // ĐVT
 
-        // Nhập
-        row.getCell(6).value = 0
-        row.getCell(7).value = 0
+      // Tồn đầu
+      row.getCell(4).value = item.openingQuantity || 0
+      row.getCell(5).value = item.openingAmount || 0
 
-        // Xuất
-        row.getCell(8).value = 0
-        row.getCell(9).value = 0
+      // Nhập
+      row.getCell(6).value = item.quantityIn || 0
+      row.getCell(7).value = item.amountIn || 0
 
-        // Tồn Cuối (From Snapshot)
-        row.getCell(10).value = item.quantity || 0
-        row.getCell(11).value = item.totalAmount || ((item.quantity || 0) * (item.price || 0))
+      // Xuất
+      row.getCell(8).value = item.quantityOut || 0
+      row.getCell(9).value = item.amountOut || 0
 
-        // Đơn giá
-        row.getCell(12).value = item.price || 0
-        
-        // Borders & Number Format
-        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-             if(colNumber <= 12) cell.border = borderStyle
-             // Apply number format to Cols 4 to 12
-             if(colNumber >= 4 && colNumber <= 12) {
-                 cell.numFmt = '#,##0'
-             }
-        })
-        row.commit()
+      // Tồn Cuối
+      row.getCell(10).value = item.closingQuantity || 0
+      row.getCell(11).value = item.closingAmount || 0
+
+      // Đơn giá
+      row.getCell(12).value = item.averageUnitPrice || 0
+
+      // Borders & Number Format
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        if (colNumber <= 12) cell.border = borderStyle
+        // Apply number format to Cols 4 to 12
+        if (colNumber >= 4 && colNumber <= 12) {
+          cell.numFmt = '#,##0'
+        }
+      })
+      row.commit()
     })
 
     // Auto-width columns
     // Loop through columns A (1) to L (12)
     for (let c = 1; c <= 12; c++) {
-        let maxLength = 0
-        // Check Header Rows (7, 8) and Data Rows (9 onwards)
-        // We skip Title rows (1-5) as they are merged
-        const column = worksheet.getColumn(c)
-        
-        column.eachCell({ includeEmpty: true }, (cell) => {
-             // Only consider rows part of the table (>= 7)
-             if (cell.row >= 7) {
-                 const cellValue = cell.value ? cell.value.toString() : ''
-                 if (cellValue.length > maxLength) {
-                     maxLength = cellValue.length
-                 }
-             }
-        })
-        
-        // Set width: min 10, max based on content + padding
-        column.width = Math.max(10, maxLength + 2)
+      let maxLength = 0
+      // Check Header Rows (7, 8) and Data Rows (9 onwards)
+      // We skip Title rows (1-5) as they are merged
+      const column = worksheet.getColumn(c)
+
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        // Only consider rows part of the table (>= 7)
+        if (cell.row >= 7) {
+          const cellValue = cell.value ? cell.value.toString() : ''
+          if (cellValue.length > maxLength) {
+            maxLength = cellValue.length
+          }
+        }
+      })
+
+      // Set width: min 10, max based on content + padding
+      column.width = Math.max(10, maxLength + 2)
     }
 
     // 4. Footer

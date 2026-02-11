@@ -110,18 +110,11 @@ export const createPayment = createAsyncThunk
 
 export const deletePayment = createAsyncThunk(
   'payment/delete-payment',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       await api.delete(`/payment-vouchers/${id}`)
-
-      const deleteAdminPayments = JSON.parse(
-        localStorage.getItem('permissionCodes'),
-      ).includes('DELETE_PAYMENT')
-
-      deleteAdminPayments
-        ? await dispatch(getPayments()).unwrap()
-        : await dispatch(getMyPayments()).unwrap()
       toast.success('Xóa thanh toán thành công')
+      return id
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -131,18 +124,15 @@ export const deletePayment = createAsyncThunk(
 
 export const deleteMultiplePayments = createAsyncThunk(
   'payment/delete-multiple-payments',
-  async (ids, { rejectWithValue, dispatch }) => {
+  async (ids, { rejectWithValue }) => {
     try {
-      await api.post('/payment-vouchers/bulk-delete', { ids })
+      await api.post('/payment-vouchers/bulk-delete', {
+        ids,
+        voucherType: 'payment_out',
+      })
 
-      const deleteAdminPayments = JSON.parse(
-        localStorage.getItem('permissionCodes'),
-      ).includes('DELETE_PAYMENT')
-
-      deleteAdminPayments
-        ? await dispatch(getPayments()).unwrap()
-        : await dispatch(getMyPayments()).unwrap()
       toast.success(`Đã xóa ${ids.length} phiếu chi thành công`)
+      return ids
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -253,12 +243,28 @@ export const paymentSlice = createSlice({
       .addCase(deletePayment.pending, (state) => {
         state.loading = true
       })
-      .addCase(deletePayment.fulfilled, (state) => {
+      .addCase(deletePayment.fulfilled, (state, action) => {
         state.loading = false
+        state.payments = state.payments.filter((p) => p.id !== action.payload)
+        state.pagination.total -= 1
       })
       .addCase(deletePayment.rejected, (state, action) => {
         state.loading = false
-        state.error = action.payload.message || 'Lỗi không xác định'
+        state.error = action.payload?.message || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+
+      .addCase(deleteMultiplePayments.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(deleteMultiplePayments.fulfilled, (state, action) => {
+        state.loading = false
+        state.payments = state.payments.filter((p) => !action.payload.includes(p.id))
+        state.pagination.total -= action.payload.length
+      })
+      .addCase(deleteMultiplePayments.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload?.message || 'Lỗi không xác định'
         toast.error(state.error)
       })
 

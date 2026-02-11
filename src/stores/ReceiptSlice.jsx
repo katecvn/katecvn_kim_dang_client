@@ -76,18 +76,11 @@ export const getReceiptById = createAsyncThunk(
 
 export const deleteReceipt = createAsyncThunk(
   'receipt/delete-receipt',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       await api.delete(`/payment-vouchers/${id}`)
-
-      const deleteAdminInvoices = JSON.parse(
-        localStorage.getItem('permissionCodes'),
-      ).includes('DELETE_RECEIPT')
-
-      deleteAdminInvoices
-        ? await dispatch(getReceipts()).unwrap()
-        : await dispatch(getMyReceipts()).unwrap()
       toast.success('Xóa thành công')
+      return id
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -97,18 +90,15 @@ export const deleteReceipt = createAsyncThunk(
 
 export const deleteMultipleReceipts = createAsyncThunk(
   'receipt/delete-multiple-receipts',
-  async (ids, { rejectWithValue, dispatch }) => {
+  async (ids, { rejectWithValue }) => {
     try {
-      await api.post('/payment-vouchers/bulk-delete', { ids })
+      await api.post('/payment-vouchers/bulk-delete', {
+        ids,
+        voucherType: 'receipt_in',
+      })
 
-      const deleteAdminInvoices = JSON.parse(
-        localStorage.getItem('permissionCodes'),
-      ).includes('DELETE_RECEIPT')
-
-      deleteAdminInvoices
-        ? await dispatch(getReceipts()).unwrap()
-        : await dispatch(getMyReceipts()).unwrap()
       toast.success(`Đã xóa ${ids.length} phiếu thu thành công`)
+      return ids
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -212,17 +202,35 @@ export const receiptSlice = createSlice({
         state.error = action.payload.message || 'Lỗi không xác định'
         toast.error(state.error)
       })
-      .addCase(deleteReceipt.fulfilled, (state) => {
-        state.loading = false
-      })
-      .addCase(deleteReceipt.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload.message || 'Lỗi không xác định'
-        toast.error(state.error)
-      })
       .addCase(deleteReceipt.pending, (state) => {
         state.loading = true
         state.error = null
+      })
+      .addCase(deleteReceipt.fulfilled, (state, action) => {
+        state.loading = false
+        state.receipts = state.receipts.filter((r) => r.id !== action.payload)
+        // Check if pagination exists before updating
+        if (state.pagination) state.pagination.total -= 1
+      })
+      .addCase(deleteReceipt.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload?.message || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+
+      .addCase(deleteMultipleReceipts.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(deleteMultipleReceipts.fulfilled, (state, action) => {
+        state.loading = false
+        state.receipts = state.receipts.filter((r) => !action.payload.includes(r.id))
+        // Check if pagination exists before updating
+        if (state.pagination) state.pagination.total -= action.payload.length
+      })
+      .addCase(deleteMultipleReceipts.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload?.message || 'Lỗi không xác định'
+        toast.error(state.error)
       })
       .addCase(getReceiptQRCode.pending, (state) => {
         // Do not set global loading to true to avoid unmounting table rows

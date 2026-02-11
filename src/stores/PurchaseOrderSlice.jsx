@@ -66,7 +66,7 @@ export const getPurchaseOrderDetail = createAsyncThunk(
     try {
       const getAdminPurchaseOrder = JSON.parse(
         localStorage.getItem('permissionCodes'),
-      ).includes('GET_PURCHASE_ORDER')
+      ).includes('PURCHASE_ORDER_VIEW_ALL')
 
       const response = getAdminPurchaseOrder
         ? await api.get(`/purchase-orders/${id}`)
@@ -141,7 +141,7 @@ export const deletePurchaseOrder = createAsyncThunk(
     try {
       const deleteAdminPurchaseOrders = JSON.parse(
         localStorage.getItem('permissionCodes'),
-      ).includes('DELETE_PURCHASE_ORDER')
+      ).includes('PURCHASE_ORDER_DELETE')
 
       deleteAdminPurchaseOrders
         ? await api.delete(`/purchase-orders/${id}`)
@@ -175,7 +175,7 @@ export const deleteMultiplePurchaseOrders = createAsyncThunk(
 
       const deleteAdminPurchaseOrders = JSON.parse(
         localStorage.getItem('permissionCodes'),
-      ).includes('DELETE_PURCHASE_ORDER')
+      ).includes('PURCHASE_ORDER_DELETE')
 
       deleteAdminPurchaseOrders
         ? await dispatch(

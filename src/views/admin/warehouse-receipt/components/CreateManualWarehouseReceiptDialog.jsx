@@ -98,15 +98,12 @@ const CreateManualWarehouseReceiptDialog = ({
 
   // Filter business types based on receipt type
   const filteredBusinessTypes = useMemo(() => {
-    // 1: Import, 2: Export, 3: Adjustment
+    // 1: Import, 2: Export
     if (receiptType === 1) {
       return businessTypes.filter(t => ['purchase_in', 'return_in', 'other', 'transfer_in'].includes(t.value))
     }
     if (receiptType === 2) {
       return businessTypes.filter(t => ['sale_out', 'return_out', 'other', 'transfer_out'].includes(t.value))
-    }
-    if (receiptType === 3) {
-      return businessTypes.filter(t => ['adjustment', 'other'].includes(t.value))
     }
     return []
   }, [receiptType])
@@ -116,11 +113,7 @@ const CreateManualWarehouseReceiptDialog = ({
     form.setValue('businessType', '')
 
     // Default business type selection
-    if (receiptType === 3) {
-      form.setValue('businessType', 'adjustment')
-    } else {
-      form.setValue('businessType', 'other')
-    }
+    form.setValue('businessType', 'other')
   }, [receiptType, form])
 
   useEffect(() => {
@@ -142,7 +135,7 @@ const CreateManualWarehouseReceiptDialog = ({
     // Adjustment defaults to 'in' (surplus) initially, user can change
 
     // Determine default price
-    // Import (1) & Adjustment (3) -> Prefer basePrice (Cost)
+    // Import (1) -> Prefer basePrice (Cost)
     // Export (2) -> Prefer price (Selling)
     let defaultPrice = 0
     if (receiptType === 2) {
@@ -207,7 +200,7 @@ const CreateManualWarehouseReceiptDialog = ({
       const details = selectedProducts.map(item => ({
         productId: item.productId,
         unitId: item.unitId,
-        movement: receiptType === 3 ? item.movement : (receiptType === 1 ? 'in' : 'out'),
+        movement: receiptType === 1 ? 'in' : 'out',
         qtyActual: item.quantity,
         unitPrice: item.price,
         note: item.note
@@ -318,7 +311,7 @@ const CreateManualWarehouseReceiptDialog = ({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {receiptTypes.map(t => (
+                          {receiptTypes.filter(t => t.value !== 3).map(t => (
                             <SelectItem key={t.value} value={String(t.value)}>{t.label}</SelectItem>
                           ))}
                         </SelectContent>
@@ -483,23 +476,7 @@ const CreateManualWarehouseReceiptDialog = ({
                                 </Select>
                               </div>
 
-                              {receiptType === 3 && (
-                                <div className="space-y-1">
-                                  <label className="text-[10px] text-muted-foreground uppercase">Điều chỉnh</label>
-                                  <Select
-                                    value={item.movement}
-                                    onValueChange={(val) => handleProductChange(index, 'movement', val)}
-                                  >
-                                    <SelectTrigger className={cn("h-8 text-xs font-medium", item.movement === 'in' ? 'text-blue-600' : 'text-orange-600')}>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="in" className="text-blue-600 text-xs">Thừa (Nhập)</SelectItem>
-                                      <SelectItem value="out" className="text-orange-600 text-xs">Thiếu (Xuất)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              )}
+
                             </div>
 
                             {/* Row 3: Quantity & Price */}
@@ -552,7 +529,7 @@ const CreateManualWarehouseReceiptDialog = ({
                             <TableHead className="w-[60px]">Ảnh</TableHead>
                             <TableHead>Sản phẩm</TableHead>
                             <TableHead className="w-[100px]">ĐVT</TableHead>
-                            {receiptType === 3 && <TableHead className="w-[120px]">Điều chỉnh</TableHead>}
+
                             <TableHead className="w-[100px]">Số lượng</TableHead>
                             <TableHead className="w-[150px]">
                               {receiptType === 2 ? 'Đơn giá bán' : 'Đơn giá vốn'}
@@ -564,7 +541,7 @@ const CreateManualWarehouseReceiptDialog = ({
                         <TableBody>
                           {selectedProducts.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={receiptType === 3 ? 9 : 8} className="text-center h-24 text-muted-foreground">
+                              <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
                                 Chưa có sản phẩm nào được chọn
                               </TableCell>
                             </TableRow>
@@ -607,22 +584,7 @@ const CreateManualWarehouseReceiptDialog = ({
                                   </Select>
                                 </TableCell>
 
-                                {receiptType === 3 && (
-                                  <TableCell>
-                                    <Select
-                                      value={item.movement}
-                                      onValueChange={(val) => handleProductChange(index, 'movement', val)}
-                                    >
-                                      <SelectTrigger className={cn("h-8 font-medium", item.movement === 'in' ? 'text-blue-600' : 'text-orange-600')}>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="in" className="text-blue-600">Thừa (Nhập)</SelectItem>
-                                        <SelectItem value="out" className="text-orange-600">Thiếu (Xuất)</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </TableCell>
-                                )}
+
 
                                 <TableCell>
                                   <Input

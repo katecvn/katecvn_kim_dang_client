@@ -114,7 +114,10 @@ const TicketStatusCell = ({ ticket }) => {
                 <SelectContent className="max-h-64 overflow-y-auto">
                   {ticketStatuses.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
-                      {item.label}
+                      <div className="flex items-center gap-2">
+                        {item.icon && <item.icon className={`h-4 w-4 ${item.color}`} />}
+                        <span className={item.color}>{item.label}</span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -31,10 +31,8 @@ const WarehouseInPage = () => {
 
   // Filter only warehouse-in receipts (receiptType = 1)
   const warehouseInReceipts = Array.isArray(warehouseReceipts)
-    ? warehouseReceipts.filter((receipt) => receipt.receiptType === 1)
-    : warehouseReceipts?.data
-      ? warehouseReceipts.data.filter((receipt) => receipt.receiptType === 1)
-      : []
+    ? warehouseReceipts
+    : warehouseReceipts?.data || []
 
   const [selectedReceiptId, setSelectedReceiptId] = useState(null)
   const [showViewDialog, setShowViewDialog] = useState(false)
@@ -48,7 +46,7 @@ const WarehouseInPage = () => {
 
   useEffect(() => {
     document.title = 'Danh sách phiếu nhập kho'
-    dispatch(getWarehouseReceipts(filters))
+    dispatch(getWarehouseReceipts({ ...filters, receiptType: 1 }))
   }, [dispatch, filters])
 
   return (

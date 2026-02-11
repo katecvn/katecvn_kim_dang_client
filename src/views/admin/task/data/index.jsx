@@ -4,11 +4,42 @@ const taskPriorities = [
   { value: 'high', label: 'Cao', variant: 'destructive' },
 ]
 
+import {
+  CheckCircle2,
+  Circle,
+  Loader2,
+  XCircle,
+} from 'lucide-react'
+
 const taskStatuses = [
-  { value: 'open', label: 'Mở', variant: 'default' },
-  { value: 'in_progress', label: 'Đang xử lý', variant: 'secondary' },
-  { value: 'done', label: 'Hoàn thành', variant: 'success' },
-  { value: 'canceled', label: 'Hủy', variant: 'destructive' },
+  {
+    value: 'open',
+    label: 'Mở',
+    variant: 'default',
+    icon: Circle,
+    color: 'text-blue-500',
+  },
+  {
+    value: 'in_progress',
+    label: 'Đang xử lý',
+    variant: 'secondary',
+    icon: Loader2,
+    color: 'text-yellow-500',
+  },
+  {
+    value: 'done',
+    label: 'Hoàn thành',
+    variant: 'success',
+    icon: CheckCircle2,
+    color: 'text-green-500',
+  },
+  {
+    value: 'canceled',
+    label: 'Hủy',
+    variant: 'destructive',
+    icon: XCircle,
+    color: 'text-gray-500',
+  },
 ]
 
 const priorityOptions = [

@@ -5,14 +5,16 @@ import { toast } from 'sonner'
 
 export const getWarehouseReceipts = createAsyncThunk(
   'warehouseReceipt/get-warehouse-receipts',
-  async ({ fromDate = null, toDate = null, page = 1, limit = 100 } = {}, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 100, receiptType } = {}, { rejectWithValue }) => {
     try {
       const response = await api.get('/warehouse-receipts', {
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
+          toDate: toDate ?? undefined,
           page,
           limit,
+          receiptType,
         },
       })
       // API returns: { data: { data: [...], pagination: {...} } }

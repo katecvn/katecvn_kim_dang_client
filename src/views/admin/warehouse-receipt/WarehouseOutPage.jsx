@@ -31,10 +31,8 @@ const WarehouseOutPage = () => {
 
   // Filter only warehouse-out receipts (receiptType = 2)
   const warehouseOutReceipts = Array.isArray(warehouseReceipts)
-    ? warehouseReceipts.filter((receipt) => receipt.receiptType === 2)
-    : warehouseReceipts?.data
-      ? warehouseReceipts.data.filter((receipt) => receipt.receiptType === 2)
-      : []
+    ? warehouseReceipts
+    : warehouseReceipts?.data || []
 
   const [selectedReceiptId, setSelectedReceiptId] = useState(null)
   const [showViewDialog, setShowViewDialog] = useState(false)
@@ -48,7 +46,7 @@ const WarehouseOutPage = () => {
 
   useEffect(() => {
     document.title = 'Danh sách phiếu xuất kho'
-    dispatch(getWarehouseReceipts(filters))
+    dispatch(getWarehouseReceipts({ ...filters, receiptType: 2 }))
   }, [dispatch, filters])
 
   return (

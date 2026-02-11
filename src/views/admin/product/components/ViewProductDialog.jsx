@@ -48,12 +48,15 @@ import { useMediaQuery } from '@/hooks/UseMediaQuery'
 
 import ProductSaleHistoryTab from './ProductSaleHistoryTab'
 import UpdateProductDialog from './UpdateProductDialog'
-import { Edit } from 'lucide-react'
+import { DeleteProductDialog } from './DeleteProductDialog'
+import { Edit, Trash } from 'lucide-react'
+import Can from '@/utils/can'
 
 const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, overlayClassName, ...props }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [product, setProduct] = useState(null)
   const [showUpdateProductDialog, setShowUpdateProductDialog] = useState(false)
+  const [showDeleteProductDialog, setShowDeleteProductDialog] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const fetchProduct = useCallback(async () => {
@@ -717,6 +720,20 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
               Sửa
             </Button>
           )}
+
+          {product && (
+            <Can permission="DELETE_PRODUCT">
+              <Button
+                variant="destructive"
+                className={cn(isMobile && "flex-1")}
+                onClick={() => setShowDeleteProductDialog(true)}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Xóa
+              </Button>
+            </Can>
+          )}
+
           <DialogClose asChild>
             <Button variant="outline" className={cn(isMobile && "flex-1")}>Đóng</Button>
           </DialogClose>
@@ -735,6 +752,24 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
             showTrigger={false}
             contentClassName="z-[100030]"
             overlayClassName="z-[100029]"
+          />
+        )}
+
+        {product && (
+          <DeleteProductDialog
+            open={showDeleteProductDialog}
+            onOpenChange={setShowDeleteProductDialog}
+            product={product}
+            showTrigger={false}
+            contentClassName="z-[100060]"
+            overlayClassName="z-[100059]"
+            onSuccess={() => {
+              // Close view dialog after successful delete if needed, 
+              // or rely on parent to refresh list. 
+              // Usually we might want to close the view dialog here.
+              setShowDeleteProductDialog(false)
+              // props.onOpenChange?.(false) // Optional: close view dialog
+            }}
           />
         )}
       </DialogContent>

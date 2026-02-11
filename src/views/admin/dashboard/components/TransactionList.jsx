@@ -1,11 +1,25 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Link } from 'react-router-dom'
 import { moneyFormat } from '@/utils/money-format'
 import { format } from 'date-fns'
+import ViewReceiptDialog from '../../receipt/components/ViewReceiptDialog'
+import ViewPaymentDialog from '../../payment/components/ViewPaymentDialog'
 
 const TransactionList = ({ title, data = [], type, loading = false, description }) => {
+  const [viewId, setViewId] = useState(null)
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false)
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+
+  const handleView = (item) => {
+    setViewId(item.id)
+    if (type === 'receipt') {
+      setShowReceiptDialog(true)
+    } else {
+      setShowPaymentDialog(true)
+    }
+  }
 
   const TransactionItem = ({ item }) => {
     const isReceipt = type === 'receipt'
@@ -14,19 +28,16 @@ const TransactionList = ({ title, data = [], type, loading = false, description 
     // Usually: payerName / receiverName
     const partnerName = item.payerName || item.receiverName || 'Khách lẻ'
 
-    // Link to detail? Maybe just link to the main list page for now.
-    const linkPath = isReceipt ? '/receipt' : '/payment'
-
     return (
       <div className="flex items-center justify-between p-2 border-b last:border-0 hover:bg-muted/50 transition-colors">
         <div className="flex flex-col gap-1 overflow-hidden">
           <div className="flex items-center gap-2">
-            <Link
-              to={linkPath}
-              className="font-medium text-sm hover:underline truncate"
+            <div
+              className="font-medium text-sm hover:underline truncate cursor-pointer text-blue-600"
+              onClick={() => handleView(item)}
             >
               {item.code}
-            </Link>
+            </div>
           </div>
           <div className="text-xs text-muted-foreground truncate">
             {partnerName}
@@ -47,7 +58,12 @@ const TransactionList = ({ title, data = [], type, loading = false, description 
   return (
     <Card className="h-full shadow-none border">
       <CardHeader className="p-4 pb-2">
-        <CardTitle className="text-base">{title}</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">{title}</CardTitle>
+          <Link to={type === 'receipt' ? '/receipt' : '/payment'} className="text-xs text-blue-600 hover:underline font-medium">
+            Xem tất cả
+          </Link>
+        </div>
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent className="p-0">
@@ -62,6 +78,23 @@ const TransactionList = ({ title, data = [], type, loading = false, description 
             )}
           </div>
         </ScrollArea>
+
+        {showReceiptDialog && (
+          <ViewReceiptDialog
+            open={showReceiptDialog}
+            onOpenChange={setShowReceiptDialog}
+            receiptId={viewId}
+            showTrigger={false}
+          />
+        )}
+        {showPaymentDialog && (
+          <ViewPaymentDialog
+            open={showPaymentDialog}
+            onOpenChange={setShowPaymentDialog}
+            paymentId={viewId}
+            showTrigger={false}
+          />
+        )}
       </CardContent>
     </Card>
   )

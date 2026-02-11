@@ -15,17 +15,46 @@ import { format } from 'date-fns'
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getSalesBacklog } from '@/stores/ReportSlice'
-import ViewInvoiceDialog from '../invoice/components/ViewInvoiceDialog'
+import ViewSalesContractDialog from './components/ViewSalesContractDialog'
+
+import { DataTablePagination } from '../invoice/components/DataTablePagination'
+
 const SalesBacklogPage = () => {
   const dispatch = useDispatch()
-  const { salesBacklog: data, loading } = useSelector((state) => state.report)
+  const { salesBacklog: data, salesBacklogPagination: pagination, loading } = useSelector((state) => state.report)
 
-  const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false)
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(50)
+  const [showViewContractDialog, setShowViewContractDialog] = useState(false)
+  const [selectedContractId, setSelectedContractId] = useState(null)
 
   useEffect(() => {
-    dispatch(getSalesBacklog())
-  }, [dispatch])
+    dispatch(getSalesBacklog({ page, limit }))
+  }, [dispatch, page, limit])
+
+  // Mock table object for DataTablePagination
+  const table = {
+    getFilteredSelectedRowModel: () => ({ rows: [] }),
+    getFilteredRowModel: () => ({ rows: data || [] }),
+    getState: () => ({
+      pagination: {
+        pageSize: limit,
+        pageIndex: page - 1,
+      },
+    }),
+    setPageSize: (newPageSize) => {
+      setLimit(newPageSize)
+      setPage(1)
+    },
+    setPageIndex: (newPageIndex) => {
+      setPage(newPageIndex + 1)
+    },
+    getPageCount: () => pagination?.totalPages || 1,
+    getCanPreviousPage: () => page > 1,
+    getCanNextPage: () => page < (pagination?.totalPages || 1),
+    previousPage: () => setPage((p) => Math.max(1, p - 1)),
+    nextPage: () => setPage((p) => Math.min(pagination?.totalPages || 1, p + 1)),
+  }
 
   return (
     <Layout>
@@ -34,7 +63,16 @@ const SalesBacklogPage = () => {
           <h2 className="text-2xl font-bold tracking-tight">Đơn bán chưa giao</h2>
         </div>
 
-        <div className="flex-1 overflow-auto rounded-md border">
+        {selectedContractId && (
+          <ViewSalesContractDialog
+            open={showViewContractDialog}
+            onOpenChange={setShowViewContractDialog}
+            contractId={selectedContractId}
+            showTrigger={false}
+          />
+        )}
+
+        <div className="flex-1 overflow-auto rounded-md border mb-4">
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-secondary">
               <TableRow>
@@ -74,16 +112,14 @@ const SalesBacklogPage = () => {
                     </TableCell>
                   </TableRow>
                 ))
-              ) : data.length > 0 ? (
+              ) : data && data.length > 0 ? (
                 data.flatMap(
                   (contract) =>
                     contract.items?.map((item) => {
-                      // Calculate based on item-level data if available
                       const orderedQty = Number(item.quantity) || 0
                       const deliveredQty = Number(item.deliveredQuantity) || 0
                       const remainingQty = orderedQty - deliveredQty
 
-                      // Use contract totals divided by number of items as approximation
                       const contractTotal = Number(contract.totalAmount) || 0
                       const contractPaid = Number(contract.paidAmount) || 0
                       const itemCount = contract.items?.length || 1
@@ -96,8 +132,8 @@ const SalesBacklogPage = () => {
                           <TableCell
                             className="font-medium cursor-pointer text-primary hover:underline"
                             onClick={() => {
-                              setSelectedInvoiceId(contract.id)
-                              setShowViewInvoiceDialog(true)
+                              setSelectedContractId(contract.id)
+                              setShowViewContractDialog(true)
                             }}
                           >
                             {contract.code}
@@ -158,12 +194,7 @@ const SalesBacklogPage = () => {
           </Table>
         </div>
 
-        <ViewInvoiceDialog
-          open={showViewInvoiceDialog}
-          onOpenChange={setShowViewInvoiceDialog}
-          invoiceId={selectedInvoiceId}
-          showTrigger={false}
-        />
+        <DataTablePagination table={table} />
       </LayoutBody>
     </Layout>
   )

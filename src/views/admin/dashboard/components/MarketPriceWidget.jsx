@@ -26,8 +26,8 @@ const MarketPriceWidget = () => {
   }, [])
 
   return (
-    <Card className="col-span-1 border-none shadow-none bg-transparent">
-      <CardHeader className="pl-0 pt-0">
+    <Card className="h-full shadow-none border bg-card">
+      <CardHeader className="p-4 pb-2 border-b">
         <CardTitle className="text-lg font-bold">Bảng giá thị trường</CardTitle>
         {metadata && (
           <p className="text-xs text-muted-foreground">
@@ -35,17 +35,17 @@ const MarketPriceWidget = () => {
           </p>
         )}
       </CardHeader>
-      <CardContent className="pl-0">
+      <CardContent className="p-0">
         {loading ? (
-          <div className="space-y-2">
+          <div className="space-y-2 p-4">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
         ) : (
-          <div className="space-y-4 h-[450px] overflow-y-auto pr-2">
+          <div className="space-y-4 h-[550px] overflow-y-auto px-4 py-2 custom-scrollbar">
             {prices.map((item) => (
-              <div key={item.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm bg-card">
+              <div key={item.id} className="flex items-center justify-between rounded-lg border p-3 shadow-sm bg-card hover:bg-muted/50 transition-colors">
                 <div>
                   <div className="font-semibold text-sm">{item.name}</div>
                   <div className="text-xs text-muted-foreground">Mã: {item.code}</div>
@@ -61,7 +61,7 @@ const MarketPriceWidget = () => {
               </div>
             ))}
             {prices.length === 0 && (
-              <div className="text-sm text-center text-muted-foreground">Không có dữ liệu giá</div>
+              <div className="text-sm text-center text-muted-foreground py-8">Không có dữ liệu giá</div>
             )}
           </div>
         )}

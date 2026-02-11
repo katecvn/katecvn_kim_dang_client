@@ -5,8 +5,23 @@ import { Link } from 'react-router-dom'
 import { moneyFormat } from '@/utils/money-format'
 import { format, isPast, isToday, parseISO } from 'date-fns'
 import { IconShoppingCart, IconTruckDelivery, IconUser, IconPackage, IconCalendar } from '@tabler/icons-react'
+import { useState } from 'react'
+import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
+import ViewPurchaseOrderDialog from '../../purchase-order/components/ViewPurchaseOrderDialog'
 
 const BacklogWidget = ({ title, data = [], type, loading = false, description }) => {
+  const [viewId, setViewId] = useState(null)
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false)
+
+  const handleView = (item) => {
+    setViewId(item.id)
+    if (type === 'sale') {
+      setShowInvoiceDialog(true)
+    } else {
+      setShowPurchaseDialog(true)
+    }
+  }
 
   const OrderItem = ({ item }) => {
     const isSale = type === 'sale'
@@ -32,12 +47,12 @@ const BacklogWidget = ({ title, data = [], type, loading = false, description })
           <div className="flex-1 min-w-0 flex flex-col gap-1">
             {/* Row 1: Code */}
             <div className="flex items-center">
-              <Link
-                to={linkPath}
-                className="font-bold text-sm hover:underline hover:text-primary truncate transition-colors"
+              <div
+                className="font-bold text-sm hover:underline hover:text-primary truncate transition-colors cursor-pointer text-blue-600"
+                onClick={() => handleView(item)}
               >
                 {item.code}
-              </Link>
+              </div>
             </div>
 
             {/* Row 2: Customer Name */}
@@ -80,15 +95,20 @@ const BacklogWidget = ({ title, data = [], type, loading = false, description })
   }
 
   return (
-    <Card className="h-full shadow-sm border-border/60">
+    <Card className="h-[800px] flex flex-col shadow-sm border-border/60">
       <CardHeader className="p-4 pb-3 border-b border-border/40 bg-muted/10">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold text-foreground/90">{title}</CardTitle>
-          {/* Optional badge count or action */}
+          <Link
+            to={type === 'sale' ? '/sales-backlog' : '/purchase-backlog'}
+            className="text-xs text-blue-600 hover:underline font-medium"
+          >
+            Xem tất cả
+          </Link>
         </div>
         {description && <CardDescription className="text-xs">{description}</CardDescription>}
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="p-0 flex-1 min-h-0">
         <ScrollArea className="h-full">
           <div className="">
             {loading ? (
@@ -106,6 +126,23 @@ const BacklogWidget = ({ title, data = [], type, loading = false, description })
             )}
           </div>
         </ScrollArea>
+
+        {showInvoiceDialog && (
+          <ViewInvoiceDialog
+            open={showInvoiceDialog}
+            onOpenChange={setShowInvoiceDialog}
+            invoiceId={viewId}
+            showTrigger={false}
+          />
+        )}
+        {showPurchaseDialog && (
+          <ViewPurchaseOrderDialog
+            open={showPurchaseDialog}
+            onOpenChange={setShowPurchaseDialog}
+            purchaseOrderId={viewId}
+            showTrigger={false}
+          />
+        )}
       </CardContent>
     </Card>
   )

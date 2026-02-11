@@ -3,12 +3,44 @@ import { handleError } from '@/utils/handle-error'
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 
 // Purchase Backlog Report
+// Purchase Backlog Report
 export const getPurchaseBacklog = createAsyncThunk(
   'report/get-purchase-backlog',
-  async (_, { rejectWithValue }) => {
+  async ({ page = 1, limit = 50 } = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get('/reports/purchases/backlog')
-      return response.data.data || []
+      const response = await api.get('/reports/purchases/backlog', {
+        params: {
+          page,
+          limit,
+        },
+      })
+
+      const responseData = response.data
+      let data = responseData?.data
+      let pagination = responseData?.pagination
+      console.log('pagination', pagination)
+
+      // Fallback if structure is different
+      if (!Array.isArray(data) && Array.isArray(responseData?.data)) {
+        data = responseData.data
+        pagination = responseData.pagination
+
+      }
+
+      if (!data && Array.isArray(responseData)) {
+        data = responseData
+        pagination = null
+      }
+
+      return {
+        data: data || [],
+        pagination: pagination || {
+          total: (data || []).length,
+          page: 1,
+          limit: (data || []).length || 50,
+          totalPages: 1
+        }
+      }
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -19,10 +51,39 @@ export const getPurchaseBacklog = createAsyncThunk(
 // Sales Backlog Report
 export const getSalesBacklog = createAsyncThunk(
   'report/get-sales-backlog',
-  async (_, { rejectWithValue }) => {
+  async ({ page = 1, limit = 50 } = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get('/reports/sales/backlog')
-      return response.data.data || []
+      const response = await api.get('/reports/sales/backlog', {
+        params: {
+          page,
+          limit,
+        },
+      })
+
+      const responseData = response.data
+      let data = responseData?.data?.data
+      let pagination = responseData?.data?.pagination
+
+      // Fallback if structure is different
+      if (!Array.isArray(data) && Array.isArray(responseData?.data)) {
+        data = responseData.data
+        pagination = responseData.pagination
+      }
+
+      if (!data && Array.isArray(responseData)) {
+        data = responseData
+        pagination = null
+      }
+
+      return {
+        data: data || [],
+        pagination: pagination || {
+          total: (data || []).length,
+          page: 1,
+          limit: (data || []).length || 50,
+          totalPages: 1
+        }
+      }
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -34,7 +95,19 @@ const reportSlice = createSlice({
   name: 'report',
   initialState: {
     purchaseBacklog: [],
-    salesBacklog: [],
+    purchaseBacklogPagination: {
+      total: 0,
+      page: 1,
+      limit: 50,
+      totalPages: 1
+    },
+    salesBacklog: [], // Array of contracts
+    salesBacklogPagination: { // Pagination metadata
+      total: 0,
+      page: 1,
+      limit: 50,
+      totalPages: 1
+    },
     loading: false,
     error: null,
   },
@@ -48,7 +121,8 @@ const reportSlice = createSlice({
       })
       .addCase(getPurchaseBacklog.fulfilled, (state, action) => {
         state.loading = false
-        state.purchaseBacklog = action.payload
+        state.purchaseBacklog = action.payload.data
+        state.purchaseBacklogPagination = action.payload.pagination
       })
       .addCase(getPurchaseBacklog.rejected, (state, action) => {
         state.loading = false
@@ -61,7 +135,8 @@ const reportSlice = createSlice({
       })
       .addCase(getSalesBacklog.fulfilled, (state, action) => {
         state.loading = false
-        state.salesBacklog = action.payload
+        state.salesBacklog = action.payload.data
+        state.salesBacklogPagination = action.payload.pagination
       })
       .addCase(getSalesBacklog.rejected, (state, action) => {
         state.loading = false

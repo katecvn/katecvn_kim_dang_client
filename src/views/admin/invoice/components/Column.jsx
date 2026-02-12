@@ -390,7 +390,7 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'user',
+    id: 'user',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Người tạo" />
     ),
@@ -409,10 +409,7 @@ export const columns = [
         </div>
       )
     },
-    filterFn: (row, id, value) => {
-      const userId = row.original?.user?.id
-      return userId ? value.map(String).includes(String(userId)) : false
-    },
+    // Server-side filtering, no filterFn needed
 
     accessorFn: (row) => row.user?.id || null,
 

@@ -1474,7 +1474,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                         <TableCell className="text-right font-semibold">
                                           {moneyFormat(receipt.totalAmount)}
                                         </TableCell>
-                                        <TableCell>{dateFormat(receipt.receiptDate)}</TableCell>
+                                        <TableCell>{dateFormat(receipt.receiptDate, true)}</TableCell>
                                         <TableCell>
                                           {/* Action buttons */}
                                           <div className="flex items-center justify-end gap-1">

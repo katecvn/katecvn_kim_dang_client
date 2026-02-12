@@ -186,7 +186,9 @@ const ExportInvoiceView = ({
       const col = worksheet.getColumn(column)
       col.eachCell((cell, rowNumber) => {
         if (typeof cell.value === 'string' && rowNumber > 2) {
-          const numValue = parseFloat(cell.value.replace(/[^\d.-]/g, ''))
+          // Remove dots (thousands separator in VN) before parsing
+          // Keep only digits and minus sign (assuming integers for money/quantity)
+          const numValue = parseFloat(cell.value.replace(/\./g, '').replace(/[^\d.-]/g, ''))
 
           if (!isNaN(numValue)) {
             cell.value = numValue // Chuyển thành số
@@ -336,11 +338,23 @@ const ExportInvoiceView = ({
                           'Không có'}
                       </TableCell>
                       <TableCell>
-                        {invoice.receipts.length
-                          ? invoice.receipts[0]?.debt.status === 'closed'
-                            ? 'Thanh toán toàn bộ'
-                            : 'Thanh toán một phần'
-                          : 'Chưa có phiếu thu'}
+                        {(() => {
+                          const paymentStatus = invoice.paymentStatus
+                          const totalAmount = parseFloat(invoice.totalAmount || 0)
+                          const paidAmount = parseFloat(invoice.paidAmount || 0)
+                          const remainingAmount = totalAmount - paidAmount
+
+                          if (paymentStatus === 'paid' || remainingAmount <= 0) {
+                            return 'Thanh toán toàn bộ'
+                          }
+                          if (paidAmount > 0 && remainingAmount > 0) {
+                            return 'Thanh toán một phần'
+                          }
+                          if (paidAmount === 0) {
+                            return 'Chưa thanh toán'
+                          }
+                          return 'Chưa có phiếu thu'
+                        })()}
                       </TableCell>
                       <TableCell>
                         {invoice.status === 'accepted'

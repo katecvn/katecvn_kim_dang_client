@@ -67,7 +67,6 @@ export const getColumns = (onView, type = 'all', onRefresh) => [
       const supplier = row.original.supplier
       const customer = row.original.customer
 
-      // Nhập kho -> hiển thị supplier
       if (receiptType === 1 && supplier) {
         return (
           <div className="w-48" title={supplier.name}>

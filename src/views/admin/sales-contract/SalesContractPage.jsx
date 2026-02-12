@@ -39,11 +39,25 @@ const SalesContractPage = () => {
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 500)
 
+  const [columnFilters, setColumnFilters] = useState([])
+
   useEffect(() => {
     document.title = 'Danh sách hợp đồng bán hàng'
-    dispatch(getSalesContracts({ ...filters, ...pageParams, search: debouncedSearch }))
+
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+    const userFilter = columnFilters.find((f) => f.id === 'user')?.value
+    const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+
+    dispatch(getSalesContracts({
+      ...filters,
+      ...pageParams,
+      search: debouncedSearch,
+      status: statusFilter,
+      creator: userFilter,
+      paymentStatus: paymentStatusFilter
+    }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, filters, pageParams.page, pageParams.limit, debouncedSearch])
+  }, [dispatch, filters, pageParams.page, pageParams.limit, debouncedSearch, columnFilters])
 
   // Reset page when search changes
   useEffect(() => {
@@ -93,6 +107,8 @@ const SalesContractPage = () => {
               onSearchChange={(value) => {
                 setSearch(value)
               }}
+              columnFilters={columnFilters}
+              onColumnFiltersChange={setColumnFilters}
             />
           )}
         </div>

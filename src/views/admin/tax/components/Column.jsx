@@ -69,7 +69,7 @@ export const columns = [
       return (
         <div className="flex space-x-2">
           <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
-            {dateFormat(row.getValue('createdAt'))}
+            {dateFormat(row.getValue('createdAt'), true)}
           </span>
         </div>
       )
@@ -84,7 +84,7 @@ export const columns = [
       return (
         <div className="flex space-x-2">
           <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem]">
-            {dateFormat(row.getValue('updatedAt'))}
+            {dateFormat(row.getValue('updatedAt'), true)}
           </span>
         </div>
       )

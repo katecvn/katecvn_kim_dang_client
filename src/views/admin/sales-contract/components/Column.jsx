@@ -189,9 +189,6 @@ export const columns = [
         </Badge>
       )
     },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
     enableSorting: true,
     enableHiding: true,
   },
@@ -246,7 +243,7 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'invoices',
+    id: 'paymentStatus', // Change accessorKey: 'invoices' to id: 'paymentStatus'
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Thanh toán" />
     ),
@@ -275,13 +272,30 @@ export const columns = [
         </Badge>
       )
     },
-    filterFn: (row, id, value) => {
-      // Filter by invoice paymentStatus
-      const firstInvoice = row.original.invoices?.[0]
-      if (!firstInvoice) return false
-      return value.includes(firstInvoice.paymentStatus)
-    },
     enableSorting: false,
+    enableHiding: true,
+    accessorFn: (row) => row.invoices?.[0]?.paymentStatus || null,
+  },
+  {
+    id: 'user', // Add Creator column
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Người tạo" />
+    ),
+    cell: ({ row }) => {
+      const user = row.original.createdByUser
+      return (
+        <div className="flex w-32 flex-col">
+          <span className="truncate font-medium" title={user?.fullName}>
+            {user?.fullName || '—'}
+          </span>
+          <span className="truncate text-xs text-muted-foreground">
+            {dateFormat(row.original.createdAt, true)}
+          </span>
+        </div>
+      )
+    },
+    accessorFn: (row) => row.createdByUser?.id || null, // For server-side filtering matching
+    enableSorting: true,
     enableHiding: true,
   },
   {

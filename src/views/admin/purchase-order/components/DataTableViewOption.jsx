@@ -23,6 +23,7 @@ const DataTableViewOptions = ({ table }) => {
     debt: 'Công nợ',
     orderDate: 'Ngày đặt',
     expectedDeliveryDate: 'Ngày dự kiến giao hàng',
+    user: 'Người tạo',
   }
 
   return (

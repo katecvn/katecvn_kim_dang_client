@@ -185,9 +185,6 @@ export const columns = [
         </Badge>
       )
     },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
     enableSorting: true,
     enableHiding: true,
   },
@@ -239,7 +236,7 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'purchaseOrders',
+    id: 'paymentStatus', // Changed from purchaseOrders
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Thanh toán" />
     ),
@@ -280,13 +277,30 @@ export const columns = [
         </Badge>
       )
     },
-    filterFn: (row, id, value) => {
-      // Filter by PO paymentStatus
-      const firstPO = row.original.purchaseOrders?.[0]
-      if (!firstPO) return false
-      return value.includes(firstPO.paymentStatus)
-    },
     enableSorting: false,
+    enableHiding: true,
+    accessorFn: (row) => row.purchaseOrders?.[0]?.paymentStatus || null,
+  },
+  {
+    id: 'user',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Người tạo" />
+    ),
+    cell: ({ row }) => {
+      const user = row.original.createdByUser
+      return (
+        <div className="flex w-32 flex-col">
+          <span className="truncate font-medium" title={user?.fullName}>
+            {user?.fullName || '—'}
+          </span>
+          <span className="truncate text-xs text-muted-foreground">
+            {dateFormat(row.original.createdAt)}
+          </span>
+        </div>
+      )
+    },
+    accessorFn: (row) => row.createdByUser?.id || null,
+    enableSorting: true,
     enableHiding: true,
   },
   {

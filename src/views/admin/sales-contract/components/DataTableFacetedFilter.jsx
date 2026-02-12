@@ -20,6 +20,8 @@ import {
 import { Separator } from '@/components/ui/separator'
 
 const DataTableFacetedFilter = ({ column, title, options }) => {
+  if (!column || !options) return null
+
   const facets = column?.getFacetedUniqueValues()
   const selectedValues = new Set(column?.getFilterValue())
 

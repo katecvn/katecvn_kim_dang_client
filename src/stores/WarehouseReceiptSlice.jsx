@@ -11,7 +11,6 @@ export const getWarehouseReceipts = createAsyncThunk(
         params: {
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
-          toDate: toDate ?? undefined,
           page,
           limit,
           receiptType,

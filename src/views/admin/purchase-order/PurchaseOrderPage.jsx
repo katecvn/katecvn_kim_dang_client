@@ -38,18 +38,25 @@ const PurchaseOrderPage = () => {
   const [updatePurchaseOrderId, setUpdatePurchaseOrderId] = useState(null)
   const [showUpdatePurchaseOrderDialog, setShowUpdatePurchaseOrderDialog] = useState(false)
 
+  const [columnFilters, setColumnFilters] = useState([])
+
   const columns = useMemo(() => getColumns(setViewPurchaseOrderId), [])
 
   useEffect(() => {
     document.title = 'Danh sách đơn đặt hàng'
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+    const userFilter = columnFilters.find((f) => f.id === 'user')?.value
+
     const apiFilters = {
       ...filters,
       page: pageIndex + 1,
       limit: pageSize,
-      search: debouncedSearch
+      search: debouncedSearch,
+      status: statusFilter,
+      creator: userFilter
     }
     dispatch(getPurchaseOrders(apiFilters))
-  }, [dispatch, filters, pageIndex, pageSize, debouncedSearch])
+  }, [dispatch, filters, pageIndex, pageSize, debouncedSearch, columnFilters])
 
   const handlePurchaseOrderCreated = (newPurchaseOrder) => {
     if (newPurchaseOrder?.id) {
@@ -118,6 +125,8 @@ const PurchaseOrderPage = () => {
                 setSearch(value)
                 setPageIndex(0) // Reset to first page on search
               }}
+              columnFilters={columnFilters}
+              onColumnFiltersChange={setColumnFilters}
             />
           )}
         </div>

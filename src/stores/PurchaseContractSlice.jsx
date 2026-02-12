@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 
 export const getPurchaseContracts = createAsyncThunk(
   'purchaseContract/get-purchase-contracts',
-  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '', status = null, creator = null, paymentStatus = null }, { rejectWithValue }) => {
     try {
       const response = await api.get('/purchase-contracts', {
         params: {
@@ -13,7 +13,10 @@ export const getPurchaseContracts = createAsyncThunk(
           toDate: toDate ?? undefined,
           page,
           limit,
-          search
+          search,
+          status: Array.isArray(status) && status.length > 0 ? status.join(',') : undefined,
+          creator: Array.isArray(creator) && creator.length > 0 ? creator.join(',') : undefined,
+          paymentStatus: Array.isArray(paymentStatus) && paymentStatus.length > 0 ? paymentStatus.join(',') : undefined,
         },
       })
       const responseData = response.data
@@ -177,7 +180,7 @@ export const cancelPurchaseContract = createAsyncThunk(
 
 export const getMyPurchaseContracts = createAsyncThunk(
   'purchaseContract/get-my-purchase-contracts',
-  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '', status = null, creator = null, paymentStatus = null }, { rejectWithValue }) => {
     try {
       const response = await api.get('/purchase-contracts/by-user', {
         headers: {
@@ -190,7 +193,10 @@ export const getMyPurchaseContracts = createAsyncThunk(
           toDate: toDate ?? undefined,
           page,
           limit,
-          search
+          search,
+          status: Array.isArray(status) && status.length > 0 ? status.join(',') : undefined,
+          creator: Array.isArray(creator) && creator.length > 0 ? creator.join(',') : undefined,
+          paymentStatus: Array.isArray(paymentStatus) && paymentStatus.length > 0 ? paymentStatus.join(',') : undefined,
         },
       })
       const responseData = response.data

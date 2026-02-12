@@ -18,8 +18,9 @@ export function DataTableViewOptions({ table }) {
     contractDate: 'Ngày ký',
     expirationDate: 'Ngày hết hạn',
     status: 'Trạng thái',
-    warehouseReceiptStatus: 'Trạng thái nhập',
-    purchaseOrders: 'Thanh toán'
+    itemStatus: 'Trạng thái nhập',
+    paymentStatus: 'Thanh toán',
+    user: 'Người tạo'
   }
 
   return (

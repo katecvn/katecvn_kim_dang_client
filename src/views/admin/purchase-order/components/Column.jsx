@@ -299,7 +299,7 @@ export const getColumns = (onView) => [
     enableHiding: true,
   },
   {
-    accessorKey: 'createdByUser',
+    id: 'user', // Match with PurchaseOrderPage filter logic
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Người tạo" />
     ),
@@ -318,10 +318,7 @@ export const getColumns = (onView) => [
         </div>
       )
     },
-    filterFn: (row, id, value) => {
-      const userId = row.original?.createdByUser?.id
-      return userId ? value.map(String).includes(String(userId)) : false
-    },
+    // Server-side filtering, no filterFn needed
 
     accessorFn: (row) => row.createdByUser?.id || null,
 

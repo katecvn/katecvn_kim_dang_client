@@ -32,12 +32,14 @@ const PurchaseContractDataTable = ({
   pagination = { page: 1, limit: 20, totalPages: 1 },
   onPageChange,
   onPageSizeChange,
-  onSearchChange
+  onSearchChange,
+  columnFilters = [], // Default to empty array if not provided
+  onColumnFiltersChange // Function from parent
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
-  const [columnFilters, setColumnFilters] = useState([])
+  // const [columnFilters, setColumnFilters] = useState([]) // Controlled by parent now
   const [sorting, setSorting] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [viewId, setViewId] = useState(null)
@@ -61,7 +63,7 @@ const PurchaseContractDataTable = ({
     },
     pageCount: pagination.totalPages,
     manualPagination: true,
-    manualFiltering: true,
+    manualFiltering: true, // Enable server-side filtering
     onPaginationChange: (updater) => {
       if (typeof updater === 'function') {
         const newState = updater({
@@ -80,7 +82,7 @@ const PurchaseContractDataTable = ({
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: onColumnFiltersChange, // Use parent handler
     onGlobalFilterChange: (updater) => {
       setGlobalFilter(updater)
       if (typeof updater !== 'function') {

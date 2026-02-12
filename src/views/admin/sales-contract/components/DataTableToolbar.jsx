@@ -14,13 +14,14 @@ import { statuses, paymentStatuses } from '../data'
 import { toast } from 'sonner'
 import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
-import { useDispatch } from 'react-redux'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useDispatch, useSelector } from 'react-redux'
+import { getUsers } from '@/stores/UserSlice'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -39,6 +40,11 @@ const DataTableToolbar = ({ table }) => {
     setSelectedContracts(contracts)
     setSelectedContractIds(contracts.map((inv) => inv.id))
   }, [selectedRows])
+
+  const users = useSelector((state) => state.user.users)
+  useEffect(() => {
+    dispatch(getUsers())
+  }, [dispatch])
 
   const handleDelete = async () => {
     const selectedIds = selectedContracts.map((inv) => inv.id)
@@ -140,6 +146,18 @@ const DataTableToolbar = ({ table }) => {
           className="h-8 w-[150px] lg:w-[250px]"
         />
 
+        {/* Filter theo người tạo */}
+        {users && table.getColumn('user') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('user')}
+            title="Người tạo"
+            options={users?.map((user) => ({
+              value: user?.id,
+              label: user?.fullName,
+            }))}
+          />
+        )}
+
         {table.getColumn('status') && (
           <DataTableFacetedFilter
             column={table.getColumn('status')}
@@ -148,9 +166,9 @@ const DataTableToolbar = ({ table }) => {
           />
         )}
 
-        {table.getColumn('invoices') && (
+        {table.getColumn('paymentStatus') && (
           <DataTableFacetedFilter
-            column={table.getColumn('invoices')}
+            column={table.getColumn('paymentStatus')}
             title="Thanh toán"
             options={paymentStatuses}
           />

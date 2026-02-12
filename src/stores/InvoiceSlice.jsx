@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 
 export const getInvoices = createAsyncThunk(
   'invoice/get-invoices',
-  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '', status = null, creator = null }, { rejectWithValue }) => {
     try {
       const response = await api.get('/invoice', {
         headers: {
@@ -22,7 +22,9 @@ export const getInvoices = createAsyncThunk(
           toDate: toDate ?? undefined,
           page,
           limit,
-          search
+          search,
+          status: Array.isArray(status) && status.length > 0 ? status.join(',') : status,
+          creator: Array.isArray(creator) && creator.length > 0 ? creator.join(',') : creator
         },
       })
       const responseData = response.data
@@ -83,7 +85,7 @@ export const getInvoiceDetail = createAsyncThunk(
 
 export const getMyInvoices = createAsyncThunk(
   'invoice/get-my-invoices',
-  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '' }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '', status = null, creator = null }, { rejectWithValue }) => {
     try {
       const response = await api.get('/invoice/by-user', {
         headers: {
@@ -96,7 +98,9 @@ export const getMyInvoices = createAsyncThunk(
           toDate: toDate ?? undefined,
           page,
           limit,
-          search
+          search,
+          status: Array.isArray(status) && status.length > 0 ? status.join(',') : status,
+          creator: Array.isArray(creator) && creator.length > 0 ? creator.join(',') : creator
         },
       })
 

@@ -35,6 +35,7 @@ const InvoicePage = () => {
   const [pageSize, setPageSize] = useState(15)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 500)
+  const [columnFilters, setColumnFilters] = useState([])
 
 
   const [filters, setFilters] = useState({
@@ -46,25 +47,37 @@ const InvoicePage = () => {
   useEffect(() => {
     document.title = 'Danh sách đơn bán'
 
+    // Extract status and user filters
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+    const userFilter = columnFilters.find((f) => f.id === 'user')?.value
+
     // Convert date filters for API
     const apiFilters = {
       fromDate: filters.fromDate,
       toDate: filters.toDate,
       page: pageIndex + 1, // API uses 1-based indexing
       limit: pageSize,
-      search: debouncedSearch
+      search: debouncedSearch,
+      status: statusFilter,
+      creator: userFilter
     }
 
     dispatch(getInvoices(apiFilters))
-  }, [dispatch, filters, pageIndex, pageSize, debouncedSearch])
+  }, [dispatch, filters, pageIndex, pageSize, debouncedSearch, columnFilters])
 
   const refreshData = () => {
+    // Extract status and user filters
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+    const userFilter = columnFilters.find((f) => f.id === 'user')?.value
+
     const apiFilters = {
       fromDate: filters.fromDate,
       toDate: filters.toDate,
       page: pageIndex + 1,
       limit: pageSize,
-      search: debouncedSearch
+      search: debouncedSearch,
+      status: statusFilter,
+      creator: userFilter
     }
     dispatch(getInvoices(apiFilters))
   }
@@ -140,6 +153,8 @@ const InvoicePage = () => {
               setSearch(value)
               setPageIndex(0) // Reset to first page on search
             }}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={setColumnFilters}
           />
         </div>
 

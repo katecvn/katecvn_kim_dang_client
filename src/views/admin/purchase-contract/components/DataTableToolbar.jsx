@@ -17,8 +17,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { useEffect } from 'react'
+import { getUsers } from '@/stores/UserSlice'
+import { purchaseContractPaymentStatuses } from '../data'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -39,6 +41,11 @@ const DataTableToolbar = ({ table }) => {
     setSelectedContracts(contracts)
     setSelectedContractIds(contracts.map((inv) => inv.id))
   }, [selectedRows])
+
+  const users = useSelector((state) => state.user.users)
+  useEffect(() => {
+    dispatch(getUsers())
+  }, [dispatch])
 
   const handleDelete = async () => {
     const selectedIds = selectedContracts.map((inv) => inv.id)
@@ -159,11 +166,31 @@ const DataTableToolbar = ({ table }) => {
           className="h-8 w-[150px] lg:w-[250px]"
         />
 
+        {/* Filter theo người tạo */}
+        {users && table.getColumn('user') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('user')}
+            title="Người tạo"
+            options={users?.map((user) => ({
+              value: user?.id,
+              label: user?.fullName,
+            }))}
+          />
+        )}
+
         {table.getColumn('status') && (
           <DataTableFacetedFilter
             column={table.getColumn('status')}
             title="Trạng thái"
             options={purchaseContractStatuses}
+          />
+        )}
+
+        {table.getColumn('paymentStatus') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('paymentStatus')}
+            title="Thanh toán"
+            options={purchaseContractPaymentStatuses}
           />
         )}
 

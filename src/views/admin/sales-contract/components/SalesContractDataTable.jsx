@@ -32,12 +32,19 @@ const SalesContractDataTable = ({
   pagination = { page: 1, limit: 20, totalPages: 1 },
   onPageChange,
   onPageSizeChange,
-  onSearchChange
+  onSearchChange,
+  columnFilters = [], // Add columnFilters prop
+  onColumnFiltersChange, // Add onColumnFiltersChange prop
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
-  const [columnFilters, setColumnFilters] = useState([])
+
+  // Use internal state if props not provided (fallback)
+  const [internalColumnFilters, setInternalColumnFilters] = useState([])
+  const finalColumnFilters = onColumnFiltersChange ? columnFilters : internalColumnFilters
+  const finalSetColumnFilters = onColumnFiltersChange ? onColumnFiltersChange : setInternalColumnFilters
+
   const [sorting, setSorting] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
 
@@ -51,7 +58,7 @@ const SalesContractDataTable = ({
       sorting,
       columnVisibility,
       rowSelection,
-      columnFilters,
+      columnFilters: finalColumnFilters,
       globalFilter,
       pagination: {
         pageIndex: pagination.page - 1,
@@ -77,7 +84,7 @@ const SalesContractDataTable = ({
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: finalSetColumnFilters,
     onGlobalFilterChange: (updater) => {
       setGlobalFilter(updater)
       if (typeof updater !== 'function') {

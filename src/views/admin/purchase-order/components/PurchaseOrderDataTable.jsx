@@ -38,11 +38,18 @@ const PurchaseOrderDataTable = ({
   onPaginationChange,
   // Server-side search
   onSearchChange,
+  columnFilters = [], // Add columnFilters prop
+  onColumnFiltersChange, // Add onColumnFiltersChange prop
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
-  const [columnFilters, setColumnFilters] = useState([])
+
+  // Use internal state if props not provided (fallback)
+  const [internalColumnFilters, setInternalColumnFilters] = useState([])
+  const finalColumnFilters = onColumnFiltersChange ? columnFilters : internalColumnFilters
+  const finalSetColumnFilters = onColumnFiltersChange ? onColumnFiltersChange : setInternalColumnFilters
+
   const [sorting, setSorting] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
 
@@ -61,7 +68,7 @@ const PurchaseOrderDataTable = ({
       sorting,
       columnVisibility,
       rowSelection,
-      columnFilters,
+      columnFilters: finalColumnFilters,
       globalFilter,
       pagination, // server-side pagination state
     },
@@ -72,7 +79,7 @@ const PurchaseOrderDataTable = ({
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: finalSetColumnFilters,
     onGlobalFilterChange: (updater) => {
       const value = typeof updater === 'function' ? updater(globalFilter) : updater
       setGlobalFilter(value)

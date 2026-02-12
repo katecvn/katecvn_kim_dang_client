@@ -18,7 +18,8 @@ const DataTableViewOptions = ({ table }) => {
     contractDate: 'Ngày ký',
     status: 'Trạng thái',
     warehouseStatus: 'Trạng thái PXK',
-    invoices: 'Thanh toán',
+    paymentStatus: 'Thanh toán',
+    user: 'Người tạo',
   }
 
   return (

@@ -100,10 +100,13 @@ const DataTableRowActions = ({ row }) => {
       // Map contract details to invoice items structure for the dialog
       const mappedItems = contractDetail?.items?.map(item => ({
         id: item.id,
+        productId: item.productId,
         productName: item.product?.name,
         quantity: item.quantity,
         unitName: item.unit?.name,
+        unitId: item.unitId,
         salesContractItemId: item.id, // Mark as contract item
+        price: item.unitPrice,
       })) || []
 
       // Construct object compat with dialog
@@ -137,7 +140,7 @@ const DataTableRowActions = ({ row }) => {
           unitId: item.unitId || item.unit?.id, // Assuming structure
           movement: 'out',
           qtyActual: item.quantity,
-          unitPrice: item.unitPrice || 0,
+          unitPrice: item.price || 0,
           content: `Xuất kho theo HĐ ${contract.code}`,
           salesContractId: contract.id,
           salesContractItemId: item.salesContractItemId

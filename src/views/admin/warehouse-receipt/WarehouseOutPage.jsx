@@ -42,12 +42,16 @@ const WarehouseOutPage = () => {
     setShowViewDialog(true)
   }, [])
 
-  const columns = useMemo(() => getColumns(handleView), [handleView])
+  const refreshData = useCallback(() => {
+    dispatch(getWarehouseReceipts({ ...filters, receiptType: 2 }))
+  }, [dispatch, filters])
+
+  const columns = useMemo(() => getColumns(handleView, 'export', refreshData), [handleView, refreshData])
 
   useEffect(() => {
     document.title = 'Danh sách phiếu xuất kho'
-    dispatch(getWarehouseReceipts({ ...filters, receiptType: 2 }))
-  }, [dispatch, filters])
+    refreshData()
+  }, [refreshData])
 
   return (
     <Layout>
@@ -87,6 +91,7 @@ const WarehouseOutPage = () => {
               data={warehouseOutReceipts}
               columns={columns}
               loading={loading}
+              onRefresh={refreshData}
             />
           )}
         </div>
@@ -97,6 +102,7 @@ const WarehouseOutPage = () => {
             onOpenChange={setShowViewDialog}
             receiptId={selectedReceiptId}
             showTrigger={false}
+            onSuccess={refreshData}
           />
         )}
       </LayoutBody>

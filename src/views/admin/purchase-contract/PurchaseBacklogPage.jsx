@@ -17,6 +17,9 @@ import { useDispatch, useSelector } from 'react-redux'
 import { getPurchaseBacklog } from '@/stores/ReportSlice'
 import ViewPurchaseOrderDialog from '../purchase-order/components/ViewPurchaseOrderDialog'
 import { DataTablePagination } from '../invoice/components/DataTablePagination'
+import { FileSpreadsheet } from 'lucide-react'
+import { Button } from '@/components/custom/Button'
+import ExportPurchaseBacklogPreviewDialog from './components/ExportPurchaseBacklogPreviewDialog'
 
 const PurchaseBacklogPage = () => {
   const dispatch = useDispatch()
@@ -26,6 +29,7 @@ const PurchaseBacklogPage = () => {
   const [limit, setLimit] = useState(50)
   const [showViewOrderDialog, setShowViewOrderDialog] = useState(false)
   const [selectedOrderId, setSelectedOrderId] = useState(null)
+  const [showExportPreview, setShowExportPreview] = useState(false)
 
   useEffect(() => {
     dispatch(getPurchaseBacklog({ page, limit }))
@@ -60,7 +64,24 @@ const PurchaseBacklogPage = () => {
       <LayoutBody className="flex flex-col" fixedHeight>
         <div className="mb-4 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
           <h2 className="text-2xl font-bold tracking-tight">Đơn mua chưa nhận</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white gap-2"
+            onClick={() => setShowExportPreview(true)}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Xuất Báo Cáo
+          </Button>
         </div>
+
+        {showExportPreview && (
+          <ExportPurchaseBacklogPreviewDialog
+            open={showExportPreview}
+            onOpenChange={setShowExportPreview}
+            data={data}
+          />
+        )}
 
         <div className="flex-1 overflow-auto rounded-md border mb-4">
           <Table>

@@ -16,12 +16,16 @@ import { moneyFormat } from '@/utils/money-format'
 import { endOfMonth, format, startOfMonth } from 'date-fns'
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { FileSpreadsheet } from 'lucide-react'
+import { Button } from '@/components/custom/Button'
+import ExportPurchaseReportPreviewDialog from './components/ExportPurchaseReportPreviewDialog'
 
 const PurchaseReportPage = () => {
   const dispatch = useDispatch()
   const { purchaseSummary: data, loading } = useSelector(
     (state) => state.report,
   )
+  const [showExportPreview, setShowExportPreview] = useState(false)
 
   const current = new Date()
   const [filters, setFilters] = useState({
@@ -42,23 +46,45 @@ const PurchaseReportPage = () => {
     <Layout>
       <LayoutBody className="flex flex-col" fixedHeight>
         <div className="mb-4 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
-          <h2 className="text-2xl font-bold tracking-tight">Báo cáo tiền mua</h2>
-          <div>
-            <DateRange
-              defaultValue={{
-                from: filters?.fromDate,
-                to: filters?.toDate,
-              }}
-              onChange={(range) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  fromDate: range?.from || startOfMonth(current),
-                  toDate: range?.to || endOfMonth(current),
-                }))
-              }}
-            />
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold tracking-tight">Báo cáo tiền mua</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div>
+              <DateRange
+                defaultValue={{
+                  from: filters?.fromDate,
+                  to: filters?.toDate,
+                }}
+                onChange={(range) => {
+                  setFilters((prev) => ({
+                    ...prev,
+                    fromDate: range?.from || startOfMonth(current),
+                    toDate: range?.to || endOfMonth(current),
+                  }))
+                }}
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white gap-2"
+              onClick={() => setShowExportPreview(true)}
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Xuất Báo Cáo
+            </Button>
           </div>
         </div>
+
+        {showExportPreview && (
+          <ExportPurchaseReportPreviewDialog
+            open={showExportPreview}
+            onOpenChange={setShowExportPreview}
+            data={data?.data}
+            filters={filters}
+          />
+        )}
 
         <div className="flex-1 overflow-auto space-y-6">
           {/* Summary Cards */}

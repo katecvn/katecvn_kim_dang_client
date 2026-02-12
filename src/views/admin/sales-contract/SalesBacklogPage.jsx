@@ -18,6 +18,9 @@ import { getSalesBacklog } from '@/stores/ReportSlice'
 import ViewSalesContractDialog from './components/ViewSalesContractDialog'
 
 import { DataTablePagination } from '../invoice/components/DataTablePagination'
+import { FileSpreadsheet } from 'lucide-react'
+import { Button } from '@/components/custom/Button'
+import ExportSalesBacklogPreviewDialog from './components/ExportSalesBacklogPreviewDialog'
 
 const SalesBacklogPage = () => {
   const dispatch = useDispatch()
@@ -27,6 +30,7 @@ const SalesBacklogPage = () => {
   const [limit, setLimit] = useState(50)
   const [showViewContractDialog, setShowViewContractDialog] = useState(false)
   const [selectedContractId, setSelectedContractId] = useState(null)
+  const [showExportPreview, setShowExportPreview] = useState(false)
 
   useEffect(() => {
     dispatch(getSalesBacklog({ page, limit }))
@@ -61,7 +65,24 @@ const SalesBacklogPage = () => {
       <LayoutBody className="flex flex-col" fixedHeight>
         <div className="mb-4 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
           <h2 className="text-2xl font-bold tracking-tight">Đơn bán chưa giao</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white gap-2"
+            onClick={() => setShowExportPreview(true)}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Xuất Báo Cáo
+          </Button>
         </div>
+
+        {showExportPreview && (
+          <ExportSalesBacklogPreviewDialog
+            open={showExportPreview}
+            onOpenChange={setShowExportPreview}
+            data={data}
+          />
+        )}
 
         {selectedContractId && (
           <ViewSalesContractDialog

@@ -14,7 +14,7 @@ import { IdCardIcon, MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCallback, useEffect, useState } from 'react'
-import { getInvoiceDetail } from '@/stores/InvoiceSlice'
+import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -120,8 +120,14 @@ const CreateReceiptDialog = ({
 
     setLoading(true)
     try {
+      const getAdminInvoice = JSON.parse(
+        localStorage.getItem('permissionCodes') || '[]',
+      ).includes('GET_INVOICE')
+
       const promises = validInvoices.map((id) =>
-        dispatch(getInvoiceDetail(id)).unwrap(),
+        getAdminInvoice
+          ? getInvoiceDetail(id)
+          : getInvoiceDetailByUser(id)
       )
       const data = await Promise.all(promises)
       setInvoiceData(data || [])
@@ -132,7 +138,7 @@ const CreateReceiptDialog = ({
       setLoading(false)
     }
     // eslint-disable-next-line react-hook/exhaustive-deps
-  }, [invoicesKey, dispatch])
+  }, [invoicesKey])
 
   useEffect(() => {
     fetchData()

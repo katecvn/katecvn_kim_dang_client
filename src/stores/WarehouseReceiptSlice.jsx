@@ -69,11 +69,11 @@ export const updateWarehouseReceipt = createAsyncThunk(
 
 export const deleteWarehouseReceipt = createAsyncThunk(
   'warehouseReceipt/delete-warehouse-receipt',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       await api.delete(`/warehouse-receipts/${id}`)
-      await dispatch(getWarehouseReceipts()).unwrap()
       toast.success('Xóa thành công')
+      return id
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -83,11 +83,11 @@ export const deleteWarehouseReceipt = createAsyncThunk(
 
 export const deleteMultipleWarehouseReceipts = createAsyncThunk(
   'warehouseReceipt/deleteMultiple',
-  async (ids, { rejectWithValue, dispatch }) => {
+  async (ids, { rejectWithValue }) => {
     try {
       await api.post('/warehouse-receipts/bulk-delete', { ids })
-      await dispatch(getWarehouseReceipts()).unwrap()
       toast.success('Xóa các phiếu kho đã chọn thành công')
+      return ids
     } catch (error) {
       return rejectWithValue(handleError(error))
     }
@@ -96,11 +96,11 @@ export const deleteMultipleWarehouseReceipts = createAsyncThunk(
 
 export const postWarehouseReceipt = createAsyncThunk(
   'warehouseReceipt/post-warehouse-receipt',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       await api.post(`/warehouse-receipts/${id}/post`)
-      await dispatch(getWarehouseReceipts()).unwrap()
       toast.success('Duyệt phiếu thành công')
+      return id
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -110,11 +110,11 @@ export const postWarehouseReceipt = createAsyncThunk(
 
 export const cancelWarehouseReceipt = createAsyncThunk(
   'warehouseReceipt/cancel-warehouse-receipt',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       await api.post(`/warehouse-receipts/${id}/cancel`)
-      await dispatch(getWarehouseReceipts()).unwrap()
       toast.success('Hủy phiếu thành công')
+      return id
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)

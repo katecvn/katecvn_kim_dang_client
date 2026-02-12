@@ -252,6 +252,7 @@ const SystemLogPage = () => {
                 <TableHead>Hành động</TableHead>
                 <TableHead>Đối tượng</TableHead>
                 <TableHead>IP Address</TableHead>
+                <TableHead>User Agent</TableHead>
                 <TableHead>Thời gian</TableHead>
                 <TableHead className="text-right">Chi tiết</TableHead>
               </TableRow>
@@ -265,6 +266,7 @@ const SystemLogPage = () => {
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-8 float-right" /></TableCell>
                   </TableRow>
@@ -298,6 +300,9 @@ const SystemLogPage = () => {
                       {log.entityId && <span className='text-muted-foreground text-xs ml-1'>#{log.entityId}</span>}
                     </TableCell>
                     <TableCell>{log.ipAddress}</TableCell>
+                    <TableCell className="max-w-[200px]" title={log.userAgent}>
+                      {log.userAgent}
+                    </TableCell>
                     <TableCell>{dateFormat(log.createdAt, true)}</TableCell>
                     <TableCell className="text-right">
                       <TooltipProvider>

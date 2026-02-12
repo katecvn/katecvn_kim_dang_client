@@ -22,7 +22,7 @@ import PrintWarehouseReceiptView from './PrintWarehouseReceiptView'
 import ExportWarehouseReceiptPreview from './ExportWarehouseReceiptPreview'
 import { toast } from 'sonner'
 
-export function DataTableRowActions({ row }) {
+export function DataTableRowActions({ row, onRefresh }) {
   const dispatch = useDispatch()
   const receipt = row.original
   const [showViewDialog, setShowViewDialog] = useState(false)
@@ -70,6 +70,7 @@ export function DataTableRowActions({ row }) {
         onOpenChange={setShowViewDialog}
         receiptId={receipt.id}
         showTrigger={false}
+        onSuccess={onRefresh}
       />
 
       {showDeleteDialog && (
@@ -78,6 +79,7 @@ export function DataTableRowActions({ row }) {
           onOpenChange={setShowDeleteDialog}
           receipt={receipt}
           showTrigger={false}
+          onSuccess={onRefresh}
           contentClassName="z-[10002]"
           overlayClassName="z-[10001]"
         />

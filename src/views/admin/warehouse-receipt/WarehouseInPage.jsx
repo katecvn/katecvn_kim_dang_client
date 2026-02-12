@@ -42,12 +42,16 @@ const WarehouseInPage = () => {
     setShowViewDialog(true)
   }, [])
 
-  const columns = useMemo(() => getColumns(handleView, 'import'), [handleView])
+  const refreshData = useCallback(() => {
+    dispatch(getWarehouseReceipts({ ...filters, receiptType: 1 }))
+  }, [dispatch, filters])
+
+  const columns = useMemo(() => getColumns(handleView, 'import', refreshData), [handleView, refreshData])
 
   useEffect(() => {
     document.title = 'Danh sách phiếu nhập kho'
-    dispatch(getWarehouseReceipts({ ...filters, receiptType: 1 }))
-  }, [dispatch, filters])
+    refreshData()
+  }, [refreshData])
 
   return (
     <Layout>
@@ -84,6 +88,7 @@ const WarehouseInPage = () => {
               data={warehouseInReceipts}
               columns={columns}
               loading={loading}
+              onRefresh={refreshData}
             />
           )}
         </div>
@@ -94,6 +99,7 @@ const WarehouseInPage = () => {
             onOpenChange={setShowViewDialog}
             receiptId={selectedReceiptId}
             showTrigger={false}
+            onSuccess={refreshData}
           />
         )}
       </LayoutBody>

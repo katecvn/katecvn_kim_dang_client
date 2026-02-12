@@ -14,7 +14,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { CreditCard, Phone, Pencil } from 'lucide-react'
 
-export const getColumns = (onView, type = 'all') => [
+export const getColumns = (onView, type = 'all', onRefresh) => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -167,7 +167,7 @@ export const getColumns = (onView, type = 'all') => [
 
           toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
           setShowUpdateStatusDialog(false)
-          dispatch(getWarehouseReceipts())
+          if (onRefresh) onRefresh()
         } catch (error) {
           console.error(error)
         }
@@ -258,6 +258,6 @@ export const getColumns = (onView, type = 'all') => [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Thao tác" />
     ),
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => <DataTableRowActions row={row} onRefresh={onRefresh} />,
   },
 ]

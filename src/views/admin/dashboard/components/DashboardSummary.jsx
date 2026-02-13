@@ -67,13 +67,13 @@ const DashboardSummary = ({ todayIncome = 0, todayExpense = 0, loading: parentLo
       />
 
       <SummaryCard
-        title="Đơn bán chưa giao"
+        title="Đơn bán"
         value={data.salesBacklogCount}
         subValue="Đơn hàng"
         icon={<IconShoppingCart className="h-4 w-4 text-orange-500" />}
       />
       <SummaryCard
-        title="Đơn mua chưa nhận"
+        title="Đơn mua"
         value={data.purchaseBacklogCount}
         subValue="Đơn hàng"
         icon={<IconTruckDelivery className="h-4 w-4 text-blue-500" />}
@@ -90,8 +90,13 @@ const SummaryCard = ({ title, value, subValue, icon }) => (
       </CardTitle>
       {icon}
     </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
+    <CardContent className="min-w-0">
+      <div
+        className="text-lg font-bold sm:text-2xl"
+        title={value}
+      >
+        {value}
+      </div>
       <p className="text-xs text-muted-foreground">
         {subValue}
       </p>

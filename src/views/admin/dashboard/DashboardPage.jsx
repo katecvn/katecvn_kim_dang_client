@@ -65,14 +65,21 @@ const DashboardPage = () => {
         ])
 
         setSalesSummary(salesRes.data.data.data || [])
-        setSalesBacklog(salesBacklogRes.data.data || [])
+        setSalesSummary(salesRes.data.data.data || [])
+
+        const rawSalesBacklog = salesBacklogRes.data.data || []
+        const mappedSalesBacklog = rawSalesBacklog.map(item => ({
+          ...item,
+          deliveryDate: item.deliveryDate || item.expectedDeliveryDate || item.invoiceDate || item.createdAt
+        }))
+        setSalesBacklog(mappedSalesBacklog)
 
         // Map purchase backlog to match widget expectation
         const rawPurchaseBacklog = purchaseBacklogRes.data.data || []
         const mappedPurchaseBacklog = rawPurchaseBacklog.map(item => ({
           ...item,
-          deliveryDate: item.purchaseOrders?.[0]?.expectedDeliveryDate,
-          items: item.purchaseOrders?.flatMap(po => po.items) || []
+          deliveryDate: item.expectedDeliveryDate || item.purchaseOrders?.[0]?.expectedDeliveryDate || item.orderDate || item.createdAt,
+          items: item.items || item.purchaseOrders?.flatMap(po => po.items) || []
         }))
         setPurchaseBacklog(mappedPurchaseBacklog)
         setRecentSales(recentRes.data.data.data || [])

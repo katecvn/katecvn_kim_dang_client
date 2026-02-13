@@ -13,6 +13,7 @@ const BacklogWidget = ({ title, data = [], type, loading = false, description })
   const [viewId, setViewId] = useState(null)
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false)
+  // console.log('data', data)
 
   const handleView = (item) => {
     setViewId(item.id)
@@ -25,7 +26,9 @@ const BacklogWidget = ({ title, data = [], type, loading = false, description })
 
   const OrderItem = ({ item }) => {
     const isSale = type === 'sale'
-    const name = isSale ? item.buyerName : item.supplierName
+    const name = isSale
+      ? item.customerName || item.customer?.name || item.buyerName
+      : item.supplierName || item.supplier?.name
     // const phone = isSale ? item.buyerPhone : item.supplierPhone
     const linkPath = isSale ? '/sales-backlog' : '/purchase-backlog'
 
@@ -62,12 +65,21 @@ const BacklogWidget = ({ title, data = [], type, loading = false, description })
             </div>
 
             {/* Row 3: Product Info (Optional) */}
+            {/* Row 3: Product Info */}
             {item.items && item.items.length > 0 && (
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80 mt-0.5">
-                <IconPackage size={12} className="flex-none" />
-                <span className="truncate">
-                  {item.items[0].productName} {item.items.length > 1 ? `(+${item.items.length - 1})` : ''}
-                </span>
+              <div className="mt-1 space-y-1">
+                {item.items.map((prod, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-1.5 text-[11px] text-muted-foreground/80"
+                  >
+                    <IconPackage size={12} className="flex-none" />
+                    <span className="truncate max-w-[140px]" title={`${prod.productName || prod.product?.name || prod.name}${Number(prod.quantity) > 0 ? ` (x${Number(prod.quantity)})` : ''}`}>
+                      {prod.productName || prod.product?.name || prod.name}
+                      {Number(prod.quantity) > 0 ? ` (x${Number(prod.quantity)})` : ''}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>

@@ -75,7 +75,7 @@ export const columns = [
           </Can>
 
           <span
-            className="cursor-pointer hover:text-primary"
+            className="cursor-pointer text-blue-600 hover:text-blue-800 hover:underline"
             onClick={() => setShowViewInvoiceDialog(true)}
           >
             {code || '—'}
@@ -146,18 +146,22 @@ export const columns = [
       const end = row?.original?.endDate
       const period = row?.original?.periodMonths
 
-      if (!start || !end || !period) {
-        return <span className="text-sm text-muted-foreground">—</span>
+      if (start && end) {
+        return (
+          <div className="flex flex-col text-sm">
+            <span>{dateFormat(start)}</span>
+            <span className="text-muted-foreground">
+              → {dateFormat(end)} ({period} tháng)
+            </span>
+          </div>
+        )
       }
 
-      return (
-        <div className="flex flex-col text-sm">
-          <span>{dateFormat(start)}</span>
-          <span className="text-muted-foreground">
-            → {dateFormat(end)} ({period} tháng)
-          </span>
-        </div>
-      )
+      if (period) {
+        return <span className="text-sm">{period} tháng</span>
+      }
+
+      return <span className="text-sm text-muted-foreground">—</span>
     },
   },
 
@@ -207,7 +211,7 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Nhắc bảo hành" />
     ),
     cell: ({ row }) => {
-      const nextReminder = row.original.nextReminderDate
+      const nextReminder = row.original.nextReminderDate || row.original.lastReminderDate;
       if (!nextReminder) return <span className="text-muted-foreground">—</span>
 
       const daysLeft = Math.ceil(

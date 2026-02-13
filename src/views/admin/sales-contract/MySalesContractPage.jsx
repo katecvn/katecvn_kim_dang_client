@@ -37,11 +37,22 @@ const MySalesContractPage = () => {
 
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 500)
+  const [columnFilters, setColumnFilters] = useState([])
 
   useEffect(() => {
     document.title = `Hợp đồng bán hàng - ${fullName}`
-    dispatch(getMySalesContracts({ ...filters, ...pageParams, search: debouncedSearch }))
-  }, [dispatch, filters, fullName, pageParams, debouncedSearch])
+
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+    const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+
+    dispatch(getMySalesContracts({
+      ...filters,
+      ...pageParams,
+      search: debouncedSearch,
+      status: statusFilter,
+      paymentStatus: paymentStatusFilter
+    }))
+  }, [dispatch, filters, fullName, pageParams, debouncedSearch, columnFilters])
 
   // Reset page when search changes
   useEffect(() => {
@@ -91,6 +102,9 @@ const MySalesContractPage = () => {
               onSearchChange={(value) => {
                 setSearch(value)
               }}
+              columnFilters={columnFilters}
+              onColumnFiltersChange={setColumnFilters}
+              isMyContract={true}
             />
           )}
         </div>

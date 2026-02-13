@@ -267,11 +267,25 @@ const ImportInvoiceDialog = ({
         return
       }
 
-      await dispatch(importInvoice(payload)).unwrap()
+      const result = await dispatch(importInvoice(payload)).unwrap()
 
-      toast.success(`Đã import thành công ${payload.items.length} hóa đơn`)
-      onOpenChange(false)
-      setFile(null)
+      if (result?.data?.failed?.length > 0) {
+        const failures = result.data.failed.map((f) => ({
+          row: f.row,
+          errors: [
+            {
+              field: 'Chi tiết',
+              message: typeof f.error === 'string' ? f.error : JSON.stringify(f.error),
+            },
+          ],
+        }))
+        setErrorList(failures)
+        toast.warning(result.message || `Có ${result.data.failed.length} dòng bị lỗi`)
+      } else {
+        toast.success(result.message || `Đã import thành công ${payload.items.length} hóa đơn`)
+        onOpenChange(false)
+        setFile(null)
+      }
 
     } catch (error) {
       console.error('Import error:', error)

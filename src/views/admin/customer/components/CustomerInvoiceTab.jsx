@@ -141,7 +141,7 @@ const InvoiceHistoryTab = ({ customerId, dateFrom, dateTo, status }) => {
                   colSpan={9}
                   className="text-center text-muted-foreground"
                 >
-                  Không có hóa đơn
+                  Không có đơn bán
                 </TableCell>
               </TableRow>
             )}

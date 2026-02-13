@@ -35,6 +35,7 @@ const SalesContractDataTable = ({
   onSearchChange,
   columnFilters = [], // Add columnFilters prop
   onColumnFiltersChange, // Add onColumnFiltersChange prop
+  isMyContract = false // Add isMyContract prop
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -110,7 +111,7 @@ const SalesContractDataTable = ({
   if (isMobile) {
     return (
       <div className="space-y-4">
-        <DataTableToolbar table={table} />
+        <DataTableToolbar table={table} isMyContract={isMyContract} />
 
         <div className="space-y-2">
           {loading ? (
@@ -147,7 +148,7 @@ const SalesContractDataTable = ({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} />
+      <DataTableToolbar table={table} isMyContract={isMyContract} />
 
       <div className="rounded-md border">
         <Table>

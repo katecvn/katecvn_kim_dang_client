@@ -153,7 +153,7 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Ngày tạo" />
     ),
-    cell: ({ row }) => <span>{dateFormat(row.getValue('createdAt'))}</span>,
+    cell: ({ row }) => <span>{dateFormat(row.getValue('createdAt'), true)}</span>,
   },
 
   {

@@ -139,7 +139,7 @@ const ImportPurchaseOrderDialog = ({
 
         if (!ordersMap.has(key)) {
           ordersMap.set(key, {
-            purchaseNo: row.purchaseNo,
+
             externalOrderCode: row.externalOrderCode,
             orderDate: row.orderDate,
             expectedDeliveryDate: row.expectedDeliveryDate,
@@ -154,12 +154,10 @@ const ImportPurchaseOrderDialog = ({
               representative: row.supplierRep
             },
             items: [],
-            rowNumbers: []
           })
         }
 
         const order = ordersMap.get(key)
-        order.rowNumbers.push(row.rowNumber)
 
         if (row.productCode) {
           order.items.push({
@@ -182,11 +180,30 @@ const ImportPurchaseOrderDialog = ({
         return
       }
 
-      await dispatch(importPurchaseOrder(payload)).unwrap()
+      const response = await dispatch(importPurchaseOrder(payload)).unwrap()
 
-      toast.success(`Đã import thành công ${payload.items.length} đơn hàng`)
-      onOpenChange(false)
-      setFile(null)
+      const { counts, success, failed } = response.data || {}
+
+      if (counts?.failed > 0) {
+        const sanitizedErrors = failed.map(err => ({
+          row: err.row,
+          errors: [{
+            field: 'Lỗi',
+            message: err.error
+          }]
+        }))
+        setErrorList(sanitizedErrors)
+
+        if (counts.success > 0) {
+          toast.warning(`Import hoàn tất: ${counts.success} thành công, ${counts.failed} thất bại`)
+        } else {
+          toast.error(`Import thất bại: ${counts.failed} lỗi`)
+        }
+      } else {
+        toast.success(`Đã import thành công ${counts?.success || payload.items.length} đơn hàng`)
+        onOpenChange(false)
+        setFile(null)
+      }
 
     } catch (error) {
       console.error('Import error:', error)

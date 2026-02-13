@@ -1866,6 +1866,8 @@ const InvoiceDialog = ({
                   getDisplayPrice={getDisplayPrice}
                   calculateSubTotal={calculateSubTotal}
                   calculateTaxForProduct={calculateTaxForProduct}
+                  applyWarrantyItems={applyWarrantyItems}
+                  onApplyWarrantyChange={handleApplyWarrantyChange}
                 />
 
                 {/* COLUMN 4: Invoice Sidebar */}

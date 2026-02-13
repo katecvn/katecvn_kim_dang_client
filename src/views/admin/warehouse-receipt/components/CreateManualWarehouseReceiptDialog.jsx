@@ -1,4 +1,5 @@
 import { Button } from '@/components/custom/Button'
+import { MoneyInputQuick } from '@/components/custom/MoneyInputQuick'
 import {
   Dialog,
   DialogContent,
@@ -496,12 +497,10 @@ const CreateManualWarehouseReceiptDialog = ({
                                 <label className="text-[10px] text-muted-foreground uppercase">
                                   {receiptType === 2 ? 'Đơn giá bán' : 'Đơn giá vốn'}
                                 </label>
-                                <Input
+                                <MoneyInputQuick
                                   className="h-8 text-sm text-right"
                                   value={item.price}
-                                  type="number"
-                                  onChange={(e) => handleProductChange(index, 'price', Number(e.target.value))}
-                                  onFocus={(e) => e.target.select()}
+                                  onChange={(val) => handleProductChange(index, 'price', val)}
                                 />
                               </div>
                             </div>
@@ -597,13 +596,10 @@ const CreateManualWarehouseReceiptDialog = ({
                                   />
                                 </TableCell>
                                 <TableCell>
-                                  <Input
+                                  <MoneyInputQuick
                                     className="h-8 text-right"
-                                    // value={moneyFormat(item.price)} // Using raw value for edit
                                     value={item.price}
-                                    type="number"
-                                    onChange={(e) => handleProductChange(index, 'price', Number(e.target.value))}
-                                    onFocus={(e) => e.target.select()}
+                                    onChange={(val) => handleProductChange(index, 'price', val)}
                                   />
                                 </TableCell>
                                 <TableCell>

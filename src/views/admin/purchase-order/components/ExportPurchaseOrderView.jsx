@@ -193,7 +193,7 @@ const ExportPurchaseOrderView = ({
       const col = worksheet.getColumn(colIdx)
       col.eachCell((cell, rowNumber) => {
         if (typeof cell.value === 'string' && rowNumber > 2) {
-          const numValue = parseFloat(cell.value.replace(/[^\d.-]/g, ''))
+          const numValue = parseFloat(cell.value.replace(/[^\d-]/g, ''))
           if (!isNaN(numValue)) cell.value = numValue
         }
         col.numFmt = '#,##0'

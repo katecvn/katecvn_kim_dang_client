@@ -8,6 +8,7 @@ import { getWarranties } from '@/stores/WarrantySlice'
 const WarrantyPage = () => {
   const dispatch = useDispatch()
   const warranties = useSelector((state) => state.warranty.warranties)
+  console.log('warranties', warranties)
   const loading = useSelector((state) => state.warranty.loading)
 
   useEffect(() => {

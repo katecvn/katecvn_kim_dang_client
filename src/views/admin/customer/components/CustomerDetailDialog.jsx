@@ -112,7 +112,7 @@ const CustomerDetailDialog = ({ customer, showTrigger = true, ...props }) => {
               <Tabs defaultValue="accounts" className="space-y-4">
                 <TabsList>
                   <TabsTrigger value="accounts">Tài khoản/Hạn dùng</TabsTrigger>
-                  <TabsTrigger value="invoices">Lịch sử hóa đơn</TabsTrigger>
+                  <TabsTrigger value="invoices">Lịch sử đơn bán</TabsTrigger>
                   <TabsTrigger value="chart">Biểu đồ mua hàng</TabsTrigger>
                   <TabsTrigger value="productChart">
                     Biểu đồ sản phẩm

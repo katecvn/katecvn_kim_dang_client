@@ -234,7 +234,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
         </div>
 
         {/* Filter theo người tạo */}
-        {users && table.getColumn('user') && (
+        {!isMyPurchaseOrder && users && table.getColumn('user') && (
           <DataTableFacetedFilter
             column={table.getColumn('user')}
             title="Người tạo"

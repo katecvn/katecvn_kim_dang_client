@@ -12,6 +12,7 @@ import {
 
 const DataTableViewOptions = ({ table }) => {
   const options = {
+    code: 'Mã đơn vị',
     name: 'Tên đơn vị',
     createdAt: 'Ngày tạo',
     updatedAt: 'Cập nhật',

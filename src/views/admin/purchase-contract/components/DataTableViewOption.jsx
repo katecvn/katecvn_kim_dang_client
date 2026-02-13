@@ -20,6 +20,7 @@ export function DataTableViewOptions({ table }) {
     status: 'Trạng thái',
     itemStatus: 'Trạng thái nhập',
     paymentStatus: 'Thanh toán',
+    warehouseReceiptStatus: 'Trạng thái nhập',
     user: 'Người tạo'
   }
 

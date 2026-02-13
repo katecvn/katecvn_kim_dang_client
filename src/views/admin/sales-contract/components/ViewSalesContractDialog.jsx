@@ -81,6 +81,7 @@ const ViewSalesContractDialog = ({
   showTrigger = true,
   contentClassName,
   overlayClassName,
+  onSuccess,
   ...props
 }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -164,8 +165,8 @@ const ViewSalesContractDialog = ({
   const handleUpdateStatus = async (status, invoiceId) => {
     try {
       await dispatch(updateInvoiceStatus({ id: invoiceId, status })).unwrap()
-      toast.success('Cập nhật trạng thái hóa đơn thành công')
       fetchContractDetail() // Refresh data
+      onSuccess?.()
     } catch (error) {
       console.log('Update status error: ', error)
       toast.error('Cập nhật trạng thái thất bại')
@@ -185,7 +186,9 @@ const ViewSalesContractDialog = ({
 
       toast.success(newStatus === 'cancelled' ? 'Hủy phiếu thành công' : newStatus === 'posted' ? 'Duyệt phiếu thành công' : 'Cập nhật trạng thái thành công')
       setShowUpdateWarehouseReceiptStatus(false)
+      setShowUpdateWarehouseReceiptStatus(false)
       fetchContractDetail()
+      onSuccess?.()
     } catch (error) {
       console.error(error)
       // toast.error('Cập nhật trạng thái phiếu xuất kho thất bại')
@@ -221,6 +224,7 @@ const ViewSalesContractDialog = ({
       await dispatch(updateReceiptStatus({ id, status })).unwrap()
       toast.success('Cập nhật trạng thái phiếu thu thành công')
       fetchContractDetail()
+      onSuccess?.()
     } catch (error) {
       console.error(error)
       toast.error('Cập nhật trạng thái thất bại')
@@ -353,6 +357,7 @@ const ViewSalesContractDialog = ({
 
       // Refresh data
       fetchContractDetail()
+      onSuccess?.()
     } catch (error) {
       console.error('Create warehouse receipt error:', error)
       toast.error('Tạo phiếu xuất kho thất bại')

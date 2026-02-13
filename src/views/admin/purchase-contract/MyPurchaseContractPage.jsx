@@ -35,10 +35,21 @@ const MyPurchaseContractPage = () => {
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
   })
 
+  const [columnFilters, setColumnFilters] = useState([])
+
   useEffect(() => {
     document.title = 'Hợp đồng mua hàng của tôi'
-    dispatch(getMyPurchaseContracts({ ...filters, ...pageParams, search: debouncedSearch }))
-  }, [dispatch, filters, pageParams, debouncedSearch])
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+    const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+
+    dispatch(getMyPurchaseContracts({
+      ...filters,
+      ...pageParams,
+      search: debouncedSearch,
+      status: statusFilter,
+      paymentStatus: paymentStatusFilter
+    }))
+  }, [dispatch, filters, pageParams, debouncedSearch, columnFilters])
 
   // Reset page when search changes
   useEffect(() => {
@@ -91,6 +102,9 @@ const MyPurchaseContractPage = () => {
               onSearchChange={(value) => {
                 setSearch(value)
               }}
+              columnFilters={columnFilters}
+              onColumnFiltersChange={setColumnFilters}
+              isMyPurchaseContract={true}
             />
           )}
         </div>

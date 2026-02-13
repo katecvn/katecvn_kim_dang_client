@@ -551,7 +551,7 @@ const ViewCategoryDialog = ({
 
                 <div className="text-xs text-muted-foreground">
                   <Calendar className="mr-1 inline-block h-4 w-4" />
-                  Dữ liệu tính dựa trên các hóa đơn <strong>
+                  Dữ liệu tính dựa trên các đơn bán <strong>
                     Đã duyệt
                   </strong>{' '}
                   thuộc danh mục này.

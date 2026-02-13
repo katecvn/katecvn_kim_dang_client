@@ -51,6 +51,8 @@ const ShoppingCart = ({
   getDisplayPrice,
   calculateSubTotal,
   calculateTaxForProduct,
+  applyWarrantyItems,
+  onApplyWarrantyChange,
 }) => {
   if (selectedProducts.length === 0) {
     return (
@@ -389,6 +391,27 @@ const ShoppingCart = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* Warranty Checkbox */}
+                  {product.warrantyPolicy && (
+                    <div className="flex items-center gap-2 py-1">
+                      <Checkbox
+                        id={`warranty-${product.id}`}
+                        checked={!!applyWarrantyItems?.[product.id]}
+                        onCheckedChange={(checked) =>
+                          onApplyWarrantyChange?.(product.id, checked)
+                        }
+                        className="h-4 w-4 border-primary"
+                      />
+                      <label
+                        htmlFor={`warranty-${product.id}`}
+                        className="cursor-pointer text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Kích hoạt bảo hành ({product.warrantyPolicy.periodMonths}{' '}
+                        tháng)
+                      </label>
+                    </div>
+                  )}
 
                   {/* Subtotal */}
                   <div className="flex items-center justify-between border-t pt-2">

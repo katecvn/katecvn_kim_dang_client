@@ -1409,7 +1409,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                 </span>
                               </Button>
                             ) : (
-                              <span className="text-[12px] text-gray-500">Đơn hàng chưa được duyệt</span>
+                              invoice?.status === 'pending' ? (
+                                <span className="text-[12px] text-gray-500">Đơn hàng chưa được duyệt</span>
+                              ) : null
                             )}
                           </div>
 
@@ -2238,6 +2240,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
         showTrigger={false}
         contentClassName="z-[10003]"
         overlayClassName="z-[10002]"
+        onSuccess={fetchData}
       />
 
       {/* Delete Receipt Dialog */}

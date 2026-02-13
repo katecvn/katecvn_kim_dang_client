@@ -189,8 +189,6 @@ export function DataTableToolbar({ table }) {
           count={selectedReceipts.length}
         />
 
-        <DataTableViewOptions table={table} />
-
         <Button
           size="sm"
           className="bg-green-600 hover:bg-green-700 text-white h-8"
@@ -205,6 +203,8 @@ export function DataTableToolbar({ table }) {
           onOpenChange={setShowCreateDialog}
           showTrigger={false}
         />
+
+        <DataTableViewOptions table={table} />
       </div>
     </div>
   )

@@ -22,7 +22,7 @@ import { useEffect } from 'react'
 import { getUsers } from '@/stores/UserSlice'
 import { purchaseContractPaymentStatuses } from '../data'
 
-const DataTableToolbar = ({ table }) => {
+const DataTableToolbar = ({ table, isMyPurchaseContract }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   // const isMobile = useMediaQuery('(max-width: 768px)') 
   // Mobile layout in SalesContract was explicit but here we might just want responsive flex. 
@@ -167,7 +167,7 @@ const DataTableToolbar = ({ table }) => {
         />
 
         {/* Filter theo người tạo */}
-        {users && table.getColumn('user') && (
+        {!isMyPurchaseContract && users && table.getColumn('user') && (
           <DataTableFacetedFilter
             column={table.getColumn('user')}
             title="Người tạo"

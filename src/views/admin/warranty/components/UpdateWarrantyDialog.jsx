@@ -147,6 +147,7 @@ const UpdateWarrantyDialog = ({ open, onOpenChange, warranty, onUpdated }) => {
         label: invoiceStatusValue || '—',
         icon: null,
         color: 'text-muted-foreground',
+        textColor: 'text-muted-foreground',
       }
     )
   }, [invoiceStatusValue])
@@ -229,8 +230,8 @@ const UpdateWarrantyDialog = ({ open, onOpenChange, warranty, onUpdated }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[720px]">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col p-0 sm:max-w-[720px]">
+        <DialogHeader className="px-6 pt-6">
           <div className="mt-3 flex items-start justify-between gap-2">
             <div className="space-y-1">
               <DialogTitle>Cập nhật bảo hành</DialogTitle>
@@ -250,10 +251,10 @@ const UpdateWarrantyDialog = ({ open, onOpenChange, warranty, onUpdated }) => {
               <div className="flex items-center gap-2 text-xs">
                 {InvoiceIcon ? (
                   <InvoiceIcon
-                    className={`h-4 w-4 ${invoiceStatusObj.color}`}
+                    className={`h-4 w-4 ${invoiceStatusObj.textColor}`}
                   />
                 ) : null}
-                <span className={`font-medium ${invoiceStatusObj.color}`}>
+                <span className={`font-medium ${invoiceStatusObj.textColor}`}>
                   {invoiceStatusObj.label}
                 </span>
               </div>
@@ -261,7 +262,7 @@ const UpdateWarrantyDialog = ({ open, onOpenChange, warranty, onUpdated }) => {
           </div>
         </DialogHeader>
 
-        <div className="space-y-5">
+        <div className="flex-1 space-y-5 overflow-y-auto px-6">
           <div className="rounded-xl border bg-background p-2">
             <div className="mb-2 flex items-center justify-between">
               <div className="text-sm font-semibold">Thông tin</div>
@@ -318,11 +319,11 @@ const UpdateWarrantyDialog = ({ open, onOpenChange, warranty, onUpdated }) => {
                       <div className="flex items-center gap-1.5">
                         {InvoiceIcon ? (
                           <InvoiceIcon
-                            className={`h-4 w-4 ${invoiceStatusObj.color}`}
+                            className={`h-4 w-4 ${invoiceStatusObj.textColor}`}
                           />
                         ) : null}
                         <span
-                          className={`text-xs font-medium ${invoiceStatusObj.color}`}
+                          className={`text-xs font-medium ${invoiceStatusObj.textColor}`}
                         >
                           {invoiceStatusObj.label}
                         </span>
@@ -458,7 +459,7 @@ const UpdateWarrantyDialog = ({ open, onOpenChange, warranty, onUpdated }) => {
           </div>
         </div>
 
-        <DialogFooter className="mt-2">
+        <DialogFooter className="mt-2 px-6 pb-6">
           <Button
             variant="outline"
             size="sm"

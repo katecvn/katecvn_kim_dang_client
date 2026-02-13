@@ -80,7 +80,7 @@ const DataTableToolbar = ({ table }) => {
             }}
             variant="outline"
             size="sm"
-            className="mx-2 text-primary border-primary hover:bg-primary/10 hover:text-primary"
+            className="text-primary border-primary hover:bg-primary/10 hover:text-primary"
           >
             <IconFileDollar className="mr-2 size-4" />
             Gia hạn BH
@@ -104,15 +104,15 @@ const DataTableToolbar = ({ table }) => {
             }}
             variant="outline"
             size="sm"
-            className="mx-2 text-primary border-primary hover:bg-primary/10 hover:text-primary"
+            className="text-primary border-primary hover:bg-primary/10 hover:text-primary"
           >
             <IconMail className="mr-2 size-4" />
             Nhắc hạn BH
           </Button>
         </Can>
-      </div>
 
-      <DataTableViewOptions table={table} />
+        <DataTableViewOptions table={table} />
+      </div>
 
       {showCreateWarrantyQuoteDialog && selectedWarranty && (
         <CreateWarrantyQuoteDialog

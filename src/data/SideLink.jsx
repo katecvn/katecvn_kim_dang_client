@@ -17,7 +17,6 @@ import {
   IconRulerMeasure2,
   IconSettings,
   IconShield,
-  IconStack3Filled,
   IconUserCog,
   IconUsers,
 } from '@tabler/icons-react'
@@ -165,12 +164,12 @@ export const sideLinks = [
         icon: <IconShield size={18} />,
         permission: 'GET_WARRANTY',
       },
-      {
-        title: 'Hạn sử dụng',
-        href: '/expiry',
-        icon: <IconCalendar size={18} />,
-        permission: 'GET_EXPIRY_USER',
-      },
+      // {
+      //   title: 'Hạn sử dụng',
+      //   href: '/expiry',
+      //   icon: <IconCalendar size={18} />,
+      //   permission: 'GET_EXPIRY_USER',
+      // },
 
     ],
   },

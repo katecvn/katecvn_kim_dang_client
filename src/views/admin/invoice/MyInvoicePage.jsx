@@ -41,11 +41,33 @@ const MyInvoicePage = () => {
 
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 500)
+  const [columnFilters, setColumnFilters] = useState([])
 
   useEffect(() => {
     document.title = `Hóa đơn - ${fullName}`
-    dispatch(getMyInvoices({ ...filters, ...pageParams, search: debouncedSearch }))
-  }, [fullName, dispatch, filters, pageParams, debouncedSearch])
+
+    // Extract status filter
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+
+    dispatch(getMyInvoices({
+      ...filters,
+      ...pageParams,
+      search: debouncedSearch,
+      status: statusFilter,
+    }))
+  }, [fullName, dispatch, filters, pageParams, debouncedSearch, columnFilters])
+
+  const refreshData = () => {
+    // Extract status filter
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+
+    dispatch(getMyInvoices({
+      ...filters,
+      ...pageParams,
+      search: debouncedSearch,
+      status: statusFilter,
+    }))
+  }
 
   // Reset page when search changes
   useEffect(() => {
@@ -58,7 +80,7 @@ const MyInvoicePage = () => {
         <div className="mb-2 -mx-4 px-1 flex flex-col sm:mx-0 sm:px-0 sm:flex-row sm:items-center justify-between gap-2">
           <div className="w-full sm:w-auto">
             <h2 className="text-2xl font-bold tracking-tight">
-              Danh sách hóa đơn: {fullName}
+              Danh sách đơn bán: {fullName}
             </h2>
           </div>
           <div className="w-full sm:w-auto">
@@ -97,6 +119,9 @@ const MyInvoicePage = () => {
                 setSearch(value)
               }}
               onView={(id) => setViewInvoiceId(id)}
+              columnFilters={columnFilters}
+              onColumnFiltersChange={setColumnFilters}
+              onCreated={refreshData}
             />
           )}
 
@@ -109,9 +134,7 @@ const MyInvoicePage = () => {
               }}
               invoiceId={viewInvoiceId}
               showTrigger={false}
-              onSuccess={() => {
-                dispatch(getMyInvoices({ ...filters, ...pageParams, search: debouncedSearch }))
-              }}
+              onSuccess={refreshData}
             />
           )}
         </div>

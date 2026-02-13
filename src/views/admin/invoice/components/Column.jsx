@@ -297,7 +297,7 @@ export const columns = [
             }
           }
 
-          toast.success('Cập nhật trạng thái hóa đơn thành công')
+          toast.success('Cập nhật trạng thái đơn bán thành công')
           setOpenUpdateStatus(false)
         } catch (error) {
           console.log('Submit error: ', error)

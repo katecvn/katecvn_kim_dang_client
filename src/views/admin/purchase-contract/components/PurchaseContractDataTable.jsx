@@ -34,7 +34,8 @@ const PurchaseContractDataTable = ({
   onPageSizeChange,
   onSearchChange,
   columnFilters = [], // Default to empty array if not provided
-  onColumnFiltersChange // Function from parent
+  onColumnFiltersChange, // Function from parent
+  isMyPurchaseContract = false, // Add isMyPurchaseContract prop
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -104,7 +105,7 @@ const PurchaseContractDataTable = ({
   if (isMobile) {
     return (
       <div className="space-y-4">
-        <DataTableToolbar table={table} />
+        <DataTableToolbar table={table} isMyPurchaseContract={isMyPurchaseContract} />
 
         <div className="space-y-2">
           {loading ? (
@@ -141,7 +142,7 @@ const PurchaseContractDataTable = ({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} />
+      <DataTableToolbar table={table} isMyPurchaseContract={isMyPurchaseContract} />
       {/* Mobile Component injection could go here, but for now standard table */}
       <div className="rounded-md border">
         <Table>

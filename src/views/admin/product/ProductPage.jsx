@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 const ProductPage = () => {
   const dispatch = useDispatch()
   const products = useSelector((state) => state.product.products)
+  console.log(products)
   const loading = useSelector((state) => state.product.loading)
 
   useEffect(() => {

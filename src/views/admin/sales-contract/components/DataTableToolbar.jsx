@@ -23,7 +23,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { getUsers } from '@/stores/UserSlice'
 
-const DataTableToolbar = ({ table }) => {
+const DataTableToolbar = ({ table, isMyContract }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showDeliveryReminderDialog, setShowDeliveryReminderDialog] = useState(false)
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -147,7 +147,7 @@ const DataTableToolbar = ({ table }) => {
         />
 
         {/* Filter theo người tạo */}
-        {users && table.getColumn('user') && (
+        {users && !isMyContract && table.getColumn('user') && (
           <DataTableFacetedFilter
             column={table.getColumn('user')}
             title="Người tạo"

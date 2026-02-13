@@ -50,8 +50,11 @@ const DataTableRowActions = ({ row }) => {
 
         <DropdownMenuContent align="end" className="w-40">
           <Can permission="UPDATE_WARRANTY">
-            <DropdownMenuItem onSelect={() => setShowUpdateDialog(true)}>
-              Cập nhật
+            <DropdownMenuItem
+              onSelect={() => setShowUpdateDialog(true)}
+              className="cursor-pointer text-orange-600 focus:bg-orange-50 focus:text-orange-600"
+            >
+              Sửa
               <DropdownMenuShortcut>
                 <IconPencil className="h-4 w-4" />
               </DropdownMenuShortcut>
@@ -59,7 +62,10 @@ const DataTableRowActions = ({ row }) => {
           </Can>
 
           <Can permission="UPDATE_WARRANTY">
-            <DropdownMenuItem onSelect={() => setShowDeleteDialog(true)}>
+            <DropdownMenuItem
+              onSelect={() => setShowDeleteDialog(true)}
+              className="cursor-pointer text-red-500 focus:bg-red-50 focus:text-red-500"
+            >
               Xóa
               <DropdownMenuShortcut>
                 <IconTrash className="h-4 w-4" />

@@ -269,14 +269,15 @@ export const importPurchaseOrder = createAsyncThunk(
   'purchaseOrder/import',
   async (data, { rejectWithValue, dispatch }) => {
     try {
-      await api.post('/purchase-orders/import', data)
+      const response = await api.post('/purchase-orders/import', data)
       await dispatch(
         getPurchaseOrders({
           fromDate: getStartOfCurrentMonth(),
           toDate: getEndOfCurrentMonth(),
         }),
       ).unwrap()
-      toast.success('Import đơn hàng thành công')
+      // toast.success('Import đơn hàng thành công') // Handled in component
+      return response.data
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)

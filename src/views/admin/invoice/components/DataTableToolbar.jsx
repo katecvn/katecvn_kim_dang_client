@@ -252,7 +252,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
       {/* Second row: Filters and actions */}
       <div className="flex w-full flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          {users && (
+          {users && !isMyInvoice && (
             <div className="flex gap-x-2">
               {table.getColumn('user') && (
                 <DataTableFacetedFilter

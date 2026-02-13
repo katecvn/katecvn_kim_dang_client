@@ -70,17 +70,17 @@ const ImportCustomerDialog = ({
 
       // --- STRICT VALIDATION START ---
       const EXPECTED_HEADERS = [
-        'Tên khách hàng',   // 1
-        'Điện thoại',       // 2
-        'Email',            // 3
+        'Loại khách hàng',  // 1
+        'Khách hàng',       // 2
+        'Số điện thoại',    // 3
         'Địa chỉ',          // 4
-        'Người đại diện',   // 5
-        'Ghi chú',          // 6
-        'Loại khách hàng',  // 7
-        'Mã số thuế',       // 8
-        'CMND/CCCD',        // 9
-        'Ngày cấp',         // 10
-        'Nơi cấp'           // 11
+        'Địa chỉ email',    // 5
+        'Tên công ty',      // 6
+        'Mã số thuế',       // 7
+        'CMND/CCCD',        // 8
+        'Ngày cấp',         // 9
+        'Nơi cấp',          // 10
+        'Ghi chú'           // 11
       ]
 
       const headerRow = worksheet.getRow(1)
@@ -126,21 +126,21 @@ const ImportCustomerDialog = ({
           return val ? String(val) : null
         }
 
-        // Mapping based on assumption (Standard Order):
-        // 1: Name, 2: Phone, 3: Email, 4: Address, 5: Represent, 
-        // 6: Note, 7: Type, 8: TaxCode, 9: IdentityCard, 10: IdentityDate, 11: IdentityPlace
+        // Mapping based on new template:
+        // 1: Type, 2: Name, 3: Phone, 4: Address, 5: Email, 
+        // 6: Company Name (Represent?), 7: TaxCode, 8: IdentityCard, 9: IdentityDate, 10: IdentityPlace, 11: Note
         const item = {
-          name: String(getVal(1)).trim(),
-          phone: String(getVal(2)).trim(),
-          email: String(getVal(3)).trim(),
+          type: String(getVal(1) || 'company').trim(),
+          name: String(getVal(2)).trim(),
+          phone: String(getVal(3)).trim(),
           address: String(getVal(4)).trim(),
-          represent: String(getVal(5)).trim(),
-          note: String(getVal(6)).trim(),
-          type: String(getVal(7) || 'company').trim(),
-          taxCode: String(getVal(8)).trim(),
-          identityCard: String(getVal(9)).trim(),
-          identityDate: getDateVal(10),
-          identityPlace: String(getVal(11)).trim()
+          email: String(getVal(5)).trim(),
+          represent: String(getVal(6)).trim(), // Assuming 'Tên công ty' maps to represent if needed, or maybe represent?
+          taxCode: String(getVal(7)).trim(),
+          identityCard: String(getVal(8)).trim(),
+          identityDate: getDateVal(9),
+          identityPlace: String(getVal(10)).trim(),
+          note: String(getVal(11)).trim(),
         }
 
         // Clean up empty strings to null

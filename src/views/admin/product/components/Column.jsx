@@ -10,6 +10,8 @@ import ViewProductDialog from './ViewProductDialog'
 import Can from '@/utils/can'
 import { IconInfoCircle } from '@tabler/icons-react'
 import { Checkbox } from '@/components/ui/checkbox'
+import { getPublicUrl } from '@/utils/file'
+import { Package } from 'lucide-react'
 
 export const columns = [
   {
@@ -82,7 +84,29 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Tên sản phẩm" />
     ),
-    cell: ({ row }) => <div className="w-28">{row.getValue('name')}</div>,
+    cell: ({ row }) => {
+      const imageUrl = row.original.image || row.original.document
+      const publicImageUrl = getPublicUrl(imageUrl)
+
+      return (
+        <div className="flex flex-col gap-2">
+          <div className="w-28 font-medium">{row.getValue('name')}</div>
+          <div className="h-10 w-10 shrink-0 overflow-hidden rounded border bg-muted">
+            {publicImageUrl ? (
+              <img
+                src={publicImageUrl}
+                alt={row.original.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <Package className="h-5 w-5 text-muted-foreground/30" />
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    },
     enableSorting: true,
     enableHiding: true,
     filterFn: (row, id, value) => {

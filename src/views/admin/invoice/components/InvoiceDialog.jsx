@@ -114,13 +114,14 @@ const InvoiceDialog = ({
 
   const [selectedProducts, setSelectedProducts] = useState([])
 
-  // ====== UNIT CONVERSION STATES ======
+  // ===== UNIT CONVERSION STATES ======
   // unitId khách chọn theo từng sản phẩm
   const [selectedUnitIds, setSelectedUnitIds] = useState({})
   // giá gốc theo baseUnit (giữ nguyên, không mutate product.price)
   const [baseUnitPrices, setBaseUnitPrices] = useState({})
   // giá override theo đơn vị đang chọn (nếu user sửa giá)
   const [priceOverrides, setPriceOverrides] = useState({})
+  const [priceErrors, setPriceErrors] = useState({})
 
   const [isCreateReceipt, setIsCreateReceipt] = useState(false)
 
@@ -219,6 +220,7 @@ const InvoiceDialog = ({
     setSelectedUnitIds({})
     setBaseUnitPrices({})
     setPriceOverrides({})
+    setPriceErrors({})
     setDiscounts({})
     setQuantities({})
     setNotes({})
@@ -602,6 +604,11 @@ const InvoiceDialog = ({
       delete next[productId]
       return next
     })
+    setPriceErrors(prev => {
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
     setDiscounts(prev => {
       const next = { ...prev }
       delete next[productId]
@@ -638,6 +645,26 @@ const InvoiceDialog = ({
     })
   }
 
+  const validatePrices = () => {
+    let hasPriceError = false
+    const newPriceErrors = {}
+    for (const product of selectedProducts) {
+      const price = getDisplayPrice(product)
+      if (price <= 0) {
+        newPriceErrors[product.id] = 'Giá phải lớn hơn 0'
+        hasPriceError = true
+      }
+    }
+    setPriceErrors(newPriceErrors)
+    return hasPriceError
+  }
+
+  const onInvalidSubmit = () => {
+    if (validatePrices()) {
+      toast.error('Vui lòng kiểm tra lại giá sản phẩm')
+    }
+  }
+
   const onSubmit = async (data, options = {}) => {
     const shouldPrintInvoice = options.printInvoice || hasPrintInvoice
     // Only print agreement if explicitly requested via options (button click)
@@ -650,6 +677,11 @@ const InvoiceDialog = ({
     if (!selectedProducts || selectedProducts.length === 0) {
       toast.error('Vui lòng chọn ít nhất 1 sản phẩm')
       setMobileView('products')
+      return
+    }
+
+    if (validatePrices()) {
+      toast.error('Vui lòng kiểm tra lại giá sản phẩm')
       return
     }
 
@@ -1153,6 +1185,12 @@ const InvoiceDialog = ({
       ...prev,
       [productId]: numericValue,
     }))
+    setPriceErrors(prev => {
+      if (!prev[productId]) return prev
+      const next = { ...prev }
+      delete next[productId]
+      return next
+    })
   }
 
   const handleGiveawayChange = (productId, value) => {
@@ -1572,6 +1610,7 @@ const InvoiceDialog = ({
                         quantities={quantities}
                         selectedUnitIds={selectedUnitIds}
                         priceOverrides={priceOverrides}
+                        priceErrors={priceErrors}
                         discounts={discounts}
                         selectedTaxes={selectedTaxes}
                         notes={notes}
@@ -1618,6 +1657,7 @@ const InvoiceDialog = ({
                         calculateTotalAmount={calculateTotalAmount}
                         calculateExpenses={calculateExpenses}
                         onSubmit={onSubmit}
+                        onInvalidSubmit={onInvalidSubmit}
                         loading={loading}
                         onShowCreateCustomer={() => setShowCreateCustomerDialog(true)}
                         onShowUpdateCustomer={() => setShowUpdateCustomerDialog(true)}
@@ -1848,6 +1888,7 @@ const InvoiceDialog = ({
                   quantities={quantities}
                   selectedUnitIds={selectedUnitIds}
                   priceOverrides={priceOverrides}
+                  priceErrors={priceErrors}
                   discounts={discounts}
                   selectedTaxes={selectedTaxes}
                   notes={notes}
@@ -1909,6 +1950,7 @@ const InvoiceDialog = ({
                   calculateTotalAmount={calculateTotalAmount}
                   calculateExpenses={calculateExpenses}
                   onSubmit={onSubmit}
+                  onInvalidSubmit={onInvalidSubmit}
                   loading={loading}
                   onShowCreateCustomer={() => setShowCreateCustomerDialog(true)}
                   onShowUpdateCustomer={() => setShowUpdateCustomerDialog(true)}

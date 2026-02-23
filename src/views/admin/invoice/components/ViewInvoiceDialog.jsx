@@ -508,9 +508,14 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
       return
     }
 
-    // Check payment status or amount
-    if (invoice?.paymentStatus === 'paid' || (invoice?.paidAmount >= invoice?.amount)) {
-      toast.warning('Đơn hàng này đã thu đủ tiền')
+    // Calculate total including drafts
+    const draftAmount = invoice?.paymentVouchers
+      ?.filter(v => v.status === 'draft' || v.status === 'pending')
+      ?.reduce((sum, v) => sum + parseFloat(v.amount || 0), 0) || 0
+
+    // Check payment status or amount considering drafts
+    if (invoice?.paymentStatus === 'paid' || ((invoice?.paidAmount || 0) + draftAmount >= invoice?.amount)) {
+      toast.warning('Đơn hàng này đã thu đủ tiền (bao gồm cả các phiếu nháp)')
       return
     }
 
@@ -831,9 +836,16 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                         return (
                                           <>
                                             <Badge
-                                              className={`cursor-pointer select-none ${statusObj?.color || ''}`}
-                                              onClick={() => setShowUpdateStatusDialog(true)}
-                                              title="Bấm để cập nhật trạng thái"
+                                              variant={invoice.status === 'delivered' ? 'outline' : 'default'}
+                                              className={invoice.status === 'delivered'
+                                                ? `cursor-default select-none border-0 ${statusObj?.textColor || 'text-green-500'}`
+                                                : `cursor-pointer select-none ${statusObj?.color || ''}`}
+                                              onClick={() => {
+                                                if (invoice.status !== 'delivered') {
+                                                  setShowUpdateStatusDialog(true)
+                                                }
+                                              }}
+                                              title={invoice.status === 'delivered' ? '' : "Bấm để cập nhật trạng thái"}
                                             >
                                               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
                                                 {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}

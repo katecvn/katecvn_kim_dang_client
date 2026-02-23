@@ -33,6 +33,7 @@ const ShoppingCart = ({
   quantities,
   selectedUnitIds,
   priceOverrides,
+  priceErrors = {},
   discounts,
   selectedTaxes,
   notes,
@@ -277,8 +278,11 @@ const ShoppingCart = ({
                             onPriceChange(product.id, String(num))
                           }
                           onFocus={(e) => e.target.select()}
-                          className="h-8 text-sm"
+                          className={cn("h-8 text-sm", priceErrors[product.id] && "border-destructive focus-visible:ring-destructive")}
                         />
+                        {priceErrors[product.id] && (
+                          <div className="text-[10px] text-destructive mt-1 font-medium">{priceErrors[product.id]}</div>
+                        )}
                       </div>
                     </div>
 

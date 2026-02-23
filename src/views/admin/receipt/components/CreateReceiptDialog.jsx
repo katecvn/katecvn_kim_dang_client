@@ -84,9 +84,6 @@ const CreateReceiptDialog = ({
   const customer = invoiceData?.[0]?.customer
   const banks = setting?.payload?.banks || []
 
-  const totalAmount = invoiceItems
-    ?.map((product) => product)
-    .reduce((acc, product) => acc + product.total, 0)
   const totalTaxAmount = invoiceItems
     ?.map((product) => product.taxAmount)
     .reduce((acc, taxAmount) => acc + taxAmount, 0)
@@ -94,15 +91,29 @@ const CreateReceiptDialog = ({
     ?.map((product) => product.discount)
     .reduce((acc, discount) => acc + discount, 0)
 
-  const remainingAmount = invoiceData?.reduce((acc, invoice) => {
-    return acc + (parseFloat(invoice.totalAmount || 0) - parseFloat(invoice.paidAmount || 0))
-  }, 0)
+  const totalAmountFromInvoice = invoiceData?.reduce((acc, invoice) => {
+    return acc + parseFloat(invoice.amount || invoice.totalAmount || 0)
+  }, 0) || 0
+
+  const paidAmount = invoiceData?.reduce((acc, invoice) => {
+    return acc + parseFloat(invoice.paidAmount || 0)
+  }, 0) || 0
+
+  const pendingAmount = invoiceData?.reduce((acc, invoice) => {
+    const vouchers = invoice.receiptVouchers || invoice.receipts || invoice.paymentVouchers || []
+    const pendingSum = vouchers
+      .filter(p => p.status === 'pending' || p.status === 'draft')
+      .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+    return acc + pendingSum
+  }, 0) || 0
+
+  const remainingAmount = Math.max(0, totalAmountFromInvoice - paidAmount - pendingAmount)
 
   const form = useForm({
     resolver: zodResolver(createReceiptSchema),
     defaultValues: async () => ({
       note: '',
-      totalAmount,
+      totalAmount: remainingAmount > 0 ? remainingAmount : 0,
       paymentMethod: paymentMethods[0].value,
       paymentNote: '',
       bankAccount: null,
@@ -141,10 +152,12 @@ const CreateReceiptDialog = ({
   }, [invoicesKey])
 
   useEffect(() => {
-    fetchData()
-    table?.resetRowSelection?.()
+    if (open) {
+      fetchData()
+      table?.resetRowSelection?.()
+    }
     // eslint-disable-next-line react-hook/exhaustive-deps
-  }, [fetchData, table])
+  }, [fetchData, table, open])
 
   useEffect(() => {
     dispatch(getSetting('general_information'))
@@ -161,6 +174,15 @@ const CreateReceiptDialog = ({
   const navigate = useNavigate()
 
   const onSubmit = async (data) => {
+    const amountToReceive = parseFloat(data.totalAmount) || 0
+    if (amountToReceive > remainingAmount) {
+      form.setError('totalAmount', {
+        type: 'manual',
+        message: `Số tiền thu không được vượt quá số nợ còn lại (${moneyFormat(remainingAmount)})`,
+      })
+      return
+    }
+
     // Build payload matching backend requirements
     const dataToSend = {
       // Voucher & Transaction Type
@@ -510,29 +532,43 @@ const CreateReceiptDialog = ({
 
                             <div className="space-y-4 text-sm">
                               <div className="flex justify-between">
-                                <strong>Tổng cộng:</strong>
-                                <span>{moneyFormat(totalAmount)}</span>
+                                <strong>Tổng giá trị đơn hàng:</strong>
+                                <span>{moneyFormat(totalAmountFromInvoice)}</span>
                               </div>
-                              <div className="flex justify-start">
-                                <div className="text-sm font-bold">
-                                  Số tiền viết bằng chữ:{' '}
-                                  <span className="font-bold">
-                                    {toVietnamese(totalAmount)}
-                                  </span>
+                              <div className="flex justify-between text-muted-foreground">
+                                <strong>Đã thanh toán:</strong>
+                                <span>{moneyFormat(paidAmount)}</span>
+                              </div>
+                              {pendingAmount > 0 && (
+                                <div className="flex justify-between text-amber-600">
+                                  <strong>Đang chờ duyệt/Nháp:</strong>
+                                  <span>{moneyFormat(pendingAmount)}</span>
                                 </div>
+                              )}
+                              <div className="flex justify-between text-destructive">
+                                <strong>Còn nợ:</strong>
+                                <span>{moneyFormat(remainingAmount)}</span>
                               </div>
+                              {pendingAmount > 0 && (
+                                <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[13px] text-amber-800">
+                                  <p>
+                                    <strong>Lưu ý:</strong> Đang có <strong>{moneyFormat(pendingAmount)}</strong> chờ duyệt hoặc nháp.
+                                    Số tiền tối đa có thể thu thêm là <strong>{moneyFormat(remainingAmount)}</strong>.
+                                  </p>
+                                </div>
+                              )}
 
                               <Separator />
 
-                              <div className="flex justify-between">
-                                <strong>Giá trên đã bao gồm</strong>
+                              <div className="flex justify-between text-muted-foreground text-xs">
+                                <strong>Giá trên đã bao gồm:</strong>
                               </div>
-                              <div className="flex justify-between">
-                                <strong>Giảm giá:</strong>
+                              <div className="flex justify-between text-muted-foreground text-xs">
+                                <span>- Giảm giá:</span>
                                 <span>{moneyFormat(totalDiscount)}</span>
                               </div>
-                              <div className="flex justify-between">
-                                <strong>Thuế:</strong>
+                              <div className="flex justify-between text-muted-foreground text-xs">
+                                <span>- Thuế:</span>
                                 <span>{moneyFormat(totalTaxAmount)}</span>
                               </div>
 
@@ -560,6 +596,9 @@ const CreateReceiptDialog = ({
                                           }}
                                         />
                                       </FormControl>
+                                      <div className="text-xs text-muted-foreground mt-1">
+                                        Bằng chữ: <span className="font-medium">{toVietnamese(field.value)}</span>
+                                      </div>
                                       <FormMessage />
                                     </FormItem>
                                   )}

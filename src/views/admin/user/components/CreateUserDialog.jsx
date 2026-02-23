@@ -273,7 +273,7 @@ const CreateUserDialog = ({
                   )}
                 />
 
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="positionId"
                   render={({ field }) => (
@@ -305,7 +305,7 @@ const CreateUserDialog = ({
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                /> */}
 
                 <FormField
                   control={form.control}

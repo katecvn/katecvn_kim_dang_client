@@ -119,8 +119,8 @@ const ImportProductDialog = ({
         const item = {
           code: String(getVal(1)),
           name: String(getVal(2)),
-          price: getNum(3),
-          basePrice: getNum(4),
+          basePrice: getNum(3),
+          price: getNum(4),
           categoryCode: String(getVal(5)),
           unitCode: String(getVal(6)),
           supplierCode: String(getVal(7)),
@@ -131,15 +131,16 @@ const ImportProductDialog = ({
           unitConversions: getUnitConversions(12)
         }
 
-        if (item.code) {
+        // Only skip completely empty rows. If they have at least one of these critical fields, push to items.
+        if (item.code || item.name || item.categoryCode || item.supplierCode) {
           items.push(item)
         }
       })
 
-      if (items.length === 0) {
-        toast.warning('Không tìm thấy dữ liệu hợp lệ trong file Excel')
-        return
-      }
+      // if (items.length === 0) {
+      //   toast.warning('Không tìm thấy dữ liệu hợp lệ trong file Excel')
+      //   return
+      // }
 
       const payload = { items }
       const response = await dispatch(importProduct(payload)).unwrap()

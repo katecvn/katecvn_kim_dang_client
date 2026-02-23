@@ -35,6 +35,7 @@ import React from 'react'
 import ViewInvoiceDialog from '@/views/admin/invoice/components/ViewInvoiceDialog'
 import InvoiceDialog from '@/views/admin/invoice/components/InvoiceDialog'
 import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
+import { getInvoiceDetail } from '@/api/invoice'
 import InstallmentPreviewDialog from '../../invoice/components/InstallmentPreviewDialog'
 import LiquidateContractDialog from './LiquidateContractDialog'
 import DeleteSalesContractDialog from './DeleteSalesContractDialog'
@@ -144,13 +145,11 @@ const ViewSalesContractDialog = ({
         return
       }
 
-      // Use the first invoice data to build installment data
-      const invoiceData = {
-        ...contract.invoices[0],
-        salesContract: contract
-      }
+      // Fetch full invoice detail to ensure all data is present
+      const invoiceId = contract.invoices[0].id
+      const fullInvoiceData = await getInvoiceDetail(invoiceId)
 
-      const baseInstallmentData = await buildInstallmentData(invoiceData)
+      const baseInstallmentData = await buildInstallmentData(fullInvoiceData)
 
       setInstallmentData(baseInstallmentData)
       setInstallmentFileName(`hop-dong-ban-hang-${contract.code || 'contract'}.docx`)

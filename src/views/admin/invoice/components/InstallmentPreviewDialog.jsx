@@ -83,7 +83,7 @@ export default function InstallmentPreviewDialog({
         </div>
       )}
       <div className="flex items-center justify-between rounded-md bg-blue-50 p-3 text-sm text-blue-800 border border-blue-200">
-        <span>Số lần in: <strong>{formData.printCount || 0}</strong></span>
+        <span>Số lần in: <strong>{(formData.printCount || 0) + 1}</strong></span>
       </div>
       <div>
         <h3 className="mb-2 text-sm font-semibold">Thông tin hợp đồng</h3>

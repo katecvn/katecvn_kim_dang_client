@@ -79,7 +79,6 @@ const PaymentDialog = ({
 
   // State for fetched payment data
   const [fetchedPayment, setFetchedPayment] = useState(null)
-  console.log(fetchedPayment)
   const payment = fetchedPayment || propPayment
 
   const [isFetching, setIsFetching] = useState(false)

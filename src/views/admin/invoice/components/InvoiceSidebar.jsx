@@ -71,6 +71,7 @@ const InvoiceSidebar = ({
   isUpdate = false,
   customerErrors = {}, // Receive validation errors
   deliveryDateError = '', // Receive delivery date error
+  onInvalidSubmit,
   onScrollToCart,
 }) => {
   const dispatch = useDispatch()
@@ -883,7 +884,7 @@ const InvoiceSidebar = ({
         {/* Main Button */}
         <Button
           className="w-full"
-          onClick={form.handleSubmit(onSubmit)}
+          onClick={form.handleSubmit(onSubmit, onInvalidSubmit)}
           disabled={loading}
           loading={loading}
         >
@@ -896,7 +897,7 @@ const InvoiceSidebar = ({
           <Button
             type="button"
             className="w-full"
-            onClick={form.handleSubmit((data) => onSubmit(data, { printInvoice: true }))}
+            onClick={form.handleSubmit((data) => onSubmit(data, { printInvoice: true }), onInvalidSubmit)}
             disabled={loading}
           >
             <IconFileTypePdf className="h-4 w-4 mr-2" />

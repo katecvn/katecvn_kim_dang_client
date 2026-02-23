@@ -24,7 +24,7 @@ export function DeleteMultiplePaymentVouchersDialog({
           <AlertDialogDescription>
             Hành động này không thể hoàn tác. Bạn đang xóa{' '}
             <span className="font-medium text-foreground">{count}</span> phiếu thu/chi
-            đã chọn và dữ liệu này sẽ bị xóa vĩnh viễn khỏi máy chủ.
+            đã chọn và dữ liệu này sẽ bị xóa.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

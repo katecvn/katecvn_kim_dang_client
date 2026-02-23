@@ -24,7 +24,7 @@ export function DeleteMultipleSuppliersDialog({
           <AlertDialogDescription>
             Hành động này không thể hoàn tác. Bạn đang xóa{' '}
             <span className="font-medium text-foreground">{count}</span> nhà cung
-            cấp đã chọn và dữ liệu này sẽ bị xóa vĩnh viễn khỏi máy chủ.
+            cấp đã chọn và dữ liệu này sẽ bị xóa.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

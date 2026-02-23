@@ -38,7 +38,14 @@ import PurchaseOrderDialog from './PurchaseOrderDialog'
 import ViewPurchaseOrderDialog from './ViewPurchaseOrderDialog'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
 import { useDispatch, useSelector } from 'react-redux'
-import { updatePurchaseOrderStatus, confirmPurchaseOrder, cancelPurchaseOrder, revertPurchaseOrder } from '@/stores/PurchaseOrderSlice'
+import {
+  updatePurchaseOrderStatus,
+  confirmPurchaseOrder,
+  cancelPurchaseOrder,
+  revertPurchaseOrder,
+  deletePurchaseOrder,
+  getPurchaseOrderDetail
+} from '@/stores/PurchaseOrderSlice'
 import { toast } from 'sonner'
 import PrintPurchaseOrderView from './PrintPurchaseOrderView'
 import PurchaseContractPreviewDialog from './PurchaseContractPreviewDialog'
@@ -71,6 +78,9 @@ const MobilePurchaseOrderCard = ({
   const [showPrintOrder, setShowPrintOrder] = useState(false)
   const [showContractPreview, setShowContractPreview] = useState(false)
   const [contractPreviewData, setContractPreviewData] = useState(null)
+
+  const [fullPurchaseOrder, setFullPurchaseOrder] = useState(null)
+  const [isOpeningPayment, setIsOpeningPayment] = useState(false)
 
   // Action states
   const [showImportWarehouseDialog, setShowImportWarehouseDialog] = useState(false)
@@ -190,6 +200,35 @@ const MobilePurchaseOrderCard = ({
   const canImportWarehouse = ['ordered', 'confirmed', 'partial'].includes(purchaseOrder?.status)
   const canPayment = !['draft', 'cancelled'].includes(purchaseOrder?.status) && purchaseOrder.paymentStatus !== 'paid'
 
+  const handleShowPaymentDialog = async () => {
+    try {
+      setIsOpeningPayment(true)
+      const poDetails = await dispatch(getPurchaseOrderDetail(purchaseOrder.id)).unwrap()
+
+      const totalAmount = parseFloat(poDetails?.totalAmount || 0)
+      const paidAmount = parseFloat(poDetails?.paidAmount || 0)
+      const pendingAmount = (poDetails?.paymentVouchers || poDetails?.payments || [])
+        .filter(p => p.status === 'pending' || p.status === 'draft')
+        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+
+      const remainingAmount = Math.max(0, totalAmount - paidAmount - pendingAmount)
+
+      if (remainingAmount <= 0) {
+        toast.error('Đơn hàng đã thanh toán đủ hoặc đang có phiếu chi nháp/chờ duyệt chờ xử lý hết số nợ.')
+        setIsOpeningPayment(false)
+        return
+      }
+
+      setFullPurchaseOrder(poDetails)
+      setShowPaymentDialog(true)
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin đơn hàng', error)
+      toast.error('Không thể lấy thông tin chi tiết đơn hàng')
+    } finally {
+      setIsOpeningPayment(false)
+    }
+  }
+
   return (
     <>
       {/* Dialogs */}
@@ -248,7 +287,7 @@ const MobilePurchaseOrderCard = ({
         <PaymentFormDialog
           open={showPaymentDialog}
           onOpenChange={setShowPaymentDialog}
-          purchaseOrder={purchaseOrder}
+          purchaseOrder={fullPurchaseOrder || purchaseOrder}
           showTrigger={false}
         />
       )}
@@ -336,7 +375,7 @@ const MobilePurchaseOrderCard = ({
 
               {canPayment && (
                 <Can permission="PAYMENT_CREATE">
-                  <DropdownMenuItem onClick={() => setShowPaymentDialog(true)} className="text-emerald-600">
+                  <DropdownMenuItem onClick={handleShowPaymentDialog} disabled={isOpeningPayment} className="text-emerald-600">
                     <IconCreditCard className="mr-2 h-4 w-4" />
                     Tạo phiếu chi
                   </DropdownMenuItem>

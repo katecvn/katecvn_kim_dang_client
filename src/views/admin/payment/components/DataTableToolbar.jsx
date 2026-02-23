@@ -10,13 +10,16 @@ import { DataTableViewOptions } from './DataTableViewOption'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { DeleteMultiplePaymentVouchersDialog } from './DeleteMultiplePaymentVouchersDialog'
 import { paymentStatus as paymentStatuses } from '../data'
+import { IconFileTypeXls } from '@tabler/icons-react'
+import ExportPaymentDialog from './ExportPaymentDialog'
 
 
-export function DataTableToolbar({ table }) {
+export function DataTableToolbar({ table, isMyPayment = false }) {
   const isFiltered = table.getState().columnFilters.length > 0
   const [selectedPaymentIds, setSelectedPaymentIds] = useState([])
   const [selectedPayments, setSelectedPayments] = useState([])
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
 
   const selectedRows = table.getSelectedRowModel().rows
   const dispatch = useDispatch()
@@ -81,6 +84,25 @@ export function DataTableToolbar({ table }) {
             <TrashIcon className="mr-2 h-4 w-4" />
             Xóa ({selectedPayments.length})
           </Button>
+        )}
+
+        <Button
+          className="text-green-600 border-green-200 hover:bg-green-50 h-8"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowExportDialog(true)}
+        >
+          <IconFileTypeXls className="mr-2 size-4" aria-hidden="true" />
+          Xuất file
+        </Button>
+
+        {showExportDialog && (
+          <ExportPaymentDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+            showTrigger={false}
+            isMyPayment={isMyPayment}
+          />
         )}
 
         <DeleteMultiplePaymentVouchersDialog

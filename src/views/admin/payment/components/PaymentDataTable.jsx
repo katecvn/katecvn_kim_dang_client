@@ -30,7 +30,8 @@ const PaymentDataTable = ({
   loading = false,
   pagination = { page: 1, limit: 20, totalPages: 1 },
   onPageChange,
-  onPageSizeChange
+  onPageSizeChange,
+  isMyPayment = false
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -85,7 +86,7 @@ const PaymentDataTable = ({
   if (isMobile) {
     return (
       <div className="space-y-4">
-        <DataTableToolbar table={table} />
+        <DataTableToolbar table={table} isMyPayment={isMyPayment} />
 
         <div className="space-y-2">
           {loading ? (
@@ -121,7 +122,7 @@ const PaymentDataTable = ({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} />
+      <DataTableToolbar table={table} isMyPayment={isMyPayment} />
 
       <div className="rounded-md border">
         <Table>

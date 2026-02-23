@@ -12,6 +12,7 @@ import {
   endOfMonth,
   startOfDay,
   startOfMonth,
+  format,
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -48,6 +49,8 @@ const MyPurchaseOrderPage = () => {
     const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
     const apiFilters = {
       ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
       page: pageIndex + 1,
       limit: pageSize,
       search: debouncedSearch,
@@ -147,6 +150,8 @@ const MyPurchaseOrderPage = () => {
             onRefresh={() => {
               const apiFilters = {
                 ...filters,
+                fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+                toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
                 page: pageIndex + 1,
                 limit: pageSize,
               }

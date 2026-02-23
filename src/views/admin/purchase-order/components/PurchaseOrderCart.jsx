@@ -195,9 +195,14 @@ const PurchaseOrderCart = ({
                           onChange={(num) =>
                             onPriceChange(product.id, String(num))
                           }
-                          className="h-8 text-sm"
+                          className={cn("h-8 text-sm", currentPrice <= 0 && "border-destructive focus-visible:ring-destructive")}
                           onFocus={(e) => e.target.select()}
                         />
+                        {currentPrice <= 0 && (
+                          <span className="text-[10px] text-destructive mt-1 block">
+                            Đơn giá phải lớn hơn 0
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -212,6 +217,7 @@ const PurchaseOrderCart = ({
                           type="number"
                           min="0"
                           max="100"
+                          step="any"
                           value={discountRates[product.id] ?? 0}
                           onChange={(e) =>
                             onDiscountRateChange(product.id, e.target.value)

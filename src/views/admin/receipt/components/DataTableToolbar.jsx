@@ -28,15 +28,18 @@ import {
 } from '@/components/ui/dialog'
 import { moneyFormat } from '@/utils/money-format'
 import PaymentQRCodeDialog from './PaymentQRCodeDialog'
+import { IconFileTypeXls } from '@tabler/icons-react'
+import ExportReceiptDialog from './ExportReceiptDialog'
 
 import { DeleteMultipleReceiptsDialog } from './DeleteMultipleReceiptsDialog'
 
-const DataTableToolbar = ({ table }) => {
+const DataTableToolbar = ({ table, isMyReceipt = false }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const selectedRows = table.getSelectedRowModel().rows
   const [openReminder, setOpenReminder] = useState(false)
   const [openQrDialog, setOpenQrDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
   const [qrCodeData, setQrCodeData] = useState(null)
   const [qrLoading, setQrLoading] = useState(false)
   const dispatch = useDispatch()
@@ -129,6 +132,14 @@ const DataTableToolbar = ({ table }) => {
               <QrCode className="mr-2 h-3 w-3" />
               Tạo QR thanh toán
             </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => setShowExportDialog(true)}
+              className="text-xs text-green-600"
+            >
+              <IconFileTypeXls className="mr-2 h-3 w-3" />
+              Xuất Excel
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -145,6 +156,15 @@ const DataTableToolbar = ({ table }) => {
           onOpenChange={setOpenQrDialog}
           qrCodeData={qrCodeData}
         />
+
+        {showExportDialog && (
+          <ExportReceiptDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+            showTrigger={false}
+            isMyReceipt={isMyReceipt}
+          />
+        )}
       </div>
     )
   }
@@ -207,6 +227,25 @@ const DataTableToolbar = ({ table }) => {
           <QrCode className="mr-2 h-4 w-4" />
           Tạo QR thanh toán
         </Button>
+
+        <Button
+          className="text-green-600 border-green-200 hover:bg-green-50 h-8"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowExportDialog(true)}
+        >
+          <IconFileTypeXls className="mr-2 size-4" aria-hidden="true" />
+          Xuất Excel
+        </Button>
+
+        {showExportDialog && (
+          <ExportReceiptDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+            showTrigger={false}
+            isMyReceipt={isMyReceipt}
+          />
+        )}
       </div>
 
       {canRemind && (

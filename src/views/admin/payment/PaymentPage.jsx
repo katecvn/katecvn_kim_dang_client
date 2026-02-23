@@ -10,6 +10,7 @@ import {
   endOfMonth,
   startOfDay,
   startOfMonth,
+  format
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
 
@@ -34,7 +35,12 @@ const PaymentPage = () => {
 
   useEffect(() => {
     document.title = 'Danh sách phiếu chi'
-    dispatch(getPayments({ ...filters, ...pageParams }))
+    dispatch(getPayments({
+      ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+      ...pageParams
+    }))
   }, [dispatch, filters, pageParams])
 
   return (

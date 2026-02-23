@@ -1,7 +1,7 @@
 import { Button } from '@/components/custom/Button'
 
 import { DateRange } from '@/components/custom/DateRange'
-import { endOfDay, endOfMonth, startOfDay, startOfMonth } from 'date-fns'
+import { endOfDay, endOfMonth, startOfDay, startOfMonth, format } from 'date-fns'
 import { useState } from 'react'
 import api from '@/utils/axios'
 
@@ -47,9 +47,9 @@ const ExportInvoiceDialog = ({
           'Expires': '0',
         },
         params: {
-          fromDate: filters.fromDate,
-          toDate: filters.toDate,
-          limit: 100 // Get all records for export
+          fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+          toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+          limit: 1000 // Get all records for export
         },
       })
 

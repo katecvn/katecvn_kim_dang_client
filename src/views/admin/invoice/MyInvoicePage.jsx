@@ -12,6 +12,7 @@ import {
   endOfMonth,
   startOfDay,
   startOfMonth,
+  format,
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
 
@@ -34,28 +35,29 @@ const MyInvoicePage = () => {
 
   const pagination = useSelector((state) => state.invoice.pagination)
 
-  const [pageParams, setPageParams] = useState({
-    page: 1,
-    limit: 15
-  })
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(15)
 
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 500)
   const [columnFilters, setColumnFilters] = useState([])
 
   useEffect(() => {
-    document.title = `Hóa đơn - ${fullName}`
+    document.title = `Đơn bán - ${fullName}`
 
     // Extract status filter
     const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
 
     dispatch(getMyInvoices({
       ...filters,
-      ...pageParams,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+      page: pageIndex + 1,
+      limit: pageSize,
       search: debouncedSearch,
       status: statusFilter,
     }))
-  }, [fullName, dispatch, filters, pageParams, debouncedSearch, columnFilters])
+  }, [fullName, dispatch, filters, pageIndex, pageSize, debouncedSearch, columnFilters])
 
   const refreshData = () => {
     // Extract status filter
@@ -63,7 +65,10 @@ const MyInvoicePage = () => {
 
     dispatch(getMyInvoices({
       ...filters,
-      ...pageParams,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+      page: pageIndex + 1,
+      limit: pageSize,
       search: debouncedSearch,
       status: statusFilter,
     }))
@@ -71,7 +76,7 @@ const MyInvoicePage = () => {
 
   // Reset page when search changes
   useEffect(() => {
-    setPageParams(prev => ({ ...prev, page: 1 }))
+    setPageIndex(0)
   }, [debouncedSearch])
 
   return (
@@ -100,7 +105,7 @@ const MyInvoicePage = () => {
                     : addHours(endOfDay(endOfMonth(current)), 0),
                 }))
                 // Reset to page 1 on filter change
-                setPageParams(prev => ({ ...prev, page: 1 }))
+                setPageIndex(0)
               }}
             />
           </div>
@@ -112,11 +117,18 @@ const MyInvoicePage = () => {
               columns={columns}
               loading={loading}
               isMyInvoice={true}
-              pagination={pagination}
-              onPageChange={(page) => setPageParams(prev => ({ ...prev, page }))}
-              onPageSizeChange={(limit) => setPageParams(prev => ({ ...prev, limit, page: 1 }))}
+              pageCount={pagination?.last_page || 1}
+              pagination={{
+                pageIndex,
+                pageSize,
+              }}
+              onPaginationChange={({ pageIndex, pageSize }) => {
+                setPageIndex(pageIndex)
+                setPageSize(pageSize)
+              }}
               onSearchChange={(value) => {
                 setSearch(value)
+                setPageIndex(0) // Reset to first page on search
               }}
               onView={(id) => setViewInvoiceId(id)}
               columnFilters={columnFilters}

@@ -3,6 +3,7 @@ import { DateRange } from '@/components/custom/DateRange'
 import { endOfDay, endOfMonth, startOfDay, startOfMonth, format } from 'date-fns'
 import { useState } from 'react'
 import api from '@/utils/axios'
+
 import {
   Dialog,
   DialogClose,
@@ -15,14 +16,14 @@ import {
 } from '@/components/ui/dialog'
 import { PlusIcon } from '@radix-ui/react-icons'
 import { toast } from 'sonner'
+import ExportPaymentView from './ExportPaymentView'
 import { IconPresentationAnalytics } from '@tabler/icons-react'
-import ExportPurchaseOrderView from './ExportPurchaseOrderView'
 
-const ExportPurchaseOrderDialog = ({
+const ExportPaymentDialog = ({
   open,
   onOpenChange,
   showTrigger = true,
-  isMyPurchaseOrder = false, // Future proofing
+  isMyPayment = false,
   ...props
 }) => {
   const current = new Date()
@@ -37,12 +38,16 @@ const ExportPurchaseOrderDialog = ({
   const handleReviewExport = async () => {
     setLoading(true)
     try {
-      const url = '/purchase-orders'
-      // If there's a specific endpoint for 'my purchase orders', handle it:
-      // const url = isMyPurchaseOrder ? '/purchase-orders/my' : '/purchase-orders'
+      const url = isMyPayment ? '/payment-vouchers/my-payment-vouchers' : '/payment-vouchers'
 
       const { data } = await api.get(url, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
         params: {
+          voucherType: 'payment_out',
           fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
           toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
           limit: 1000,
@@ -50,13 +55,13 @@ const ExportPurchaseOrderDialog = ({
         },
       })
 
-      const orders = data.data?.data || [] // Accessing paginated data if wrapped
+      const list = data?.data?.data || data?.data || []
 
-      if (!orders.length) {
-        toast.warning('Danh sách đơn hàng trống')
+      if (!list.length) {
+        toast.warning('Danh sách phiếu chi trống')
         return
       }
-      setExportData(orders)
+      setExportData(list)
       setShowExportReview(true)
     } catch (error) {
       console.log('Export fetch error: ', error)
@@ -79,7 +84,7 @@ const ExportPurchaseOrderDialog = ({
 
       <DialogContent className="md:h-auto md:w-[320px]">
         <DialogHeader>
-          <DialogTitle>Xuất báo cáo đơn mua hàng</DialogTitle>
+          <DialogTitle>Xuất báo cáo phiếu chi</DialogTitle>
           <DialogDescription>
             Chọn từ ngày đến ngày để xuất file
           </DialogDescription>
@@ -112,7 +117,7 @@ const ExportPurchaseOrderDialog = ({
 
         <DialogFooter className="flex gap-2 sm:space-x-0">
           <DialogClose asChild>
-            <Button type="button" variant="outline">
+            <Button type="button" variant="outline" disabled={loading}>
               Hủy
             </Button>
           </DialogClose>
@@ -124,18 +129,18 @@ const ExportPurchaseOrderDialog = ({
       </DialogContent>
 
       {showExportReview && (
-        <ExportPurchaseOrderView
+        <ExportPaymentView
           open={showExportReview}
           onOpenChange={setShowExportReview}
           showTrigger={false}
           data={exportData}
           fromDate={filters.fromDate}
           toDate={filters.toDate}
-          closeExport={() => onOpenChange(false)}
+          closeExport={onOpenChange}
         />
       )}
     </Dialog>
   )
 }
 
-export default ExportPurchaseOrderDialog
+export default ExportPaymentDialog

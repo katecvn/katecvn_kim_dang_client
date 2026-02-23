@@ -10,6 +10,7 @@ import {
   endOfMonth,
   startOfDay,
   startOfMonth,
+  format
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
 
@@ -34,7 +35,12 @@ const MyPaymentPage = () => {
 
   useEffect(() => {
     document.title = 'Danh sách phiếu chi của tôi'
-    dispatch(getMyPayments({ ...filters, ...pageParams }))
+    dispatch(getMyPayments({
+      ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+      ...pageParams
+    }))
   }, [dispatch, filters, pageParams])
 
   return (
@@ -79,6 +85,7 @@ const MyPaymentPage = () => {
               pagination={pagination}
               onPageChange={(page) => setPageParams(prev => ({ ...prev, page }))}
               onPageSizeChange={(limit) => setPageParams(prev => ({ ...prev, limit, page: 1 }))}
+              isMyPayment={true}
             />
           )}
         </div>

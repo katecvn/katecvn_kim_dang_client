@@ -12,6 +12,7 @@ import {
   endOfMonth,
   startOfDay,
   startOfMonth,
+  format,
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -49,6 +50,8 @@ const PurchaseOrderPage = () => {
 
     const apiFilters = {
       ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
       page: pageIndex + 1,
       limit: pageSize,
       search: debouncedSearch,
@@ -65,6 +68,8 @@ const PurchaseOrderPage = () => {
       // Refresh the list as Create Action in Slice might only refresh my-purchase-orders
       const apiFilters = {
         ...filters,
+        fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+        toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
         page: pageIndex + 1,
         limit: pageSize,
         search: debouncedSearch

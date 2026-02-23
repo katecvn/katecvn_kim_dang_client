@@ -443,7 +443,8 @@ const PurchaseOrderDialog = ({
   }
 
   const handleDiscountRateChange = (productId, value) => {
-    let numericValue = Number(value.replace(/,/g, '').replace(/\D/g, ''))
+    // allow decimal numbers but remove formatting or invalid chars
+    let numericValue = Number(value.replace(/,/g, '').replace(/[^\d.]/g, ''))
     if (numericValue > 100) numericValue = 100
     setDiscountRates(prev => ({ ...prev, [productId]: numericValue }))
   }
@@ -543,6 +544,30 @@ const PurchaseOrderDialog = ({
       return
     }
 
+    // Strict validation for new supplier
+    if (supplierEditData) {
+      const phoneRegex = /^(0)(3|5|7|8|9)([0-9]{8})$/
+      if (supplierEditData.phone && !phoneRegex.test(supplierEditData.phone)) {
+        toast.error('SĐT nhà cung cấp không hợp lệ (10 số, đầu 03, 05, 07, 08, 09)')
+        return
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (supplierEditData.email && !emailRegex.test(supplierEditData.email)) {
+        toast.error('Email nhà cung cấp không hợp lệ')
+        return
+      }
+    }
+
+    // Validate Unit Price
+    for (const product of selectedProducts) {
+      const priceUnit = getDisplayPrice(product)
+      if (priceUnit <= 0) {
+        toast.error(`Đơn giá của sản phẩm "${product.name}" phải lớn hơn 0`)
+        return
+      }
+    }
+
     const items = selectedProducts.map((product, index) => {
       const unitId =
         selectedUnitIds[product.id] ||
@@ -606,7 +631,7 @@ const PurchaseOrderDialog = ({
       paymentTerms: data.paymentTerms,
       updatedBy: authUserWithRoleHasPermissions.id,
 
-      ...((!data.supplierId && supplierEditData) && {
+      ...((supplierEditData) && {
         newSupplier: {
           name: supplierEditData.name,
           phone: supplierEditData.phone,

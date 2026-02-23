@@ -33,6 +33,7 @@ import {
   cancelPurchaseOrder,
   revertPurchaseOrder,
   getPurchaseOrders,
+  getPurchaseOrderDetail,
 } from '@/stores/PurchaseOrderSlice'
 import { createWarehouseReceipt, postWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { purchaseOrderStatuses } from '../data'
@@ -55,6 +56,8 @@ const DataTableRowActions = ({ row, table }) => {
   const [showImportWarehouseDialog, setShowImportWarehouseDialog] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   const [showPrintOrder, setShowPrintOrder] = useState(false)
+  const [fullPurchaseOrder, setFullPurchaseOrder] = useState(null)
+  const [isOpeningPayment, setIsOpeningPayment] = useState(false)
 
   const dispatch = useDispatch()
 
@@ -140,6 +143,35 @@ const DataTableRowActions = ({ row, table }) => {
   const canImportWarehouse = ['ordered', 'confirmed', 'partial'].includes(purchaseOrder?.status) && !purchaseOrder?.warehouseReceiptId
   const canPayment = !['draft', 'cancelled'].includes(purchaseOrder?.status) && purchaseOrder.paymentStatus !== 'paid'
 
+  const handleShowPaymentDialog = async () => {
+    try {
+      setIsOpeningPayment(true)
+      const poDetails = await dispatch(getPurchaseOrderDetail(purchaseOrder.id)).unwrap()
+
+      const totalAmount = parseFloat(poDetails?.totalAmount || 0)
+      const paidAmount = parseFloat(poDetails?.paidAmount || 0)
+      const pendingAmount = (poDetails?.paymentVouchers || poDetails?.payments || [])
+        .filter(p => p.status === 'pending' || p.status === 'draft')
+        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+
+      const remainingAmount = Math.max(0, totalAmount - paidAmount - pendingAmount)
+
+      if (remainingAmount <= 0) {
+        toast.error('Đơn hàng đã thanh toán đủ hoặc đang có phiếu chi nháp/chờ duyệt chờ xử lý hết số nợ.')
+        setIsOpeningPayment(false)
+        return
+      }
+
+      setFullPurchaseOrder(poDetails)
+      setShowPaymentDialog(true)
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin đơn hàng', error)
+      toast.error('Không thể lấy thông tin chi tiết đơn hàng')
+    } finally {
+      setIsOpeningPayment(false)
+    }
+  }
+
   return (
     <>
 
@@ -192,7 +224,7 @@ const DataTableRowActions = ({ row, table }) => {
 
           {canPayment && (
             <Can permission="PAYMENT_CREATE">
-              <DropdownMenuItem onClick={() => setShowPaymentDialog(true)} className="text-emerald-600">
+              <DropdownMenuItem onClick={handleShowPaymentDialog} disabled={isOpeningPayment} className="text-emerald-600">
                 Tạo phiếu chi
                 <DropdownMenuShortcut>
                   <IconCreditCard className="h-4 w-4" />
@@ -319,7 +351,7 @@ const DataTableRowActions = ({ row, table }) => {
         <PaymentFormDialog
           open={showPaymentDialog}
           onOpenChange={setShowPaymentDialog}
-          purchaseOrder={purchaseOrder}
+          purchaseOrder={fullPurchaseOrder || purchaseOrder}
           showTrigger={false}
         />
       )}

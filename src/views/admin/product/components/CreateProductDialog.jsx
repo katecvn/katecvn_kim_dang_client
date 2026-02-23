@@ -287,7 +287,7 @@ const CreateProductDialog = ({
         supplierId: data.supplierId,
         unitId: data.unitId,
         basePrice: data.basePrice || 0,
-        price: data.price,
+        price: data.price || 0,
         name: data.name,
         description: data.description,
         note: data.note,
@@ -402,8 +402,8 @@ const CreateProductDialog = ({
                   form={form}
                   label="Giá bán (VNĐ)"
                   name="price"
-                  required={true}
-                  placeholder="Nhập giá sản phẩm"
+                  required={false}
+                  placeholder="Nhập giá sản phẩm (không bắt buộc)"
                 />
 
                 <FormField

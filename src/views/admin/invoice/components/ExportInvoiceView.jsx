@@ -39,7 +39,7 @@ const ExportInvoiceView = ({
     })
     const table = document.getElementById('exportTable')
 
-    worksheet.mergeCells('A1:V1')
+    worksheet.mergeCells('A1:X1')
     worksheet.getCell('A1').value =
       `Báo cáo danh sách hóa đơn từ ${fromDate} đến ${toDate}`
 
@@ -56,9 +56,32 @@ const ExportInvoiceView = ({
 
     const columnIndexForCheck = 1 // Cột B (index 1) để kiểm tra nhóm dữ liệu
 
-    let mergeRows_M = []
-    let mergeRows_Q = []
+    // Các cột cần gộp giống thông tin master (Hóa đơn)
+    let mergeRows_B = [] // Mã HĐ
+    let mergeRows_C = [] // Mã HĐ/Bán
+    let mergeRows_D = [] // KH
+    let mergeRows_E = [] // SĐT
+    let mergeRows_F = [] // Địa chỉ
+    let mergeRows_G = [] // Người tạo
+    let mergeRows_M = [] // Tổng hóa đơn
+    let mergeRows_O = [] // Giảm giá HD
+    let mergeRows_P = [] // Chia DS
+    let mergeRows_Q = [] // Tổng chia DS
+    let mergeRows_R = [] // Người được chia
+    let mergeRows_S = [] // Công nợ
+    let mergeRows_T = [] // Thanh toán
+    let mergeRows_U = [] // DS phiếu xuất
+    let mergeRows_V = [] // Trạng thái
+    let mergeRows_W = [] // Ngày T.Toán/HĐ
+    let mergeRows_X = [] // Ngày tạo
+
     let previousInvoiceCode = null
+
+    const doMerge = (rows, colLetter) => {
+      if (rows.length > 1) {
+        worksheet.mergeCells(`${colLetter}${rows[0]}:${colLetter}${rows[rows.length - 1]}`)
+      }
+    }
 
     data.forEach((row, rowIndex) => {
       const excelRow = worksheet.addRow(row)
@@ -83,39 +106,83 @@ const ExportInvoiceView = ({
 
         // Kiểm tra nếu Mã HĐ trùng
         if (row[columnIndexForCheck] === previousInvoiceCode) {
+          mergeRows_B.push(excelRow.number)
+          mergeRows_C.push(excelRow.number)
+          mergeRows_D.push(excelRow.number)
+          mergeRows_E.push(excelRow.number)
+          mergeRows_F.push(excelRow.number)
+          mergeRows_G.push(excelRow.number)
           mergeRows_M.push(excelRow.number)
+          mergeRows_O.push(excelRow.number) // Assuming column indexing might shift, we will just merge specific structural end-columns based on their letter: 
+          mergeRows_P.push(excelRow.number)
           mergeRows_Q.push(excelRow.number)
+          mergeRows_R.push(excelRow.number)
+          mergeRows_S.push(excelRow.number)
+          mergeRows_T.push(excelRow.number)
+          mergeRows_U.push(excelRow.number)
+          mergeRows_V.push(excelRow.number)
+          mergeRows_W.push(excelRow.number)
+          mergeRows_X.push(excelRow.number)
         } else {
-          // Thực hiện gộp ô nếu có nhóm trước đó
-          if (mergeRows_M.length > 1) {
-            worksheet.mergeCells(
-              `M${mergeRows_M[0]}:M${mergeRows_M[mergeRows_M.length - 1]}`,
-            )
-          }
-          if (mergeRows_Q.length > 1) {
-            worksheet.mergeCells(
-              `Q${mergeRows_Q[0]}:Q${mergeRows_Q[mergeRows_Q.length - 1]}`,
-            )
-          }
+          // Thực hiện gộp ô nhóm trước đó
+          doMerge(mergeRows_B, 'B')
+          doMerge(mergeRows_C, 'C')
+          doMerge(mergeRows_D, 'D')
+          doMerge(mergeRows_E, 'E')
+          doMerge(mergeRows_F, 'F')
+          doMerge(mergeRows_G, 'G')
+          doMerge(mergeRows_M, 'N') // Actually refers to N if columns shift, we map dynamically based on TableHead
+          doMerge(mergeRows_O, 'O')
+          doMerge(mergeRows_P, 'P')
+          doMerge(mergeRows_Q, 'Q')
+          doMerge(mergeRows_R, 'R')
+          doMerge(mergeRows_S, 'S')
+          doMerge(mergeRows_T, 'T')
+          doMerge(mergeRows_U, 'U')
+          doMerge(mergeRows_V, 'V')
+          doMerge(mergeRows_W, 'W')
+          doMerge(mergeRows_X, 'X')
 
           // Bắt đầu nhóm mới
+          mergeRows_B = [excelRow.number]
+          mergeRows_C = [excelRow.number]
+          mergeRows_D = [excelRow.number]
+          mergeRows_E = [excelRow.number]
+          mergeRows_F = [excelRow.number]
+          mergeRows_G = [excelRow.number]
           mergeRows_M = [excelRow.number]
+          mergeRows_O = [excelRow.number]
+          mergeRows_P = [excelRow.number]
           mergeRows_Q = [excelRow.number]
+          mergeRows_R = [excelRow.number]
+          mergeRows_S = [excelRow.number]
+          mergeRows_T = [excelRow.number]
+          mergeRows_U = [excelRow.number]
+          mergeRows_V = [excelRow.number]
+          mergeRows_W = [excelRow.number]
+          mergeRows_X = [excelRow.number]
         }
         previousInvoiceCode = row[columnIndexForCheck]
       }
     })
-    // Kiểm tra gộp ô nhóm cuối cùng
-    if (mergeRows_M.length > 1) {
-      worksheet.mergeCells(
-        `M${mergeRows_M[0]}:M${mergeRows_M[mergeRows_M.length - 1]}`,
-      )
-    }
-    if (mergeRows_Q.length > 1) {
-      worksheet.mergeCells(
-        `Q${mergeRows_Q[0]}:Q${mergeRows_Q[mergeRows_Q.length - 1]}`,
-      )
-    }
+    // Gộp ô nhóm cuối cùng
+    doMerge(mergeRows_B, 'B')
+    doMerge(mergeRows_C, 'C')
+    doMerge(mergeRows_D, 'D')
+    doMerge(mergeRows_E, 'E')
+    doMerge(mergeRows_F, 'F')
+    doMerge(mergeRows_G, 'G')
+    doMerge(mergeRows_M, 'N')
+    doMerge(mergeRows_O, 'O')
+    doMerge(mergeRows_P, 'P')
+    doMerge(mergeRows_Q, 'Q')
+    doMerge(mergeRows_R, 'R')
+    doMerge(mergeRows_S, 'S')
+    doMerge(mergeRows_T, 'T')
+    doMerge(mergeRows_U, 'U')
+    doMerge(mergeRows_V, 'V')
+    doMerge(mergeRows_W, 'W')
+    doMerge(mergeRows_X, 'X')
 
     worksheet.getCell('A1').font = {
       name: 'Times New Roman',
@@ -142,18 +209,19 @@ const ExportInvoiceView = ({
 
     // Chỉnh độ rộng của từng cột
     const customColumnWidths = [
-      8, // STT
+      6, // STT
       22, // Mã HĐ
+      22, // Mã HĐ/Bán
       25, // KH
       15, // SĐT
       35, // Địa chỉ
       20, // Người tạo
       30, // Sản phẩm
-      10, // SL
-      10, // Tặng
+      8, // SL
+      8, // Tặng
       10, // ĐVT
       15, // Giá
-      15, // Tổng cộng
+      15, // Thành tiền
       15, // Tổng hóa đơn
       15, // Thuế
       15, // Giảm giá
@@ -161,16 +229,19 @@ const ExportInvoiceView = ({
       15, // Tổng chia DS
       20, // Người được chia
       20, // Công nợ
+      22, // Thanh toán
+      28, // DS phiếu xuất
       15, // Trạng thái
-      15, // Ngày tạo
+      20, // Ngày HĐ
+      20, // Ngày tạo
       30, // Ghi chú
     ]
     worksheet.columns.forEach((column, index) => {
       column.width = customColumnWidths[index] || 15
     })
 
-    const customColumnsAlignment = [3, 5, 6, 7, 18, 22]
-    const customColumnConvertToNumber = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    const customColumnsAlignment = [2, 3, 4, 5, 6, 7, 8, 10, 23, 24, 25, 26]
+    const customColumnConvertToNumber = [9, 10, 12, 13, 14, 15, 16, 17, 18, 20]
 
     customColumnsAlignment.forEach((column) => {
       // Canh trái các cột
@@ -187,16 +258,14 @@ const ExportInvoiceView = ({
       col.eachCell((cell, rowNumber) => {
         if (typeof cell.value === 'string' && rowNumber > 2) {
           // Remove dots (thousands separator in VN) before parsing
-          // Keep only digits and minus sign (assuming integers for money/quantity)
-          const numValue = parseFloat(cell.value.replace(/\./g, '').replace(/[^\d.-]/g, ''))
+          const numValue = parseFloat(cell.value.replace(/\./g, '').replace(/,/g, '.'))
 
           if (!isNaN(numValue)) {
             cell.value = numValue // Chuyển thành số
           }
         }
-        cell.numFmt = 'Number'
-        cell.numFmt = '#,##0'
       })
+      col.numFmt = '#,##0'
     })
 
     // Định dang header
@@ -266,43 +335,47 @@ const ExportInvoiceView = ({
                 <TableRow className="bg-secondary text-xs">
                   <TableHead className="w-8">STT</TableHead>
                   <TableHead className="min-w-40">Mã HĐ</TableHead>
-                  <TableHead className="min-w-20">KH</TableHead>
+                  <TableHead className="min-w-36">Mã HĐ/Bán</TableHead>
+                  <TableHead className="min-w-40">KH</TableHead>
                   <TableHead className="min-w-16">SĐT</TableHead>
                   <TableHead className="min-w-40">Địa chỉ</TableHead>
                   <TableHead className="min-w-40">Người tạo</TableHead>
-                  <TableHead className="min-w-28">Sản phẩm</TableHead>
+                  <TableHead className="min-w-28">Tên sản phẩm</TableHead>
                   <TableHead className="min-w-16">SL</TableHead>
                   <TableHead className="min-w-16">Tặng</TableHead>
                   <TableHead className="min-w-16">ĐVT</TableHead>
-                  <TableHead className="min-w-28">Giá</TableHead>
-                  <TableHead className="min-w-28">Tổng cộng</TableHead>
+                  <TableHead className="min-w-32">Giá</TableHead>
+                  <TableHead className="min-w-32">Thành tiền</TableHead>
                   {/* Merge */}
-                  <TableHead className="min-w-28">Tổng hóa đơn</TableHead>
+                  <TableHead className="min-w-32">Tổng hóa đơn</TableHead>
                   <TableHead className="min-w-28">Thuế</TableHead>
                   <TableHead className="min-w-28">Giảm giá</TableHead>
-                  {/* Merge */}
                   <TableHead className="min-w-28">Chia DS</TableHead>
                   <TableHead className="min-w-28">Tổng chia DS</TableHead>
                   <TableHead className="min-w-28">Người được chia</TableHead>
-                  <TableHead className="min-w-28">Công nợ</TableHead>
+                  <TableHead className="min-w-32">Công nợ</TableHead>
+                  <TableHead className="min-w-36">Thanh toán</TableHead>
+                  <TableHead className="min-w-40">DS phiếu xuất</TableHead>
                   <TableHead className="min-w-28">Trạng thái</TableHead>
+                  <TableHead className="min-w-28">Ngày HĐ</TableHead>
                   <TableHead className="min-w-28">Ngày tạo</TableHead>
-                  <TableHead className="min-w-28">Ghi chú</TableHead>
+                  <TableHead className="min-w-40">Ghi chú</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {props?.data.map((invoice) =>
                   invoice.invoiceItems.map((invoiceItem) => (
-                    <TableRow key={indexTable}>
+                    <TableRow key={`${invoice.id}-${invoiceItem.id}`}>
                       <TableCell>{indexTable++}</TableCell>
                       <TableCell>{invoice.code}</TableCell>
+                      <TableCell>{invoice.salesContract?.code ?? '—'}</TableCell>
                       <TableCell>{invoice.customerName}</TableCell>
                       <TableCell>{invoice.customerPhone}</TableCell>
                       <TableCell>{invoice.customerAddress}</TableCell>
                       <TableCell>{invoice.user?.fullName}</TableCell>
                       <TableCell>{invoiceItem.productName}</TableCell>
-                      <TableCell>{invoiceItem.quantity}</TableCell>
-                      <TableCell>{invoiceItem.giveaway}</TableCell>
+                      <TableCell>{moneyFormat(invoiceItem.quantity, false)}</TableCell>
+                      <TableCell>{moneyFormat(invoiceItem.giveaway, false)}</TableCell>
                       <TableCell>{invoiceItem.unitName}</TableCell>
                       <TableCell>
                         {moneyFormat(invoiceItem.price, false)}
@@ -311,13 +384,13 @@ const ExportInvoiceView = ({
                         {moneyFormat(invoiceItem.total, false)}
                       </TableCell>
                       <TableCell>
-                        {moneyFormat(invoice.amount, false)}
+                        {moneyFormat(invoice.totalAmount || invoice.amount, false)}
                       </TableCell>
                       <TableCell>
-                        {moneyFormat(invoiceItem.taxAmount, false)}
+                        {moneyFormat(invoice.taxAmount, false)}
                       </TableCell>
                       <TableCell>
-                        {moneyFormat(invoiceItem.discount, false)}
+                        {moneyFormat(invoice.discountAmount || invoice.discount, false)}
                       </TableCell>
                       <TableCell>
                         {invoice.invoiceRevenueShare
@@ -340,31 +413,47 @@ const ExportInvoiceView = ({
                       <TableCell>
                         {(() => {
                           const paymentStatus = invoice.paymentStatus
-                          const totalAmount = parseFloat(invoice.totalAmount || 0)
+                          const totalAmount = parseFloat(invoice.totalAmount || invoice.amount || 0)
                           const paidAmount = parseFloat(invoice.paidAmount || 0)
                           const remainingAmount = totalAmount - paidAmount
 
-                          if (paymentStatus === 'paid' || remainingAmount <= 0) {
-                            return 'Thanh toán toàn bộ'
-                          }
-                          if (paidAmount > 0 && remainingAmount > 0) {
-                            return 'Thanh toán một phần'
-                          }
-                          if (paidAmount === 0) {
-                            return 'Chưa thanh toán'
-                          }
-                          return 'Chưa có phiếu thu'
+                          if (paymentStatus === 'paid') return 0
+                          if (remainingAmount <= 0) return 0
+                          return moneyFormat(remainingAmount, false)
                         })()}
                       </TableCell>
                       <TableCell>
-                        {invoice.status === 'accepted'
-                          ? 'Đã duyệt'
-                          : 'Chưa duyệt'}
+                        {invoice.paymentStatus === 'paid'
+                          ? 'Đã T.Toán'
+                          : invoice.paymentStatus === 'partial'
+                            ? `T.T 1 phần (${moneyFormat(invoice.paidAmount || 0, false)})`
+                            : 'Chưa T.Toán'}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.warehouseReceipts?.length > 0
+                          ? invoice.warehouseReceipts.map((wr) => wr.code).join(', ')
+                          : invoice.salesContract?.warehouseReceipts?.length > 0
+                            ? invoice.salesContract?.warehouseReceipts?.map((wr) => wr.code).join(', ')
+                            : 'Không có'}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.status === 'delivered'
+                          ? 'Hoàn thành'
+                          : invoice.status === 'accepted'
+                            ? 'Đã xác nhận'
+                            : invoice.status === 'pending'
+                              ? 'Chờ xác nhận'
+                              : invoice.status === 'rejected'
+                                ? 'Từ chối'
+                                : invoice.status}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.invoiceDate ? dateFormat(invoice.invoiceDate, false) : '—'}
                       </TableCell>
                       <TableCell>
                         {dateFormat(invoiceItem.createdAt, false)}
                       </TableCell>
-                      <TableCell>{invoiceItem.note}</TableCell>
+                      <TableCell>{invoice.note || invoiceItem.note}</TableCell>
                     </TableRow>
                   )),
                 )}

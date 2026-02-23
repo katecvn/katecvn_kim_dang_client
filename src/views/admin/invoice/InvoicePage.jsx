@@ -13,6 +13,7 @@ import {
   endOfMonth,
   startOfDay,
   startOfMonth,
+  format,
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -53,8 +54,8 @@ const InvoicePage = () => {
 
     // Convert date filters for API
     const apiFilters = {
-      fromDate: filters.fromDate,
-      toDate: filters.toDate,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
       page: pageIndex + 1, // API uses 1-based indexing
       limit: pageSize,
       search: debouncedSearch,
@@ -71,8 +72,8 @@ const InvoicePage = () => {
     const userFilter = columnFilters.find((f) => f.id === 'user')?.value
 
     const apiFilters = {
-      fromDate: filters.fromDate,
-      toDate: filters.toDate,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
       page: pageIndex + 1,
       limit: pageSize,
       search: debouncedSearch,

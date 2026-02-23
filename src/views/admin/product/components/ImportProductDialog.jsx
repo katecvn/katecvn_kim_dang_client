@@ -83,11 +83,29 @@ const ImportProductDialog = ({
         }
         const getUnitConversions = (idx) => {
           const val = getVal(idx)
+          if (!val) return []
           try {
-            return val ? JSON.parse(val) : []
+            // Try standard JSON first
+            return JSON.parse(val)
           } catch (e) {
-            console.warn('Error parsing unitConversions at row', rowNumber, e)
-            return []
+            // Fallback for comma separated key:value format like "Chỉ:10,Phân:10"
+            try {
+              const conversions = []
+              const pairs = val.split(',')
+              for (const pair of pairs) {
+                const [unitCode, factorStr] = pair.split(':')
+                if (unitCode && factorStr) {
+                  conversions.push({
+                    unitCode: unitCode.trim(),
+                    conversionFactor: parseFloat(factorStr.trim()) || 1
+                  })
+                }
+              }
+              return conversions
+            } catch (err) {
+              console.warn('Error parsing unitConversions at row', rowNumber, val)
+              return []
+            }
           }
         }
 

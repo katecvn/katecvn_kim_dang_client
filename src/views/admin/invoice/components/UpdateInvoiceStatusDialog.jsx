@@ -109,9 +109,9 @@ const UpdateInvoiceStatusDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn('sm:max-w-[460px]', className)} overlayClassName={overlayClassName}>
         <DialogHeader>
-          <DialogTitle>Cập nhật trạng thái hóa đơn</DialogTitle>
+          <DialogTitle>Cập nhật trạng thái đơn bán</DialogTitle>
           <DialogDescription>
-            Hóa đơn: <span className="font-semibold">#{invoiceId}</span>
+            Đơn bán: <span className="font-semibold">#{invoiceId}</span>
             {current?.label ? (
               <>
                 {' '}

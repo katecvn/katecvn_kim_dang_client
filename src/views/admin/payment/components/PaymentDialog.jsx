@@ -101,13 +101,26 @@ const PaymentDialog = ({
 
 
 
-  // Calculate totals
   const totalAmount = parseFloat(effectivePurchaseOrder?.totalAmount || salesContract?.totalAmount || payment?.amount || 0)
   const paidAmount = parseFloat(effectivePurchaseOrder?.paidAmount || salesContract?.paidAmount || 0)
 
+  // Tính tổng số tiền đang chờ duyệt (pending/draft) từ các phiếu chi của Đơn mua hàng (hoặc hợp đồng bán)
+  const pendingAmount = (
+    effectivePurchaseOrder?.paymentVouchers ||
+    effectivePurchaseOrder?.payments ||
+    salesContract?.paymentVouchers ||
+    salesContract?.payments ||
+    []
+  )
+    .filter(p => (p.status === 'pending' || p.status === 'draft') && p.id !== effectivePaymentId)
+    .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+
   // For Create Mode: calculate remaining. For Edit Mode: usually we edit existing amount, validation against debt might be tricky if we don't know original state.
-  // Logic from CreatePurchaseOrderPaymentDialog:
-  const remainingAmount = isEditMode ? 0 : (totalAmount - paidAmount)
+  // We should allow max = total - paid - pending, BUT for edit mode, the CURRENT payment's amount shouldn't be subtracted from remaining capacity.
+  // Actually, our pendingAmount calculation already EXCLUDES the current payment (p.id !== effectivePaymentId).
+  // So remainingAmount is exactly how much MORE capacity exists. The max allowed for this payment is remainingAmount + (isEditMode ? parseFloat(payment?.amount || 0) : 0).
+  // But wait, pendingAmount excludes current payment, so remainingAmount = total - paid - pending. This remainingAmount is the exact max amount this specific payment (new or edited) can be.
+  const remainingAmount = Math.max(0, totalAmount - paidAmount - pendingAmount)
 
   const form = useForm({
     resolver: zodResolver(createPaymentSchema),
@@ -189,16 +202,14 @@ const PaymentDialog = ({
 
 
   const onSubmit = async (data) => {
-    // Shared Validation for Create Mode
-    if (!isEditMode) {
-      const amountToPay = parseFloat(data.paymentAmount) || 0
-      if (amountToPay > remainingAmount) {
-        form.setError('paymentAmount', {
-          type: 'manual',
-          message: `Số tiền chi không được vượt quá số nợ còn lại (${moneyFormat(remainingAmount)})`,
-        })
-        return
-      }
+    // Shared Validation for Create and Edit Mode avoiding overpayments
+    const amountToPay = parseFloat(data.paymentAmount) || 0
+    if (amountToPay > remainingAmount) {
+      form.setError('paymentAmount', {
+        type: 'manual',
+        message: `Số tiền chi không được vượt quá số nợ còn lại (${moneyFormat(remainingAmount)})`,
+      })
+      return
     }
 
     const commonData = {
@@ -443,17 +454,27 @@ const PaymentDialog = ({
                           <strong>Tổng giá trị đơn hàng:</strong>
                           <span>{moneyFormat(totalAmount)}</span>
                         </div>
-                        {!isEditMode && (
-                          <>
-                            <div className="flex justify-between text-muted-foreground">
-                              <strong>Đã thanh toán:</strong>
-                              <span>{moneyFormat(paidAmount)}</span>
-                            </div>
-                            <div className="flex justify-between text-destructive">
-                              <strong>Còn nợ:</strong>
-                              <span>{moneyFormat(remainingAmount)}</span>
-                            </div>
-                          </>
+                        <div className="flex justify-between text-muted-foreground">
+                          <strong>Đã thanh toán:</strong>
+                          <span>{moneyFormat(paidAmount)}</span>
+                        </div>
+                        {pendingAmount > 0 && (
+                          <div className="flex justify-between text-amber-600">
+                            <strong>Đang chờ duyệt/Nháp:</strong>
+                            <span>{moneyFormat(pendingAmount)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-destructive">
+                          <strong>Còn nợ:</strong>
+                          <span>{moneyFormat(remainingAmount)}</span>
+                        </div>
+                        {pendingAmount > 0 && (
+                          <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[13px] text-amber-800">
+                            <p>
+                              <strong>Lưu ý:</strong> Đang có <strong>{moneyFormat(pendingAmount)}</strong> chờ duyệt hoặc nháp.
+                              Số tiền tối đa có thể chi thêm là <strong>{moneyFormat(remainingAmount)}</strong>.
+                            </p>
+                          </div>
                         )}
 
 
@@ -634,7 +655,6 @@ const PaymentDialog = ({
                               {supplier?.phone || 'Chưa cập nhật'}
                             </a>
                           </div>
-
                           <div className="flex items-center text-muted-foreground">
                             <div className="mr-2 h-4 w-4 ">
                               <Mail className="h-4 w-4" />

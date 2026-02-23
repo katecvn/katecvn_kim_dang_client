@@ -194,7 +194,7 @@ const MobileInvoiceCard = ({
       await dispatch(
         updateInvoiceStatus({ id: invoice.id, status: nextStatus }),
       ).unwrap()
-      toast.success('Cập nhật trạng thái hóa đơn thành công')
+      toast.success('Cập nhật trạng thái đơn bán thành công')
       setShowUpdateStatusDialog(false)
     } catch (error) {
       console.log('Submit error: ', error)

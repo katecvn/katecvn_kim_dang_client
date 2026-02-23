@@ -152,6 +152,19 @@ const ViewPurchaseContractDialog = ({
       return
     }
 
+    const totalAmount = parseFloat(contract?.totalAmount || 0)
+    const paidAmount = parseFloat(contract?.paidAmount || 0)
+    const pendingAmount = (contract?.paymentVouchers || contract?.payments || [])
+      .filter(p => p.status === 'pending' || p.status === 'draft')
+      .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+
+    const remainingAmount = Math.max(0, totalAmount - paidAmount - pendingAmount)
+
+    if (remainingAmount <= 0) {
+      toast.error('Hợp đồng đã thanh toán đủ hoặc đang có phiếu chi nháp/chờ duyệt chờ xử lý hết số nợ.')
+      return
+    }
+
     setShowCreatePaymentDialog(true)
   }
 

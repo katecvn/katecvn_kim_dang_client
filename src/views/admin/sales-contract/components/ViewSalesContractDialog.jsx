@@ -1840,7 +1840,7 @@ const ViewSalesContractDialog = ({
               className="z-[100030]"
               overlayClassName="z-[100029]"
               selectContentClassName="z-[100040]"
-              title={`Cập nhật trạng thái hóa đơn: ${invoiceToUpdateStatus.code}`}
+              title={`Cập nhật trạng thái đơn bán: ${invoiceToUpdateStatus.code}`}
             />
           )}
 

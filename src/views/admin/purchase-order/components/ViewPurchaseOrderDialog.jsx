@@ -256,6 +256,20 @@ const ViewPurchaseOrderDialog = ({
       toast.error('Chỉ có thể tạo phiếu chi cho đơn hàng đã xác nhận (Đã đặt).')
       return
     }
+
+    const totalAmount = parseFloat(purchaseOrder?.totalAmount || 0)
+    const paidAmount = parseFloat(purchaseOrder?.paidAmount || 0)
+    const pendingAmount = (purchaseOrder?.paymentVouchers || purchaseOrder?.payments || [])
+      .filter(p => p.status === 'pending' || p.status === 'draft')
+      .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+
+    const remainingAmount = Math.max(0, totalAmount - paidAmount - pendingAmount)
+
+    if (remainingAmount <= 0) {
+      toast.error('Đơn hàng đã thanh toán đủ hoặc đang có phiếu chi nháp/chờ duyệt chờ xử lý hết số nợ.')
+      return
+    }
+
     setShowCreatePaymentDialog(true)
   }
 

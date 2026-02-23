@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import MobileReceiptCard from './MobileReceiptCard'
 
-const ReceiptDataTable = ({ columns, data, loading = false }) => {
+const ReceiptDataTable = ({ columns, data, loading = false, isMyReceipt = false }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
@@ -62,7 +62,7 @@ const ReceiptDataTable = ({ columns, data, loading = false }) => {
   if (isMobile) {
     return (
       <div className="space-y-4">
-        <DataTableToolbar table={table} />
+        <DataTableToolbar table={table} isMyReceipt={isMyReceipt} />
 
         <div className="space-y-2">
           {loading ? (
@@ -98,7 +98,7 @@ const ReceiptDataTable = ({ columns, data, loading = false }) => {
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} />
+      <DataTableToolbar table={table} isMyReceipt={isMyReceipt} />
 
       <div className="rounded-md border">
         <Table>

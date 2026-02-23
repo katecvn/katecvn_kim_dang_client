@@ -10,6 +10,7 @@ import {
   endOfMonth,
   startOfDay,
   startOfMonth,
+  format
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -50,6 +51,8 @@ const SalesContractPage = () => {
 
     dispatch(getSalesContracts({
       ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
       ...pageParams,
       search: debouncedSearch,
       status: statusFilter,

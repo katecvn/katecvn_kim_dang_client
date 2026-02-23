@@ -53,12 +53,7 @@ const baseCreateSchema = z.object({
   supplierId: z.string().nonempty('Nhà cung cấp là bắt buộc'),
   unitId: z.string().nonempty('Đơn vị là bắt buộc'),
 
-  price: z
-    .union([z.string(), z.number()])
-    .transform((val) => parseNumber(val))
-    .refine((val) => !isNaN(val) && val >= 0, {
-      message: 'Giá phải là số và lớn hơn hoặc bằng 0',
-    }),
+  price: z.union([z.string(), z.number()]).optional(),
 
   name: z.string().nonempty('Tên là bắt buộc'),
   description: z.string().nullable(),

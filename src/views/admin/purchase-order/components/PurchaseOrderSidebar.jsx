@@ -477,7 +477,7 @@ const PurchaseOrderSidebar = ({
             name="contractNumber"
             render={({ field }) => (
               <FormItem className="mb-2">
-                <FormLabel>Số hợp đồng</FormLabel>
+                <FormLabel>Số hợp đồng <span className="text-destructive"> *</span></FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Nhập số hợp đồng..."
@@ -568,7 +568,7 @@ const PurchaseOrderSidebar = ({
             name="expectedDeliveryDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Ngày dự kiến giao hàng</FormLabel>
+                <FormLabel>Ngày dự kiến giao hàng <span className="text-destructive"> *</span></FormLabel>
                 <Popover open={openDeliveryDatePicker} onOpenChange={setOpenDeliveryDatePicker}>
                   <PopoverTrigger asChild>
                     <FormControl>

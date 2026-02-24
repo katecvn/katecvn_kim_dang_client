@@ -74,7 +74,8 @@ const LiquidatePurchaseContractDialog = ({
       }
     } catch (error) {
       console.error('Fetch liquidation preview error:', error)
-      toast.error('Không thể lấy dữ liệu thanh lý')
+      toast.error(error?.message || (typeof error === 'string' ? error : 'Không thể lấy dữ liệu thanh lý'))
+      onOpenChange(false)
     } finally {
       setLoading(false)
     }

@@ -72,6 +72,7 @@ import {
   updateWarehouseReceipt
 } from '@/stores/WarehouseReceiptSlice'
 import { IconPlus } from '@tabler/icons-react'
+import ViewSupplierDialog from '../../supplier/components/ViewSupplierDialog'
 
 const ViewPurchaseContractDialog = ({
   open,
@@ -94,6 +95,7 @@ const ViewPurchaseContractDialog = ({
   const [selectedPurchaseOrderId, setSelectedPurchaseOrderId] = useState(null)
 
   const [showViewWarehouseReceiptDialog, setShowViewWarehouseReceiptDialog] = useState(false)
+  const [showSupplierDetail, setShowSupplierDetail] = useState(false)
   const [selectedWarehouseReceiptId, setSelectedWarehouseReceiptId] = useState(null)
 
   const [showViewPaymentDialog, setShowViewPaymentDialog] = useState(false)
@@ -178,7 +180,7 @@ const ViewPurchaseContractDialog = ({
 
   const handleLiquidate = () => {
     if (contract?.status !== 'confirmed') {
-      toast.warning('Chỉ có thể thanh lý hợp đồng đã duyệt')
+      toast.warning('Chỉ có thể thanh lý hợp đồng ở trạng thái chờ nhận hàng')
       return
     }
     setShowLiquidationDialog(true)
@@ -195,7 +197,7 @@ const ViewPurchaseContractDialog = ({
   const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
     const firstPO = contract?.purchaseOrders?.[0] || {}
     const payload = {
-      code: `NK-${contract.code}-${Date.now().toString().slice(-4)}`,
+      // code: `NK-${contract.code}-${Date.now().toString().slice(-4)}`,
       receiptType: 1, // IMPORT
       businessType: 'purchase_in',
       receiptDate: new Date().toISOString(),
@@ -1179,7 +1181,22 @@ const ViewPurchaseContractDialog = ({
                         <AvatarFallback>NCC</AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">{contract?.supplier?.name}</div>
+                        <div
+                          className="font-medium cursor-pointer text-primary hover:underline"
+                          onClick={() => setShowSupplierDetail(true)}
+                        >
+                          {contract?.supplier?.name}
+                        </div>
+                        {showSupplierDetail && contract?.supplier && (
+                          <ViewSupplierDialog
+                            open={showSupplierDetail}
+                            onOpenChange={setShowSupplierDetail}
+                            supplierId={contract?.supplier?.id}
+                            showTrigger={false}
+                            contentClassName="z-[100020]"
+                            overlayClassName="z-[100019]"
+                          />
+                        )}
                       </div>
                     </div>
 

@@ -44,6 +44,7 @@ import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWo
 import { Package } from 'lucide-react'
 import { getPublicUrl } from '@/utils/file'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
+import CustomerDetailDialog from '../../customer/components/CustomerDetailDialog'
 import {
   Select,
   SelectContent,
@@ -130,6 +131,9 @@ const ViewSalesContractDialog = ({
   // View Product Dialog
   const [showViewProductDialog, setShowViewProductDialog] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState(null)
+
+  // Customer Detail Dialog
+  const [showCustomerDetailDialog, setShowCustomerDetailDialog] = useState(false)
 
   const handlePrintContract = async () => {
     // Chỉ cho phép in khi status = 'confirmed' (Đã xác nhận)
@@ -338,7 +342,7 @@ const ViewSalesContractDialog = ({
       }
 
       const payload = {
-        code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`,
+        // code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`,
         receiptType: 2, // ISSUE
         businessType: 'sale_out',
         receiptDate: new Date().toISOString(),
@@ -1568,12 +1572,25 @@ const ViewSalesContractDialog = ({
                           <AvatarFallback>CU</AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-medium">
+                          <div
+                            className="font-medium cursor-pointer text-primary hover:underline"
+                            onClick={() => setShowCustomerDetailDialog(true)}
+                          >
                             {contract?.customer?.name}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {contract?.customer?.code}
                           </div>
+                          {showCustomerDetailDialog && contract?.customer && (
+                            <CustomerDetailDialog
+                              open={showCustomerDetailDialog}
+                              onOpenChange={setShowCustomerDetailDialog}
+                              customer={contract.customer}
+                              showTrigger={false}
+                              contentClassName="z-[100020]"
+                              overlayClassName="z-[100019]"
+                            />
+                          )}
                         </div>
                       </div>
 
@@ -1682,7 +1699,7 @@ const ViewSalesContractDialog = ({
             isDesktop={isDesktop}
             handleLiquidate={() => {
               if (contract?.status !== 'confirmed') {
-                toast.warning('Chỉ có thể thanh lý hợp đồng đã xác nhận')
+                toast.warning('Chỉ có thể thanh lý hợp đồng ở trạng thái chờ nhận hàng')
                 return
               }
               setShowLiquidationDialog(true)
@@ -1724,7 +1741,7 @@ const ViewSalesContractDialog = ({
               size="sm"
               onClick={() => {
                 if (contract?.status !== 'confirmed') {
-                  toast.warning('Chỉ có thể thanh lý hợp đồng đã xác nhận')
+                  toast.warning('Chỉ có thể thanh lý hợp đồng ở trạng thái chờ nhận hàng')
                   return
                 }
                 setShowLiquidationDialog(true)

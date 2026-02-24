@@ -86,7 +86,7 @@ const DataTableRowActions = ({ row, table }) => {
   const handleCreateWarehouseReceipt = async (selectedItems) => {
     // Construct payload
     const payload = {
-      code: `NK-${purchaseOrder.code}-${Date.now().toString().slice(-4)}`,
+      // code: `NK-${purchaseOrder.code}-${Date.now().toString().slice(-4)}`,
       receiptType: 1, // IMPORT / RECEIPT
       businessType: 'purchase_in',
       receiptDate: new Date().toISOString(),

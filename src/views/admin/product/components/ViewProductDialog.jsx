@@ -521,7 +521,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
                     <div>
                       <h3 className="mb-3 flex items-center gap-2 font-semibold">
                         <FileText className="h-5 w-5" />
-                        Lịch sử giá theo NCC
+                        Lịch sử giá thủ công
                       </h3>
 
                       {supplierPriceHistory.map((s) => (

@@ -68,6 +68,7 @@ import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components
 import { updateReceiptStatus } from '@/stores/ReceiptSlice'
 import { updateWarehouseReceipt, postWarehouseReceipt, cancelWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { updatePaymentStatus } from '@/stores/PaymentSlice'
+import ViewSupplierDialog from '../../supplier/components/ViewSupplierDialog'
 
 const ViewPurchaseOrderDialog = ({
   open,
@@ -82,7 +83,6 @@ const ViewPurchaseOrderDialog = ({
 }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const [purchaseOrder, setPurchaseOrder] = useState(null)
-  console.log(purchaseOrder)
   const [loading, setLoading] = useState(false)
   const dispatch = useDispatch()
   const setting = useSelector((state) => state.setting.setting)
@@ -108,6 +108,7 @@ const ViewPurchaseOrderDialog = ({
   const [selectedProductId, setSelectedProductId] = useState(null)
 
   const [showPrintOrder, setShowPrintOrder] = useState(false)
+  const [showSupplierDetail, setShowSupplierDetail] = useState(false)
 
   // Status Update Dialog States (Sub-items)`
   const [showUpdatePaymentStatus, setShowUpdatePaymentStatus] = useState(false)
@@ -275,7 +276,7 @@ const ViewPurchaseOrderDialog = ({
 
   const handleCreateWarehouseReceipt = async (selectedItems) => {
     const payload = {
-      code: `NK-${purchaseOrder.code}-${Date.now().toString().slice(-4)}`,
+      // code: `NK-${purchaseOrder.code}-${Date.now().toString().slice(-4)}`,
       receiptType: 1, // IMPORT / RECEIPT
       businessType: 'purchase_in',
       receiptDate: new Date().toISOString(),
@@ -1136,9 +1137,22 @@ const ViewPurchaseOrderDialog = ({
                       <AvatarFallback>NCC</AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium">
+                      <div
+                        className="font-medium cursor-pointer text-primary hover:underline"
+                        onClick={() => setShowSupplierDetail(true)}
+                      >
                         {purchaseOrder?.supplier?.name}
                       </div>
+                      {showSupplierDetail && purchaseOrder?.supplier && (
+                        <ViewSupplierDialog
+                          open={showSupplierDetail}
+                          onOpenChange={setShowSupplierDetail}
+                          supplierId={purchaseOrder?.supplier?.id}
+                          showTrigger={false}
+                          contentClassName="z-[100020]"
+                          overlayClassName="z-[100019]"
+                        />
+                      )}
                     </div>
                   </div>
 

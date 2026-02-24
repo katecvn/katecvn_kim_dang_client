@@ -209,7 +209,7 @@ const MobileSalesContractCard = ({
       }
 
       const payload = {
-        code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`,
+        // code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`,
         receiptType: 2,
         businessType: 'sale_out',
         receiptDate: new Date().toISOString(),

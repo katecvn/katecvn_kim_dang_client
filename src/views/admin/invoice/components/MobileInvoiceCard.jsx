@@ -261,7 +261,7 @@ const MobileInvoiceCard = ({
       }
 
       const payload = {
-        code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
+        // code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
         receiptType: 2, // ISSUE
         businessType: 'sale_out',
         receiptDate: new Date().toISOString(),

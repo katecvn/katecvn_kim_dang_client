@@ -33,6 +33,7 @@ import { useEffect, useState } from 'react'
 import { CustomerDetailPagination } from './CustomerDetailPagination'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import InvoiceHistoryTab from './CustomerInvoiceTab'
+import { cn } from '@/lib/utils'
 
 import {
   Table,
@@ -107,7 +108,10 @@ const CustomerDetailDialog = ({ customer, showTrigger = true, ...props }) => {
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="md:h-auto md:max-w-7xl">
+      <DialogContent
+        className={cn("md:h-auto md:max-w-7xl", props.contentClassName)}
+        overlayClassName={props.overlayClassName}
+      >
         <DialogHeader>
           <DialogTitle>{customer?.name}</DialogTitle>
           <DialogDescription>

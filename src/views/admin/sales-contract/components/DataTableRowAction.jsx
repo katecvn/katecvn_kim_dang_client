@@ -152,7 +152,7 @@ const DataTableRowActions = ({ row }) => {
       }
 
       const payload = {
-        code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`, // Auto-gen code example
+        // code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`, // Auto-gen code example
         receiptType: 2, // ISSUE / EXPORT
         businessType: 'sale_out',
         receiptDate: new Date().toISOString(),

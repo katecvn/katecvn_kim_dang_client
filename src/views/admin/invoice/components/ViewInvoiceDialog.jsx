@@ -90,6 +90,7 @@ import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 import MobileInvoiceActions from './MobileInvoiceActions'
 import PaymentQRCodeDialog from '../../receipt/components/PaymentQRCodeDialog'
 import { Badge } from '@/components/ui/badge'
+import CustomerDetailDialog from '../../customer/components/CustomerDetailDialog'
 
 const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, contentClassName, overlayClassName, ...props }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -152,6 +153,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
   // State for deleting receipt
   const [showDeleteReceiptDialog, setShowDeleteReceiptDialog] = useState(false)
   const [receiptToDelete, setReceiptToDelete] = useState(null)
+
+  // State for customer detail
+  const [showCustomerDetailDialog, setShowCustomerDetailDialog] = useState(false)
 
   // -- LOGIC FOR MOBILE SELECT STATUS --
   const isPaid = invoice?.paymentStatus === 'paid'
@@ -474,7 +478,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
       }
 
       const payload = {
-        code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
+        // code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
         receiptType: 2, // ISSUE
         businessType: 'sale_out',
         receiptDate: new Date().toISOString(),
@@ -1899,9 +1903,22 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                           <AvatarFallback>AD</AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-medium">
+                          <div
+                            className="font-medium cursor-pointer text-primary hover:underline"
+                            onClick={() => setShowCustomerDetailDialog(true)}
+                          >
                             {invoice?.customer?.name}
                           </div>
+                          {showCustomerDetailDialog && invoice?.customer && (
+                            <CustomerDetailDialog
+                              open={showCustomerDetailDialog}
+                              onOpenChange={setShowCustomerDetailDialog}
+                              customer={invoice.customer}
+                              showTrigger={false}
+                              contentClassName="z-[100020]"
+                              overlayClassName="z-[100019]"
+                            />
+                          )}
                         </div>
                       </div>
 

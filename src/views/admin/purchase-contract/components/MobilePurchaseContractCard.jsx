@@ -152,7 +152,7 @@ const MobilePurchaseContractCard = ({
           purchaseContractId={contract.id}
           onConfirm={async (selectedItems) => {
             const payload = {
-              code: `NK-${contract.code}-${Date.now().toString().slice(-4)}`,
+              // code: `NK-${contract.code}-${Date.now().toString().slice(-4)}`,
               receiptType: 1, // IMPORT
               businessType: 'purchase_in',
               receiptDate: new Date().toISOString(),

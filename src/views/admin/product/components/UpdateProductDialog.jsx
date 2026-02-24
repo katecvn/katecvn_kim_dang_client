@@ -433,7 +433,6 @@ const UpdateProductDialog = ({
 
       // Send full data like CREATE (PUT semantics - replace entire resource)
       // No longer filtering by dirty fields
-      console.log('📦 Full Update Payload:', fullData)
 
       await dispatch(
         updateProduct({ id: product.id, data: fullData }),

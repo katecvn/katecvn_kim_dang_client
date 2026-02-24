@@ -11,7 +11,6 @@ export const getPurchaseSummary = createAsyncThunk(
       const response = await api.get('/reports/purchases/summary', {
         params,
       })
-      console.log('rss', response.data)
       return response.data
     } catch (error) {
       const message = handleError(error)
@@ -35,7 +34,6 @@ export const getPurchaseBacklog = createAsyncThunk(
       const responseData = response.data
       let data = responseData?.data
       let pagination = responseData?.pagination
-      console.log('pagination', pagination)
 
       // Fallback if structure is different
       if (!Array.isArray(data) && Array.isArray(responseData?.data)) {

@@ -13,12 +13,15 @@ import { DeleteMultipleCustomersDialog } from './DeleteMultipleCustomersDialog'
 import { deleteMultipleCustomers } from '@/stores/CustomerSlice'
 import { useDispatch } from 'react-redux'
 import { TrashIcon } from '@radix-ui/react-icons'
+import { IconFileTypeXls } from '@tabler/icons-react'
+import ExportCustomerDialog from './ExportCustomerDialog'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showCreateCustomerDialog, setShowCreateCustomerDialog] =
     useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const dispatch = useDispatch()
@@ -114,6 +117,26 @@ const DataTableToolbar = ({ table }) => {
           <CreateCustomerDialog
             open={showCreateCustomerDialog}
             onOpenChange={setShowCreateCustomerDialog}
+            showTrigger={false}
+          />
+        )}
+      </Can>
+
+      <Can permission={'GET_CUSTOMER'}>
+        <Button
+          onClick={() => setShowExportDialog(true)}
+          className="mx-2 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+          variant="outline"
+          size="sm"
+        >
+          <IconFileTypeXls className="mr-2 size-4" aria-hidden="true" />
+          Xuất Excel
+        </Button>
+
+        {showExportDialog && (
+          <ExportCustomerDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
             showTrigger={false}
           />
         )}

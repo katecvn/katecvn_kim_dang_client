@@ -49,7 +49,7 @@ import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import ProductSaleHistoryTab from './ProductSaleHistoryTab'
 import UpdateProductDialog from './UpdateProductDialog'
 import { DeleteProductDialog } from './DeleteProductDialog'
-import { Edit, Trash } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import Can from '@/utils/can'
 
 const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, overlayClassName, ...props }) => {
@@ -710,33 +710,41 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
           )}
         </div>
 
-        <DialogFooter className={cn(isMobile && "pb-4 px-4 flex flex-row gap-2")}>
-          {product && (
-            <Button
-              className={cn("bg-orange-600 text-white hover:bg-orange-700", isMobile && "flex-1")}
-              onClick={() => setShowUpdateProductDialog(true)}
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Sửa
-            </Button>
-          )}
+        <DialogFooter className={cn(isMobile && "pb-4 px-4", "sm:space-x-0 mt-4")}>
+          <div className="w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
+            {product && (
+              <Can permission="UPDATE_PRODUCT">
+                <Button
+                  size="sm"
+                  className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+                  onClick={() => setShowUpdateProductDialog(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Sửa
+                </Button>
+              </Can>
+            )}
 
-          {product && (
-            <Can permission="DELETE_PRODUCT">
-              <Button
-                variant="destructive"
-                className={cn(isMobile && "flex-1")}
-                onClick={() => setShowDeleteProductDialog(true)}
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                Xóa
+            {product && (
+              <Can permission="DELETE_PRODUCT">
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="gap-2 w-full sm:w-auto"
+                  onClick={() => setShowDeleteProductDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Xóa
+                </Button>
+              </Can>
+            )}
+
+            <DialogClose asChild>
+              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+                Đóng
               </Button>
-            </Can>
-          )}
-
-          <DialogClose asChild>
-            <Button variant="outline" className={cn(isMobile && "flex-1")}>Đóng</Button>
-          </DialogClose>
+            </DialogClose>
+          </div>
         </DialogFooter>
 
         {product && (

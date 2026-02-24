@@ -185,9 +185,16 @@ const ConfirmImportWarehouseDialog = ({
       const selectedIds = Object.keys(selectedItems).filter((id) => selectedItems[id])
 
       // Get the actual item objects
-      const selectedItemObjects = itemsToDisplay.filter(item =>
-        selectedIds.includes(String(item.id))
-      )
+      const selectedItemObjects = itemsToDisplay
+        .filter(item => selectedIds.includes(String(item.id)))
+        .map(item => {
+          const imported = calculateTotalImported(item)
+          const remaining = Math.max(0, Number(item.quantity || 0) - imported)
+          return {
+            ...item,
+            quantity: remaining
+          }
+        })
 
       await onConfirm?.(selectedItemObjects)
       onOpenChange(false)

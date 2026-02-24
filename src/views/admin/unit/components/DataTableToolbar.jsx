@@ -8,10 +8,13 @@ import Can from '@/utils/can'
 import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import CreateUnitDialog from './CreateUnitDialog'
+import { IconFileTypeXls } from '@tabler/icons-react'
+import ExportUnitDialog from './ExportUnitDialog'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showCreateUnitDialog, setShowCreateUnitDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
 
   return (
     <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-1">
@@ -51,6 +54,26 @@ const DataTableToolbar = ({ table }) => {
           <CreateUnitDialog
             open={showCreateUnitDialog}
             onOpenChange={setShowCreateUnitDialog}
+            showTrigger={false}
+          />
+        )}
+      </Can>
+
+      <Can permission={'GET_UNIT'}>
+        <Button
+          onClick={() => setShowExportDialog(true)}
+          className="mx-2 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+          variant="outline"
+          size="sm"
+        >
+          <IconFileTypeXls className="mr-2 size-4" aria-hidden="true" />
+          Xuất Excel
+        </Button>
+
+        {showExportDialog && (
+          <ExportUnitDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
             showTrigger={false}
           />
         )}

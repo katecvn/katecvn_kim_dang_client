@@ -109,30 +109,15 @@ const ConfirmWarehouseReceiptDialog = ({
     }
   }, [open, invoice?.id, type])
 
-  // Helper to check if item is selectable
-  const isItemSelectable = (item) => {
-    // Check quantity
-    const totalOrdered = Number(item.quantity || 0)
-
-    // Calculate shipped quantity from warehouse receipts
+  const calculateTotalShipped = (item) => {
     let totalShipped = 0
-    if (activeInvoice.warehouseReceipts) {
+    if (activeInvoice?.warehouseReceipts) {
       activeInvoice.warehouseReceipts.forEach(receipt => {
-        // Only count valid receipts (not cancelled)
         if (receipt.status !== 'cancelled' && receipt.status !== 'canceled') {
-          // Check if receipt has details
           if (receipt.details) {
-            const detail = receipt.details.find(d => d.invoiceItemId === item.id || d.salesContractItemId === item.salesContractItemId || d.productId === item.productId) // Try to match by ID
-            // Note: API might not return invoiceItemId in details. 
-            // Logic in ViewInvoiceDialog used productId or salesContractItemId
-
-            // Let's match by product ID and unit ID to be safe, or best match
-            // Actually, simplest is if we have invoiceItemId. If not, use product ID.
-
             const match = receipt.details.filter(d =>
               (d.invoiceItemId && d.invoiceItemId === item.id) ||
               (
-                // Fallback matching
                 !d.invoiceItemId &&
                 String(d.productId) === String(item.productId) &&
                 (!d.unitId || !item.unitId || String(d.unitId) === String(item.unitId))
@@ -146,13 +131,16 @@ const ConfirmWarehouseReceiptDialog = ({
         }
       })
     }
+    return totalShipped
+  }
 
-    // If we have specific shipped quantity field from API, use it (future proof)
-    if (item.shippedQuantity !== undefined) {
-      // Prefer calculated totalShipped? Or user API?
-      // If API has it, it might be more accurate if we missed some receipts.
-      // currently we trust our calc more because we fetch all receipts.
-    }
+  // Helper to check if item is selectable
+  const isItemSelectable = (item) => {
+    // Check quantity
+    const totalOrdered = Number(item.quantity || 0)
+
+    // Calculate shipped quantity from warehouse receipts
+    const totalShipped = calculateTotalShipped(item)
 
     if (totalShipped >= totalOrdered) return false
 
@@ -185,9 +173,16 @@ const ConfirmWarehouseReceiptDialog = ({
     )
 
     // Get the actual item objects
-    const selectedItemObjects = activeInvoice.invoiceItems.filter(item =>
-      selectedIds.includes(String(item.id))
-    )
+    const selectedItemObjects = activeInvoice.invoiceItems
+      .filter(item => selectedIds.includes(String(item.id)))
+      .map(item => {
+        const totalShipped = calculateTotalShipped(item)
+        const remaining = Math.max(0, Number(item.quantity || 0) - totalShipped)
+        return {
+          ...item,
+          quantity: remaining // Pass remaining quantity as default to export
+        }
+      })
 
     await onConfirm?.(selectedItemObjects)
     onOpenChange(false)
@@ -305,28 +300,7 @@ const ConfirmWarehouseReceiptDialog = ({
                         const isContractItem = !!item.salesContractItemId
 
                         // Calculate shipped for display
-                        let totalShipped = 0
-                        if (activeInvoice.warehouseReceipts) {
-                          activeInvoice.warehouseReceipts.forEach(receipt => {
-                            if (receipt.status !== 'cancelled' && receipt.status !== 'canceled') {
-                              if (receipt.details) {
-                                const match = receipt.details.filter(d =>
-                                  (d.invoiceItemId && d.invoiceItemId === item.id) ||
-                                  (
-                                    // Fallback matching if invoiceItemId is missing
-                                    !d.invoiceItemId &&
-                                    String(d.productId) === String(item.productId) &&
-                                    // Optional unit check if available
-                                    (!d.unitId || !item.unitId || String(d.unitId) === String(item.unitId))
-                                  )
-                                )
-                                match.forEach(m => {
-                                  totalShipped += Number(m.qtyActual || m.quantity || 0)
-                                })
-                              }
-                            }
-                          })
-                        }
+                        const totalShipped = calculateTotalShipped(item)
 
                         const remaining = Math.max(0, Number(item.quantity || 0) - totalShipped)
 
@@ -446,6 +420,8 @@ const ConfirmWarehouseReceiptDialog = ({
                     activeInvoice.invoiceItems?.map((item, index) => {
                       const selectable = isItemSelectable(item)
                       const isContractItem = !!item.salesContractItemId
+                      const totalShipped = calculateTotalShipped(item)
+                      const remaining = Math.max(0, Number(item.quantity || 0) - totalShipped)
 
                       return (
                         <div
@@ -514,8 +490,8 @@ const ConfirmWarehouseReceiptDialog = ({
                                     Không thể xuất
                                   </span>
                                 ) : (
-                                  <span className="text-green-600 font-medium">
-                                    Có thể xuất
+                                  <span className="text-green-600 font-medium whitespace-nowrap">
+                                    Có thể xuất ({remaining})
                                   </span>
                                 )}
                               </div>

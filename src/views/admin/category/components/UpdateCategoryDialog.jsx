@@ -34,6 +34,8 @@ const UpdateCategoryDialog = ({
   open,
   onOpenChange,
   showTrigger = true,
+  contentClassName,
+  overlayClassName,
   ...props
 }) => {
   const loading = useSelector((state) => state.category.loading)
@@ -70,7 +72,7 @@ const UpdateCategoryDialog = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className="md:h-auto md:max-w-2xl">
+      <DialogContent className={contentClassName || "md:h-auto md:max-w-2xl"} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Cập nhật danh mục: {category.name}</DialogTitle>
           <DialogDescription>

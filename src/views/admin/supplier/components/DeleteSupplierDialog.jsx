@@ -13,7 +13,7 @@ import { deleteSupplier } from '@/stores/SupplierSlice'
 import { TrashIcon } from '@radix-ui/react-icons'
 import { useDispatch, useSelector } from 'react-redux'
 
-const DeleteSupplierDialog = ({ supplier, showTrigger = true, ...props }) => {
+const DeleteSupplierDialog = ({ supplier, showTrigger = true, contentClassName, overlayClassName, ...props }) => {
   const dispatch = useDispatch()
   const loading = useSelector((state) => state.supplier.loading)
 
@@ -34,7 +34,7 @@ const DeleteSupplierDialog = ({ supplier, showTrigger = true, ...props }) => {
           </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent>
+      <DialogContent className={contentClassName} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Bạn chắc chắn thực hiện hành động này?</DialogTitle>
           <DialogDescription>

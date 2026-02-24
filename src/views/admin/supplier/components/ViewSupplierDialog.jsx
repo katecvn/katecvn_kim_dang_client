@@ -20,11 +20,14 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Building2, FileText, Calendar, User, PlusIcon } from 'lucide-react'
+import { Building2, FileText, Calendar, User, PlusIcon, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
 import api from '@/utils/axios'
+import Can from '@/utils/can'
+import UpdateSupplierDialog from './UpdateSupplierDialog'
+import { DeleteSupplierDialog } from './DeleteSupplierDialog'
 
 const ViewSupplierDialog = ({
   supplierId,
@@ -37,6 +40,9 @@ const ViewSupplierDialog = ({
   const [supplier, setSupplier] = useState({})
   const [products, setProducts] = useState([])
   const [error, setError] = useState(null)
+
+  const [showUpdateSupplierDialog, setShowUpdateSupplierDialog] = useState(false)
+  const [showDeleteSupplierDialog, setShowDeleteSupplierDialog] = useState(false)
 
   useEffect(() => {
     if (!open || !supplierId) return
@@ -221,11 +227,11 @@ const ViewSupplierDialog = ({
                                   <TableCell>
                                     {h.taxes?.length
                                       ? h.taxes
-                                          .map(
-                                            (t) =>
-                                              `${t.title} (${t.percentage}%)`,
-                                          )
-                                          .join(', ')
+                                        .map(
+                                          (t) =>
+                                            `${t.title} (${t.percentage}%)`,
+                                        )
+                                        .join(', ')
                                       : '—'}
                                   </TableCell>
                                   <TableCell>{p.unitName}</TableCell>
@@ -288,12 +294,66 @@ const ViewSupplierDialog = ({
           )}
         </div>
 
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Đóng</Button>
-          </DialogClose>
+        <DialogFooter className="hidden md:flex sm:space-x-0 mt-4">
+          <div className="w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
+            <Can permission="UPDATE_SUPPLIER">
+              <Button
+                size="sm"
+                onClick={() => setShowUpdateSupplierDialog(true)}
+                className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Pencil className="h-4 w-4" />
+                Sửa
+              </Button>
+            </Can>
+
+            <Can permission="DELETE_SUPPLIER">
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowDeleteSupplierDialog(true)}
+                className="gap-2 w-full sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4" />
+                Xóa
+              </Button>
+            </Can>
+
+            <DialogClose asChild>
+              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+                Đóng
+              </Button>
+            </DialogClose>
+          </div>
         </DialogFooter>
       </DialogContent>
+
+      {showUpdateSupplierDialog && (
+        <UpdateSupplierDialog
+          open={showUpdateSupplierDialog}
+          onOpenChange={setShowUpdateSupplierDialog}
+          supplier={supplier}
+          showTrigger={false}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
+
+      {showDeleteSupplierDialog && (
+        <DeleteSupplierDialog
+          open={showDeleteSupplierDialog}
+          onOpenChange={(open) => {
+            setShowDeleteSupplierDialog(open)
+            if (!open && !supplier.id) { // If successfully deleted, close the view dialog as well
+              onOpenChange?.(false)
+            }
+          }}
+          supplier={supplier}
+          showTrigger={false}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
     </Dialog>
   )
 }

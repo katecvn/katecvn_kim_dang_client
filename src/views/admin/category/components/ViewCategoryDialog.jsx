@@ -20,12 +20,15 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Layers, FileText, Calendar, Users, Eye } from 'lucide-react'
+import { Layers, FileText, Calendar, Users, Eye, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
 import api from '@/utils/axios'
 import { PRODUCT_SOURCE, PRODUCT_TYPE, statuses, types } from '../data'
+import Can from '@/utils/can'
+import UpdateCategoryDialog from './UpdateCategoryDialog'
+import { DeleteCategoryDialog } from './DeleteCategoryDialog'
 
 const ViewCategoryDialog = ({
   categoryId,
@@ -37,6 +40,9 @@ const ViewCategoryDialog = ({
   const [loading, setLoading] = useState(false)
   const [category, setCategory] = useState({})
   const [error, setError] = useState(null)
+
+  const [showUpdateCategoryDialog, setShowUpdateCategoryDialog] = useState(false)
+  const [showDeleteCategoryDialog, setShowDeleteCategoryDialog] = useState(false)
 
   // Bộ lọc thời gian
   const [dateFrom, setDateFrom] = useState('')
@@ -561,12 +567,66 @@ const ViewCategoryDialog = ({
           )}
         </div>
 
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Đóng</Button>
-          </DialogClose>
+        <DialogFooter className="hidden md:flex sm:space-x-0 mt-4">
+          <div className="w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
+            <Can permission="UPDATE_CATEGORY">
+              <Button
+                size="sm"
+                onClick={() => setShowUpdateCategoryDialog(true)}
+                className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Pencil className="h-4 w-4" />
+                Sửa
+              </Button>
+            </Can>
+
+            <Can permission="DELETE_CATEGORY">
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowDeleteCategoryDialog(true)}
+                className="gap-2 w-full sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4" />
+                Xóa
+              </Button>
+            </Can>
+
+            <DialogClose asChild>
+              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+                Đóng
+              </Button>
+            </DialogClose>
+          </div>
         </DialogFooter>
       </DialogContent>
+
+      {showUpdateCategoryDialog && (
+        <UpdateCategoryDialog
+          open={showUpdateCategoryDialog}
+          onOpenChange={setShowUpdateCategoryDialog}
+          category={category}
+          showTrigger={false}
+          contentClassName="z-[100072]"
+          overlayClassName="z-[100071]"
+        />
+      )}
+
+      {showDeleteCategoryDialog && (
+        <DeleteCategoryDialog
+          open={showDeleteCategoryDialog}
+          onOpenChange={(open) => {
+            setShowDeleteCategoryDialog(open)
+            if (!open && !category.id) { // close view when deleted
+              onOpenChange?.(false)
+            }
+          }}
+          category={category}
+          showTrigger={false}
+          contentClassName="z-[100072]"
+          overlayClassName="z-[100071]"
+        />
+      )}
     </Dialog>
   )
 }

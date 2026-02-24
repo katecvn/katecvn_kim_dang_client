@@ -184,47 +184,43 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'warehouseStatus',
+    accessorKey: 'warehouseReceiptStatus',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Trạng thái xuất" />
     ),
     cell: ({ row }) => {
-      const wrs = row.original.warehouseReceipts?.length ? row.original.warehouseReceipts : row.original.invoices?.[0]?.warehouseReceipts
-      const warehouseReceipt = wrs?.[wrs.length - 1]
+      const status = row.getValue('warehouseReceiptStatus') || 'none'
 
       let Icon = PackageOpen
       let label = 'Chưa xuất'
-      let colorClass = 'text-gray-400 border-gray-400'
+      let colorClass = 'text-gray-400'
 
-      if (warehouseReceipt) {
-        if (warehouseReceipt.status === 'draft') {
-          Icon = FileText
-          label = 'Nháp'
-          colorClass = 'text-yellow-600 border-yellow-600'
-        } else if (warehouseReceipt.status === 'posted') {
-          Icon = CheckCircle
-          label = 'Đã ghi sổ'
-          colorClass = 'text-green-600 border-green-600'
-        } else if (warehouseReceipt.status === 'cancelled') {
-          Icon = XCircle
-          label = 'Đã hủy'
-          colorClass = 'text-red-600 border-red-600'
-        } else {
-          Icon = PackageOpen
-          label = warehouseReceipt.status
-          colorClass = 'text-gray-500 border-gray-500'
-        }
+      if (status === 'draft') {
+        Icon = FileText
+        label = 'Đã tạo nháp'
+        colorClass = 'text-yellow-600 border-yellow-600'
+      } else if (status === 'posted_partial') {
+        Icon = CheckCircle
+        label = 'Xuất một phần'
+        colorClass = 'text-blue-600 border-blue-600'
+      } else if (status === 'posted_full') {
+        Icon = CheckCircle
+        label = 'Đã xuất đủ'
+        colorClass = 'text-green-600 border-green-600'
+      } else if (status === 'none') {
+        Icon = PackageOpen
+        label = 'Chưa xuất'
+        colorClass = 'text-gray-400 border-gray-400'
+      } else if (status) {
+        // Fallback for other potential statuses
+        label = status
+        colorClass = 'text-gray-500 border-gray-500'
       }
 
       return (
         <Badge
           variant="outline"
           className={`cursor-default select-none ${colorClass}`}
-          title={
-            warehouseReceipt
-              ? `Mã: ${warehouseReceipt.code}`
-              : 'Chưa có phiếu xuất kho'
-          }
         >
           <Icon className="mr-1 h-3 w-3" />
           {label}

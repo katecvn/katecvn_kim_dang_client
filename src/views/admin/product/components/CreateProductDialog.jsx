@@ -203,7 +203,6 @@ const CreateProductDialog = ({
       setLoadingCatalog(true)
       try {
         const catalog = await getCatalogBySupplier(selectedSupplierId)
-        console.log('catalog', catalog)
         setExternalCatalog(Array.isArray(catalog) ? catalog : [])
       } catch (error) {
         console.error('Error loading catalog:', error)

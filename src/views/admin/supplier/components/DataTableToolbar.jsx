@@ -9,7 +9,9 @@ import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import CreateSupplierDialog from './CreateSupplierDialog'
 import ImportSupplierDialog from './ImportSupplierDialog'
+import ExportSupplierDialog from './ExportSupplierDialog'
 import { FileSpreadsheet } from 'lucide-react'
+import { IconFileTypeXls } from '@tabler/icons-react'
 
 import { DeleteMultipleSuppliersDialog } from './DeleteMultipleSuppliersDialog'
 import { deleteMultipleSuppliers } from '@/stores/SupplierSlice'
@@ -21,6 +23,7 @@ const DataTableToolbar = ({ table }) => {
   const [showCreateSupplierDialog, setShowCreateSupplierDialog] =
     useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const dispatch = useDispatch()
@@ -89,6 +92,24 @@ const DataTableToolbar = ({ table }) => {
           <CreateSupplierDialog
             open={showCreateSupplierDialog}
             onOpenChange={setShowCreateSupplierDialog}
+            showTrigger={false}
+          />
+        )}
+
+        <Button
+          onClick={() => setShowExportDialog(true)}
+          className="mx-2 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+          variant="outline"
+          size="sm"
+        >
+          <IconFileTypeXls className="mr-2 size-4" aria-hidden="true" />
+          Xuất Excel
+        </Button>
+
+        {showExportDialog && (
+          <ExportSupplierDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
             showTrigger={false}
           />
         )}

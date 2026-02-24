@@ -9,7 +9,6 @@ import ViewPaymentDialog from '../../payment/components/ViewPaymentDialog'
 
 const TransactionList = ({ title, data = [], type, loading = false, description }) => {
   const [viewId, setViewId] = useState(null)
-  console.log('data', data)
   const [showReceiptDialog, setShowReceiptDialog] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
 

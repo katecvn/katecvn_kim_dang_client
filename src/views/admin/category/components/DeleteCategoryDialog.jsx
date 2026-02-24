@@ -13,7 +13,7 @@ import { deleteCategory } from '@/stores/CategorySlice'
 import { TrashIcon } from '@radix-ui/react-icons'
 import { useDispatch, useSelector } from 'react-redux'
 
-const DeleteCategoryDialog = ({ category, showTrigger = true, ...props }) => {
+const DeleteCategoryDialog = ({ category, showTrigger = true, contentClassName, overlayClassName, ...props }) => {
   const dispatch = useDispatch()
   const loading = useSelector((state) => state.user.loading)
 
@@ -34,7 +34,7 @@ const DeleteCategoryDialog = ({ category, showTrigger = true, ...props }) => {
           </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent>
+      <DialogContent className={contentClassName} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Bạn chắc chắn thực hiện hành động này?</DialogTitle>
           <DialogDescription>

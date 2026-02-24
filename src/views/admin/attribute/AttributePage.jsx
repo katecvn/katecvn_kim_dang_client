@@ -11,7 +11,7 @@ const AttributePage = () => {
   const loading = useSelector((state) => state.attribute.loading)
 
   useEffect(() => {
-    document.title = 'Quản lý đơn vị tính'
+    document.title = 'Quản lý thuộc tính'
     dispatch(getAttributes())
   }, [dispatch])
 
@@ -21,7 +21,7 @@ const AttributePage = () => {
         <div className="mb-2 flex items-center justify-between space-y-2">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Danh sách các đơn vị tính
+              Danh sách các thuộc tính
             </h2>
           </div>
         </div>

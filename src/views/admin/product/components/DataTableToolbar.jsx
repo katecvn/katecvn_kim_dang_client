@@ -12,7 +12,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { copyProduct, getProducts } from '@/stores/ProductSlice'
 import { toast } from 'sonner'
-import { IconCopyCheck } from '@tabler/icons-react'
+import { IconCopyCheck, IconFileTypeXls } from '@tabler/icons-react'
+import ExportProductDialog from './ExportProductDialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +32,7 @@ const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showCreateProductDialog, setShowCreateProductDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const dispatch = useDispatch()
   const categories = useSelector((state) => state.category.categories)
@@ -185,6 +187,17 @@ const DataTableToolbar = ({ table }) => {
                 </>
               )}
 
+              <Can permission="GET_PRODUCT">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setShowExportDialog(true)}
+                  className="text-green-600 focus:text-green-600 focus:bg-green-50"
+                >
+                  <IconFileTypeXls className="mr-2 size-4" />
+                  <span>Xuất Excel</span>
+                </DropdownMenuItem>
+              </Can>
+
               <Can permission="CREATE_PRODUCT">
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -198,6 +211,14 @@ const DataTableToolbar = ({ table }) => {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {showExportDialog && (
+          <ExportProductDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+            showTrigger={false}
+          />
+        )}
 
         <DeleteMultipleProductsDialog
           open={showDeleteDialog}
@@ -305,6 +326,26 @@ const DataTableToolbar = ({ table }) => {
           <CreateProductDialog
             open={showCreateProductDialog}
             onOpenChange={setShowCreateProductDialog}
+            showTrigger={false}
+          />
+        )}
+      </Can>
+
+      <Can permission="GET_PRODUCT">
+        <Button
+          onClick={() => setShowExportDialog(true)}
+          className="mx-0 mr-2 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+          variant="outline"
+          size="sm"
+        >
+          <IconFileTypeXls className="mr-2 size-4" aria-hidden="true" />
+          Xuất Excel
+        </Button>
+
+        {showExportDialog && (
+          <ExportProductDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
             showTrigger={false}
           />
         )}

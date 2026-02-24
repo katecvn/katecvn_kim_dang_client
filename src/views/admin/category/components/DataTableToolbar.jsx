@@ -12,11 +12,14 @@ import { DeleteMultipleCategoriesDialog } from './DeleteMultipleCategoriesDialog
 import { deleteMultipleCategories, getCategories } from '@/stores/CategorySlice'
 import { useDispatch } from 'react-redux'
 import { TrashIcon } from '@radix-ui/react-icons'
+import { IconFileTypeXls } from '@tabler/icons-react'
+import ExportCategoryDialog from './ExportCategoryDialog'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
     useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const dispatch = useDispatch()
   const selectedRows = table.getSelectedRowModel().rows
@@ -84,6 +87,26 @@ const DataTableToolbar = ({ table }) => {
           <CreateCategoryDialog
             open={showCreateCategoryDialog}
             onOpenChange={setShowCreateCategoryDialog}
+            showTrigger={false}
+          />
+        )}
+      </Can>
+
+      <Can permission={'GET_CATEGORY'}>
+        <Button
+          onClick={() => setShowExportDialog(true)}
+          className="mx-2 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+          variant="outline"
+          size="sm"
+        >
+          <IconFileTypeXls className="mr-2 size-4" aria-hidden="true" />
+          Xuất Excel
+        </Button>
+
+        {showExportDialog && (
+          <ExportCategoryDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
             showTrigger={false}
           />
         )}

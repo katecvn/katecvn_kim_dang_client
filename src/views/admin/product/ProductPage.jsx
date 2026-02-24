@@ -20,8 +20,6 @@ const ProductPage = () => {
   // Listen for real-time price updates
   useSocketEvent({
     product_price_updated: (updatedProduct) => {
-      console.log('💰 Product price updated:', updatedProduct)
-
       // Update product in Redux store
       dispatch(updateProductInStore(updatedProduct))
 

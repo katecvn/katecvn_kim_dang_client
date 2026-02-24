@@ -46,8 +46,6 @@ export const deleteMultipleProducts = createAsyncThunk(
 // NEW: form-data helpers (support nested arrays/objects)
 // =====================
 const buildFormData = (data) => {
-  console.log('📦 Data received in buildFormData:', data)  // ← THÊM DÒNG NÀY
-  console.log('📦 supplierId value:', data.supplierId)
   const formData = new FormData()
 
   // Helper append primitive (skip null/undefined)

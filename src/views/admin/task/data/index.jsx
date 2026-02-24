@@ -18,6 +18,7 @@ const taskStatuses = [
     variant: 'default',
     icon: Circle,
     color: 'text-blue-500',
+    bgColor: 'bg-blue-500',
   },
   {
     value: 'in_progress',
@@ -25,6 +26,7 @@ const taskStatuses = [
     variant: 'secondary',
     icon: Loader2,
     color: 'text-yellow-500',
+    bgColor: 'bg-yellow-500',
   },
   {
     value: 'done',
@@ -32,6 +34,7 @@ const taskStatuses = [
     variant: 'success',
     icon: CheckCircle2,
     color: 'text-green-500',
+    bgColor: 'bg-green-500',
   },
   {
     value: 'canceled',
@@ -39,6 +42,7 @@ const taskStatuses = [
     variant: 'destructive',
     icon: XCircle,
     color: 'text-gray-500',
+    bgColor: 'bg-gray-500',
   },
 ]
 

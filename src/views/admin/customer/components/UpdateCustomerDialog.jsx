@@ -41,6 +41,8 @@ const UpdateCustomerDialog = ({
   open,
   onOpenChange,
   showTrigger = true,
+  contentClassName,
+  overlayClassName,
   ...props
 }) => {
   const loading = useSelector((state) => state.customer.loading)
@@ -87,7 +89,7 @@ const UpdateCustomerDialog = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className="md:h-auto md:max-w-2xl">
+      <DialogContent className={cn("md:h-auto md:max-w-2xl", contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Cập nhật khách hàng</DialogTitle>
           <DialogDescription>

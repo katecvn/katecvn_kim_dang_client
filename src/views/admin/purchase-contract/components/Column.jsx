@@ -42,29 +42,20 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Số HĐ" />
     ),
-    cell: function Cell({ row }) {
-      const [showViewDialog, setShowViewDialog] = useState(false)
+    cell: function Cell({ row, table }) {
+      const handleView = () => {
+        if (table?.options?.meta?.onView) {
+          table.options.meta.onView(row.original.id)
+        }
+      }
 
       return (
-        <>
-          <Can permission={'PURCHASE_CONTRACT_VIEW_ALL'}>
-            {showViewDialog && (
-              <ViewPurchaseContractDialog
-                open={showViewDialog}
-                onOpenChange={setShowViewDialog}
-                purchaseContractId={row.original.id}
-                showTrigger={false}
-              />
-            )}
-          </Can>
-
-          <span
-            className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
-            onClick={() => setShowViewDialog(true)}
-          >
-            {row.original.code}
-          </span>
-        </>
+        <span
+          className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
+          onClick={handleView}
+        >
+          {row.original.code}
+        </span>
       )
     },
   },

@@ -53,7 +53,7 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" className="w-40">
-          <Can permission="GET_INVOICE">
+          <Can permission="UPDATE_CUSTOMER_CARE">
             <DropdownMenuItem
               onSelect={() => setShowUpdateTicketDialog(true)}
               className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
@@ -65,7 +65,7 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can>
 
-          <Can permission="GET_INVOICE">
+          <Can permission="DELETE_CUSTOMER_CARE">
             <DropdownMenuItem
               onSelect={() => setShowDeleteTicketDialog(true)}
               className="text-red-600 focus:text-red-600 focus:bg-red-50"

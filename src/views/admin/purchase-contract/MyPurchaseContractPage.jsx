@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { columns } from './components/Column'
 import PurchaseContractDataTable from './components/PurchaseContractDataTable'
+import ViewPurchaseContractDialog from './components/ViewPurchaseContractDialog'
 import {
   addHours,
   endOfDay,
@@ -37,6 +38,22 @@ const MyPurchaseContractPage = () => {
   })
 
   const [columnFilters, setColumnFilters] = useState([])
+  const [viewPurchaseContractId, setViewPurchaseContractId] = useState(null)
+
+  const refreshData = () => {
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+    const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+
+    dispatch(getMyPurchaseContracts({
+      ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+      ...pageParams,
+      search: debouncedSearch,
+      status: statusFilter,
+      paymentStatus: paymentStatusFilter
+    }))
+  }
 
   useEffect(() => {
     document.title = 'Hợp đồng mua hàng của tôi'
@@ -107,10 +124,25 @@ const MyPurchaseContractPage = () => {
               }}
               columnFilters={columnFilters}
               onColumnFiltersChange={setColumnFilters}
+              onView={setViewPurchaseContractId}
               isMyPurchaseContract={true}
             />
           )}
         </div>
+
+        {viewPurchaseContractId && (
+          <ViewPurchaseContractDialog
+            open={!!viewPurchaseContractId}
+            onOpenChange={(open) => {
+              if (!open) {
+                setViewPurchaseContractId(null)
+              }
+            }}
+            purchaseContractId={viewPurchaseContractId}
+            onSuccess={refreshData}
+            showTrigger={false}
+          />
+        )}
       </LayoutBody>
     </Layout>
   )

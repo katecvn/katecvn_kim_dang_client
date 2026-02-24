@@ -1300,50 +1300,51 @@ const InvoiceDialog = ({
       identityPlace: customer?.identityPlace || '',
     })
 
-    try {
-      const res = await dispatch(
-        getExpiriesByCustomerId({ customerId: customer.id }),
-      ).unwrap()
+    // Bỏ qua theo yêu cầu: không tự động gọi API expiry khi chọn khách hàng
+    // try {
+    //   const res = await dispatch(
+    //     getExpiriesByCustomerId({ customerId: customer.id }),
+    //   ).unwrap()
 
-      const accounts = res?.data?.accounts || []
-      setCustomerAccounts(accounts)
+    //   const accounts = res?.data?.accounts || []
+    //   setCustomerAccounts(accounts)
 
-      const nextApplyExpiry = {}
-      const nextAccountName = {}
-      const nextStartDate = {}
-      const nextExpiryDuration = {}
+    //   const nextApplyExpiry = {}
+    //   const nextAccountName = {}
+    //   const nextStartDate = {}
+    //   const nextExpiryDuration = {}
 
-      for (const acc of accounts) {
-        const expiry = acc.expiries?.[0]
-        if (!expiry) continue
-        const productId = expiry.productId
-        nextApplyExpiry[productId] = true
-        nextAccountName[productId] = acc.accountName
-        if (expiry.endDate) {
-          const d = new Date(expiry.endDate)
-          d.setDate(d.getDate() + 1)
-          nextStartDate[productId] = d
-        }
-      }
+    //   for (const acc of accounts) {
+    //     const expiry = acc.expiries?.[0]
+    //     if (!expiry) continue
+    //     const productId = expiry.productId
+    //     nextApplyExpiry[productId] = true
+    //     nextAccountName[productId] = acc.accountName
+    //     if (expiry.endDate) {
+    //       const d = new Date(expiry.endDate)
+    //       d.setDate(d.getDate() + 1)
+    //       nextStartDate[productId] = d
+    //     }
+    //   }
 
-      for (const acc of accounts) {
-        const expiry = acc.expiries?.[0]
-        if (!expiry) continue
+    //   for (const acc of accounts) {
+    //     const expiry = acc.expiries?.[0]
+    //     if (!expiry) continue
 
-        const productId = expiry.productId
-        nextExpiryDuration[productId] = {
-          value: expiry.period || 1,
-          unit: expiry.unit || 'month',
-        }
-      }
+    //     const productId = expiry.productId
+    //     nextExpiryDuration[productId] = {
+    //       value: expiry.period || 1,
+    //       unit: expiry.unit || 'month',
+    //     }
+    //   }
 
-      setExpiryDurations((prev) => ({ ...prev, ...nextExpiryDuration }))
-      setApplyExpiryItems((prev) => ({ ...prev, ...nextApplyExpiry }))
-      setAccountName((prev) => ({ ...prev, ...nextAccountName }))
-      setProductStartDate((prev) => ({ ...prev, ...nextStartDate }))
-    } catch {
-      setCustomerAccounts([])
-    }
+    //   setExpiryDurations((prev) => ({ ...prev, ...nextExpiryDuration }))
+    //   setApplyExpiryItems((prev) => ({ ...prev, ...nextApplyExpiry }))
+    //   setAccountName((prev) => ({ ...prev, ...nextAccountName }))
+    //   setProductStartDate((prev) => ({ ...prev, ...nextStartDate }))
+    // } catch {
+    //   setCustomerAccounts([])
+    // }
   }
 
   const paymentMethod = form.watch('paymentMethod')

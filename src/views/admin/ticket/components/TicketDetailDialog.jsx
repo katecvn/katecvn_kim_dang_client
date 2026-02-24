@@ -5,11 +5,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/custom/Button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Pencil, Trash2 } from 'lucide-react'
+import Can from '@/utils/can'
+import UpdateTicketDialog from './UpdateTicketDialog'
+import DeleteTicketDialog from './DeleteTicketDialog'
+import TicketStatusCell from './TicketStatusCell'
 
 import { ticketStatuses, ticketPriorities, ticketChannels } from '../data'
 import { useMemo, useEffect, useState } from 'react'
@@ -70,6 +77,9 @@ const TicketDetailDialog = ({
 
   const [newNoteTitle, setNewNoteTitle] = useState('')
   const [newNoteContent, setNewNoteContent] = useState('')
+
+  const [showUpdateTicketDialog, setShowUpdateTicketDialog] = useState(false)
+  const [showDeleteTicketDialog, setShowDeleteTicketDialog] = useState(false)
 
   useEffect(() => {
     if (open && ticketId && (!ticket || ticket.id !== ticketId)) {
@@ -246,12 +256,11 @@ const TicketDetailDialog = ({
                   – {ticket.subject}
                 </span>
               </span>
-              {status && (
-                <Badge variant={status.variant || 'outline'}>
-                  {status.icon && <status.icon className="mr-2 h-4 w-4" />}
-                  {status.label}
-                </Badge>
-              )}
+              <TicketStatusCell
+                ticket={ticket}
+                contentClassName="z-[100070]"
+                overlayClassName="z-[100069]"
+              />
             </div>
           </DialogTitle>
 
@@ -316,7 +325,63 @@ const TicketDetailDialog = ({
             </TabsContent>
           </Tabs>
         </div>
+
+        <DialogFooter className="hidden md:flex sm:space-x-0">
+          <div className="w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
+            <Can permission="UPDATE_CUSTOMER_CARE">
+              <Button
+                size="sm"
+                onClick={() => setShowUpdateTicketDialog(true)}
+                className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Pencil className="h-4 w-4" />
+                Sửa
+              </Button>
+            </Can>
+
+            <Can permission="DELETE_CUSTOMER_CARE">
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowDeleteTicketDialog(true)}
+                className="gap-2 w-full sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4" />
+                Xóa
+              </Button>
+            </Can>
+
+            <DialogClose asChild>
+              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+                Đóng
+              </Button>
+            </DialogClose>
+          </div>
+        </DialogFooter>
       </DialogContent>
+
+      {showDeleteTicketDialog && (
+        <DeleteTicketDialog
+          open={showDeleteTicketDialog}
+          onOpenChange={setShowDeleteTicketDialog}
+          ticket={ticket}
+          showTrigger={false}
+          onSuccess={() => handleOpenChange(false)}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
+
+      {showUpdateTicketDialog && (
+        <UpdateTicketDialog
+          open={showUpdateTicketDialog}
+          onOpenChange={setShowUpdateTicketDialog}
+          ticket={ticket}
+          showTrigger={false}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
     </Dialog>
   )
 }

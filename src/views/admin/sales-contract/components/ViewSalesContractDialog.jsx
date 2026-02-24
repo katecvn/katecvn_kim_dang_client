@@ -63,7 +63,7 @@ import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/comp
 import UpdateInvoiceStatusDialog from '../../invoice/components/UpdateInvoiceStatusDialog'
 import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components/DeleteWarehouseReceiptDialog'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
-import CreateReceiptDialog from '@/views/admin/receipt/components/CreateReceiptDialog'
+import ReceiptDialog from '@/views/admin/receipt/components/ReceiptDialog'
 import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
 import { receiptStatus } from '../../receipt/data' // Corrected path based on previous check, wait. ViewInvoice said ../../receipt/data. I need to be careful.
 import { updateReceiptStatus, getReceiptQRCode } from '@/stores/ReceiptSlice'
@@ -249,7 +249,7 @@ const ViewSalesContractDialog = ({
   }
 
 
-  const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false)
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
   const [warehouseLoading, setWarehouseLoading] = useState(false)
   const [warehouseDialogData, setWarehouseDialogData] = useState(null)
@@ -260,7 +260,7 @@ const ViewSalesContractDialog = ({
       toast.warning('Hợp đồng chưa có hóa đơn để tạo phiếu thu')
       return
     }
-    setShowCreateReceiptDialog(true)
+    setShowReceiptDialog(true)
   }
 
   const handleCreateWarehouseReceipt = async () => {
@@ -364,6 +364,25 @@ const ViewSalesContractDialog = ({
       setWarehouseLoading(false)
       setShowConfirmWarehouseDialog(false)
     }
+  }
+
+  const handleDeleteWarehouseReceiptSuccess = () => {
+    setShowDeleteWarehouseReceiptDialog(false)
+    fetchContractDetail()
+    onSuccess?.()
+  }
+
+  const handleDeleteReceiptSuccess = () => {
+    setShowDeleteReceiptDialog(false)
+    fetchContractDetail()
+    onSuccess?.()
+  }
+
+  const handleCreateReceiptSuccess = () => {
+    setShowReceiptDialog(false)
+    fetchContractDetail()
+    toast.success('Tạo phiếu thu thành công')
+    onSuccess?.()
   }
 
   const getFilteredStatuses = (invoice) => {
@@ -1874,10 +1893,7 @@ const ViewSalesContractDialog = ({
               onOpenChange={setShowDeleteWarehouseReceiptDialog}
               receipt={warehouseReceiptToDelete}
               showTrigger={false}
-              onSuccess={() => {
-                setShowDeleteWarehouseReceiptDialog(false)
-                fetchContractDetail()
-              }}
+              onSuccess={handleDeleteWarehouseReceiptSuccess}
               contentClassName="z-[100020]"
               overlayClassName="z-[100019]"
             />
@@ -1919,26 +1935,19 @@ const ViewSalesContractDialog = ({
               onOpenChange={setShowDeleteReceiptDialog}
               receipt={receiptToDelete}
               showTrigger={false}
-              onSuccess={() => {
-                fetchContractDetail()
-                setShowDeleteReceiptDialog(false)
-              }}
+              onSuccess={handleDeleteReceiptSuccess}
               contentClassName="z-[100020]"
               overlayClassName="z-[100019]"
             />
           )}
-          <CreateReceiptDialog
-            open={showCreateReceiptDialog}
-            onOpenChange={setShowCreateReceiptDialog}
+          <ReceiptDialog
+            open={showReceiptDialog}
+            onOpenChange={setShowReceiptDialog}
             invoices={contract?.invoices?.[0]?.id ? [contract.invoices[0].id] : []}
             contentClassName="z-[100020]"
             overlayClassName="z-[100019]"
             showTrigger={false}
-            onSuccess={() => {
-              setShowCreateReceiptDialog(false)
-              fetchContractDetail()
-              toast.success('Tạo phiếu thu thành công')
-            }}
+            onSuccess={handleCreateReceiptSuccess}
           />
 
           <ConfirmWarehouseReceiptDialog

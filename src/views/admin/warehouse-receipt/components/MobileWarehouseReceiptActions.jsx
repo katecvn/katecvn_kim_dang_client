@@ -53,9 +53,9 @@ const MobileWarehouseReceiptActions = ({
             <SheetTitle>Thao tác phiếu kho</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-3">
-            {/* Save Action */}
-            {receipt.status === 'draft' && onSave && (
-              <div className="grid grid-cols-2 gap-3">
+            {/* Save & Edit Actions */}
+            <div className={receipt.status === 'draft' && onSave ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
+              {receipt.status === 'draft' && onSave && (
                 <Button
                   className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 gap-1 flex"
                   onClick={() => handleAction(onSave)}
@@ -63,16 +63,22 @@ const MobileWarehouseReceiptActions = ({
                   <Save className="h-5 w-5" />
                   <span className="text-xs">Lưu</span>
                 </Button>
-                <Button
-                  className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 gap-1 flex"
-                  onClick={() => handleAction(onEdit)}
-                >
-                  <Pencil className="h-5 w-5" />
-                  <span className="text-xs">Sửa</span>
-                </Button>
-              </div>
-            )}
-            {receipt.status === 'draft' && onSave && <Separator />}
+              )}
+              <Button
+                className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 gap-1 flex"
+                onClick={() => {
+                  if (receipt.status === 'draft') {
+                    handleAction(onEdit)
+                  } else {
+                    toast.warning('Chỉ có thể sửa phiếu kho ở trạng thái nháp')
+                  }
+                }}
+              >
+                <Pencil className="h-5 w-5" />
+                <span className="text-xs">Sửa</span>
+              </Button>
+            </div>
+            <Separator />
 
             {/* Print & Export Actions */}
             <div className="space-y-2">

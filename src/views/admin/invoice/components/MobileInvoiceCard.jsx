@@ -40,7 +40,7 @@ import { buildInstallmentData } from '../helpers/BuildInstallmentData'
 import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
 import { IconPlus, IconPackageExport, IconCheck, IconPackage } from '@tabler/icons-react'
-import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
+import ReceiptDialog from '../../receipt/components/ReceiptDialog'
 import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
 
@@ -74,7 +74,7 @@ const MobileInvoiceCard = ({
   const [installmentExporting, setInstallmentExporting] = useState(false)
 
   // New actions state
-  const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false)
   const [showCreateSalesContractDialog, setShowCreateSalesContractDialog] = useState(false)
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
   const [warehouseLoading, setWarehouseLoading] = useState(false)
@@ -103,7 +103,7 @@ const MobileInvoiceCard = ({
       if (s.value === 'rejected') {
         if (!canReject) return false
         // Only allow switching to 'rejected' if current status is 'pending'
-        if (status !== 'pending') return false
+        // if (status !== 'pending') return false
       }
 
       // Permission check for 'pending' (revert)
@@ -208,7 +208,7 @@ const MobileInvoiceCard = ({
       toast.warning('Không thể tạo phiếu thu cho hóa đơn đã thanh toán hoặc bị từ chối')
       return
     }
-    setShowCreateReceiptDialog(true)
+    setShowReceiptDialog(true)
   }
 
   const handleCreateSalesContract = () => {
@@ -439,11 +439,11 @@ const MobileInvoiceCard = ({
         />
       )}
 
-      {showCreateReceiptDialog && (
-        <CreateReceiptDialog
+      {showReceiptDialog && (
+        <ReceiptDialog
           invoices={[invoice.id]}
-          open={showCreateReceiptDialog}
-          onOpenChange={setShowCreateReceiptDialog}
+          open={showReceiptDialog}
+          onOpenChange={setShowReceiptDialog}
           showTrigger={false}
           table={{ resetRowSelection: () => { } }} // Mock table object needed for dialog
         />

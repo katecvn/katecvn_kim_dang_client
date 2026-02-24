@@ -23,7 +23,7 @@ import {
 import { updateTicketStatus } from '@/stores/TicketSlice'
 import { ticketStatuses } from '../data'
 
-const TicketStatusCell = ({ ticket }) => {
+const TicketStatusCell = ({ ticket, contentClassName, overlayClassName }) => {
   const dispatch = useDispatch()
   const loading = useSelector((state) => state.ticket.loading)
 
@@ -84,7 +84,7 @@ const TicketStatusCell = ({ ticket }) => {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className={contentClassName} overlayClassName={overlayClassName}>
           <DialogHeader>
             <DialogTitle>Cập nhật trạng thái phiếu hỗ trợ</DialogTitle>
             <DialogDescription>

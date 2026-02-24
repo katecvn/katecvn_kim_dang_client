@@ -23,7 +23,7 @@ import RejectInvoiceDialog from './RejectInvoiceDialog'
 import InvoiceDialog from './InvoiceDialog'
 import CreateCreditNoteDialog from './CreateCreditNoteDialog'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
-import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
+import ReceiptDialog from '../../receipt/components/ReceiptDialog'
 import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
 import {
   downloadPreviewDraftInvoice,
@@ -62,7 +62,7 @@ const DataTableRowActions = ({ row, table }) => {
     useState(false)
   const [warehouseLoading, setWarehouseLoading] = useState(false)
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
-  const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false)
   const [showCreateSalesContractDialog, setShowCreateSalesContractDialog] = useState(false)
 
   // Print state
@@ -232,7 +232,7 @@ const DataTableRowActions = ({ row, table }) => {
       toast.warning('Không thể tạo phiếu thu cho hóa đơn đã thanh toán hoặc bị từ chối')
       return
     }
-    setShowCreateReceiptDialog(true)
+    setShowReceiptDialog(true)
   }
 
   const handleCreateSalesContract = () => {
@@ -284,11 +284,11 @@ const DataTableRowActions = ({ row, table }) => {
         />
       )}
 
-      {showCreateReceiptDialog && (
-        <CreateReceiptDialog
+      {showReceiptDialog && (
+        <ReceiptDialog
           invoices={[invoice.id]}
-          open={showCreateReceiptDialog}
-          onOpenChange={setShowCreateReceiptDialog}
+          open={showReceiptDialog}
+          onOpenChange={setShowReceiptDialog}
           showTrigger={false}
           table={{ resetRowSelection: () => { } }} // Mock table object needed for dialog
         />

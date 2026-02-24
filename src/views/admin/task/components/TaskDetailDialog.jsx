@@ -7,12 +7,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Clock, Ticket, User, Phone, FileText } from 'lucide-react'
+import { Button } from '@/components/custom/Button'
+import { Calendar, Clock, Ticket, User, Phone, FileText, Pencil, Trash2 } from 'lucide-react'
+import Can from '@/utils/can'
+import UpdateTaskDialog from './UpdateTaskDialog'
+import DeleteTaskDialog from './DeleteTaskDialog'
 import { getTaskById } from '@/stores/TaskSlice'
 import { dateFormat } from '@/utils/date-format'
 import { taskPriorities, taskStatuses } from '../data'
+import TaskStatusDialog from './TaskStatusDialog'
 
 const safeParseJson = (value) => {
   if (!value) return null
@@ -56,6 +63,9 @@ const TaskDetailDialog = ({ taskId, children }) => {
   const [task, setTask] = useState(null)
   const [taskMeta, setTaskMeta] = useState(null)
   const [ticketMeta, setTicketMeta] = useState(null)
+
+  const [showUpdateTaskDialog, setShowUpdateTaskDialog] = useState(false)
+  const [showDeleteTaskDialog, setShowDeleteTaskDialog] = useState(false)
 
   useEffect(() => {
     if (!open || !taskId) return
@@ -110,9 +120,14 @@ const TaskDetailDialog = ({ taskId, children }) => {
               </Badge>
             )}
             {status && (
-              <Badge variant={status.variant} className="text-xs">
-                {status.label}
-              </Badge>
+              <TaskStatusDialog taskId={task?.id} currentStatus={status.value}>
+                <button type="button" className="focus:outline-none">
+                  <div className={`inline-flex items-center gap-1.5 font-medium text-xs rounded px-2 py-1 text-white ${status.bgColor} hover:opacity-90 transition-opacity`}>
+                    {status.icon && <status.icon className="h-3.5 w-3.5" />}
+                    {status.label}
+                  </div>
+                </button>
+              </TaskStatusDialog>
             )}
           </DialogTitle>
           <DialogDescription className="text-sm">
@@ -326,7 +341,63 @@ const TaskDetailDialog = ({ taskId, children }) => {
             </div>
           )}
         </div>
+
+        <DialogFooter className="hidden md:flex sm:space-x-0 mt-4">
+          <div className="w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
+            <Can permission="UPDATE_TASK">
+              <Button
+                size="sm"
+                onClick={() => setShowUpdateTaskDialog(true)}
+                className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Pencil className="h-4 w-4" />
+                Sửa
+              </Button>
+            </Can>
+
+            <Can permission="DELETE_TASK">
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowDeleteTaskDialog(true)}
+                className="gap-2 w-full sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4" />
+                Xóa
+              </Button>
+            </Can>
+
+            <DialogClose asChild>
+              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+                Đóng
+              </Button>
+            </DialogClose>
+          </div>
+        </DialogFooter>
       </DialogContent>
+
+      {showDeleteTaskDialog && task && (
+        <DeleteTaskDialog
+          open={showDeleteTaskDialog}
+          onOpenChange={setShowDeleteTaskDialog}
+          task={task}
+          showTrigger={false}
+          onSuccess={() => setOpen(false)}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
+
+      {showUpdateTaskDialog && task && (
+        <UpdateTaskDialog
+          open={showUpdateTaskDialog}
+          onOpenChange={setShowUpdateTaskDialog}
+          taskId={task.id}
+          showTrigger={false}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
     </Dialog>
   )
 }

@@ -141,6 +141,20 @@ export const updateReceiptStatus = createAsyncThunk(
   },
 )
 
+export const updateReceipt = createAsyncThunk(
+  'receipt/update-receipt',
+  async ({ id, ...data }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/payment-vouchers/${id}`, data)
+      toast.success('Cập nhật phiếu thu thành công')
+      return response.data.data || response.data
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 const initialState = {
   receipt: {},
   receipts: [],
@@ -249,6 +263,22 @@ export const receiptSlice = createSlice({
         if (index !== -1) {
           state.receipts[index] = { ...state.receipts[index], ...updatedReceipt }
         }
+      })
+      .addCase(updateReceipt.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(updateReceipt.fulfilled, (state, action) => {
+        state.loading = false
+        const updatedReceipt = action.payload
+        const index = state.receipts.findIndex((r) => r.id === updatedReceipt.id)
+        if (index !== -1) {
+          state.receipts[index] = { ...state.receipts[index], ...updatedReceipt }
+        }
+      })
+      .addCase(updateReceipt.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload?.message || 'Lỗi không xác định'
+        toast.error(state.error)
       })
   },
 })

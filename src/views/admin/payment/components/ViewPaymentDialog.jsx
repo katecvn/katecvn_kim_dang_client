@@ -677,7 +677,6 @@ const ViewPaymentDialog = ({
             >
               <Printer className="h-4 w-4" />
               In phiếu
-              In phiếu
             </Button>
 
             {payment?.status === 'draft' && (

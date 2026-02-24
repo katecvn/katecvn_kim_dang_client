@@ -13,7 +13,7 @@ import { deleteTask } from '@/stores/TaskSlice'
 import { TrashIcon } from '@radix-ui/react-icons'
 import { useDispatch, useSelector } from 'react-redux'
 
-const DeleteTaskDialog = ({ task, showTrigger = true, ...props }) => {
+const DeleteTaskDialog = ({ task, showTrigger = true, contentClassName, overlayClassName, ...props }) => {
   const dispatch = useDispatch()
   const loading = useSelector((state) => state.task.loading)
 
@@ -35,7 +35,7 @@ const DeleteTaskDialog = ({ task, showTrigger = true, ...props }) => {
         </DialogTrigger>
       ) : null}
 
-      <DialogContent>
+      <DialogContent className={contentClassName} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Bạn chắc chắn muốn xóa nhiệm vụ này?</DialogTitle>
           <DialogDescription>

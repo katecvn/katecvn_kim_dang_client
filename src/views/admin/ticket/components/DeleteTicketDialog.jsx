@@ -13,7 +13,7 @@ import { deleteTicket } from '@/stores/TicketSlice'
 import { TrashIcon } from '@radix-ui/react-icons'
 import { useDispatch, useSelector } from 'react-redux'
 
-const DeleteTicketDialog = ({ ticket, showTrigger = true, ...props }) => {
+const DeleteTicketDialog = ({ ticket, showTrigger = true, contentClassName, overlayClassName, ...props }) => {
   const dispatch = useDispatch()
   const loading = useSelector((state) => state.ticket.loading)
 
@@ -35,7 +35,7 @@ const DeleteTicketDialog = ({ ticket, showTrigger = true, ...props }) => {
         </DialogTrigger>
       ) : null}
 
-      <DialogContent>
+      <DialogContent className={contentClassName} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Bạn chắc chắn muốn xóa phiếu hỗ trợ này?</DialogTitle>
           <DialogDescription>

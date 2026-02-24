@@ -38,6 +38,24 @@ const DashboardPage = () => {
 
     if (!canViewReport) return
 
+    const invoiceEndpoint = userPermissions.includes('GET_INVOICE')
+      ? '/invoice'
+      : userPermissions.includes('GET_INVOICE_USER')
+        ? '/invoice/by-user'
+        : null
+
+    const receiptEndpoint = userPermissions.includes('RECEIPT_VIEW_ALL')
+      ? '/payment-vouchers'
+      : userPermissions.includes('RECEIPT_VIEW_OWN')
+        ? '/payment-vouchers/my-payment-vouchers'
+        : null
+
+    const paymentEndpoint = userPermissions.includes('PAYMENT_VIEW_ALL')
+      ? '/payment-vouchers'
+      : userPermissions.includes('PAYMENT_VIEW_OWN')
+        ? '/payment-vouchers/my-payment-vouchers'
+        : null
+
     const fetchAllData = async () => {
       setLoading(true)
       try {
@@ -45,26 +63,31 @@ const DashboardPage = () => {
           api.get('/reports/sales/summary', { params: { fromDate, toDate } }),
           api.get('/reports/sales/backlog'),
           api.get('/reports/purchases/backlog'),
-          api.get('/invoice', { params: { limit: 10, sort: 'createdAt:desc' } }),
-          api.get('/payment-vouchers', {
-            params: {
-              voucherType: 'receipt_in',
-              fromDate: todayStart,
-              toDate: todayEnd,
-              limit: 100
-            }
-          }),
-          api.get('/payment-vouchers', {
-            params: {
-              voucherType: 'payment_out',
-              fromDate: todayStart,
-              toDate: todayEnd,
-              limit: 100
-            }
-          })
+          invoiceEndpoint
+            ? api.get(invoiceEndpoint, { params: { limit: 10, sort: 'createdAt:desc' } })
+            : Promise.resolve({ data: { data: { data: [] } } }),
+          receiptEndpoint
+            ? api.get(receiptEndpoint, {
+              params: {
+                voucherType: 'receipt_in',
+                fromDate: todayStart,
+                toDate: todayEnd,
+                limit: 100
+              }
+            })
+            : Promise.resolve({ data: { data: { data: [] } } }),
+          paymentEndpoint
+            ? api.get(paymentEndpoint, {
+              params: {
+                voucherType: 'payment_out',
+                fromDate: todayStart,
+                toDate: todayEnd,
+                limit: 100
+              }
+            })
+            : Promise.resolve({ data: { data: { data: [] } } })
         ])
 
-        setSalesSummary(salesRes.data.data.data || [])
         setSalesSummary(salesRes.data.data.data || [])
 
         const rawSalesBacklog = salesBacklogRes.data.data || []

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { columns } from './components/Column'
 import SalesContractDataTable from './components/SalesContractDataTable'
+import ViewSalesContractDialog from './components/ViewSalesContractDialog'
 import {
   addHours,
   endOfDay,
@@ -41,6 +42,7 @@ const SalesContractPage = () => {
   const debouncedSearch = useDebounce(search, 500)
 
   const [columnFilters, setColumnFilters] = useState([])
+  const [viewSalesContractId, setViewSalesContractId] = useState(null)
 
   useEffect(() => {
     document.title = 'Danh sách hợp đồng bán hàng'
@@ -61,6 +63,23 @@ const SalesContractPage = () => {
     }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, filters, pageParams.page, pageParams.limit, debouncedSearch, columnFilters])
+
+  const refreshData = () => {
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+    const userFilter = columnFilters.find((f) => f.id === 'user')?.value
+    const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+
+    dispatch(getSalesContracts({
+      ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+      ...pageParams,
+      search: debouncedSearch,
+      status: statusFilter,
+      creator: userFilter,
+      paymentStatus: paymentStatusFilter
+    }))
+  }
 
   // Reset page when search changes
   useEffect(() => {
@@ -112,9 +131,24 @@ const SalesContractPage = () => {
               }}
               columnFilters={columnFilters}
               onColumnFiltersChange={setColumnFilters}
+              onView={setViewSalesContractId}
             />
           )}
         </div>
+
+        {viewSalesContractId && (
+          <ViewSalesContractDialog
+            open={!!viewSalesContractId}
+            onOpenChange={(open) => {
+              if (!open) {
+                setViewSalesContractId(null)
+              }
+            }}
+            contractId={viewSalesContractId}
+            showTrigger={false}
+            onSuccess={refreshData}
+          />
+        )}
       </LayoutBody>
     </Layout>
   )

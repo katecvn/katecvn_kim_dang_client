@@ -55,7 +55,7 @@ import { z } from 'zod'
 import { useState, useEffect, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getProducts } from '@/stores/ProductSlice'
-import { createWarehouseReceipt, getWarehouseReceipts } from '@/stores/WarehouseReceiptSlice'
+import { updateWarehouseReceipt, getWarehouseReceiptById } from '@/stores/WarehouseReceiptSlice'
 import { getCustomers } from '@/stores/CustomerSlice'
 import { getSuppliers } from '@/stores/SupplierSlice'
 import { PlusIcon, Trash2, Check, ChevronsUpDown, Search, CheckIcon } from 'lucide-react'
@@ -76,10 +76,11 @@ const formSchema = z.object({
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { getPublicUrl } from '@/utils/file'
 
-const CreateManualWarehouseReceiptDialog = ({
+const UpdateWarehouseReceiptDialog = ({
+  receiptId,
   open,
   onOpenChange,
-  showTrigger = true,
+  onSuccess,
 }) => {
   const dispatch = useDispatch()
   const { products, loading: productsLoading } = useSelector((state) => state.product)
@@ -130,8 +131,57 @@ const CreateManualWarehouseReceiptDialog = ({
       if (products.length === 0) dispatch(getProducts())
       if (customers.length === 0) dispatch(getCustomers())
       if (suppliers.length === 0) dispatch(getSuppliers())
+
+      if (receiptId) {
+        // Fetch receipt data to populate
+        setLoading(true)
+        dispatch(getWarehouseReceiptById(receiptId))
+          .unwrap()
+          .then((data) => {
+            // Populate form
+            form.reset({
+              receiptType: data.receiptType,
+              businessType: data.businessType || 'other',
+              receiptDate: data.receiptDate ? new Date(data.receiptDate) : new Date(),
+              reason: data.reason || '',
+              note: data.note || '',
+              partnerId: data.receiptType === 1 ? data.supplierId?.toString() || '' : data.customerId?.toString() || '',
+            })
+
+            // Populate selected products
+            if (data.details && data.details.length > 0) {
+              const mappedProducts = data.details.map(d => ({
+                productId: d.productId,
+                productName: d.productName || d.product?.name,
+                code: d.productCode || d.product?.code,
+                image: d.productImage || d.product?.image,
+                unitId: d.unitId,
+                unitName: d.unitName,
+                quantity: parseFloat(d.qtyActual) || parseFloat(d.qtyDocument) || 1,
+                price: parseFloat(d.unitPrice) || 0,
+                movement: data.receiptType === 1 ? 'in' : 'out',
+                note: d.note || '',
+                product: d.product || products.find(p => p.id === d.productId) // Try to get from state if not in detail
+              }))
+              setSelectedProducts(mappedProducts)
+            } else {
+              setSelectedProducts([])
+            }
+          })
+          .catch((error) => {
+            console.error('Failed to load receipt', error)
+            toast.error('Không thể tải dữ liệu phiếu kho')
+          })
+          .finally(() => {
+            setLoading(false)
+          })
+      }
+    } else {
+      // Reset when dialog closes
+      form.reset()
+      setSelectedProducts([])
     }
-  }, [open, dispatch, products.length, customers.length, suppliers.length])
+  }, [open, dispatch, receiptId])
 
   const handleAddProduct = (product) => {
     if (selectedProducts.some(p => p.productId === product.id)) {
@@ -228,18 +278,18 @@ const CreateManualWarehouseReceiptDialog = ({
         ...(data.receiptType === 2 && data.partnerId && { customerId: Number(data.partnerId) })
       }
 
-      await dispatch(createWarehouseReceipt(payload)).unwrap()
-      toast.success('Tạo phiếu kho thành công')
+      await dispatch(updateWarehouseReceipt({ id: receiptId, data: payload })).unwrap()
+      toast.success('Cập nhật phiếu kho thành công')
 
       // Reset & Refresh
       form.reset()
       setSelectedProducts([])
       onOpenChange(false)
-      dispatch(getWarehouseReceipts())
+      if (onSuccess) onSuccess()
     } catch (error) {
       console.error(error)
       // Toast error is handled in slice usually, but safety net:
-      toast.error(error?.message || 'Tạo phiếu thất bại')
+      toast.error(error?.message || 'Cập nhật phiếu thất bại')
     } finally {
       setLoading(false)
     }
@@ -280,15 +330,6 @@ const CreateManualWarehouseReceiptDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {showTrigger && (
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="hidden sm:flex">
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Tạo phiếu
-          </Button>
-        </DialogTrigger>
-      )}
-
       <DialogContent
         className={cn(
           "md:max-w-4xl md:max-h-[90vh] overflow-y-auto flex flex-col",
@@ -296,7 +337,7 @@ const CreateManualWarehouseReceiptDialog = ({
         )}
       >
         <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
-          <DialogTitle>Tạo phiếu kho thủ công</DialogTitle>
+          <DialogTitle>Cập nhật phiếu kho thủ công</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -740,7 +781,7 @@ const CreateManualWarehouseReceiptDialog = ({
               <DialogClose asChild>
                 <Button type="button" variant="outline">Hủy</Button>
               </DialogClose>
-              <Button type="submit" loading={loading}>Lưu phiếu</Button>
+              <Button type="submit" loading={loading} disabled={loading}>Lưu phiếu</Button>
             </DialogFooter>
           </form>
         </Form>
@@ -749,4 +790,4 @@ const CreateManualWarehouseReceiptDialog = ({
   )
 }
 
-export default CreateManualWarehouseReceiptDialog
+export default UpdateWarehouseReceiptDialog

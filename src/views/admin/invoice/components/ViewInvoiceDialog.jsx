@@ -68,7 +68,7 @@ import { DeleteWarehouseReceiptDialog } from '../../warehouse-receipt/components
 import { UpdateWarehouseReceiptStatusDialog } from '../../warehouse-receipt/components/UpdateWarehouseReceiptStatusDialog'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
 import ViewWarehouseReceiptDialog from '../../warehouse-receipt/components/ViewWarehouseReceiptDialog'
-import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
+import ReceiptDialog from '../../receipt/components/ReceiptDialog'
 import ViewReceiptDialog from '../../receipt/components/ViewReceiptDialog'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
@@ -414,7 +414,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
 
   // Create Receipt Dialog State
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
-  const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false)
+  const [receiptToEdit, setReceiptToEdit] = useState(null)
   const [warehouseLoading, setWarehouseLoading] = useState(false)
 
   // Contract View State
@@ -519,7 +520,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
       return
     }
 
-    setShowCreateReceiptDialog(true)
+    setShowReceiptDialog(true)
   }
 
 
@@ -1224,6 +1225,21 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                             <Button
                                               variant="ghost"
                                               size="icon"
+                                              className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-100"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                setReceiptToEdit(voucher)
+                                                setShowReceiptDialog(true)
+                                              }}
+                                              title="Sửa phiếu thu"
+                                            >
+                                              <Pencil className="h-4 w-4" />
+                                            </Button>
+                                          )}
+                                          {voucher.status === 'draft' && (
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
                                               className="h-8 w-8 text-primary hover:text-primary/90 hover:bg-primary/10"
                                               onClick={(e) => {
                                                 e.stopPropagation()
@@ -1267,6 +1283,21 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                         >
                                           {voucher.code}
                                         </span>
+                                        {voucher.status === 'draft' && (
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-orange-500 hover:text-orange-600 hover:bg-orange-100 -mr-2"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              setReceiptToEdit(voucher)
+                                              setShowReceiptDialog(true)
+                                            }}
+                                            title="Sửa phiếu thu"
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                        )}
                                         {voucher.status === 'draft' && (
                                           <Button
                                             variant="ghost"
@@ -2365,15 +2396,22 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
       />
 
       {/* Create Receipt Dialog */}
-      <CreateReceiptDialog
-        open={showCreateReceiptDialog}
-        onOpenChange={setShowCreateReceiptDialog}
+      <ReceiptDialog
+        open={showReceiptDialog}
+        onOpenChange={(open) => {
+          setShowReceiptDialog(open)
+          if (!open) {
+            setTimeout(() => setReceiptToEdit(null), 300)
+          }
+        }}
         invoices={[invoice?.id]}
+        receipt={receiptToEdit}
         invoiceCode={invoice?.code}
         amount={invoice?.remainingAmount}
         onSuccess={() => {
           fetchData()
-          setShowCreateReceiptDialog(false)
+          setShowReceiptDialog(false)
+          setTimeout(() => setReceiptToEdit(null), 300)
           onSuccess?.()
         }}
         contentClassName="z-[100010]"

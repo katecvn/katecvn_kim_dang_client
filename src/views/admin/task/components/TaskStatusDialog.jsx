@@ -43,7 +43,7 @@ const TaskStatusDialog = ({ taskId, currentStatus, children }) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md !z-[10001]" overlayClassName="!z-[10000]">
         <DialogHeader>
           <DialogTitle>Cập nhật trạng thái nhiệm vụ</DialogTitle>
           <DialogDescription>

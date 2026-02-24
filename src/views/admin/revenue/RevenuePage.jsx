@@ -53,12 +53,12 @@ const RevenuePage = () => {
   return (
     <Layout>
       <LayoutBody className="flex flex-col" fixedHeight>
-        <div className="mb-4 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
+        <div className="mb-4 -mx-4 px-1 sm:mx-0 sm:px-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-bold tracking-tight">Doanh thu tháng</h2>
           </div>
-          <div className="flex items-center gap-2">
-            <div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="w-full sm:w-auto">
               <DateRange
                 defaultValue={{
                   from: filters?.fromDate,
@@ -76,7 +76,7 @@ const RevenuePage = () => {
             <Button
               variant="outline"
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white gap-2"
+              className="bg-green-600 hover:bg-green-700 text-white gap-2 w-full sm:w-auto"
               onClick={() => setShowExportPreview(true)}
             >
               <FileSpreadsheet className="h-4 w-4" />
@@ -94,7 +94,7 @@ const RevenuePage = () => {
           />
         )}
 
-        <div className="flex-1 overflow-auto space-y-6">
+        <div className="-mx-4 flex-1 overflow-auto px-1 sm:px-4 space-y-6">
           {/* Summary Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <SummaryCard

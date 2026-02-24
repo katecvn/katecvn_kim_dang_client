@@ -153,6 +153,7 @@ export const columns = [
     cell: ({ row }) => {
       const amount = row.original.amount
       const discount = row.original.discount
+      const paidAmount = row.original.paidAmount
 
       return (
         <div className="flex flex-col">
@@ -161,6 +162,12 @@ export const columns = [
           {discount > 0 && (
             <span className="text-xs text-red-500">
               Giảm: {moneyFormat(discount)}
+            </span>
+          )}
+
+          {paidAmount > 0 && (
+            <span className="text-xs text-green-600">
+              Đã thu: {moneyFormat(paidAmount)}
             </span>
           )}
         </div>

@@ -110,8 +110,11 @@ export const columns = [
 
       return (
         <TaskStatusDialog taskId={task.id} currentStatus={statusValue}>
-          <button type="button" className="focus:outline-none">
-            <Badge variant={status.variant}>{status.label}</Badge>
+          <button type="button" className="focus:outline-none text-left">
+            <div className={`inline-flex items-center gap-1.5 font-medium text-xs rounded px-2 py-1 text-white ${status.bgColor}`}>
+              {status.icon && <status.icon className="h-3.5 w-3.5" />}
+              {status.label}
+            </div>
           </button>
         </TaskStatusDialog>
       )

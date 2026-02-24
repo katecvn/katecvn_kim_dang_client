@@ -29,6 +29,7 @@ import { UpdateWarehouseReceiptStatusDialog } from './UpdateWarehouseReceiptStat
 import { DeleteWarehouseReceiptDialog } from './DeleteWarehouseReceiptDialog'
 import ExportWarehouseReceiptPreview from './ExportWarehouseReceiptPreview'
 import MobileWarehouseReceiptActions from './MobileWarehouseReceiptActions'
+import UpdateWarehouseReceiptDialog from './UpdateWarehouseReceiptDialog'
 import { toast } from 'sonner'
 import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
 import InvoiceDialog from '../../invoice/components/InvoiceDialog'
@@ -59,6 +60,7 @@ const ViewWarehouseReceiptDialog = ({
   const [targetStatus, setTargetStatus] = useState(null)
   const [showExportPreview, setShowExportPreview] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showUpdateReceiptDialog, setShowUpdateReceiptDialog] = useState(false)
 
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false)
   const [showUpdateInvoiceDialog, setShowUpdateInvoiceDialog] = useState(false)
@@ -600,18 +602,22 @@ const ViewWarehouseReceiptDialog = ({
               <Printer className="h-4 w-4" />
               In phiếu
             </Button>
-            {receipt?.status === 'draft' && (
-              <Can permission={receipt.receiptType === 1 ? 'WAREHOUSE_IMPORT_UPDATE' : 'WAREHOUSE_EXPORT_UPDATE'}>
-                <Button
-                  size="sm"
-                  className="gap-2 bg-orange-600 hover:bg-orange-700 text-white"
-                  onClick={() => toast.info('Tính năng sửa đang phát triển')}
-                >
-                  <Pencil className="h-4 w-4" />
-                  Sửa
-                </Button>
-              </Can>
-            )}
+            <Can permission={receipt?.receiptType === 1 ? 'WAREHOUSE_IMPORT_UPDATE' : 'WAREHOUSE_EXPORT_UPDATE'}>
+              <Button
+                size="sm"
+                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white"
+                onClick={() => {
+                  if (receipt?.status === 'draft') {
+                    setShowUpdateReceiptDialog(true)
+                  } else {
+                    toast.warning('Chỉ có thể sửa phiếu kho ở trạng thái nháp')
+                  }
+                }}
+              >
+                <Pencil className="h-4 w-4" />
+                Sửa
+              </Button>
+            </Can>
             <Can permission={receipt?.receiptType === 1 ? 'WAREHOUSE_IMPORT_DELETE' : 'WAREHOUSE_EXPORT_DELETE'}>
               <Button
                 variant="destructive"
@@ -642,10 +648,7 @@ const ViewWarehouseReceiptDialog = ({
           receipt={receipt}
           isDesktop={isDesktop}
           canDelete={receipt?.status === 'draft'}
-          onEdit={() => {
-            // TODO: Implement edit for warehouse receipt
-            toast.info('Tính năng sửa đang phát triển')
-          }}
+          onEdit={() => setShowUpdateReceiptDialog(true)}
           handlePrintWarehouseReceipt={handlePrintWarehouseReceipt}
           handleExportToExcel={() => setShowExportPreview(true)}
           handleUpdateStatus={() => setShowUpdateStatusDialog(true)}
@@ -744,6 +747,19 @@ const ViewWarehouseReceiptDialog = ({
           overlayClassName="z-[100069]"
           onSuccess={() => {
             onOpenChange?.(false)
+            onSuccess?.()
+          }}
+        />
+      )}
+
+      {/* Update Warehouse Receipt Dialog */}
+      {showUpdateReceiptDialog && receipt && (
+        <UpdateWarehouseReceiptDialog
+          open={showUpdateReceiptDialog}
+          onOpenChange={setShowUpdateReceiptDialog}
+          receiptId={receipt.id}
+          onSuccess={() => {
+            fetchData()
             onSuccess?.()
           }}
         />

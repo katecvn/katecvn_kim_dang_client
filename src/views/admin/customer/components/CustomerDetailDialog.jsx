@@ -21,8 +21,13 @@ import {
   CreditCard,
   CalendarDays,
   MapPinned,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { useDispatch } from 'react-redux'
+import Can from '@/utils/can'
+import { DeleteCustomerDialog } from './DeleteCustomerDialog'
+import UpdateCustomerDialog from './UpdateCustomerDialog'
 import { getExpiriesByCustomerId } from '@/stores/ExpirySlice'
 import { useEffect, useState } from 'react'
 import { CustomerDetailPagination } from './CustomerDetailPagination'
@@ -71,6 +76,9 @@ const CustomerDetailDialog = ({ customer, showTrigger = true, ...props }) => {
     from: addHours(startOfDay(startOfMonth(current)), 12),
     to: addHours(endOfDay(endOfMonth(current)), 0),
   })
+
+  const [showDeleteCustomerDialog, setShowDeleteCustomerDialog] = useState(false)
+  const [showUpdateCustomerDialog, setShowUpdateCustomerDialog] = useState(false)
 
   useEffect(() => {
     if (!customer?.id) return
@@ -351,12 +359,62 @@ const CustomerDetailDialog = ({ customer, showTrigger = true, ...props }) => {
             </div>
           </div>
         </div>
-        <DialogFooter className="gap-2 sm:space-x-0">
-          <DialogClose asChild>
-            <Button>Đóng</Button>
-          </DialogClose>
+        <DialogFooter className="hidden md:flex sm:space-x-0">
+          <div className="w-full grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:justify-end">
+            <Can permission="UPDATE_CUSTOMER">
+              <Button
+                size="sm"
+                onClick={() => setShowUpdateCustomerDialog(true)}
+                className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Pencil className="h-4 w-4" />
+                Sửa
+              </Button>
+            </Can>
+
+            <Can permission="DELETE_CUSTOMER">
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowDeleteCustomerDialog(true)}
+                className="gap-2 w-full sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4" />
+                Xóa
+              </Button>
+            </Can>
+
+            <DialogClose asChild>
+              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+                Đóng
+              </Button>
+            </DialogClose>
+          </div>
         </DialogFooter>
       </DialogContent>
+
+      {showDeleteCustomerDialog && (
+        <DeleteCustomerDialog
+          open={showDeleteCustomerDialog}
+          onOpenChange={setShowDeleteCustomerDialog}
+          customer={customer}
+          showTrigger={false}
+          onSuccess={() => props?.onOpenChange?.(false)}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
+
+      {showUpdateCustomerDialog && (
+        <UpdateCustomerDialog
+          open={showUpdateCustomerDialog}
+          onOpenChange={setShowUpdateCustomerDialog}
+          customer={customer}
+          showTrigger={false}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
     </Dialog>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { columns } from './components/Column'
 import PurchaseContractDataTable from './components/PurchaseContractDataTable'
+import ViewPurchaseContractDialog from './components/ViewPurchaseContractDialog'
 import {
   addHours,
   endOfDay,
@@ -38,6 +39,7 @@ const PurchaseContractPage = () => {
   const debouncedSearch = useDebounce(search, 500)
 
   const [columnFilters, setColumnFilters] = useState([])
+  const [viewPurchaseContractId, setViewPurchaseContractId] = useState(null)
 
   useEffect(() => {
     document.title = 'Danh sách hợp đồng mua hàng'
@@ -58,6 +60,23 @@ const PurchaseContractPage = () => {
     }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, filters, pageParams.page, pageParams.limit, debouncedSearch, columnFilters])
+
+  const refreshData = () => {
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+    const userFilter = columnFilters.find((f) => f.id === 'user')?.value
+    const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+
+    dispatch(getPurchaseContracts({
+      ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+      ...pageParams,
+      search: debouncedSearch,
+      status: statusFilter,
+      creator: userFilter,
+      paymentStatus: paymentStatusFilter
+    }))
+  }
 
   // Reset page when search changes
   useEffect(() => {
@@ -109,9 +128,24 @@ const PurchaseContractPage = () => {
               }}
               columnFilters={columnFilters}
               onColumnFiltersChange={setColumnFilters}
+              onView={setViewPurchaseContractId}
             />
           )}
         </div>
+
+        {viewPurchaseContractId && (
+          <ViewPurchaseContractDialog
+            open={!!viewPurchaseContractId}
+            onOpenChange={(open) => {
+              if (!open) {
+                setViewPurchaseContractId(null)
+              }
+            }}
+            purchaseContractId={viewPurchaseContractId}
+            showTrigger={false}
+            onSuccess={refreshData}
+          />
+        )}
       </LayoutBody>
     </Layout>
   )

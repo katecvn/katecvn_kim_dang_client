@@ -51,6 +51,8 @@ const UpdateTaskDialog = ({
   onOpenChange,
   taskId,
   showTrigger = false,
+  contentClassName,
+  overlayClassName,
 }) => {
   const dispatch = useDispatch()
   const [loadingTask, setLoadingTask] = useState(false)
@@ -151,21 +153,21 @@ const UpdateTaskDialog = ({
 
   const ticketOptions = selectedCustomerId
     ? tickets
-        .filter((t) => String(t.customerId) === selectedCustomerId)
-        .map((t) => ({
-          value: String(t.id),
-          label: `#${t.id} - ${t.subject}`,
-        }))
+      .filter((t) => String(t.customerId) === selectedCustomerId)
+      .map((t) => ({
+        value: String(t.id),
+        label: `#${t.id} - ${t.subject}`,
+      }))
     : []
 
   // MỚI: hóa đơn theo khách
   const invoiceOptions = selectedCustomerId
     ? invoices
-        .filter((inv) => String(inv.customerId) === selectedCustomerId)
-        .map((inv) => ({
-          value: String(inv.id),
-          label: inv.code || `HĐ #${inv.id}`,
-        }))
+      .filter((inv) => String(inv.customerId) === selectedCustomerId)
+      .map((inv) => ({
+        value: String(inv.id),
+        label: inv.code || `HĐ #${inv.id}`,
+      }))
     : []
 
   const onSubmit = async (values) => {
@@ -219,7 +221,7 @@ const UpdateTaskDialog = ({
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       {showTrigger && <Button size="sm">Chỉnh sửa nhiệm vụ</Button>}
 
-      <DialogContent className="md:h-[90vh] md:max-w-[40vw]">
+      <DialogContent className={cn("md:h-[90vh] md:max-w-[40vw]", contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
           <DialogTitle>Cập nhật nhiệm vụ</DialogTitle>
           <DialogDescription>
@@ -251,9 +253,8 @@ const UpdateTaskDialog = ({
                           }}
                           options={customers.map((c) => ({
                             value: String(c.id),
-                            label: `${c.code ? c.code + ' - ' : ''}${
-                              c.name || c.fullName
-                            }`,
+                            label: `${c.code ? c.code + ' - ' : ''}${c.name || c.fullName
+                              }`,
                           }))}
                           placeholder="Chọn khách hàng"
                           emptyMessage="Không tìm thấy khách hàng."

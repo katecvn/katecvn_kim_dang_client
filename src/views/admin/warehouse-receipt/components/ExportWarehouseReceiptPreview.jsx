@@ -37,7 +37,9 @@ const ExportWarehouseReceiptPreview = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn("md:max-w-4xl", contentClassName)} overlayClassName={overlayClassName}>
         <DialogHeader>
-          <DialogTitle>Chi tiết phiếu xuất kho: {receipt?.code}</DialogTitle>
+          <DialogTitle>
+            Chi tiết phiếu {receipt?.receiptType === 1 ? 'nhập kho' : 'xuất kho'}: {receipt?.code}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="max-h-[60vh] overflow-auto border rounded-md">

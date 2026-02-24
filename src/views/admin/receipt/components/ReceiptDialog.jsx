@@ -49,7 +49,7 @@ import {
 import { paymentMethods } from '../data'
 import { createReceiptSchema } from '../schema'
 import { useDispatch, useSelector } from 'react-redux'
-import { createReceipt, getReceiptQRCode } from '@/stores/ReceiptSlice'
+import { createReceipt, updateReceipt, getReceiptById, getReceiptQRCode } from '@/stores/ReceiptSlice'
 import { Input } from '@/components/ui/input'
 import { useNavigate } from 'react-router-dom'
 import { getSetting } from '@/stores/SettingSlice'
@@ -59,8 +59,10 @@ import { getPublicUrl } from '@/utils/file'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import PaymentQRCodeDialog from '../../receipt/components/PaymentQRCodeDialog'
 
-const CreateReceiptDialog = ({
+const ReceiptDialog = ({
   invoices,
+  receiptId,
+  receipt: propReceipt,
   open,
   onOpenChange,
   showTrigger = true,
@@ -80,6 +82,13 @@ const CreateReceiptDialog = ({
   const [showQrDialog, setShowQrDialog] = useState(false)
   const [createdReceiptId, setCreatedReceiptId] = useState(null)
   const setting = useSelector((state) => state.setting.setting)
+
+  const effectiveReceiptId = receiptId || propReceipt?.id
+  const isEditMode = !!effectiveReceiptId
+
+  const [fetchedReceipt, setFetchedReceipt] = useState(null)
+  const receipt = fetchedReceipt || propReceipt
+
   const invoiceItems = invoiceData?.flatMap((invoice) => invoice.invoiceItems)
   const customer = invoiceData?.[0]?.customer
   const banks = setting?.payload?.banks || []
@@ -102,12 +111,15 @@ const CreateReceiptDialog = ({
   const pendingAmount = invoiceData?.reduce((acc, invoice) => {
     const vouchers = invoice.receiptVouchers || invoice.receipts || invoice.paymentVouchers || []
     const pendingSum = vouchers
-      .filter(p => p.status === 'pending' || p.status === 'draft')
+      .filter(p => (p.status === 'pending' || p.status === 'draft') && p.id !== effectiveReceiptId)
       .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
     return acc + pendingSum
   }, 0) || 0
 
   const remainingAmount = Math.max(0, totalAmountFromInvoice - paidAmount - pendingAmount)
+
+  const isCompletedReceipt = receipt?.status === 'completed' || receipt?.status === 'success'
+  const maxAllowableAmount = remainingAmount + (isEditMode && isCompletedReceipt ? parseFloat(receipt?.amount || 0) : 0)
 
   const form = useForm({
     resolver: zodResolver(createReceiptSchema),
@@ -126,7 +138,7 @@ const CreateReceiptDialog = ({
   const invoicesKey = JSON.stringify(invoices)
 
   const fetchData = useCallback(async () => {
-    const validInvoices = invoices?.filter((id) => id)
+    const validInvoices = invoices?.filter((id) => id) || (receipt?.invoiceId ? [receipt.invoiceId] : [])
     if (!validInvoices || validInvoices.length === 0) return
 
     setLoading(true)
@@ -164,21 +176,57 @@ const CreateReceiptDialog = ({
   }, [dispatch])
 
   useEffect(() => {
-    if (invoiceData.length > 0) {
-      // Default to remaining amount for payment input
-      form.setValue('totalAmount', remainingAmount > 0 ? remainingAmount : 0)
-      form.setValue('totalTaxAmount', totalTaxAmount)
-      form.setValue('totalDiscount', totalDiscount)
+    if (open && effectiveReceiptId) {
+      dispatch(getReceiptById(effectiveReceiptId))
+        .unwrap()
+        .then((data) => {
+          setFetchedReceipt(data)
+        })
+        .catch((error) => {
+          console.error('Failed to fetch receipt details:', error)
+        })
+    } else if (!open) {
+      setFetchedReceipt(null)
     }
-  }, [invoiceData, form, remainingAmount, totalTaxAmount, totalDiscount])
+  }, [open, effectiveReceiptId, dispatch])
+
+  useEffect(() => {
+    if (open) {
+      if (isEditMode && receipt) {
+        let bankAccount = receipt.bankAccount
+        if (!bankAccount && receipt.bankAccountNumber) {
+          bankAccount = {
+            bankName: receipt.bankName,
+            accountNumber: receipt.bankAccountNumber,
+            accountName: receipt.bankAccountName,
+            bankBranch: receipt.bankBranch,
+          }
+        }
+
+        form.reset({
+          note: receipt.reason || '',
+          totalAmount: parseFloat(receipt.amount || 0),
+          paymentMethod: receipt.paymentMethod || 'cash',
+          paymentNote: receipt.note || '',
+          bankAccount: bankAccount || null,
+          isDeposit: receipt.transactionType === 'deposit',
+        })
+      } else if (invoiceData.length > 0) {
+        // Default to remaining amount for payment input
+        form.setValue('totalAmount', remainingAmount > 0 ? remainingAmount : 0)
+        // form.setValue('totalTaxAmount', totalTaxAmount) // these don't exist in schema
+        // form.setValue('totalDiscount', totalDiscount) // these don't exist in schema
+      }
+    }
+  }, [open, isEditMode, receipt, invoiceData, form, remainingAmount, totalTaxAmount, totalDiscount])
   const navigate = useNavigate()
 
   const onSubmit = async (data) => {
     const amountToReceive = parseFloat(data.totalAmount) || 0
-    if (amountToReceive > remainingAmount) {
+    if (amountToReceive > maxAllowableAmount) {
       form.setError('totalAmount', {
         type: 'manual',
-        message: `Số tiền thu không được vượt quá số nợ còn lại (${moneyFormat(remainingAmount)})`,
+        message: `Số tiền thu không được vượt quá số nợ còn lại (${moneyFormat(maxAllowableAmount)})`,
       })
       return
     }
@@ -217,23 +265,45 @@ const CreateReceiptDialog = ({
     }
 
     try {
-      const result = await dispatch(createReceipt(dataToSend)).unwrap()
-      const receiptId = result?.id
+      if (isEditMode) {
+        const dataToUpdate = {
+          id: effectiveReceiptId,
+          amount: parseInt(data.totalAmount) || 0,
+          paymentMethod: data.paymentMethod,
+          bankAccount: data.paymentMethod === 'transfer' && data.bankAccount
+            ? {
+              bankName: data.bankAccount.bankName,
+              accountNumber: data.bankAccount.accountNumber,
+              accountName: data.bankAccount.accountName,
+              bankBranch: data.bankAccount.bankBranch
+            }
+            : null,
+          reason: data.note || 'Thu tiền bán hàng',
+          note: data.paymentNote || null,
+          transactionType: data.isDeposit ? 'deposit' : 'payment',
+        }
+        await dispatch(updateReceipt(dataToUpdate)).unwrap()
 
-      // If payment method is transfer, fetch and show QR code
-      if (data.paymentMethod === 'transfer' && receiptId) {
-        setCreatedReceiptId(receiptId)
-        try {
-          const qrData = await dispatch(getReceiptQRCode(receiptId)).unwrap()
-          setQrCodeData(qrData)
-          setShowQrDialog(true)
-        } catch (qrError) {
-          console.error('Failed to fetch QR code:', qrError)
+        navigateAway()
+      } else {
+        const result = await dispatch(createReceipt(dataToSend)).unwrap()
+        const receiptId = result?.id
+
+        // If payment method is transfer, fetch and show QR code
+        if (data.paymentMethod === 'transfer' && receiptId) {
+          setCreatedReceiptId(receiptId)
+          try {
+            const qrData = await dispatch(getReceiptQRCode(receiptId)).unwrap()
+            setQrCodeData(qrData)
+            setShowQrDialog(true)
+          } catch (qrError) {
+            console.error('Failed to fetch QR code:', qrError)
+            navigateAway()
+          }
+        } else {
+          // Cash payment or no receipt ID, navigate immediately
           navigateAway()
         }
-      } else {
-        // Cash payment or no receipt ID, navigate immediately
-        navigateAway()
       }
     } catch (error) {
       console.log('Submit error: ', error)
@@ -263,10 +333,14 @@ const CreateReceiptDialog = ({
 
   const paymentMethod = form.watch('paymentMethod')
 
+  const dialogTitle = isEditMode ? `Chỉnh sửa phiếu thu ${receipt?.voucherCode || ''}` : 'Thêm phiếu thu mới'
+  const dialogDesc = isEditMode ? 'Cập nhật thông tin phiếu thu' : 'Kiểm tra và hoàn thành thông tin bên dưới để thêm phiếu thu mới'
+  const submitLabel = isEditMode ? 'Cập nhật' : 'Thêm mới'
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange} {...props}>
-        {showTrigger && (
+        {showTrigger && !isEditMode && (
           <DialogTrigger asChild>
             <Button className="mx-2" variant="outline" size="sm">
               <PlusIcon className="mr-2 size-4" aria-hidden="true" />
@@ -284,9 +358,9 @@ const CreateReceiptDialog = ({
           overlayClassName={overlayClassName}
         >
           <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
-            <DialogTitle>Thêm phiếu thu mới</DialogTitle>
+            <DialogTitle>{dialogTitle}</DialogTitle>
             <DialogDescription>
-              Kiểm tra và hoàn thành thông tin bên dưới để thêm phiếu thu mới
+              {dialogDesc}
             </DialogDescription>
           </DialogHeader>
 
@@ -832,7 +906,7 @@ const CreateReceiptDialog = ({
             </DialogClose>
 
             <Button form="create-receipt" loading={loading} className={cn(isMobile && "flex-1")}>
-              Thêm mới
+              {submitLabel}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -850,4 +924,4 @@ const CreateReceiptDialog = ({
   )
 }
 
-export default CreateReceiptDialog
+export default ReceiptDialog

@@ -122,6 +122,12 @@ export const getColumns = (onView) => [
               Giảm: {moneyFormat(discount)}
             </span>
           )}
+
+          {row.original.paidAmount > 0 && (
+            <span className="text-xs text-green-600">
+              Đã trả: {moneyFormat(row.original.paidAmount)}
+            </span>
+          )}
         </div>
       )
     },

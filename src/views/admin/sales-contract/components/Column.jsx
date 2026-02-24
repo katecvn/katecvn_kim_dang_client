@@ -42,29 +42,20 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Số HĐ" />
     ),
-    cell: function Cell({ row }) {
-      const [showViewDialog, setShowViewDialog] = useState(false)
+    cell: function Cell({ row, table }) {
+      const handleView = () => {
+        if (table?.options?.meta?.onView) {
+          table.options.meta.onView(row.original.id)
+        }
+      }
 
       return (
-        <>
-          <Can permission={'SALES_CONTRACT_VIEW_ALL'}>
-            {showViewDialog && (
-              <ViewSalesContractDialog
-                open={showViewDialog}
-                onOpenChange={setShowViewDialog}
-                contractId={row.original.id}
-                showTrigger={false}
-              />
-            )}
-          </Can>
-
-          <span
-            className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
-            onClick={() => setShowViewDialog(true)}
-          >
-            {row.original.code}
-          </span>
-        </>
+        <span
+          className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
+          onClick={handleView}
+        >
+          {row.original.code}
+        </span>
       )
     },
   },
@@ -136,11 +127,11 @@ export const columns = [
           <span className="font-semibold">
             {moneyFormat(row.original.totalAmount)}
           </span>
-          {row.original.paidAmount > 0 && (
+          {/* {row.original.paidAmount > 0 && (
             <span className="text-xs text-green-600">
               Đã thu: {moneyFormat(row.original.paidAmount)}
             </span>
-          )}
+          )} */}
         </div>
       )
     },
@@ -198,7 +189,8 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Trạng thái xuất" />
     ),
     cell: ({ row }) => {
-      const warehouseReceipt = row.original.warehouseReceipts?.[0] || row.original.invoices?.[0]?.warehouseReceipts?.[0]
+      const wrs = row.original.warehouseReceipts?.length ? row.original.warehouseReceipts : row.original.invoices?.[0]?.warehouseReceipts
+      const warehouseReceipt = wrs?.[wrs.length - 1]
 
       let Icon = PackageOpen
       let label = 'Chưa xuất'
@@ -248,14 +240,10 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Thanh toán" />
     ),
     cell: ({ row }) => {
-      // Get paymentStatus from first invoice
-      const firstInvoice = row.original.invoices?.[0]
-      if (!firstInvoice) {
-        return <span className="text-muted-foreground text-sm">—</span>
-      }
+      const pStatus = row.original.paymentStatus || 'none'
 
       const paymentStatus = paymentStatuses.find(
-        (s) => s.value === firstInvoice.paymentStatus,
+        (s) => s.value === pStatus,
       )
 
       if (!paymentStatus) return <span className="text-sm">—</span>
@@ -274,7 +262,7 @@ export const columns = [
     },
     enableSorting: false,
     enableHiding: true,
-    accessorFn: (row) => row.invoices?.[0]?.paymentStatus || null,
+    accessorFn: (row) => row.paymentStatus || null,
   },
   {
     id: 'user', // Add Creator column

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { columns } from './components/Column'
 import SalesContractDataTable from './components/SalesContractDataTable'
+import ViewSalesContractDialog from './components/ViewSalesContractDialog'
 import {
   addHours,
   endOfDay,
@@ -39,6 +40,22 @@ const MySalesContractPage = () => {
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 500)
   const [columnFilters, setColumnFilters] = useState([])
+  const [viewSalesContractId, setViewSalesContractId] = useState(null)
+
+  const refreshData = () => {
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+    const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+
+    dispatch(getMySalesContracts({
+      ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+      ...pageParams,
+      search: debouncedSearch,
+      status: statusFilter,
+      paymentStatus: paymentStatusFilter
+    }))
+  }
 
   useEffect(() => {
     document.title = `Hợp đồng bán hàng - ${fullName}`
@@ -107,10 +124,25 @@ const MySalesContractPage = () => {
               }}
               columnFilters={columnFilters}
               onColumnFiltersChange={setColumnFilters}
+              onView={setViewSalesContractId}
               isMyContract={true}
             />
           )}
         </div>
+
+        {viewSalesContractId && (
+          <ViewSalesContractDialog
+            open={!!viewSalesContractId}
+            onOpenChange={(open) => {
+              if (!open) {
+                setViewSalesContractId(null)
+              }
+            }}
+            contractId={viewSalesContractId}
+            onSuccess={refreshData}
+            showTrigger={false}
+          />
+        )}
       </LayoutBody>
     </Layout>
   )

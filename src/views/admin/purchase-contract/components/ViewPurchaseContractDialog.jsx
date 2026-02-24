@@ -288,6 +288,33 @@ const ViewPurchaseContractDialog = ({
     }
   }
 
+  const handleDeleteWarehouseReceiptSuccess = () => {
+    setShowDeleteWarehouseReceiptDialog(false)
+    fetchContractDetail()
+    onSuccess?.()
+  }
+
+  const handleLiquidateSuccess = () => {
+    fetchContractDetail()
+    onSuccess?.()
+  }
+
+  const handleViewPaymentSuccess = () => {
+    fetchContractDetail()
+    onSuccess?.()
+  }
+
+  const handleDeletePaymentSuccess = () => {
+    setShowDeletePaymentDialog(false)
+    fetchContractDetail()
+    onSuccess?.()
+  }
+
+  const handlePaymentFormSuccess = () => {
+    fetchContractDetail()
+    onSuccess?.()
+  }
+
   const getReceiptStatusColor = (statusValue) => {
     switch (statusValue) {
       case 'draft': return 'bg-yellow-100 text-yellow-700'
@@ -1280,9 +1307,7 @@ const ViewPurchaseContractDialog = ({
             contractId={purchaseContractId}
             contentClassName="z-[100070]"
             overlayClassName="z-[100069]"
-            onSuccess={() => {
-              fetchContractDetail()
-            }}
+            onSuccess={handleLiquidateSuccess}
           />
         )}
 
@@ -1327,9 +1352,7 @@ const ViewPurchaseContractDialog = ({
             showTrigger={false}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
-            onSuccess={() => {
-              fetchContractDetail()
-            }}
+            onSuccess={handleViewPaymentSuccess}
           />
         )}
 
@@ -1384,11 +1407,7 @@ const ViewPurchaseContractDialog = ({
             onOpenChange={setShowDeletePaymentDialog}
             payment={paymentToDelete}
             showTrigger={false}
-            onSuccess={() => {
-              setShowDeletePaymentDialog(false)
-              fetchContractDetail()
-              onSuccess?.()
-            }}
+            onSuccess={handleDeletePaymentSuccess}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
           />
@@ -1401,11 +1420,7 @@ const ViewPurchaseContractDialog = ({
             onOpenChange={setShowDeleteWarehouseReceiptDialog}
             receipt={warehouseReceiptToDelete}
             showTrigger={false}
-            onSuccess={() => {
-              setShowDeleteWarehouseReceiptDialog(false)
-              fetchContractDetail()
-              onSuccess?.()
-            }}
+            onSuccess={handleDeleteWarehouseReceiptSuccess}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
           />
@@ -1417,10 +1432,7 @@ const ViewPurchaseContractDialog = ({
             onOpenChange={setShowCreatePaymentDialog}
             purchaseOrder={contract?.purchaseOrders?.[0]}
             supplier={contract?.supplier}
-            onSuccess={() => {
-              fetchContractDetail()
-              onSuccess?.()
-            }}
+            onSuccess={handlePaymentFormSuccess}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
           />
@@ -1432,10 +1444,7 @@ const ViewPurchaseContractDialog = ({
             open={!!selectedPaymentForEdit}
             onOpenChange={(open) => !open && setSelectedPaymentForEdit(null)}
             paymentId={selectedPaymentForEdit.id}
-            onSuccess={() => {
-              fetchContractDetail()
-              onSuccess?.()
-            }}
+            onSuccess={handlePaymentFormSuccess}
             contentClassName="!z-[100060]"
             overlayClassName="z-[100059]"
           />

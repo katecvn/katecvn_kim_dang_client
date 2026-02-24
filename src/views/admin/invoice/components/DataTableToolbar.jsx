@@ -10,7 +10,7 @@ import ImportInvoiceDialog from './ImportInvoiceDialog'
 import { IconFileTypeXls } from '@tabler/icons-react'
 import { FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
-import CreateReceiptDialog from '../../receipt/components/CreateReceiptDialog'
+import ReceiptDialog from '../../receipt/components/ReceiptDialog'
 import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
 import PrintInvoiceView from './PrintInvoiceView'
 import { useDispatch, useSelector } from 'react-redux'
@@ -40,7 +40,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
   const [showCreateInvoiceDialog, setShowCreateInvoiceDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
 
-  const [showCreateReceiptDialog, setShowCreateReceiptDialog] = useState(false)
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false)
   const [showCreateSalesContractDialog, setShowCreateSalesContractDialog] = useState(false)
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([])
   const [selectedInvoices, setSelectedInvoices] = useState([])
@@ -204,11 +204,11 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
         {invoice && setting && (
           <PrintInvoiceView invoice={invoice} setting={setting} />
         )}
-        {showCreateReceiptDialog && (
-          <CreateReceiptDialog
+        {showReceiptDialog && (
+          <ReceiptDialog
             invoices={selectedInvoices}
-            open={showCreateReceiptDialog}
-            onOpenChange={setShowCreateReceiptDialog}
+            open={showReceiptDialog}
+            onOpenChange={setShowReceiptDialog}
             showTrigger={false}
             table={table}
           />
@@ -393,11 +393,11 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
           )}
 
           {/* Dialog tạo phiếu thu */}
-          {showCreateReceiptDialog && (
-            <CreateReceiptDialog
+          {showReceiptDialog && (
+            <ReceiptDialog
               invoices={selectedInvoices}
-              open={showCreateReceiptDialog}
-              onOpenChange={setShowCreateReceiptDialog}
+              open={showReceiptDialog}
+              onOpenChange={setShowReceiptDialog}
               showTrigger={false}
               table={table}
             />

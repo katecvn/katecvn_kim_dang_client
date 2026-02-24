@@ -35,7 +35,8 @@ const SalesContractDataTable = ({
   onSearchChange,
   columnFilters = [], // Add columnFilters prop
   onColumnFiltersChange, // Add onColumnFiltersChange prop
-  isMyContract = false // Add isMyContract prop
+  isMyContract = false, // Add isMyContract prop
+  onView // Add onView prop
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -104,6 +105,9 @@ const SalesContractDataTable = ({
       const value = row.getValue(columnId)
       if (value == null) return false
       return value.toString().includes(normalizeText(filterValue))
+    },
+    meta: {
+      onView,
     },
   })
 

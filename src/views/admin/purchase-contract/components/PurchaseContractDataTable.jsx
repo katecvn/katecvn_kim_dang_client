@@ -21,7 +21,6 @@ import {
 import { DataTableToolbar } from './DataTableToolbar'
 import { DataTablePagination } from './DataTablePagination'
 import { Skeleton } from '@/components/ui/skeleton'
-import ViewPurchaseContractDialog from './ViewPurchaseContractDialog'
 import MobilePurchaseContractCard from './MobilePurchaseContractCard'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 
@@ -36,6 +35,7 @@ const PurchaseContractDataTable = ({
   columnFilters = [], // Default to empty array if not provided
   onColumnFiltersChange, // Function from parent
   isMyPurchaseContract = false, // Add isMyPurchaseContract prop
+  onView, // Function from parent
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -43,13 +43,12 @@ const PurchaseContractDataTable = ({
   // const [columnFilters, setColumnFilters] = useState([]) // Controlled by parent now
   const [sorting, setSorting] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
-  const [viewId, setViewId] = useState(null)
 
   const table = useReactTable({
     data,
     columns,
     meta: {
-      onView: (id) => setViewId(id),
+      onView,
     },
     state: {
       sorting,
@@ -207,18 +206,6 @@ const PurchaseContractDataTable = ({
         </Table>
       </div>
       <DataTablePagination table={table} />
-
-      {/* View Dialog */}
-      {viewId && (
-        <ViewPurchaseContractDialog
-          open={!!viewId}
-          onOpenChange={(open) => {
-            if (!open) setViewId(null)
-          }}
-          purchaseContractId={viewId}
-          showTrigger={false}
-        />
-      )}
     </div>
   )
 }

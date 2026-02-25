@@ -63,9 +63,9 @@ export function DataTableToolbar({ table }) {
       <div className="space-y-2">
         <Input
           placeholder="Tìm kiếm..."
-          value={table.getColumn('code')?.getFilterValue() || ''}
+          value={table.getState().globalFilter || ''}
           onChange={(event) =>
-            table.getColumn('code')?.setFilterValue(event.target.value)
+            table.setGlobalFilter(event.target.value)
           }
           className="h-8 w-full text-sm"
         />
@@ -138,10 +138,10 @@ export function DataTableToolbar({ table }) {
     <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-1">
       <div className="flex flex-1 items-center space-x-2">
         <Input
-          placeholder="Tìm kiếm theo mã phiếu..."
-          value={table.getColumn('code')?.getFilterValue() || ''}
+          placeholder="Tìm kiếm..."
+          value={table.getState().globalFilter || ''}
           onChange={(event) =>
-            table.getColumn('code')?.setFilterValue(event.target.value)
+            table.setGlobalFilter(event.target.value)
           }
           className="h-8 w-[150px] lg:w-[250px]"
         />

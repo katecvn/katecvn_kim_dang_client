@@ -14,6 +14,7 @@ import {
   format
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
+import { useDebounce } from '@/hooks/useDebounce'
 import Can from '@/utils/can'
 
 const WarehouseOutPage = () => {
@@ -21,9 +22,20 @@ const WarehouseOutPage = () => {
   const warehouseReceipts = useSelector(
     (state) => state.warehouseReceipt.warehouseReceipts,
   )
+  const paginationMeta = useSelector(
+    (state) => state.warehouseReceipt.pagination,
+  )
   const loading = useSelector((state) => state.warehouseReceipt.loading)
 
   const current = new Date()
+
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 30,
+  })
+
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 500)
 
   const [filters, setFilters] = useState({
     fromDate: addHours(startOfDay(startOfMonth(current)), 12),
@@ -46,11 +58,14 @@ const WarehouseOutPage = () => {
   const refreshData = useCallback(() => {
     const formattedFilters = {
       ...filters,
+      search: debouncedSearch,
       fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
       toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+      page: pagination.pageIndex + 1,
+      limit: pagination.pageSize,
     }
     dispatch(getWarehouseReceipts({ ...formattedFilters, receiptType: 2 }))
-  }, [dispatch, filters])
+  }, [dispatch, filters, debouncedSearch, pagination])
 
   const columns = useMemo(() => getColumns(handleView, 'export', refreshData), [handleView, refreshData])
 
@@ -95,6 +110,10 @@ const WarehouseOutPage = () => {
               columns={columns}
               loading={loading}
               onRefresh={refreshData}
+              onSearchChange={(value) => setSearch(value)}
+              pagination={pagination}
+              onPaginationChange={setPagination}
+              pageCount={paginationMeta?.last_page || -1}
             />
           )}
         </div>

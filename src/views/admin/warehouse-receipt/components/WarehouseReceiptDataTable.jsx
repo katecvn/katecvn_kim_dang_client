@@ -24,11 +24,20 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import MobileWarehouseReceiptCard from './MobileWarehouseReceiptCard'
 
-const WarehouseReceiptDataTable = ({ columns, data, loading = false }) => {
+const WarehouseReceiptDataTable = ({
+  columns,
+  data,
+  loading = false,
+  onSearchChange,
+  pagination,
+  onPaginationChange,
+  pageCount,
+}) => {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
   const [columnFilters, setColumnFilters] = useState([])
   const [sorting, setSorting] = useState([])
+  const [globalFilter, setGlobalFilter] = useState('')
   const isMobile = useMediaQuery('(max-width: 768px)')
 
   const table = useReactTable({
@@ -39,16 +48,29 @@ const WarehouseReceiptDataTable = ({ columns, data, loading = false }) => {
         pageSize: 30, //custom default page size
       },
     },
+    manualFiltering: true,
+    manualPagination: true,
+    pageCount: pageCount,
     state: {
       sorting,
       columnVisibility,
       rowSelection,
       columnFilters,
+      globalFilter,
+      ...(pagination && { pagination }),
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    ...(onPaginationChange && { onPaginationChange }),
+    onGlobalFilterChange: (updater) => {
+      const value = typeof updater === 'function' ? updater(globalFilter) : updater
+      setGlobalFilter(value)
+      if (onSearchChange) {
+        onSearchChange(value)
+      }
+    },
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

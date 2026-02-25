@@ -5,10 +5,11 @@ import { toast } from 'sonner'
 
 export const getWarehouseReceipts = createAsyncThunk(
   'warehouseReceipt/get-warehouse-receipts',
-  async ({ fromDate = null, toDate = null, page = 1, limit = 100, receiptType } = {}, { rejectWithValue }) => {
+  async ({ search, fromDate = null, toDate = null, page = 1, limit = 100, receiptType } = {}, { rejectWithValue }) => {
     try {
       const response = await api.get('/warehouse-receipts', {
         params: {
+          search,
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
           page,
@@ -16,8 +17,29 @@ export const getWarehouseReceipts = createAsyncThunk(
           receiptType,
         },
       })
-      // API returns: { data: { data: [...], pagination: {...} } }
-      return response.data.data || response.data
+      const responseData = response.data
+      let data = responseData?.data?.data
+      let pagination = responseData?.data?.pagination
+
+      if (!Array.isArray(data) && Array.isArray(responseData?.data)) {
+        data = responseData.data
+        pagination = responseData.pagination || responseData
+      }
+
+      if (!data && Array.isArray(responseData)) {
+        data = responseData
+      }
+
+      data = data || []
+
+      const meta = pagination ? {
+        ...pagination,
+        last_page: pagination.totalPages,
+        current_page: pagination.page,
+        per_page: pagination.limit
+      } : undefined
+
+      return { data, meta }
     } catch (error) {
       const message = handleError(error)
       return rejectWithValue(message)
@@ -169,6 +191,14 @@ const initialState = {
   loading: false,
   detailLoading: false,
   error: null,
+  pagination: {
+    total: 0,
+    per_page: 15,
+    current_page: 1,
+    last_page: 1,
+    from: 0,
+    to: 0
+  }
 }
 
 export const warehouseReceiptSlice = createSlice({
@@ -183,7 +213,8 @@ export const warehouseReceiptSlice = createSlice({
       })
       .addCase(getWarehouseReceipts.fulfilled, (state, action) => {
         state.loading = false
-        state.warehouseReceipts = action.payload
+        state.warehouseReceipts = action.payload.data || []
+        state.pagination = action.payload.meta || initialState.pagination
       })
       .addCase(getWarehouseReceipts.rejected, (state, action) => {
         state.loading = false

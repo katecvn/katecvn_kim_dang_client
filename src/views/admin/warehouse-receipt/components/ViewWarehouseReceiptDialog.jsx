@@ -34,6 +34,8 @@ import { toast } from 'sonner'
 import ViewInvoiceDialog from '../../invoice/components/ViewInvoiceDialog'
 import InvoiceDialog from '../../invoice/components/InvoiceDialog'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
+import CustomerDetailDialog from '../../customer/components/CustomerDetailDialog'
+import ViewSupplierDialog from '../../supplier/components/ViewSupplierDialog'
 import {
   SelectTrigger,
   SelectValue,
@@ -71,6 +73,9 @@ const ViewWarehouseReceiptDialog = ({
   const [showViewProductDialog, setShowViewProductDialog] = useState(false)
   const setting = useSelector((state) => state.setting.setting)
   const [details, setDetails] = useState([])
+
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false)
+  const [showSupplierDialog, setShowSupplierDialog] = useState(false)
 
   const handleUpdateStatus = async (newStatus, id) => {
     try {
@@ -474,7 +479,18 @@ const ViewWarehouseReceiptDialog = ({
                         <AvatarFallback>P</AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">{partner.name}</div>
+                        <div
+                          className="font-medium cursor-pointer text-primary hover:underline hover:text-blue-600"
+                          onClick={() => {
+                            if (receipt?.receiptType === 1) {
+                              setShowSupplierDialog(true)
+                            } else {
+                              setShowCustomerDialog(true)
+                            }
+                          }}
+                        >
+                          {partner.name}
+                        </div>
                         <div className="text-xs text-muted-foreground">{partner.code}</div>
                       </div>
                     </div>
@@ -762,6 +778,30 @@ const ViewWarehouseReceiptDialog = ({
             fetchData()
             onSuccess?.()
           }}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
+
+      {showCustomerDialog && partner && (
+        <CustomerDetailDialog
+          open={showCustomerDialog}
+          onOpenChange={setShowCustomerDialog}
+          customer={partner}
+          showTrigger={false}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
+
+      {showSupplierDialog && partner && (
+        <ViewSupplierDialog
+          open={showSupplierDialog}
+          onOpenChange={setShowSupplierDialog}
+          supplierId={partner.id}
+          showTrigger={false}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
         />
       )}
 

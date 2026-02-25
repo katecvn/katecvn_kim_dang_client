@@ -98,9 +98,9 @@ const InvoiceSidebar = ({
       setPhoneError('Số điện thoại là bắt buộc')
       return
     }
-    const regex = /^(0)(3|5|7|8|9)([0-9]{8})$/
+    const regex = /^(0)(2|3|5|7|8|9)([0-9]{8,9})$/
     if (!regex.test(phone)) {
-      setPhoneError('SĐT không hợp lệ (10 số, đầu 03, 05, 07, 08, 09)')
+      setPhoneError('SĐT không hợp lệ (Bắt đầu bằng 02, 03, 05, 07, 08, 09 và có 10-11 số)')
     } else {
       setPhoneError('')
     }

@@ -11,6 +11,7 @@ import {
   endOfMonth,
   startOfDay,
   startOfMonth,
+  format
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
 import Can from '@/utils/can'
@@ -43,7 +44,12 @@ const WarehouseInPage = () => {
   }, [])
 
   const refreshData = useCallback(() => {
-    dispatch(getWarehouseReceipts({ ...filters, receiptType: 1 }))
+    const formattedFilters = {
+      ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+    }
+    dispatch(getWarehouseReceipts({ ...formattedFilters, receiptType: 1 }))
   }, [dispatch, filters])
 
   const columns = useMemo(() => getColumns(handleView, 'import', refreshData), [handleView, refreshData])

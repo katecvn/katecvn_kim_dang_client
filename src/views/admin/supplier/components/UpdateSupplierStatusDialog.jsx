@@ -96,12 +96,14 @@ const UpdateSupplierStatusDialog = ({
                         {statuses.map((status) => (
                           <SelectItem value={status.value} key={status.value}>
                             <div
-                              className={`flex items-center ${status.color}`}
+                              className={`flex items-center font-medium ${status.value === 'published'
+                                  ? 'text-green-600'
+                                  : 'text-red-600'
+                                }`}
                             >
                               <div className="mr-2 h-4 w-4">
                                 <status.icon className="h-4 w-4" />
                               </div>
-
                               <div>{status.label}</div>
                             </div>
                           </SelectItem>

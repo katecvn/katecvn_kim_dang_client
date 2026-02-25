@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 const phoneRegex =
-  /^(?:\+84|0)(?:3[2-9]|5[2689]|7[06789]|8[1-9]|9[0-9])[0-9]{7}$/
+  /^(?:\+84|0)(?:2|3|5|7|8|9)[0-9]{8,9}$/
 
 const createSupplierSchema = z.object({
   name: z.string().min(1, { message: 'Không được để trống' }),

@@ -22,7 +22,7 @@ export const columns = [
         <TaskDetailDialog taskId={task.id}>
           <button
             type="button"
-            className="flex max-w-lg items-center gap-2 text-left text-primary hover:underline"
+            className="flex max-w-lg items-center gap-2 text-left font-medium text-blue-600 hover:underline"
           >
             <span className="truncate">{task.title}</span>
             {priority && (

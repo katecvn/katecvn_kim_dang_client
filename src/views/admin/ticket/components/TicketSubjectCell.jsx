@@ -10,7 +10,7 @@ const TicketSubjectCell = ({ ticket }) => {
     <>
       <button
         type="button"
-        className="line-clamp-2 w-64 text-left text-primary hover:underline"
+        className="line-clamp-2 w-64 text-left font-medium text-blue-600 hover:underline"
         onClick={() => setOpen(true)}
         title={ticket.subject}
       >

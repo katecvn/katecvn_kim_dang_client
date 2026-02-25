@@ -688,7 +688,7 @@ const InvoiceDialog = ({
     const hasSelectedCustomer = !!data.customerId
 
     // Validate Phone Format
-    const phoneRegex = /^(0)(3|5|7|8|9)([0-9]{8})$/
+    const phoneRegex = /^(0)(2|3|5|7|8|9)([0-9]{8,9})$/
     const errors = {}
 
     // Only validate if NO existing customer selected (creating new one) OR if updating existing info
@@ -713,7 +713,7 @@ const InvoiceDialog = ({
     if (!customerEditData?.phone?.trim()) {
       errors.phone = "Số điện thoại là bắt buộc"
     } else if (!phoneRegex.test(customerEditData.phone.trim())) {
-      errors.phone = "SĐT không hợp lệ (10 số, đầu 03, 05, 07, 08, 09)"
+      errors.phone = "SĐT không hợp lệ (Bắt đầu bằng 02, 03, 05, 07, 08, 09 và có 10-11 số)"
     }
 
     // Validate Email Format (Optional but must be valid if provided)

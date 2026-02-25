@@ -443,6 +443,10 @@ const PurchaseOrderDialog = ({
   }
 
   const handleDiscountRateChange = (productId, value) => {
+    if (value === '') {
+      setDiscountRates(prev => ({ ...prev, [productId]: '' }))
+      return
+    }
     // allow decimal numbers but remove formatting or invalid chars
     let numericValue = Number(value.replace(/,/g, '').replace(/[^\d.]/g, ''))
     if (numericValue > 100) numericValue = 100
@@ -546,9 +550,9 @@ const PurchaseOrderDialog = ({
 
     // Strict validation for new supplier
     if (supplierEditData) {
-      const phoneRegex = /^(0)(3|5|7|8|9)([0-9]{8})$/
+      const phoneRegex = /^(0)(2|3|5|7|8|9)([0-9]{8,9})$/
       if (supplierEditData.phone && !phoneRegex.test(supplierEditData.phone)) {
-        toast.error('SĐT nhà cung cấp không hợp lệ (10 số, đầu 03, 05, 07, 08, 09)')
+        toast.error('SĐT nhà cung cấp không hợp lệ (Bắt đầu bằng 02, 03, 05, 07, 08, 09 và có 10-11 số)')
         return
       }
 

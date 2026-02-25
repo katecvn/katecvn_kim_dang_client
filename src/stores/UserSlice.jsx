@@ -62,6 +62,21 @@ export const updateUser = createAsyncThunk(
   },
 )
 
+export const updateUserStatus = createAsyncThunk(
+  'user/update-status',
+  async (updateData, { rejectWithValue, dispatch }) => {
+    try {
+      const { id, data } = updateData
+      await api.put(`/user/${id}/update-status`, data)
+      await dispatch(getUsers()).unwrap()
+      toast.success('Cập nhật trạng thái thành công')
+    } catch (error) {
+      const message = handleError(error)
+      return rejectWithValue(message)
+    }
+  },
+)
+
 export const changePassword = createAsyncThunk(
   'user/change-password',
   async (data, { rejectWithValue }) => {
@@ -134,6 +149,18 @@ export const userSlice = createSlice({
         state.loading = false
       })
       .addCase(updateUser.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload.message || 'Lỗi không xác định'
+        toast.error(state.error)
+      })
+      .addCase(updateUserStatus.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(updateUserStatus.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(updateUserStatus.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload.message || 'Lỗi không xác định'
         toast.error(state.error)

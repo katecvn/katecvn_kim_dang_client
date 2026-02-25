@@ -470,6 +470,11 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
                                 <CheckCircle2 className="h-3 w-3 mr-1" />
                                 Thành công
                               </Badge>
+                            ) : product.syncMapping.syncStatus === 'PENDING' ? (
+                              <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">
+                                <RefreshCw className="h-3 w-3 mr-1 text-slate-400" />
+                                Chưa đồng bộ
+                              </Badge>
                             ) : (
                               <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
                                 <XCircle className="h-3 w-3 mr-1" />
@@ -483,31 +488,35 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
                             <span className="font-mono font-medium">{product.syncMapping.externalCode}</span>
                           </div>
 
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Giá đồng bộ:</span>
-                            <span className="font-semibold text-blue-600 dark:text-blue-400">
-                              {moneyFormat(product.syncMapping.lastSyncPrice)}
-                            </span>
-                          </div>
+                          {product.syncMapping.syncStatus !== 'PENDING' && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Giá đồng bộ:</span>
+                                <span className="font-semibold text-blue-600 dark:text-blue-400">
+                                  {moneyFormat(product.syncMapping.lastSyncPrice)}
+                                </span>
+                              </div>
 
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Giá mua:</span>
-                            <span className="font-semibold">
-                              {moneyFormat(product.syncMapping.lastBuyPrice)}
-                            </span>
-                          </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Giá mua:</span>
+                                <span className="font-semibold">
+                                  {moneyFormat(product.syncMapping.lastBuyPrice)}
+                                </span>
+                              </div>
 
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Đồng bộ lần cuối:</span>
-                            <span>{dateFormat(product.syncMapping.lastSyncAt, true)}</span>
-                          </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Đồng bộ lần cuối:</span>
+                                <span>{dateFormat(product.syncMapping.lastSyncAt, true)}</span>
+                              </div>
 
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">NCC cập nhật:</span>
-                            <span>{dateFormat(product.syncMapping.providerUpdatedAt, true)}</span>
-                          </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">NCC cập nhật:</span>
+                                <span>{dateFormat(product.syncMapping.providerUpdatedAt, true)}</span>
+                              </div>
+                            </>
+                          )}
 
-                          {product.syncMapping.errorMessage && (
+                          {product.syncMapping.errorMessage && product.syncMapping.syncStatus !== 'PENDING' && (
                             <div className="mt-2 p-2 rounded bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 text-xs">
                               <strong>Lỗi:</strong> {product.syncMapping.errorMessage}
                             </div>

@@ -72,6 +72,12 @@ export const getColumns = (onView, type = 'all', onRefresh) => [
           <div className="w-48" title={supplier.name}>
             <span className="font-semibold">{supplier.name}</span>
             <div className="text-xs text-muted-foreground">{supplier.code}</div>
+            {supplier.taxCode && (
+              <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                <CreditCard className="h-3 w-3" />
+                {supplier.taxCode}
+              </span>
+            )}
           </div>
         )
       }
@@ -111,12 +117,12 @@ export const getColumns = (onView, type = 'all', onRefresh) => [
   {
     accessorKey: 'totalQuantity',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Số lượng" />
+      <DataTableColumnHeader column={column} title="Số lượng" className="justify-center" />
     ),
     cell: ({ row }) => {
       const quantity = parseFloat(row.getValue('totalQuantity') || 0)
       return (
-        <div className="w-24 text-end">
+        <div className="w-24 text-center">
           {quantity.toLocaleString('vi-VN', {
             minimumFractionDigits: 0,
             maximumFractionDigits: 2,

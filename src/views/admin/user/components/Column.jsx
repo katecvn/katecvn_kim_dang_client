@@ -1,3 +1,7 @@
+import { useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { updateUserStatus } from '@/stores/UserSlice'
+import { UpdateUserStatusDialog } from './UpdateUserStatusDialog'
 import { statuses } from '../data'
 import { Badge } from '@/components/ui/badge'
 import { DataTableRowActions } from './DataTableRowAction'
@@ -12,6 +16,8 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Mã nhân viên" />
     ),
     cell: ({ row }) => <div className="w-[80px]">{row.getValue('code')}</div>,
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'fullName',
@@ -28,7 +34,7 @@ export const columns = [
       )
     },
     enableSorting: false,
-    enableHiding: false,
+    enableHiding: true,
     filterFn: (row, id, value) => {
       const fullName = normalizeText(row.original.fullName)
       const searchValue = normalizeText(value)
@@ -41,26 +47,55 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Trạng thái" />
     ),
-    cell: ({ row }) => {
+    cell: function Cell({ row }) {
       const statusValue = row.getValue('status')
       const status = statuses.find((status) => status.value === statusValue)
+      const [showUpdateStatusDialog, setShowUpdateStatusDialog] = useState(false)
+      const dispatch = useDispatch()
+
+      const handleUpdateStatus = async (newStatus, id) => {
+        try {
+          await dispatch(updateUserStatus({ id, data: { status: newStatus } })).unwrap()
+          setShowUpdateStatusDialog(false)
+        } catch (error) {
+          console.error(error)
+        }
+      }
 
       return (
-        <div className="flex w-[110px] items-center">
-          <span>
-            <Badge
-              variant="outline"
-              className={
-                status.value === 'active'
-                  ? 'border-green-600 text-green-600'
-                  : 'border-red-600 text-red-600'
-              }
+        <>
+          <div className="flex w-[110px] items-center">
+            <span
+              className="cursor-pointer hover:opacity-80"
+              onClick={() => setShowUpdateStatusDialog(true)}
             >
-              {status.icon && <status.icon className="mr-2 h-4 w-4" />}
-              {status.label}
-            </Badge>
-          </span>
-        </div>
+              <Badge
+                className={
+                  status.value === 'active'
+                    ? 'bg-green-500 text-white hover:bg-green-600 border-transparent'
+                    : 'bg-red-500 text-white hover:bg-red-600 border-transparent'
+                }
+              >
+                {status.icon && <status.icon className="mr-2 h-4 w-4" />}
+                {status.label}
+              </Badge>
+            </span>
+          </div>
+          {showUpdateStatusDialog && (
+            <UpdateUserStatusDialog
+              open={showUpdateStatusDialog}
+              onOpenChange={setShowUpdateStatusDialog}
+              userId={row.original.id}
+              userCode={row.getValue('code')}
+              userName={row.getValue('fullName')}
+              currentStatus={statusValue}
+              statuses={statuses}
+              onSubmit={handleUpdateStatus}
+              contentClassName="z-[10002]"
+              overlayClassName="z-[10001]"
+            />
+          )}
+        </>
       )
     },
     filterFn: (row, id, value) => {
@@ -68,7 +103,7 @@ export const columns = [
     },
 
     enableSorting: false,
-    enableHiding: false,
+    enableHiding: true,
   },
   {
     accessorKey: 'phone',
@@ -92,7 +127,7 @@ export const columns = [
       )
     },
     enableSorting: false,
-    enableHiding: false,
+    enableHiding: true,
   },
   {
     accessorKey: 'updatedAt',

@@ -59,20 +59,19 @@ export const columns = [
             )}
           </Can>
 
-          <span
-            className="cursor-pointer text-primary hover:underline"
+          <div
+            className="w-32 cursor-pointer"
             onClick={() => setShowViewProductDialog(true)}
           >
-            {row.getValue('code')}
-            <br />
+            <div className="font-medium text-blue-600 hover:underline">
+              {row.getValue('code')}
+            </div>
             {row.original.prices?.length > 1 ? (
-              <span className="text-orange-500">
+              <div className="text-xs text-orange-500 mt-1 font-normal">
                 {row.original.prices.length} lịch sử giá
-              </span>
-            ) : (
-              ''
-            )}
-          </span>
+              </div>
+            ) : null}
+          </div>
         </>
       )
     },

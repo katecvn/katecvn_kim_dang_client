@@ -55,13 +55,13 @@ export const columns = [
             />
           )}
 
-          <span
-            className="inline-block w-28 cursor-pointer text-primary hover:underline"
+          <div
+            className="inline-block w-28 cursor-pointer font-medium text-blue-600 hover:underline"
             onClick={() => setOpen(true)}
             title="Xem chi tiết danh mục"
           >
             {code}
-          </span>
+          </div>
         </>
       )
     },

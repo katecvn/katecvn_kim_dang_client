@@ -8,6 +8,7 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogOverlay,
 } from '@/components/ui/dialog'
 import {
   Form,
@@ -58,7 +59,7 @@ import { getProducts } from '@/stores/ProductSlice'
 import { updateWarehouseReceipt, getWarehouseReceiptById } from '@/stores/WarehouseReceiptSlice'
 import { getCustomers } from '@/stores/CustomerSlice'
 import { getSuppliers } from '@/stores/SupplierSlice'
-import { PlusIcon, Trash2, Check, ChevronsUpDown, Search, CheckIcon } from 'lucide-react'
+import { PlusIcon, Trash2, Check, ChevronsUpDown, Search, CheckIcon, Loader2 } from 'lucide-react'
 import { CaretSortIcon } from '@radix-ui/react-icons'
 import { toast } from 'sonner'
 import { receiptTypes, businessTypes } from '../data'
@@ -81,12 +82,15 @@ const UpdateWarehouseReceiptDialog = ({
   open,
   onOpenChange,
   onSuccess,
+  contentClassName,
+  overlayClassName,
 }) => {
   const dispatch = useDispatch()
   const { products, loading: productsLoading } = useSelector((state) => state.product)
   const { customers } = useSelector((state) => state.customer)
   const { suppliers } = useSelector((state) => state.supplier)
   const [loading, setLoading] = useState(false)
+  const [isFetching, setIsFetching] = useState(!!receiptId)
   const [selectedProducts, setSelectedProducts] = useState([])
   const [openProductSearch, setOpenProductSearch] = useState(false)
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -134,7 +138,7 @@ const UpdateWarehouseReceiptDialog = ({
 
       if (receiptId) {
         // Fetch receipt data to populate
-        setLoading(true)
+        setIsFetching(true)
         dispatch(getWarehouseReceiptById(receiptId))
           .unwrap()
           .then((data) => {
@@ -173,7 +177,7 @@ const UpdateWarehouseReceiptDialog = ({
             toast.error('Không thể tải dữ liệu phiếu kho')
           })
           .finally(() => {
-            setLoading(false)
+            setIsFetching(false)
           })
       }
     } else {
@@ -331,363 +335,252 @@ const UpdateWarehouseReceiptDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        overlayClassName={overlayClassName}
         className={cn(
           "md:max-w-4xl md:max-h-[90vh] overflow-y-auto flex flex-col",
-          isMobile && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none translate-x-0 translate-y-0 flex flex-col z-[10002]"
+          isMobile && "fixed inset-0 w-screen h-[100dvh] top-0 left-0 right-0 max-w-none m-0 p-0 rounded-none translate-x-0 translate-y-0 flex flex-col z-[10002]",
+          contentClassName
         )}
       >
         <DialogHeader className={cn(isMobile && "px-4 pt-4")}>
           <DialogTitle>Cập nhật phiếu kho thủ công</DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}
-            className={cn(
-              "space-y-4 flex-1 flex flex-col",
-              isMobile && "h-full px-4 pb-4 overflow-auto"
-            )}
-          >
-            <div className="flex-1 overflow-auto space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <FormField
-                  control={form.control}
-                  name="receiptType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Loại phiếu</FormLabel>
-                      <Select
-                        onValueChange={(val) => field.onChange(Number(val))}
-                        value={String(field.value)}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {receiptTypes.filter(t => t.value !== 3).map(t => (
-                            <SelectItem key={t.value} value={String(t.value)}>{t.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="businessType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Loại nghiệp vụ</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Chọn nghiệp vụ" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {filteredBusinessTypes.map(t => (
-                            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="receiptDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ngày tạo</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          value={field.value ? field.value.toISOString().split('T')[0] : ''}
-                          onChange={(e) => field.onChange(new Date(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="partnerId"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col mt-2.5">
-                      <FormLabel>{receiptType === 1 ? 'Nhà cung cấp' : 'Khách hàng'}</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
+        {isFetching ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 min-h-[300px]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+            <span className="text-muted-foreground">Đang tải dữ liệu...</span>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}
+              className={cn(
+                "space-y-4 flex-1 flex flex-col",
+                isMobile && "h-full px-4 pb-4 overflow-auto"
+              )}
+            >
+              <div className="flex-1 overflow-auto space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="receiptType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Loại phiếu</FormLabel>
+                        <Select
+                          onValueChange={(val) => field.onChange(Number(val))}
+                          value={String(field.value)}
+                        >
                           <FormControl>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className={cn(
-                                "w-full justify-between font-normal h-10 bg-background",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              <span className="truncate">
-                                {field.value
-                                  ? receiptType === 1
-                                    ? suppliers.find((s) => s.id.toString() === field.value.toString())?.name
-                                    : customers.find((c) => c.id.toString() === field.value.toString())?.name
-                                  : `Chọn ${receiptType === 1 ? 'nhà cung cấp' : 'khách hàng'}`}
-                              </span>
-                              <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
                           </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                          <Command>
-                            <CommandInput placeholder="Tìm kiếm..." className="h-9" />
-                            <CommandEmpty>Không tìm thấy</CommandEmpty>
-                            <CommandGroup>
-                              <CommandList>
-                                {receiptType === 1 ? (
-                                  suppliers.map((s) => (
-                                    <CommandItem
-                                      key={s.id}
-                                      value={`${s.name} ${s.phone} ${s.id}`} /* Thêm id vào value để search & select chính xác nếu trùng tên */
-                                      onSelect={() => {
-                                        form.setValue("partnerId", s.id.toString())
-                                      }}
-                                    >
-                                      {s.name} - {s.phone}
-                                      <CheckIcon
-                                        className={cn(
-                                          "ml-auto h-4 w-4",
-                                          s.id.toString() === field.value?.toString()
-                                            ? "opacity-100"
-                                            : "opacity-0"
-                                        )}
-                                      />
-                                    </CommandItem>
-                                  ))
-                                ) : (
-                                  customers.map((c) => (
-                                    <CommandItem
-                                      key={c.id}
-                                      value={`${c.name} ${c.phone} ${c.id}`}
-                                      onSelect={() => {
-                                        form.setValue("partnerId", c.id.toString())
-                                      }}
-                                    >
-                                      {c.name} - {c.phone}
-                                      <CheckIcon
-                                        className={cn(
-                                          "ml-auto h-4 w-4",
-                                          c.id.toString() === field.value?.toString()
-                                            ? "opacity-100"
-                                            : "opacity-0"
-                                        )}
-                                      />
-                                    </CommandItem>
-                                  ))
-                                )}
-                              </CommandList>
-                            </CommandGroup>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="reason"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lý do / Diễn giải</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Ví dụ: Nhập kho hàng trả lại" />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <div className="border rounded-md p-4 space-y-4">
-                <div className="flex flex-col md:flex-row justify-between md:items-center gap-2">
-                  <h3 className="font-semibold">Chi tiết hàng hóa</h3>
-                  <Popover open={openProductSearch} onOpenChange={setOpenProductSearch}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" role="combobox" className="w-full md:w-[250px] justify-between">
-                        <Search className="mr-2 h-4 w-4 opacity-50" />
-                        Thêm sản phẩm...
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0" align="end">
-                      <Command shouldFilter={false}> {/* Client side filtering manually if needed, or rely on command default */}
-                        <CommandInput placeholder="Tìm kiếm sản phẩm..." />
-                        <CommandList>
-                          <CommandEmpty>Không tìm thấy sản phẩm.</CommandEmpty>
-                          <CommandGroup heading="Sản phẩm">
-                            {products.map((product) => (
-                              <CommandItem
-                                key={product.id}
-                                value={product.name + ' ' + product.code} // Searchable string
-                                onSelect={() => handleAddProduct(product)}
-                              >
-                                <div className='flex flex-col'>
-                                  <span>{product.name}</span>
-                                  <span className='text-xs text-muted-foreground'>{product.code} - Tồn: {product.productStocks?.[0]?.quantity || 0}</span>
-                                </div>
-                                <Check
-                                  className={cn(
-                                    "ml-auto h-4 w-4",
-                                    selectedProducts.some(p => p.productId === product.id) ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                              </CommandItem>
+                          <SelectContent className="z-[100080]">
+                            {receiptTypes.filter(t => t.value !== 3).map(t => (
+                              <SelectItem key={t.value} value={String(t.value)}>{t.label}</SelectItem>
                             ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="businessType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Loại nghiệp vụ</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Chọn nghiệp vụ" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="z-[100080]">
+                            {filteredBusinessTypes.map(t => (
+                              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="receiptDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ngày tạo</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            value={field.value ? field.value.toISOString().split('T')[0] : ''}
+                            onChange={(e) => field.onChange(new Date(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="partnerId"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col mt-2.5">
+                        <FormLabel>{receiptType === 1 ? 'Nhà cung cấp' : 'Khách hàng'}</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn(
+                                  "w-full justify-between font-normal h-10 bg-background",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                <span className="truncate">
+                                  {field.value
+                                    ? receiptType === 1
+                                      ? suppliers.find((s) => s.id.toString() === field.value.toString())?.name
+                                      : customers.find((c) => c.id.toString() === field.value.toString())?.name
+                                    : `Chọn ${receiptType === 1 ? 'nhà cung cấp' : 'khách hàng'}`}
+                                </span>
+                                <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[100080]" align="start">
+                            <Command>
+                              <CommandInput placeholder="Tìm kiếm..." className="h-9" />
+                              <CommandEmpty>Không tìm thấy</CommandEmpty>
+                              <CommandGroup>
+                                <CommandList>
+                                  {receiptType === 1 ? (
+                                    suppliers.map((s) => (
+                                      <CommandItem
+                                        key={s.id}
+                                        value={`${s.name} ${s.phone} ${s.id}`} /* Thêm id vào value để search & select chính xác nếu trùng tên */
+                                        onSelect={() => {
+                                          form.setValue("partnerId", s.id.toString())
+                                        }}
+                                      >
+                                        {s.name} - {s.phone}
+                                        <CheckIcon
+                                          className={cn(
+                                            "ml-auto h-4 w-4",
+                                            s.id.toString() === field.value?.toString()
+                                              ? "opacity-100"
+                                              : "opacity-0"
+                                          )}
+                                        />
+                                      </CommandItem>
+                                    ))
+                                  ) : (
+                                    customers.map((c) => (
+                                      <CommandItem
+                                        key={c.id}
+                                        value={`${c.name} ${c.phone} ${c.id}`}
+                                        onSelect={() => {
+                                          form.setValue("partnerId", c.id.toString())
+                                        }}
+                                      >
+                                        {c.name} - {c.phone}
+                                        <CheckIcon
+                                          className={cn(
+                                            "ml-auto h-4 w-4",
+                                            c.id.toString() === field.value?.toString()
+                                              ? "opacity-100"
+                                              : "opacity-0"
+                                          )}
+                                        />
+                                      </CommandItem>
+                                    ))
+                                  )}
+                                </CommandList>
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
-                <div className="rounded-md border">
-                  {isMobile ? (
-                    <div className="divide-y">
-                      {selectedProducts.length === 0 ? (
-                        <div className="p-4 text-center text-muted-foreground text-sm">
-                          Chưa có sản phẩm nào được chọn
-                        </div>
-                      ) : (
-                        selectedProducts.map((item, index) => (
-                          <div key={item.productId} className="p-3 space-y-3 bg-card">
-                            {/* Row 1: Info & Remove */}
-                            <div className="flex justify-between items-start gap-2">
-                              <div className="flex items-center gap-2">
-                                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-muted">
-                                  {item.image ? (
-                                    <img
-                                      src={getPublicUrl(item.image)}
-                                      alt={item.productName}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-                                      <span className="text-[10px]">No img</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div>
-                                  <div className="font-medium text-sm">{item.productName}</div>
-                                  <div className="text-xs text-muted-foreground">{item.code}</div>
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-destructive -mt-1 -mr-1"
-                                onClick={() => handleRemoveProduct(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                <FormField
+                  control={form.control}
+                  name="reason"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lý do / Diễn giải</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Ví dụ: Nhập kho hàng trả lại" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
-                            {/* Row 2: Unit & Movement */}
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="space-y-1">
-                                <label className="text-[10px] text-muted-foreground uppercase">ĐVT</label>
-                                <Select
-                                  value={String(item.unitId)}
-                                  onValueChange={(val) => handleProductChange(index, 'unitId', Number(val))}
+                <div className="border rounded-md p-4 space-y-4">
+                  <div className="flex flex-col md:flex-row justify-between md:items-center gap-2">
+                    <h3 className="font-semibold">Chi tiết hàng hóa</h3>
+                    <Popover open={openProductSearch} onOpenChange={setOpenProductSearch}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" className="w-full md:w-[250px] justify-between">
+                          <Search className="mr-2 h-4 w-4 opacity-50" />
+                          Thêm sản phẩm...
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0 z-[100080]" align="end">
+                        <Command shouldFilter={false}> {/* Client side filtering manually if needed, or rely on command default */}
+                          <CommandInput placeholder="Tìm kiếm sản phẩm..." />
+                          <CommandList>
+                            <CommandEmpty>Không tìm thấy sản phẩm.</CommandEmpty>
+                            <CommandGroup heading="Sản phẩm">
+                              {products.map((product) => (
+                                <CommandItem
+                                  key={product.id}
+                                  value={product.name + ' ' + product.code} // Searchable string
+                                  onSelect={() => handleAddProduct(product)}
                                 >
-                                  <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {getUnitOptions(item.product).map(u => (
-                                      <SelectItem key={u.value} value={String(u.value)} className="text-xs">{u.label}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
+                                  <div className='flex flex-col'>
+                                    <span>{product.name}</span>
+                                    <span className='text-xs text-muted-foreground'>{product.code} - Tồn: {product.productStocks?.[0]?.quantity || 0}</span>
+                                  </div>
+                                  <Check
+                                    className={cn(
+                                      "ml-auto h-4 w-4",
+                                      selectedProducts.some(p => p.productId === product.id) ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
 
-
-                            </div>
-
-                            {/* Row 3: Quantity & Price */}
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="space-y-1">
-                                <label className="text-[10px] text-muted-foreground uppercase">Số lượng</label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  className="h-8 text-sm"
-                                  value={item.quantity}
-                                  onChange={(e) => handleProductChange(index, 'quantity', Number(e.target.value))}
-                                  onFocus={(e) => e.target.select()}
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <label className="text-[10px] text-muted-foreground uppercase">
-                                  {receiptType === 2 ? 'Đơn giá bán' : 'Đơn giá vốn'}
-                                </label>
-                                <MoneyInputQuick
-                                  className="h-8 text-sm text-right"
-                                  value={item.price}
-                                  onChange={(val) => handleProductChange(index, 'price', val)}
-                                />
-                              </div>
-                            </div>
-
-                            {/* Row 4: Note */}
-                            <div className="space-y-1">
-                              <label className="text-[10px] text-muted-foreground uppercase">Ghi chú</label>
-                              <Input
-                                className="h-8 text-sm"
-                                value={item.note}
-                                onChange={(e) => handleProductChange(index, 'note', e.target.value)}
-                                placeholder="Ghi chú chi tiết..."
-                              />
-                            </div>
+                  <div className="rounded-md border">
+                    {isMobile ? (
+                      <div className="divide-y">
+                        {selectedProducts.length === 0 ? (
+                          <div className="p-4 text-center text-muted-foreground text-sm">
+                            Chưa có sản phẩm nào được chọn
                           </div>
-                        ))
-                      )}
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <Table className="min-w-[800px]">
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[50px]">#</TableHead>
-                            <TableHead className="w-[60px]">Ảnh</TableHead>
-                            <TableHead>Sản phẩm</TableHead>
-                            <TableHead className="w-[100px]">ĐVT</TableHead>
-
-                            <TableHead className="w-[100px]">Số lượng</TableHead>
-                            <TableHead className="w-[150px]">
-                              {receiptType === 2 ? 'Đơn giá bán' : 'Đơn giá vốn'}
-                            </TableHead>
-                            <TableHead>Ghi chú</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {selectedProducts.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
-                                Chưa có sản phẩm nào được chọn
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            selectedProducts.map((item, index) => (
-                              <TableRow key={item.productId}>
-                                <TableCell>{index + 1}</TableCell>
-                                <TableCell>
-                                  <div className="h-10 w-10 overflow-hidden rounded-md border bg-muted">
+                        ) : (
+                          selectedProducts.map((item, index) => (
+                            <div key={item.productId} className="p-3 space-y-3 bg-card">
+                              {/* Row 1: Info & Remove */}
+                              <div className="flex justify-between items-start gap-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-muted">
                                     {item.image ? (
                                       <img
                                         src={getPublicUrl(item.image)}
@@ -700,91 +593,211 @@ const UpdateWarehouseReceiptDialog = ({
                                       </div>
                                     )}
                                   </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="font-medium">{item.productName}</div>
-                                  <div className="text-xs text-muted-foreground">{item.code}</div>
-                                </TableCell>
-                                <TableCell>
+                                  <div>
+                                    <div className="font-medium text-sm">{item.productName}</div>
+                                    <div className="text-xs text-muted-foreground">{item.code}</div>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-destructive -mt-1 -mr-1"
+                                  onClick={() => handleRemoveProduct(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              {/* Row 2: Unit & Movement */}
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                  <label className="text-[10px] text-muted-foreground uppercase">ĐVT</label>
                                   <Select
                                     value={String(item.unitId)}
                                     onValueChange={(val) => handleProductChange(index, 'unitId', Number(val))}
                                   >
-                                    <SelectTrigger className="h-8">
+                                    <SelectTrigger className="h-8 text-xs">
                                       <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="z-[100080]">
                                       {getUnitOptions(item.product).map(u => (
-                                        <SelectItem key={u.value} value={String(u.value)}>{u.label}</SelectItem>
+                                        <SelectItem key={u.value} value={String(u.value)} className="text-xs">{u.label}</SelectItem>
                                       ))}
                                     </SelectContent>
                                   </Select>
-                                </TableCell>
+                                </div>
 
 
+                              </div>
 
-                                <TableCell>
+                              {/* Row 3: Quantity & Price */}
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                  <label className="text-[10px] text-muted-foreground uppercase">Số lượng</label>
                                   <Input
                                     type="number"
                                     min="0"
-                                    className="h-8"
+                                    className="h-8 text-sm"
                                     value={item.quantity}
                                     onChange={(e) => handleProductChange(index, 'quantity', Number(e.target.value))}
                                     onFocus={(e) => e.target.select()}
                                   />
-                                </TableCell>
-                                <TableCell>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[10px] text-muted-foreground uppercase">
+                                    {receiptType === 2 ? 'Đơn giá bán' : 'Đơn giá vốn'}
+                                  </label>
                                   <MoneyInputQuick
-                                    className="h-8 text-right"
+                                    className="h-8 text-sm text-right"
                                     value={item.price}
                                     onChange={(val) => handleProductChange(index, 'price', val)}
                                   />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    className="h-8"
-                                    value={item.note}
-                                    onChange={(e) => handleProductChange(index, 'note', e.target.value)}
-                                    placeholder="Ghi chú..."
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveProduct(index)}>
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Row 4: Note */}
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-muted-foreground uppercase">Ghi chú</label>
+                                <Input
+                                  className="h-8 text-sm"
+                                  value={item.note}
+                                  onChange={(e) => handleProductChange(index, 'note', e.target.value)}
+                                  placeholder="Ghi chú chi tiết..."
+                                />
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table className="min-w-[800px]">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-[50px]">#</TableHead>
+                              <TableHead className="w-[60px]">Ảnh</TableHead>
+                              <TableHead>Sản phẩm</TableHead>
+                              <TableHead className="w-[100px]">ĐVT</TableHead>
+
+                              <TableHead className="w-[100px]">Số lượng</TableHead>
+                              <TableHead className="w-[150px]">
+                                {receiptType === 2 ? 'Đơn giá bán' : 'Đơn giá vốn'}
+                              </TableHead>
+                              <TableHead>Ghi chú</TableHead>
+                              <TableHead className="w-[50px]"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {selectedProducts.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
+                                  Chưa có sản phẩm nào được chọn
                                 </TableCell>
                               </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
+                            ) : (
+                              selectedProducts.map((item, index) => (
+                                <TableRow key={item.productId}>
+                                  <TableCell>{index + 1}</TableCell>
+                                  <TableCell>
+                                    <div className="h-10 w-10 overflow-hidden rounded-md border bg-muted">
+                                      {item.image ? (
+                                        <img
+                                          src={getPublicUrl(item.image)}
+                                          alt={item.productName}
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
+                                          <span className="text-[10px]">No img</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="font-medium">{item.productName}</div>
+                                    <div className="text-xs text-muted-foreground">{item.code}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Select
+                                      value={String(item.unitId)}
+                                      onValueChange={(val) => handleProductChange(index, 'unitId', Number(val))}
+                                    >
+                                      <SelectTrigger className="h-8">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent className="z-[100080]">
+                                        {getUnitOptions(item.product).map(u => (
+                                          <SelectItem key={u.value} value={String(u.value)}>{u.label}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </TableCell>
+
+
+
+                                  <TableCell>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      className="h-8"
+                                      value={item.quantity}
+                                      onChange={(e) => handleProductChange(index, 'quantity', Number(e.target.value))}
+                                      onFocus={(e) => e.target.select()}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <MoneyInputQuick
+                                      className="h-8 text-right"
+                                      value={item.price}
+                                      onChange={(val) => handleProductChange(index, 'price', val)}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      className="h-8"
+                                      value={item.note}
+                                      onChange={(e) => handleProductChange(index, 'note', e.target.value)}
+                                      placeholder="Ghi chú..."
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveProduct(index)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="note"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ghi chú chung</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="Ghi chú thêm..." />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              <FormField
-                control={form.control}
-                name="note"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ghi chú chung</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} placeholder="Ghi chú thêm..." />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <DialogFooter className="mt-4 shrink-0">
-              <DialogClose asChild>
-                <Button type="button" variant="outline">Hủy</Button>
-              </DialogClose>
-              <Button type="submit" loading={loading} disabled={loading}>Lưu phiếu</Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              <DialogFooter className="mt-4 shrink-0">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">Hủy</Button>
+                </DialogClose>
+                <Button type="submit" loading={loading} disabled={loading}>Lưu phiếu</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   )

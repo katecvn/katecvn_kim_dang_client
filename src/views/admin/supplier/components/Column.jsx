@@ -56,7 +56,7 @@ export const columns = [
           )}
 
           <div
-            className="w-[150px] cursor-pointer text-primary hover:underline"
+            className="w-[150px] cursor-pointer font-medium text-blue-600 hover:underline"
             onClick={() => setShowViewSupplierDialog(true)}
           >
             {row.getValue('code')}
@@ -133,11 +133,10 @@ export const columns = [
           >
             <span>
               <Badge
-                variant="outline"
                 className={
                   status.value === 'published'
-                    ? 'border-green-600 text-green-600'
-                    : 'border-red-600 text-red-600'
+                    ? 'bg-green-600 text-white hover:bg-green-700 border-transparent'
+                    : 'bg-red-600 text-white hover:bg-red-700 border-transparent'
                 }
               >
                 {status.icon && <status.icon className="mr-2 h-4 w-4" />}

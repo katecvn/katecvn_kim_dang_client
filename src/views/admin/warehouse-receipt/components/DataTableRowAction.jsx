@@ -14,6 +14,7 @@ import {
   getWarehouseReceiptById,
 } from '@/stores/WarehouseReceiptSlice'
 import ViewWarehouseReceiptDialog from './ViewWarehouseReceiptDialog'
+import UpdateWarehouseReceiptDialog from './UpdateWarehouseReceiptDialog'
 import Can from '@/utils/can'
 import { Eye, Printer, Trash2, Pencil, FileSpreadsheet } from 'lucide-react'
 import { DeleteWarehouseReceiptDialog } from './DeleteWarehouseReceiptDialog'
@@ -26,6 +27,7 @@ export function DataTableRowActions({ row, onRefresh }) {
   const dispatch = useDispatch()
   const receipt = row.original
   const [showViewDialog, setShowViewDialog] = useState(false)
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [showExportPreview, setShowExportPreview] = useState(false)
@@ -72,6 +74,15 @@ export function DataTableRowActions({ row, onRefresh }) {
         showTrigger={false}
         onSuccess={onRefresh}
       />
+
+      {showUpdateDialog && (
+        <UpdateWarehouseReceiptDialog
+          open={showUpdateDialog}
+          onOpenChange={setShowUpdateDialog}
+          receiptId={receipt.id}
+          onSuccess={onRefresh}
+        />
+      )}
 
       {showDeleteDialog && (
         <DeleteWarehouseReceiptDialog
@@ -137,7 +148,7 @@ export function DataTableRowActions({ row, onRefresh }) {
           {receipt.status === 'draft' && (
             <Can permission={receipt.receiptType === 1 ? 'WAREHOUSE_IMPORT_UPDATE' : 'WAREHOUSE_EXPORT_UPDATE'}>
               <DropdownMenuItem
-                onClick={() => setShowViewDialog(true)}
+                onClick={() => setShowUpdateDialog(true)}
                 className="text-orange-600 hover:text-orange-700 focus:text-orange-700"
               >
                 Sửa

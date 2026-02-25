@@ -11,6 +11,7 @@ import {
   endOfMonth,
   startOfDay,
   startOfMonth,
+  format
 } from 'date-fns'
 import { DateRange } from '@/components/custom/DateRange.jsx'
 import Can from '@/utils/can'
@@ -43,7 +44,12 @@ const WarehouseOutPage = () => {
   }, [])
 
   const refreshData = useCallback(() => {
-    dispatch(getWarehouseReceipts({ ...filters, receiptType: 2 }))
+    const formattedFilters = {
+      ...filters,
+      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
+      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
+    }
+    dispatch(getWarehouseReceipts({ ...formattedFilters, receiptType: 2 }))
   }, [dispatch, filters])
 
   const columns = useMemo(() => getColumns(handleView, 'export', refreshData), [handleView, refreshData])
@@ -61,9 +67,6 @@ const WarehouseOutPage = () => {
             <h2 className="text-2xl font-bold tracking-tight">
               Danh sách phiếu xuất kho
             </h2>
-            <p className="text-muted-foreground">
-              Quản lý phiếu xuất kho cho khách hàng
-            </p>
           </div>
           <div>
             <DateRange

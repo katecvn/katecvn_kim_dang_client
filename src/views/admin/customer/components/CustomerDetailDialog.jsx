@@ -23,6 +23,7 @@ import {
   MapPinned,
   Pencil,
   Trash2,
+  X,
 } from 'lucide-react'
 import { useDispatch } from 'react-redux'
 import Can from '@/utils/can'
@@ -389,7 +390,8 @@ const CustomerDetailDialog = ({ customer, showTrigger = true, ...props }) => {
             </Can>
 
             <DialogClose asChild>
-              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+              <Button size="sm" type="button" variant="outline" className="gap-2 w-full sm:w-auto">
+                <X className="h-4 w-4" />
                 Đóng
               </Button>
             </DialogClose>

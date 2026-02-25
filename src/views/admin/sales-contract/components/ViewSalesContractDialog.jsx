@@ -444,7 +444,7 @@ const ViewSalesContractDialog = ({
     []
 
   const remainingAmount = contract
-    ? parseFloat(contract.totalAmount) - parseFloat(contract.paidAmount || 0)
+    ? parseFloat(contract.totalCurrentAmount || contract.totalAmount) - parseFloat(contract.paidAmount || 0)
     : 0
 
   return (
@@ -615,6 +615,9 @@ const ViewSalesContractDialog = ({
                                 <TableHead className="min-w-28 text-right">
                                   Đơn giá
                                 </TableHead>
+                                <TableHead className="min-w-24 text-right">
+                                  Thuế
+                                </TableHead>
                                 <TableHead className="min-w-28 text-right">
                                   Thành tiền
                                 </TableHead>
@@ -674,8 +677,11 @@ const ViewSalesContractDialog = ({
                                   <TableCell className="text-right">
                                     {moneyFormat(item.unitPrice)}
                                   </TableCell>
+                                  <TableCell className="text-right">
+                                    {moneyFormat(item.taxAmount || 0)}
+                                  </TableCell>
                                   <TableCell className="text-right font-medium">
-                                    {moneyFormat(item.totalAmount)}
+                                    {moneyFormat(Number(item.unitPrice) + Number(item.taxAmount))}
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -727,6 +733,7 @@ const ViewSalesContractDialog = ({
                                 {/* Quantity x Price */}
                                 <div className="text-xs">
                                   <span className="font-medium">{parseInt(item.quantity)}</span> {item.unitName || ''} x {moneyFormat(item.unitPrice)}
+                                  {item.taxAmount > 0 && <span className="text-muted-foreground ml-1">(+ {moneyFormat(item.taxAmount)} Thuế)</span>}
                                 </div>
                               </div>
 
@@ -749,9 +756,23 @@ const ViewSalesContractDialog = ({
                         )}
                       >
                         <div className="flex justify-between">
-                          <strong>Tổng giá trị:</strong>
-                          <span className="font-bold text-primary">
+                          <strong>Tổng tiền hàng:</strong>
+                          <span className="font-medium text-primary">
                             {moneyFormat(contract?.totalAmount)}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <strong>Tiền thuế:</strong>
+                          <span className="font-medium text-muted-foreground">
+                            {moneyFormat(contract?.totalTaxAmount || 0)}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between border-t pt-2 mt-2">
+                          <strong>Tổng cộng:</strong>
+                          <span className="font-bold text-primary text-lg">
+                            {moneyFormat(contract?.totalCurrentAmount || contract?.totalAmount)}
                           </span>
                         </div>
 
@@ -782,7 +803,7 @@ const ViewSalesContractDialog = ({
                             Số tiền viết bằng chữ:
                           </strong>
                           <span className="font-bold text-primary">
-                            {toVietnamese(contract?.totalAmount)}
+                            {toVietnamese(contract?.totalCurrentAmount || contract?.totalAmount)}
                           </span>
                         </div>
 

@@ -84,13 +84,24 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Loại" />
     ),
-    cell: ({ row }) => (
-      <div className="w-28">
-        <Badge variant="outline">
-          {row.getValue('receiverType') === 'customer' ? 'Khách hàng' : 'Nhà cung cấp'}
-        </Badge>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const isCustomer = row.getValue('receiverType') === 'customer'
+      return (
+        <div className="w-28">
+          <Badge
+            variant="outline"
+            className={cn(
+              "font-medium",
+              isCustomer
+                ? "border-blue-200 text-blue-700 bg-blue-50/50"
+                : "border-orange-200 text-orange-700 bg-orange-50/50"
+            )}
+          >
+            {isCustomer ? 'Khách hàng' : 'Nhà cung cấp'}
+          </Badge>
+        </div>
+      )
+    },
     enableSorting: true,
     enableHiding: true,
   },

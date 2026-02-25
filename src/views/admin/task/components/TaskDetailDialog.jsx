@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/custom/Button'
-import { Calendar, Clock, Ticket, User, Phone, FileText, Pencil, Trash2 } from 'lucide-react'
+import { Calendar, Clock, Ticket, User, Phone, FileText, Pencil, Trash2, X } from 'lucide-react'
 import Can from '@/utils/can'
 import UpdateTaskDialog from './UpdateTaskDialog'
 import DeleteTaskDialog from './DeleteTaskDialog'
@@ -108,7 +108,7 @@ const TaskDetailDialog = ({ taskId, children }) => {
       <DialogTrigger asChild>{children}</DialogTrigger>
 
       {/* Dialog to hơn, dễ đọc hơn */}
-      <DialogContent className="max-h-[85vh] w-[95vw] max-w-5xl overflow-hidden">
+      <DialogContent className="flex max-h-[85vh] w-[95vw] max-w-5xl flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2 text-lg">
             <span className="font-semibold">
@@ -137,7 +137,7 @@ const TaskDetailDialog = ({ taskId, children }) => {
         </DialogHeader>
 
         {/* Body */}
-        <div className="mt-3 max-h-[calc(85vh-140px)] overflow-y-auto pr-1">
+        <div className="mt-3 flex-1 overflow-y-auto pr-1">
           {loading && (
             <div className="rounded-lg border bg-muted/30 p-4 text-sm">
               Đang tải dữ liệu...
@@ -368,7 +368,8 @@ const TaskDetailDialog = ({ taskId, children }) => {
             </Can>
 
             <DialogClose asChild>
-              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+              <Button size="sm" type="button" variant="outline" className="gap-2 w-full sm:w-auto">
+                <X className="h-4 w-4" />
                 Đóng
               </Button>
             </DialogClose>

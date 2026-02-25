@@ -12,7 +12,7 @@ import { Button } from '@/components/custom/Button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, X } from 'lucide-react'
 import Can from '@/utils/can'
 import UpdateTicketDialog from './UpdateTicketDialog'
 import DeleteTicketDialog from './DeleteTicketDialog'
@@ -352,7 +352,8 @@ const TicketDetailDialog = ({
             </Can>
 
             <DialogClose asChild>
-              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+              <Button size="sm" type="button" variant="outline" className="gap-2 w-full sm:w-auto">
+                <X className="h-4 w-4" />
                 Đóng
               </Button>
             </DialogClose>

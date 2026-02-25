@@ -167,8 +167,8 @@ const PurchaseOrderSidebar = ({
 
             {selectedSupplier ? (
               <>
-                <div className="border rounded-lg p-3 space-y-2">
-                  <div className="flex items-center gap-2">
+                <div className="border rounded-lg p-3 space-y-2 overflow-hidden">
+                  <div className="flex items-center gap-2 min-w-0">
                     <Avatar className="h-8 w-8">
                       <AvatarImage
                         src={`https://ui-avatars.com/api/?bold=true&background=random&name=${selectedSupplier?.name}`}
@@ -179,7 +179,7 @@ const PurchaseOrderSidebar = ({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">
+                      <div className="font-medium text-sm leading-snug break-words">
                         {selectedSupplier?.name}
                       </div>
                       {selectedSupplier?.code && (

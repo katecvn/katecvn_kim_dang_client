@@ -607,9 +607,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                 <TableHead className="min-w-16">Đơn Vị Tính</TableHead>
                                 <TableHead className="min-w-20 text-right">Giá</TableHead>
                                 <TableHead className="min-w-16 text-right">Thuế</TableHead>
-                                <TableHead className="min-w-28 md:w-16 text-right">
+                                {/* <TableHead className="min-w-28 md:w-16 text-right">
                                   Giảm giá
-                                </TableHead>
+                                </TableHead> */}
                                 <TableHead className="min-w-28 text-right">
                                   Tổng cộng
                                 </TableHead>
@@ -673,9 +673,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                   <TableCell className="text-end">
                                     {moneyFormat(product.taxAmount)}
                                   </TableCell>
-                                  <TableCell className="text-end">
+                                  {/* <TableCell className="text-end">
                                     {moneyFormat(product.discount)}
-                                  </TableCell>
+                                  </TableCell> */}
                                   <TableCell className="text-end">
                                     {moneyFormat(product.total)}
                                   </TableCell>

@@ -393,8 +393,8 @@ const ViewPurchaseOrderDialog = ({
                             <TableHead className="min-w-16 text-right">Số lượng</TableHead>
                             <TableHead className="min-w-16 text-right">Đã nhận</TableHead>
                             <TableHead className="min-w-20 text-right">Giá nhập</TableHead>
-                            <TableHead className="min-w-16 text-center">% Thuế</TableHead>
-                            <TableHead className="min-w-16 text-right">Thuế</TableHead>
+                            {/* <TableHead className="min-w-16 text-center">% Thuế</TableHead>
+                            <TableHead className="min-w-16 text-right">Thuế</TableHead> */}
                             <TableHead className="min-w-16 text-center">% CK</TableHead>
                             <TableHead className="min-w-16 text-right">CK</TableHead>
                             <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
@@ -433,8 +433,8 @@ const ViewPurchaseOrderDialog = ({
                               <TableCell className="text-right">{Number(item.quantity)}</TableCell>
                               <TableCell className="text-right">{Number(item.receivedQuantity)}</TableCell>
                               <TableCell className="text-right">{moneyFormat(item.unitPrice)}</TableCell>
-                              <TableCell className="text-center">{Number(item.taxRate)}%</TableCell>
-                              <TableCell className="text-right">{moneyFormat(item.taxAmount)}</TableCell>
+                              {/* <TableCell className="text-center">{Number(item.taxRate)}%</TableCell>
+                              <TableCell className="text-right">{moneyFormat(item.taxAmount)}</TableCell> */}
                               <TableCell className="text-center">{Number(item.discountRate)}%</TableCell>
                               <TableCell className="text-right">{moneyFormat(item.discountAmount)}</TableCell>
                               <TableCell className="text-right font-medium">{moneyFormat(item.totalAmount)}</TableCell>
@@ -1149,8 +1149,8 @@ const ViewPurchaseOrderDialog = ({
                           onOpenChange={setShowSupplierDetail}
                           supplierId={purchaseOrder?.supplier?.id}
                           showTrigger={false}
-                          contentClassName="z-[100020]"
-                          overlayClassName="z-[100019]"
+                          contentClassName="z-[100050]"
+                          overlayClassName="z-[100049]"
                         />
                       )}
                     </div>

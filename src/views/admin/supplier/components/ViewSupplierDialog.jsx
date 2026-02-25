@@ -20,7 +20,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Building2, FileText, Calendar, User, PlusIcon, Pencil, Trash2 } from 'lucide-react'
+import { FileText, Pencil, Trash2, Building2, PlusIcon, X, User, Calendar } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
@@ -34,6 +34,8 @@ const ViewSupplierDialog = ({
   showTrigger = true,
   open,
   onOpenChange,
+  contentClassName = '',
+  overlayClassName = '',
   ...props
 }) => {
   const [loading, setLoading] = useState(false)
@@ -93,7 +95,7 @@ const ViewSupplierDialog = ({
   }, [products])
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} {...props}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       {showTrigger ? (
         <DialogTrigger asChild>
           <Button variant="outline" size="sm">
@@ -102,7 +104,10 @@ const ViewSupplierDialog = ({
         </DialogTrigger>
       ) : null}
 
-      <DialogContent className="md:h-auto md:max-w-6xl">
+      <DialogContent
+        className={`md:h-auto md:max-w-6xl ${contentClassName}`}
+        overlayClassName={overlayClassName}
+      >
         <DialogHeader>
           <DialogTitle>
             Chi tiết nhà cung cấp:{' '}
@@ -320,7 +325,8 @@ const ViewSupplierDialog = ({
             </Can>
 
             <DialogClose asChild>
-              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+              <Button size="sm" type="button" variant="outline" className="gap-2 w-full sm:w-auto">
+                <X className="h-4 w-4" />
                 Đóng
               </Button>
             </DialogClose>

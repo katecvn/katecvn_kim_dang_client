@@ -20,7 +20,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Layers, FileText, Calendar, Users, Eye, Pencil, Trash2 } from 'lucide-react'
+import { Layers, FileText, Calendar, Users, Eye, Pencil, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
@@ -593,7 +593,8 @@ const ViewCategoryDialog = ({
             </Can>
 
             <DialogClose asChild>
-              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+              <Button size="sm" type="button" variant="outline" className="gap-2 w-full sm:w-auto">
+                <X className="h-4 w-4" />
                 Đóng
               </Button>
             </DialogClose>

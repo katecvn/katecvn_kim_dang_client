@@ -37,6 +37,7 @@ import {
   CheckCircle2,
   XCircle,
   Image as ImageIcon,
+  X,
 } from 'lucide-react'
 
 import { moneyFormat } from '@/utils/money-format'
@@ -491,7 +492,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
                           {product.syncMapping.syncStatus !== 'PENDING' && (
                             <>
                               <div className="flex justify-between">
-                                <span className="text-muted-foreground">Giá đồng bộ:</span>
+                                <span className="text-muted-foreground">Giá bán:</span>
                                 <span className="font-semibold text-blue-600 dark:text-blue-400">
                                   {moneyFormat(product.syncMapping.lastSyncPrice)}
                                 </span>
@@ -749,7 +750,8 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
             )}
 
             <DialogClose asChild>
-              <Button size="sm" type="button" variant="outline" className="w-full sm:w-auto">
+              <Button size="sm" type="button" variant="outline" className="gap-2 w-full sm:w-auto">
+                <X className="h-4 w-4" />
                 Đóng
               </Button>
             </DialogClose>

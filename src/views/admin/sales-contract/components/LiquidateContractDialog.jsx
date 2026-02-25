@@ -94,11 +94,12 @@ const LiquidateContractDialog = ({
   const summary = useMemo(() => {
     if (!previewData || !items.length) return null
 
-    const totalContractValue = previewData.summary?.totalContractValue || 0
+    const totalContractValue = previewData.summary?.totalActualValue || 0
     const depositAmount = previewData.summary?.depositAmount || 0
 
     const totalMarketValue = items.reduce((sum, item) => {
-      return sum + (item.quantity * item.marketPrice)
+      const marketTaxAmount = item.marketPrice * (item.taxRate || 0)
+      return sum + (item.marketPrice + marketTaxAmount) * item.quantity
     }, 0)
 
     const priceDifference = totalMarketValue - totalContractValue
@@ -189,7 +190,7 @@ const LiquidateContractDialog = ({
               <div>
                 <span className="text-muted-foreground">Giá trị HĐ:</span>
                 <p className="font-medium text-primary">
-                  {moneyFormat(previewData.contract?.totalAmount)}
+                  {moneyFormat(previewData.summary?.totalActualValue)}
                 </p>
               </div>
               <div>
@@ -210,14 +211,20 @@ const LiquidateContractDialog = ({
                     <TableRow>
                       <TableHead>Sản phẩm</TableHead>
                       <TableHead className="text-right">SL</TableHead>
-                      <TableHead className="text-right">Đơn giá HĐ</TableHead>
-                      <TableHead className="text-right w-[180px]">Giá thị trường</TableHead>
+                      <TableHead className="text-right">Giá trị HĐ</TableHead>
+                      <TableHead className="text-right w-[150px]">Đơn giá TT</TableHead>
+                      <TableHead className="text-right w-[120px]">Thuế TT</TableHead>
+                      <TableHead className="text-right">Giá trị TT</TableHead>
                       <TableHead className="text-right">Chênh lệch</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {items.map((item) => {
-                      const diff = (item.marketPrice - item.contractPrice) * item.quantity
+                      const marketTaxAmount = item.marketPrice * (item.taxRate || 0)
+                      const itemMarketValue = (item.marketPrice + marketTaxAmount) * item.quantity
+                      const itemContractValue = item.itemContractValue || (item.contractPrice * item.quantity) || 0
+                      const diff = itemMarketValue - itemContractValue
+
                       return (
                         <TableRow key={item.productId}>
                           <TableCell className="font-medium">
@@ -226,7 +233,7 @@ const LiquidateContractDialog = ({
                           </TableCell>
                           <TableCell className="text-right">{item.quantity}</TableCell>
                           <TableCell className="text-right">
-                            {moneyFormat(item.contractPrice)}
+                            {moneyFormat(itemContractValue)}
                           </TableCell>
                           <TableCell className="text-right">
                             <MoneyInputQuick
@@ -236,6 +243,13 @@ const LiquidateContractDialog = ({
                               onFocus={(e) => e.target.select()}
                               min={0}
                             />
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground text-xs font-medium">
+                            {moneyFormat(marketTaxAmount)}
+                            <div className="text-[10px] text-muted-foreground/70">({(item.taxRate * 100).toFixed(0)}%)</div>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {moneyFormat(itemMarketValue)}
                           </TableCell>
                           <TableCell className={cn("text-right font-medium", diff > 0 ? "text-green-600" : diff < 0 ? "text-red-500" : "")}>
                             {moneyFormat(diff)}
@@ -249,7 +263,11 @@ const LiquidateContractDialog = ({
             ) : (
               <div className="space-y-3">
                 {items.map((item) => {
-                  const diff = (item.marketPrice - item.contractPrice) * item.quantity
+                  const marketTaxAmount = item.marketPrice * (item.taxRate || 0)
+                  const itemMarketValue = (item.marketPrice + marketTaxAmount) * item.quantity
+                  const itemContractValue = item.itemContractValue || (item.contractPrice * item.quantity) || 0
+                  const diff = itemMarketValue - itemContractValue
+
                   return (
                     <div key={item.productId} className="rounded-lg border p-3 space-y-2 bg-card">
                       <div className="font-medium">
@@ -263,20 +281,31 @@ const LiquidateContractDialog = ({
                           <span className="ml-2 font-medium">{item.quantity}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-muted-foreground">Đơn giá HĐ:</span>
-                          <div className="font-medium">{moneyFormat(item.contractPrice)}</div>
+                          <span className="text-muted-foreground">Giá trị HĐ:</span>
+                          <div className="font-medium">{moneyFormat(itemContractValue)}</div>
                         </div>
                       </div>
 
-                      <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Giá thị trường</label>
-                        <MoneyInputQuick
-                          className="text-right h-9 w-full"
-                          value={item.marketPrice}
-                          onChange={(value) => handlePriceChange(item.productId, value)}
-                          onFocus={(e) => e.target.select()}
-                          min={0}
-                        />
+                      <div className="grid grid-cols-2 gap-2 items-end">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Đơn giá TT</label>
+                          <MoneyInputQuick
+                            className="text-right h-9 w-full"
+                            value={item.marketPrice}
+                            onChange={(value) => handlePriceChange(item.productId, value)}
+                            onFocus={(e) => e.target.select()}
+                            min={0}
+                          />
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs text-muted-foreground block mb-1">Thuế TT ({(item.taxRate * 100).toFixed(0)}%)</span>
+                          <div className="font-medium text-sm">{moneyFormat(marketTaxAmount)}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2 border-t mt-2">
+                        <span className="text-sm text-muted-foreground">Giá trị TT:</span>
+                        <span className="font-semibold text-primary">{moneyFormat(itemMarketValue)}</span>
                       </div>
 
                       <div className="flex justify-between items-center pt-2 border-t">

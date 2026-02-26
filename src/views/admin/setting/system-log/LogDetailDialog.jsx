@@ -7,6 +7,15 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { dateFormat } from '@/utils/date-format'
+import { Plus, Edit3, Trash2, LogIn, LogOut } from 'lucide-react'
+
+const ACTIONS_CONFIG = {
+  CREATE: { icon: Plus, color: 'border-transparent bg-transparent text-green-700 shadow-none px-0' },
+  UPDATE: { icon: Edit3, color: 'border-transparent bg-transparent text-blue-700 shadow-none px-0' },
+  DELETE: { icon: Trash2, color: 'border-transparent bg-transparent text-red-700 shadow-none px-0' },
+  LOGIN: { icon: LogIn, color: 'border-transparent bg-transparent text-purple-700 shadow-none px-0' },
+  LOGOUT: { icon: LogOut, color: 'border-transparent bg-transparent text-orange-700 shadow-none px-0' },
+}
 
 const LogDetailDialog = ({ open, onOpenChange, log }) => {
   if (!log) return null
@@ -39,9 +48,19 @@ const LogDetailDialog = ({ open, onOpenChange, log }) => {
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Hành động</label>
                 <div>
-                  <Badge variant={log.action === 'DELETE' ? 'destructive' : 'outline'}>
-                    {log.action}
-                  </Badge>
+                  {(() => {
+                    const actionConfig = ACTIONS_CONFIG[log.action]
+                    const IconComponent = actionConfig?.icon
+                    return (
+                      <Badge
+                        variant="outline"
+                        className={`${actionConfig?.color || 'border-transparent bg-transparent shadow-none px-0 text-gray-700'}`}
+                      >
+                        {IconComponent && <IconComponent className="mr-2 h-4 w-4 inline" />}
+                        {log.action}
+                      </Badge>
+                    )
+                  })()}
                 </div>
               </div>
               <div>

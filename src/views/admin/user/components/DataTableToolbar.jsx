@@ -15,7 +15,7 @@ const DataTableToolbar = ({ table }) => {
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false)
 
   return (
-    <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-1">
+    <div className="flex w-full items-center justify-between space-x-2 overflow-auto">
       <div className="flex flex-1 items-center space-x-2">
         <Input
           placeholder="Tìm kiếm..."

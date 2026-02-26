@@ -18,6 +18,9 @@ import { DateRange } from '@/components/custom/DateRange.jsx'
 import { useDebounce } from '@/hooks/useDebounce'
 
 const MyPurchaseOrderPage = () => {
+  const authUserWithRoleHasPermissions =
+    useSelector((state) => state.auth.authUserWithRoleHasPermissions) || {}
+  const fullName = authUserWithRoleHasPermissions?.fullName
   const dispatch = useDispatch()
   const purchaseOrders = useSelector((state) => state.purchaseOrder.purchaseOrders)
   const loading = useSelector((state) => state.purchaseOrder.loading)
@@ -70,7 +73,7 @@ const MyPurchaseOrderPage = () => {
         <div className="mb-2 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Đơn đặt hàng của tôi
+              Đơn đặt hàng của tôi: {fullName}
             </h2>
           </div>
           <div>

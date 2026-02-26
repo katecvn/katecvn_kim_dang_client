@@ -42,6 +42,8 @@ const WarehouseOutPage = () => {
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
   })
 
+  const [columnFilters, setColumnFilters] = useState([])
+
   // Filter only warehouse-out receipts (receiptType = 2)
   const warehouseOutReceipts = Array.isArray(warehouseReceipts)
     ? warehouseReceipts
@@ -56,6 +58,8 @@ const WarehouseOutPage = () => {
   }, [])
 
   const refreshData = useCallback(() => {
+    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+
     const formattedFilters = {
       ...filters,
       search: debouncedSearch,
@@ -63,9 +67,10 @@ const WarehouseOutPage = () => {
       toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
       page: pagination.pageIndex + 1,
       limit: pagination.pageSize,
+      status: statusFilter,
     }
     dispatch(getWarehouseReceipts({ ...formattedFilters, receiptType: 2 }))
-  }, [dispatch, filters, debouncedSearch, pagination])
+  }, [dispatch, filters, debouncedSearch, pagination, columnFilters])
 
   const columns = useMemo(() => getColumns(handleView, 'export', refreshData), [handleView, refreshData])
 
@@ -114,6 +119,8 @@ const WarehouseOutPage = () => {
               pagination={pagination}
               onPaginationChange={setPagination}
               pageCount={paginationMeta?.last_page || -1}
+              columnFilters={columnFilters}
+              onColumnFiltersChange={setColumnFilters}
             />
           )}
         </div>

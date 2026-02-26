@@ -40,7 +40,7 @@ import { getUnits } from '@/stores/UnitSlice'
 import { getCategories } from '@/stores/CategorySlice'
 import MoneyInput from '@/components/custom/MoneyInput'
 import { getAttributes } from '@/stores/AttributeSlice'
-import { CalendarIcon, TrashIcon } from 'lucide-react'
+import { CalendarIcon, TrashIcon, Check, ChevronsUpDown } from 'lucide-react'
 import {
   CATEGORY_STATUS,
   matchAttributes,
@@ -54,6 +54,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { updateProduct } from '@/stores/ProductSlice'
@@ -99,6 +107,7 @@ const UpdateProductDialog = ({
   const [externalCatalog, setExternalCatalog] = useState([])
   const [loadingCatalog, setLoadingCatalog] = useState(false)
   const [syncEnabled, setSyncEnabled] = useState(false)
+  const [openCombobox, setOpenCombobox] = useState(false)
 
   const handleFileChange = (e) => {
     setSelectedFile(e.target.files?.[0] || null)
@@ -748,28 +757,64 @@ const UpdateProductDialog = ({
                                     Không có sản phẩm nào từ nhà cung cấp này
                                   </p>
                                 ) : (
-                                  <Select
-                                    onValueChange={field.onChange}
-                                    value={field.value}
+                                  <Popover
+                                    open={openCombobox}
+                                    onOpenChange={setOpenCombobox}
                                   >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Chọn sản phẩm tham chiếu" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent className="z-[100031]">
-                                      <SelectGroup>
-                                        {externalCatalog.map((product) => (
-                                          <SelectItem
-                                            key={`${product.code}-${product.name}`}
-                                            value={product.code}
-                                          >
-                                            {product.name} - [{product.code}]
-                                          </SelectItem>
-                                        ))}
-                                      </SelectGroup>
-                                    </SelectContent>
-                                  </Select>
+                                    <PopoverTrigger asChild>
+                                      <FormControl>
+                                        <Button
+                                          variant="outline"
+                                          role="combobox"
+                                          aria-expanded={openCombobox}
+                                          className={cn(
+                                            "w-full justify-between font-normal",
+                                            !field.value && "text-muted-foreground"
+                                          )}
+                                        >
+                                          {field.value
+                                            ? `${externalCatalog.find((product) => product.code === field.value)?.name} - [${field.value}]`
+                                            : "Chọn sản phẩm tham chiếu..."}
+                                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                      </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-[100031]">
+                                      <Command>
+                                        <CommandInput placeholder="Tìm mã hoặc tên sản phẩm..." />
+                                        <CommandList>
+                                          <CommandEmpty>Không tìm thấy sản phẩm.</CommandEmpty>
+                                          <CommandGroup>
+                                            {externalCatalog.map((product) => (
+                                              <CommandItem
+                                                key={`${product.code}-${product.name}`}
+                                                value={`${product.code} - ${product.name}`}
+                                                onSelect={() => {
+                                                  field.onChange(product.code)
+                                                  setOpenCombobox(false)
+                                                }}
+                                              >
+                                                <Check
+                                                  className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    field.value === product.code
+                                                      ? "opacity-100"
+                                                      : "opacity-0"
+                                                  )}
+                                                />
+                                                <div className="flex flex-col">
+                                                  <span>{product.name}</span>
+                                                  <span className="text-xs text-muted-foreground">
+                                                    [{product.code}]
+                                                  </span>
+                                                </div>
+                                              </CommandItem>
+                                            ))}
+                                          </CommandGroup>
+                                        </CommandList>
+                                      </Command>
+                                    </PopoverContent>
+                                  </Popover>
                                 )}
                                 <FormMessage />
                               </FormItem>

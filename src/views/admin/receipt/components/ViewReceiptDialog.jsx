@@ -43,7 +43,7 @@ import { getPublicUrl } from '@/utils/file'
 import { getReceiptById, updateReceiptStatus, getReceiptQRCode } from '@/stores/ReceiptSlice'
 import UpdateReceiptStatusDialog from './UpdateReceiptStatusDialog'
 import { DeleteReceiptDialog } from './DeleteReceiptDialog'
-import { receiptStatus } from '../data'
+import { receiptStatus, paymentMethods } from '../data'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { QrCode } from 'lucide-react'
@@ -559,8 +559,8 @@ const ViewReceiptDialog = ({
                               <Badge
                                 className={
                                   remaining > 0
-                                    ? 'border border-destructive text-destructive bg-transparent hover:bg-transparent'
-                                    : 'border border-green-600 text-green-600 bg-transparent hover:bg-transparent'
+                                    ? 'border-transparent shadow-none text-destructive bg-transparent px-0 text-sm hover:bg-transparent'
+                                    : 'border-transparent shadow-none text-green-600 bg-transparent px-0 text-sm hover:bg-transparent'
                                 }
                               >
                                 {remaining > 0 ? moneyFormat(remaining) : 'Đã thanh toán hết'}
@@ -579,9 +579,18 @@ const ViewReceiptDialog = ({
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between">
                       <strong>Phương thức:</strong>
-                      <Badge className="border border-primary text-primary bg-transparent hover:bg-transparent">
-                        {receipt?.paymentMethod === 'cash' ? 'Tiền mặt' : receipt?.paymentMethod === 'transfer' ? 'Chuyển khoản' : receipt?.paymentMethod || 'Không xác định'}
-                      </Badge>
+                      {(() => {
+                        const method = receipt?.paymentMethod
+                        const methodObj = paymentMethods.find((m) => m.value === method)
+                        const IconComponent = methodObj?.icon
+
+                        return (
+                          <Badge className={cn("border-transparent shadow-none bg-transparent px-0 hover:bg-transparent", methodObj?.color)}>
+                            {IconComponent && <IconComponent className="mr-1.5 h-3.5 w-3.5" />}
+                            {methodObj?.label || method || 'Không xác định'}
+                          </Badge>
+                        )
+                      })()}
                     </div>
                     <div className="flex items-center justify-between">
                       <strong>Ngày thanh toán:</strong>

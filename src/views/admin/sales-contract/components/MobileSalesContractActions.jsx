@@ -52,29 +52,35 @@ const MobileSalesContractActions = ({
           <div className="flex flex-col gap-3">
             {/* Main Actions */}
             <div className="grid grid-cols-2 gap-3">
-              <Button
-                className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 flex-col gap-1"
-                onClick={() => handleAction(handleLiquidate)}
-              >
-                <FileCheck className="h-5 w-5" />
-                <span className="text-xs">Thanh lý</span>
-              </Button>
+              {contract?.status === 'confirmed' && (
+                <Button
+                  className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 flex-col gap-1"
+                  onClick={() => handleAction(handleLiquidate)}
+                >
+                  <FileCheck className="h-5 w-5" />
+                  <span className="text-xs">Thanh lý</span>
+                </Button>
+              )}
 
-              <Button
-                className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 flex-col gap-1"
-                onClick={() => handleAction(handleCreateReceipt)}
-              >
-                <PlusIcon className="h-5 w-5" />
-                <span className="text-xs">Tạo Phiếu Thu</span>
-              </Button>
+              {(!['draft', 'cancelled'].includes(contract?.status) && contract?.paymentStatus !== 'paid') && (
+                <Button
+                  className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 flex-col gap-1"
+                  onClick={() => handleAction(handleCreateReceipt)}
+                >
+                  <PlusIcon className="h-5 w-5" />
+                  <span className="text-xs">Tạo Phiếu Thu</span>
+                </Button>
+              )}
 
-              <Button
-                className="bg-blue-600 text-white hover:bg-blue-700 h-auto py-3 flex-col gap-1"
-                onClick={() => handleAction(handleCreateWarehouseReceipt)}
-              >
-                <PlusIcon className="h-5 w-5" />
-                <span className="text-xs">Tạo Phiếu Nhập Kho</span>
-              </Button>
+              {contract?.status === 'confirmed' && (
+                <Button
+                  className="bg-blue-600 text-white hover:bg-blue-700 h-auto py-3 flex-col gap-1"
+                  onClick={() => handleAction(handleCreateWarehouseReceipt)}
+                >
+                  <PlusIcon className="h-5 w-5" />
+                  <span className="text-xs">Tạo Phiếu Xuất Kho</span>
+                </Button>
+              )}
 
               <Button
                 variant="outline"
@@ -87,14 +93,16 @@ const MobileSalesContractActions = ({
               </Button>
             </div>
 
-            <Button
-              variant="destructive"
-              className="w-full h-auto py-3 flex-col gap-1"
-              onClick={() => handleAction(handleDeleteClick)}
-            >
-              <Trash2 className="h-5 w-5" />
-              <span className="text-xs">Xóa</span>
-            </Button>
+            {contract?.status === 'draft' && (
+              <Button
+                variant="destructive"
+                className="w-full h-auto py-3 flex-col gap-1"
+                onClick={() => handleAction(handleDeleteClick)}
+              >
+                <Trash2 className="h-5 w-5" />
+                <span className="text-xs">Xóa</span>
+              </Button>
+            )}
 
             <Separator />
 

@@ -329,7 +329,7 @@ const DataTableRowActions = ({ row, table }) => {
             <Can permission="CREATE_INVOICE">
               <DropdownMenuItem
                 onClick={() => setShowUpdatePendingInvoiceDialog(true)}
-                className="text-blue-600"
+                className="text-amber-500 focus:text-amber-600 hover:text-amber-600 focus:bg-amber-50"
               >
                 Sửa
                 <DropdownMenuShortcut>

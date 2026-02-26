@@ -237,7 +237,7 @@ const DataTableRowActions = ({ row, table }) => {
 
           {canEdit && (
             <Can permission="PURCHASE_ORDER_UPDATE">
-              <DropdownMenuItem onClick={() => setShowUpdateDialog(true)} className="text-blue-600">
+              <DropdownMenuItem onClick={() => setShowUpdateDialog(true)} className="text-amber-500 focus:text-amber-600 hover:text-amber-600 focus:bg-amber-50">
                 Sửa
                 <DropdownMenuShortcut>
                   <IconPencil className="h-4 w-4" />

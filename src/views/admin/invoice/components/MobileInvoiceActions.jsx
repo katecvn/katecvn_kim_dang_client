@@ -56,22 +56,26 @@ const MobileInvoiceActions = ({
           </SheetHeader>
           <div className="flex flex-col gap-3">
             {/* Receipt & Warehouse Actions */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 flex-col gap-1"
-                onClick={() => handleAction(handleCreateReceipt)}
-              >
-                <PlusIcon className="h-5 w-5" />
-                <span className="text-xs">Tạo Phiếu Thu</span>
-              </Button>
-              <Button
-                className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 flex-col gap-1"
-                onClick={() => handleAction(handleCreateWarehouseReceipt)}
-              >
-                <PlusIcon className="h-5 w-5" />
-                <span className="text-xs">Tạo Phiếu Xuất Kho</span>
-              </Button>
-            </div>
+            {(!['draft', 'cancelled'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid') && (
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 flex-col gap-1"
+                  onClick={() => handleAction(handleCreateReceipt)}
+                >
+                  <PlusIcon className="h-5 w-5" />
+                  <span className="text-xs">Tạo Phiếu Thu</span>
+                </Button>
+                {invoice?.status === 'accepted' && (
+                  <Button
+                    className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 flex-col gap-1"
+                    onClick={() => handleAction(handleCreateWarehouseReceipt)}
+                  >
+                    <PlusIcon className="h-5 w-5" />
+                    <span className="text-xs">Tạo Phiếu Xuất Kho</span>
+                  </Button>
+                )}
+              </div>
+            )}
 
             <Separator />
 
@@ -110,46 +114,31 @@ const MobileInvoiceActions = ({
 
             {/* Edit/Delete Actions */}
             <div className="grid grid-cols-2 gap-3">
-              <Button
-                className="bg-orange-600 text-white hover:bg-orange-700 w-full"
-                onClick={() => {
-                  if (invoice.status !== 'pending') {
-                    toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái chờ duyệt')
-                    return
-                  }
-                  handleAction(onEdit)
-                }}
-              >
-                <Pencil className="mr-2 h-4 w-4" />
-                Sửa
-              </Button>
+              {invoice.status === 'pending' && (
+                <Button
+                  className="bg-orange-600 text-white hover:bg-orange-700 w-full"
+                  onClick={() => handleAction(onEdit)}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Sửa
+                </Button>
+              )}
 
-              {canDelete && (
-                invoice.status === 'pending' ? (
-                  <ConfirmActionButton
-                    title="Xác nhận xóa"
-                    description="Bạn có chắc chắn muốn xóa đơn bán này?"
-                    confirmText="Xóa"
-                    onConfirm={() => handleAction(handleDeleteInvoice)}
-                    contentClassName="z-[100020]"
-                    overlayClassName="z-[100019]"
-                    confirmBtnVariant="destructive"
-                  >
-                    <Button variant="destructive" className="w-full">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Xóa
-                    </Button>
-                  </ConfirmActionButton>
-                ) : (
-                  <Button
-                    variant="destructive"
-                    className="w-full"
-                    onClick={() => toast.warning('Chỉ có thể xóa đơn hàng ở trạng thái chờ duyệt')}
-                  >
+              {(canDelete && invoice.status === 'pending') && (
+                <ConfirmActionButton
+                  title="Xác nhận xóa"
+                  description="Bạn có chắc chắn muốn xóa đơn bán này?"
+                  confirmText="Xóa"
+                  onConfirm={() => handleAction(handleDeleteInvoice)}
+                  contentClassName="z-[100020]"
+                  overlayClassName="z-[100019]"
+                  confirmBtnVariant="destructive"
+                >
+                  <Button variant="destructive" className={invoice.status === 'pending' ? "w-full" : "w-full col-span-2"}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Xóa
                   </Button>
-                )
+                </ConfirmActionButton>
               )}
             </div>
 

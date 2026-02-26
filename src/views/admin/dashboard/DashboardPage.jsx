@@ -125,10 +125,6 @@ const DashboardPage = () => {
     fetchAllData()
   }, [canViewReport])
 
-  // Calculate totals
-  const todayIncome = todayReceipts.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
-  const todayExpense = todayPayments.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
-
   if (!canViewReport) {
     return (
       <Layout>
@@ -151,8 +147,6 @@ const DashboardPage = () => {
         <div className="flex-1 overflow-y-auto min-h-0">
           <div className="space-y-6 pb-8">
             <DashboardSummary
-              todayIncome={todayIncome}
-              todayExpense={todayExpense}
               loading={loading}
             />
 

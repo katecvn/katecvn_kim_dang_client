@@ -65,32 +65,25 @@ const MobilePurchaseOrderActions = ({
           <div className="flex flex-col gap-3">
             {/* Receipt & Warehouse Actions */}
             <div className="grid grid-cols-2 gap-3">
-              <Button
-                className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 flex-col gap-1"
-                onClick={() => {
-                  if (!(!['draft', 'cancelled'].includes(purchaseOrder.status) && purchaseOrder.paymentStatus !== 'paid')) {
-                    toast.warning('Không thể tạo phiếu chi')
-                    return
-                  }
-                  handleAction(handleCreatePayment)
-                }}
-              >
-                <CreditCard className="h-5 w-5" />
-                <span className="text-xs">Tạo Phiếu Chi</span>
-              </Button>
-              <Button
-                className="bg-blue-600 text-white hover:bg-blue-700 h-auto py-3 flex-col gap-1"
-                onClick={() => {
-                  if (!['ordered', 'partial'].includes(purchaseOrder.status)) {
-                    toast.warning('Chỉ tạo phiếu nhập kho khi đơn đã đặt')
-                    return
-                  }
-                  handleAction(handleCreateImport)
-                }}
-              >
-                <PackagePlus className="h-5 w-5" />
-                <span className="text-xs">Tạo Phiếu Nhập Kho</span>
-              </Button>
+              {(!['draft', 'cancelled'].includes(purchaseOrder.status) && purchaseOrder.paymentStatus !== 'paid') && (
+                <Button
+                  className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 flex-col gap-1"
+                  onClick={() => handleAction(handleCreatePayment)}
+                >
+                  <CreditCard className="h-5 w-5" />
+                  <span className="text-xs">Tạo Phiếu Chi</span>
+                </Button>
+              )}
+
+              {['ordered', 'partial'].includes(purchaseOrder.status) && (
+                <Button
+                  className="bg-blue-600 text-white hover:bg-blue-700 h-auto py-3 flex-col gap-1"
+                  onClick={() => handleAction(handleCreateImport)}
+                >
+                  <PackagePlus className="h-5 w-5" />
+                  <span className="text-xs">Tạo Phiếu Nhập Kho</span>
+                </Button>
+              )}
             </div>
 
             <Separator />
@@ -114,34 +107,26 @@ const MobilePurchaseOrderActions = ({
 
             {/* Edit/Delete Actions */}
             <div className="grid grid-cols-2 gap-3">
-              <Button
-                className="bg-orange-600 text-white hover:bg-orange-700"
-                onClick={() => {
-                  if (purchaseOrder.status !== 'draft') {
-                    toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái nháp')
-                    return
-                  }
-                  handleAction(onEdit)
-                }}
-              >
-                <Pencil className="mr-2 h-4 w-4" />
-                Sửa
-              </Button>
+              {purchaseOrder.status === 'draft' && (
+                <Button
+                  className="bg-orange-600 text-white hover:bg-orange-700"
+                  onClick={() => handleAction(onEdit)}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Sửa
+                </Button>
+              )}
 
-              <Button
-                variant="destructive"
-                className="w-full"
-                onClick={() => {
-                  if (!['draft', 'cancelled'].includes(purchaseOrder.status)) {
-                    toast.warning('Chỉ có thể xóa đơn hàng ở trạng thái nháp hoặc đã hủy')
-                    return
-                  }
-                  setShowDeleteConfirm(true)
-                }}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Xóa
-              </Button>
+              {['draft', 'cancelled'].includes(purchaseOrder.status) && (
+                <Button
+                  variant="destructive"
+                  className={purchaseOrder.status === 'draft' ? "w-full" : "w-full col-span-2"}
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Xóa
+                </Button>
+              )}
             </div>
           </div>
         </SheetContent>

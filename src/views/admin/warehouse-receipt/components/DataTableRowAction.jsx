@@ -149,7 +149,7 @@ export function DataTableRowActions({ row, onRefresh }) {
             <Can permission={receipt.receiptType === 1 ? 'WAREHOUSE_IMPORT_UPDATE' : 'WAREHOUSE_EXPORT_UPDATE'}>
               <DropdownMenuItem
                 onClick={() => setShowUpdateDialog(true)}
-                className="text-orange-600 hover:text-orange-700 focus:text-orange-700"
+                className="text-amber-500 hover:text-amber-600 focus:text-amber-600"
               >
                 Sửa
                 <DropdownMenuShortcut>

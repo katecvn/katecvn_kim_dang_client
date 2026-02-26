@@ -515,9 +515,18 @@ const ViewPaymentDialog = ({
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between">
                       <strong>Phương thức:</strong>
-                      <Badge variant="outline">
-                        {payment?.paymentMethod === 'cash' ? 'Tiền mặt' : (payment?.paymentMethod === 'transfer' || payment?.paymentMethod === 'bank_transfer') ? 'Chuyển khoản' : payment?.paymentMethod || 'Không xác định'}
-                      </Badge>
+                      {(() => {
+                        const method = payment?.paymentMethod
+                        const methodObj = paymentMethods.find(m => m.value === method)
+                        const Icon = methodObj?.icon
+
+                        return (
+                          <Badge variant="outline" className={`border-transparent bg-transparent px-0 font-medium ${methodObj?.color || 'text-slate-700'}`}>
+                            {Icon && <Icon className="mr-1 h-3 w-3" />}
+                            {methodObj?.label || (method === 'cash' ? 'Tiền mặt' : (method === 'transfer' || method === 'bank_transfer') ? 'Chuyển khoản' : method || 'Không xác định')}
+                          </Badge>
+                        )
+                      })()}
                     </div>
                     <div className="flex items-center justify-between">
                       <strong>Ngày tạo phiếu:</strong>
@@ -682,11 +691,11 @@ const ViewPaymentDialog = ({
             {payment?.status === 'draft' && (
               <Button
                 size="sm"
-                className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+                className="gap-2 w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white"
                 onClick={() => setShowUpdatePaymentDialog(true)}
               >
                 <Pencil className="h-4 w-4" />
-                Chỉnh sửa
+                Sửa
               </Button>
             )}
 

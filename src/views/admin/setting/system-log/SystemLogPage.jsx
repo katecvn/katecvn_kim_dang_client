@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Search, X, Eye, Plus, Edit3, Trash2, LogIn, LogOut } from 'lucide-react'
+import { Search, X, Eye, Plus, Edit3, Trash2, LogIn, LogOut, User, Users, Building2, Package, FileText, ShoppingCart, FileSpreadsheet, Receipt, Wallet, PackageOpen } from 'lucide-react'
 import { DateRange } from '@/components/custom/DateRange'
 import { getUsers } from '@/stores/UserSlice'
 import { format } from 'date-fns'
@@ -134,41 +134,41 @@ const SystemLogPage = () => {
     CREATE: {
       label: 'CREATE',
       icon: Plus,
-      color: 'border-green-700 bg-transparent text-green-700',
+      color: 'border-transparent bg-transparent text-green-700',
     },
     UPDATE: {
       label: 'UPDATE',
       icon: Edit3,
-      color: 'border-blue-700 bg-transparent text-blue-700',
+      color: 'border-transparent bg-transparent text-blue-700',
     },
     DELETE: {
       label: 'DELETE',
       icon: Trash2,
-      color: 'border-red-700 bg-transparent text-red-700',
+      color: 'border-transparent bg-transparent text-red-700',
     },
     LOGIN: {
       label: 'LOGIN',
       icon: LogIn,
-      color: 'border-purple-700 bg-transparent text-purple-700',
+      color: 'border-transparent bg-transparent text-purple-700',
     },
     LOGOUT: {
       label: 'LOGOUT',
       icon: LogOut,
-      color: 'border-orange-700 bg-transparent text-orange-700',
+      color: 'border-transparent bg-transparent text-orange-700',
     },
   }
 
   const ENTITIES_CONFIG = {
-    User: { label: 'Người dùng', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
-    Customer: { label: 'Khách hàng', color: 'bg-pink-100 text-pink-700 border-pink-200' },
-    Supplier: { label: 'Nhà cung cấp', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-    Product: { label: 'Sản phẩm', color: 'bg-teal-100 text-teal-700 border-teal-200' },
-    SalesContract: { label: 'Hợp đồng bán', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-    PurchaseContract: { label: 'Hợp đồng mua', color: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
-    PurchaseOrder: { label: 'Đơn mua hàng', color: 'bg-sky-100 text-sky-700 border-sky-200' },
-    Invoice: { label: 'Hóa đơn', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-    PaymentVoucher: { label: 'Phiếu thu/chi', color: 'bg-rose-100 text-rose-700 border-rose-200' },
-    WarehouseReceipt: { label: 'Phiếu kho', color: 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200' },
+    User: { label: 'Người dùng', icon: User, color: 'bg-transparent text-indigo-700 border-transparent' },
+    Customer: { label: 'Khách hàng', icon: Users, color: 'bg-transparent text-pink-700 border-transparent' },
+    Supplier: { label: 'Nhà cung cấp', icon: Building2, color: 'bg-transparent text-purple-700 border-transparent' },
+    Product: { label: 'Sản phẩm', icon: Package, color: 'bg-transparent text-teal-700 border-transparent' },
+    SalesContract: { label: 'Hợp đồng bán', icon: FileText, color: 'bg-transparent text-amber-700 border-transparent' },
+    PurchaseContract: { label: 'Hợp đồng mua', icon: ShoppingCart, color: 'bg-transparent text-cyan-700 border-transparent' },
+    PurchaseOrder: { label: 'Đơn mua hàng', icon: FileSpreadsheet, color: 'bg-transparent text-sky-700 border-transparent' },
+    Invoice: { label: 'Hóa đơn', icon: Receipt, color: 'bg-transparent text-emerald-700 border-transparent' },
+    PaymentVoucher: { label: 'Phiếu thu/chi', icon: Wallet, color: 'bg-transparent text-rose-700 border-transparent' },
+    WarehouseReceipt: { label: 'Phiếu kho', icon: PackageOpen, color: 'bg-transparent text-fuchsia-700 border-transparent' },
   }
 
   return (
@@ -181,7 +181,7 @@ const SystemLogPage = () => {
         </div>
 
         {/* Toolbar */}
-        <div className="flex w-full items-center justify-between space-x-2 overflow-auto p-1">
+        <div className="flex w-full items-center justify-between space-x-2 overflow-auto">
           <div className="flex flex-1 items-center space-x-2">
             {/* User Select */}
             <Select
@@ -377,8 +377,10 @@ const SystemLogPage = () => {
                         {(() => {
                           const entityConfig = ENTITIES_CONFIG[log.entity]
                           if (entityConfig) {
+                            const EntityIcon = entityConfig.icon
                             return (
                               <Badge variant="outline" className={`font-normal ${entityConfig.color}`}>
+                                {EntityIcon && <EntityIcon className="mr-2 h-4 w-4 inline" />}
                                 {entityConfig.label}
                                 {log.entityId && <span className='opacity-70 ml-1'>#{log.entityId}</span>}
                               </Badge>
@@ -402,19 +404,9 @@ const SystemLogPage = () => {
                     {visibleColumns.time && <TableCell>{dateFormat(log.createdAt, true)}</TableCell>}
                     {visibleColumns.detail && (
                       <TableCell className="text-right">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => openDetail(log)}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Xem chi tiết thay đổi</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-
+                        <Button variant="outline" size="sm" onClick={() => openDetail(log)}>
+                          <Eye className=" h-4 w-4" />
+                        </Button>
                       </TableCell>
                     )}
                   </TableRow>

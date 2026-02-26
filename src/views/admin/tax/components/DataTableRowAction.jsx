@@ -52,7 +52,7 @@ const DataTableRowActions = ({ row }) => {
           <Can permission="UPDATE_TAX">
             <DropdownMenuItem
               onSelect={() => setShowUpdateTaxDialog(true)}
-              className="text-orange-600 hover:text-orange-700 focus:text-orange-700"
+              className="text-amber-500 hover:text-amber-600 focus:text-amber-600"
             >
               Sửa
               <DropdownMenuShortcut>

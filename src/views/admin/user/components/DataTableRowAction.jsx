@@ -49,7 +49,7 @@ const DataTableRowActions = ({ row }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
           <Can permission="UPDATE_USER">
-            <DropdownMenuItem onSelect={() => setShowUpdateUserDialog(true)} className="text-orange-600">
+            <DropdownMenuItem onSelect={() => setShowUpdateUserDialog(true)} className="text-amber-500 hover:text-amber-600 focus:text-amber-600">
               Sửa
               <DropdownMenuShortcut>
                 <IconEdit className="h-4 w-4" />

@@ -573,7 +573,7 @@ const ViewCategoryDialog = ({
               <Button
                 size="sm"
                 onClick={() => setShowUpdateCategoryDialog(true)}
-                className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+                className="gap-2 w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white"
               >
                 <Pencil className="h-4 w-4" />
                 Sửa

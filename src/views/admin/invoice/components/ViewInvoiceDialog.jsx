@@ -2102,7 +2102,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
           )}>
             {invoice && (
               <>
-                <>
+                {(!['draft', 'cancelled'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid') && (
                   <Button
                     size="sm"
                     className={cn("gap-2 bg-green-600 text-white hover:bg-green-700", !isDesktop && "w-full")}
@@ -2111,6 +2111,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                     <PlusIcon className="h-4 w-4" />
                     Tạo Phiếu Thu
                   </Button>
+                )}
+                {invoice?.status === 'accepted' && (
                   <Button
                     size="sm"
                     className={cn("gap-2 bg-orange-600 text-white hover:bg-orange-700", !isDesktop && "w-full")}
@@ -2119,7 +2121,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                     <PlusIcon className="h-4 w-4" />
                     Tạo Phiếu xuất kho
                   </Button>
-                </>
+                )}
 
                 <Button
                   size="sm"
@@ -2149,52 +2151,36 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                   In Hợp Đồng
                 </Button>
 
-                <Button
-                  size="sm"
-                  className={cn("gap-2 bg-orange-600 text-white hover:bg-orange-700", !isDesktop && "w-full")}
-                  onClick={() => {
-                    if (invoice.status !== 'pending') {
-                      toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái chờ duyệt')
-                      return
-                    }
-                    onEdit?.()
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                  Sửa
-                </Button>
+                {invoice.status === 'pending' && (
+                  <Button
+                    size="sm"
+                    className={cn("gap-2 bg-amber-500 text-white hover:bg-amber-600", !isDesktop && "w-full")}
+                    onClick={() => onEdit?.()}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Sửa
+                  </Button>
+                )}
 
-                {canDelete && (
-                  invoice.status === 'pending' ? (
-                    <ConfirmActionButton
-                      title="Xác nhận xóa"
-                      description="Bạn có chắc chắn muốn xóa đơn bán này? Hành động này không thể hoàn tác."
-                      confirmText="Xóa"
-                      onConfirm={handleDeleteInvoice}
-                      contentClassName="z-[100020]"
-                      overlayClassName="z-[100019]"
-                      confirmBtnVariant="destructive"
-                    >
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className={cn("gap-2", !isDesktop && "w-full")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Xóa
-                      </Button>
-                    </ConfirmActionButton>
-                  ) : (
+                {(canDelete && invoice.status === 'pending') && (
+                  <ConfirmActionButton
+                    title="Xác nhận xóa"
+                    description="Bạn có chắc chắn muốn xóa đơn bán này? Hành động này không thể hoàn tác."
+                    confirmText="Xóa"
+                    onConfirm={handleDeleteInvoice}
+                    contentClassName="z-[100020]"
+                    overlayClassName="z-[100019]"
+                    confirmBtnVariant="destructive"
+                  >
                     <Button
                       variant="destructive"
                       size="sm"
                       className={cn("gap-2", !isDesktop && "w-full")}
-                      onClick={() => toast.warning('Chỉ có thể xóa đơn hàng ở trạng thái chờ duyệt')}
                     >
                       <Trash2 className="h-4 w-4" />
                       Xóa
                     </Button>
-                  )
+                  </ConfirmActionButton>
                 )}
               </>
             )}

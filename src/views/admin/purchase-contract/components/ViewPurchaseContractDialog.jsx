@@ -1276,38 +1276,46 @@ const ViewPurchaseContractDialog = ({
         </div>
 
         <DialogFooter className="hidden md:flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0 p-4 pt-0">
-          <Button size="sm" onClick={handleLiquidate} className="bg-orange-600 hover:bg-orange-700 text-white">
-            <FileCheck className="mr-2 h-4 w-4" />
-            Thanh lý
-          </Button>
+          {contract?.status === 'confirmed' && (
+            <Button size="sm" onClick={handleLiquidate} className="bg-orange-600 hover:bg-orange-700 text-white">
+              <FileCheck className="mr-2 h-4 w-4" />
+              Thanh lý
+            </Button>
+          )}
 
-          <Button
-            size="sm"
-            onClick={handleCreatePayment}
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
-            <CreditCard className="h-4 w-4 mr-1" />
-            Tạo Phiếu Chi
-          </Button>
+          {['ordered', 'partial', 'completed'].includes(contract?.purchaseOrders?.[0]?.status) && (
+            <Button
+              size="sm"
+              onClick={handleCreatePayment}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <CreditCard className="h-4 w-4 mr-1" />
+              Tạo Phiếu Chi
+            </Button>
+          )}
 
-          <Button
-            size="sm"
-            onClick={handleCreateWarehouseReceipt}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Package className="h-4 w-4 mr-1" />
-            Tạo Phiếu Nhập Kho
-          </Button>
+          {contract?.status === 'confirmed' && (
+            <Button
+              size="sm"
+              onClick={handleCreateWarehouseReceipt}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Package className="h-4 w-4 mr-1" />
+              Tạo Phiếu Nhập Kho
+            </Button>
+          )}
 
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={handleDeleteClick}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Xóa
-          </Button>
+          {['draft', 'cancelled'].includes(contract?.status) && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteClick}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Xóa
+            </Button>
+          )}
 
           <DialogClose asChild>
             <Button type="button" variant="outline" size="sm">

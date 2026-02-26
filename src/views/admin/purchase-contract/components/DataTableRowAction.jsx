@@ -26,6 +26,8 @@ import { useDispatch } from 'react-redux'
 import { getPurchaseContracts } from '@/stores/PurchaseContractSlice'
 import { toast } from 'sonner'
 import { IconPackageImport } from '@tabler/icons-react'
+import { CreditCard } from 'lucide-react'
+import PaymentFormDialog from '../../payment/components/PaymentDialog'
 
 const DataTableRowActions = ({ row }) => {
   const contract = row?.original || {}
@@ -35,12 +37,31 @@ const DataTableRowActions = ({ row }) => {
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false)
 
   // Check if editable based on status
   const canEdit = contract.status === 'draft'
   const canDelete = contract.status === 'draft'
   const canLiquidate = contract.status === 'confirmed' // Only confirmed contracts can be liquidated
   const canImport = contract.status === 'confirmed' || contract.status === 'shipping'
+  const canCreatePayment = ['ordered', 'partial', 'completed'].includes(contract?.purchaseOrders?.[0]?.status)
+
+  const handleCreatePaymentClick = () => {
+    const totalAmount = parseFloat(contract?.totalAmount || 0)
+    const paidAmount = parseFloat(contract?.paidAmount || 0)
+    const pendingAmount = (contract?.paymentVouchers || contract?.payments || [])
+      .filter(p => p.status === 'pending' || p.status === 'draft')
+      .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+
+    const remainingAmount = Math.max(0, totalAmount - paidAmount - pendingAmount)
+
+    if (remainingAmount <= 0) {
+      toast.error('Hợp đồng đã thanh toán đủ hoặc đang có phiếu chi nháp/chờ duyệt chờ xử lý hết số nợ.')
+      return
+    }
+
+    setShowCreatePaymentDialog(true)
+  }
 
   const handleCreateWarehouseReceipt = async (selectedItems) => {
     const payload = {
@@ -101,7 +122,7 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuShortcut>
           </DropdownMenuItem> */}
 
-          <Can permission={'PURCHASE_CONTRACT_UPDATE'}>
+          {/* <Can permission={'PURCHASE_CONTRACT_UPDATE'}>
             <DropdownMenuItem
               onClick={() => setShowUpdateDialog(true)}
               className={`text-blue-600 ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -112,48 +133,63 @@ const DataTableRowActions = ({ row }) => {
                 <IconPencil className="h-4 w-4" />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
-          </Can>
+          </Can> */}
 
-          <Can permission={'WAREHOUSE_IMPORT_CREATE'}>
+          {canImport && (
+            <Can permission={'WAREHOUSE_IMPORT_CREATE'}>
+              <DropdownMenuItem
+                onClick={() => setShowImportDialog(true)}
+                className="text-blue-600"
+              >
+                Nhập kho
+                <DropdownMenuShortcut>
+                  <IconPackageImport className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
+
+          {canCreatePayment && (
             <DropdownMenuItem
-              onClick={() => setShowImportDialog(true)}
-              className={`text-emerald-600 ${!canImport ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={!canImport}
+              onClick={handleCreatePaymentClick}
+              className="text-green-600"
             >
-              Nhập kho
+              Tạo phiếu chi
               <DropdownMenuShortcut>
-                <IconPackageImport className="h-4 w-4" />
+                <CreditCard className="h-4 w-4" />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
-          </Can>
+          )}
 
-          <Can permission={'PURCHASE_CONTRACT_LIQUIDATE'}>
-            <DropdownMenuItem
-              onClick={() => setShowLiquidationDialog(true)}
-              className={`text-orange-600 ${!canLiquidate ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={!canLiquidate}
-            >
-              Thanh lý
-              <DropdownMenuShortcut>
-                <IconReceiptRefund className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </Can>
+          {canLiquidate && (
+            <Can permission={'PURCHASE_CONTRACT_LIQUIDATE'}>
+              <DropdownMenuItem
+                onClick={() => setShowLiquidationDialog(true)}
+                className="text-orange-600"
+              >
+                Thanh lý
+                <DropdownMenuShortcut>
+                  <IconReceiptRefund className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
 
           <DropdownMenuSeparator />
 
-          <Can permission={'PURCHASE_CONTRACT_DELETE'}>
-            <DropdownMenuItem
-              onClick={() => setShowDeleteDialog(true)}
-              className={`text-red-600 ${!canDelete ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={!canDelete}
-            >
-              Xóa
-              <DropdownMenuShortcut>
-                <IconTrash className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </Can>
+          {canDelete && (
+            <Can permission={'PURCHASE_CONTRACT_DELETE'}>
+              <DropdownMenuItem
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-red-600"
+              >
+                Xóa
+                <DropdownMenuShortcut>
+                  <IconTrash className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -163,6 +199,18 @@ const DataTableRowActions = ({ row }) => {
           onOpenChange={setShowImportDialog}
           purchaseContractId={contract.id}
           onConfirm={handleCreateWarehouseReceipt}
+          contentClassName="z-[100020]"
+          overlayClassName="z-[100019]"
+        />
+      )}
+
+      {showCreatePaymentDialog && (
+        <PaymentFormDialog
+          open={showCreatePaymentDialog}
+          onOpenChange={setShowCreatePaymentDialog}
+          purchaseOrder={contract?.purchaseOrders?.[0]}
+          supplier={contract?.supplier}
+          onSuccess={() => dispatch(getPurchaseContracts({}))}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"
         />

@@ -15,6 +15,9 @@ import {
 import { DateRange } from '@/components/custom/DateRange.jsx'
 
 const MyPaymentPage = () => {
+  const authUserWithRoleHasPermissions =
+    useSelector((state) => state.auth.authUserWithRoleHasPermissions) || {}
+  const fullName = authUserWithRoleHasPermissions?.fullName
   const dispatch = useDispatch()
   const payments = useSelector((state) => state.payment.payments)
   const loading = useSelector((state) => state.payment.loading)
@@ -49,11 +52,8 @@ const MyPaymentPage = () => {
         <div className="mb-2 flex items-center justify-between space-y-2">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Danh sách phiếu chi của tôi
+              Danh sách phiếu chi của tôi: {fullName}
             </h2>
-            <p className="text-muted-foreground">
-              Quản lý các khoản chi tiêu do bạn tạo
-            </p>
           </div>
           <div>
             <DateRange

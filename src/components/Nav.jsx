@@ -20,9 +20,28 @@ import {
 import { IconChevronDown, IconChevronDownLeft } from '@tabler/icons-react'
 import Can from '@/utils/can'
 
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
+
 const Nav = ({ links, isCollapsed, className, closeNav }) => {
+  const [openKey, setOpenKey] = useState('')
+  const { checkActiveNav } = useCheckActiveNav()
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    // Find the link that contains the currently active sub-link
+    const activeLink = links.find(link =>
+      link.sub && link.sub.some(s => checkActiveNav(s.href))
+    )
+    if (activeLink) {
+      setOpenKey(`${activeLink.href || 'no-href'}-${activeLink.title || 'no-title'}`)
+    } else {
+      setOpenKey('')
+    }
+  }, [pathname, links]) // Reacts only to URL change (pathname) and links
+
   const renderLink = ({ sub, ...rest }) => {
-    const key = `${rest.title}-${rest.href || 'no-href'}`
+    const key = `${rest.href || 'no-href'}-${rest.title || 'no-title'}`
 
     if (isCollapsed && sub)
       return (
@@ -39,7 +58,14 @@ const Nav = ({ links, isCollapsed, className, closeNav }) => {
 
     if (sub)
       return (
-        <NavLinkDropdown {...rest} sub={sub} key={key} closeNav={closeNav} />
+        <NavLinkDropdown
+          {...rest}
+          sub={sub}
+          key={key}
+          closeNav={closeNav}
+          isOpen={openKey === key}
+          setIsOpen={(isOpen) => setOpenKey(isOpen ? key : '')}
+        />
       )
 
     return <NavLink {...rest} key={key} closeNav={closeNav} />
@@ -128,13 +154,14 @@ const NavLinkIcon = ({ title, icon, label, href }) => {
   )
 }
 
-const NavLinkDropdown = ({ title, icon, label, sub, closeNav }) => {
+const NavLinkDropdown = ({ title, icon, label, sub, closeNav, isOpen, setIsOpen }) => {
   const { checkActiveNav } = useCheckActiveNav()
 
-  const isChildActive = !!sub?.find((s) => checkActiveNav(s.href))
-
   return (
-    <Collapsible defaultOpen={isChildActive}>
+    <Collapsible
+      open={isOpen}
+      onOpenChange={setIsOpen}
+    >
       <CollapsibleTrigger
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'sm' }),

@@ -243,7 +243,7 @@ export const getColumns = (onView) => [
               className={cn(
                 'select-none',
                 currentStatus === 'completed'
-                  ? 'cursor-default bg-transparent p-0 text-green-600 hover:bg-transparent shadow-none border-0'
+                  ? 'cursor-default bg-transparent p-0 text-green-500 hover:bg-transparent shadow-none border-0'
                   : `cursor-pointer ${statusObj?.bgColor || ''}`,
               )}
               onClick={() => !isTerminalStatus && setOpenUpdateStatus(true)}

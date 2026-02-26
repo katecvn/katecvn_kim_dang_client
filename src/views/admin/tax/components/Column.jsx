@@ -47,8 +47,8 @@ export const columns = [
             variant="outline"
             className={
               status.value === 'published'
-                ? 'border-green-600 text-green-600'
-                : 'border-red-600 text-red-600'
+                ? 'border-transparent bg-transparent px-0 text-green-600'
+                : 'border-transparent bg-transparent px-0 text-red-600'
             }
           >
             {status.icon && <status.icon className="mr-2 h-4 w-4" />}

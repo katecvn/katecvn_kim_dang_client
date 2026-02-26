@@ -1280,36 +1280,28 @@ const ViewPurchaseOrderDialog = ({
         )}>
           {purchaseOrder && (
             <>
-              <Button
-                size="sm"
-                className="gap-2 bg-green-600 text-white hover:bg-green-700"
-                onClick={() => {
-                  if (!(!['draft', 'cancelled'].includes(purchaseOrder.status) && purchaseOrder.paymentStatus !== 'paid')) {
-                    toast.warning('Không thể tạo phiếu chi')
-                    return
-                  }
-                  handleCreatePayment()
-                }}
-                disabled={!(!['draft', 'cancelled'].includes(purchaseOrder.status) && purchaseOrder.paymentStatus !== 'paid')}
-              >
-                <CreditCard className="h-4 w-4" />
-                Tạo Phiếu Chi
-              </Button>
-              <Button
-                size="sm"
-                className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
-                onClick={() => {
-                  if (!['ordered', 'partial'].includes(purchaseOrder.status)) {
-                    toast.warning('Chỉ tạo phiếu nhập kho khi đơn đã đặt')
-                    return
-                  }
-                  handleCreateImport()
-                }}
-                disabled={!['ordered', 'partial'].includes(purchaseOrder.status)}
-              >
-                <PackagePlus className="h-4 w-4" />
-                Tạo Phiếu Nhập Kho
-              </Button>
+              {(!['draft', 'cancelled'].includes(purchaseOrder.status) && purchaseOrder.paymentStatus !== 'paid') && (
+                <Button
+                  size="sm"
+                  className="gap-2 bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleCreatePayment}
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Tạo Phiếu Chi
+                </Button>
+              )}
+
+              {['ordered', 'partial'].includes(purchaseOrder.status) && (
+                <Button
+                  size="sm"
+                  className="gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                  onClick={handleCreateImport}
+                >
+                  <PackagePlus className="h-4 w-4" />
+                  Tạo Phiếu Nhập Kho
+                </Button>
+              )}
+
               <Button
                 size="sm"
                 variant="outline"
@@ -1320,22 +1312,18 @@ const ViewPurchaseOrderDialog = ({
                 In Đơn Hàng
               </Button>
 
-              <Button
-                size="sm"
-                className="gap-2 bg-orange-600 text-white hover:bg-orange-700"
-                onClick={() => {
-                  if (purchaseOrder.status !== 'draft') {
-                    toast.warning('Chỉ có thể sửa đơn hàng ở trạng thái nháp')
-                    return
-                  }
-                  onEdit?.()
-                }}
-              >
-                <Pencil className="h-4 w-4" />
-                Sửa
-              </Button>
+              {purchaseOrder.status === 'draft' && (
+                <Button
+                  size="sm"
+                  className="gap-2 bg-amber-500 text-white hover:bg-amber-600"
+                  onClick={() => onEdit?.()}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Sửa
+                </Button>
+              )}
 
-              {['draft', 'cancelled'].includes(purchaseOrder.status) ? (
+              {['draft', 'cancelled'].includes(purchaseOrder.status) && (
                 <ConfirmActionButton
                   title="Xác nhận xóa"
                   description="Bạn có chắc chắn muốn xóa đơn mua hàng này?"
@@ -1350,16 +1338,6 @@ const ViewPurchaseOrderDialog = ({
                     Xóa
                   </Button>
                 </ConfirmActionButton>
-              ) : (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => toast.warning('Chỉ có thể xóa đơn hàng ở trạng thái nháp hoặc đã hủy')}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Xóa
-                </Button>
               )}
             </>
           )}

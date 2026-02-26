@@ -403,8 +403,18 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
                                     </span>
                                   </TableCell>
                                   <TableCell className="text-center">
-                                    <Badge variant={isBase ? "default" : "secondary"} className="text-[10px]">
-                                      {c.source === 'EXPLICIT' ? 'Thiết lập' : 'Quy đổi'}
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(
+                                        "text-[11px] border-transparent bg-transparent px-0 font-medium",
+                                        isBase ? "text-primary" : "text-muted-foreground"
+                                      )}
+                                    >
+                                      {isBase ? (
+                                        <><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Thiết lập</>
+                                      ) : (
+                                        <><RefreshCw className="mr-1 h-3.5 w-3.5" /> Quy đổi</>
+                                      )}
                                     </Badge>
                                   </TableCell>
                                 </TableRow>
@@ -726,7 +736,7 @@ const ViewProductDialog = ({ productId, showTrigger = true, contentClassName, ov
               <Can permission="UPDATE_PRODUCT">
                 <Button
                   size="sm"
-                  className="gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+                  className="gap-2 w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white"
                   onClick={() => setShowUpdateProductDialog(true)}
                 >
                   <Pencil className="h-4 w-4" />

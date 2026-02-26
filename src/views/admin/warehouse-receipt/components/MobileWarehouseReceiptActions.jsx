@@ -54,7 +54,7 @@ const MobileWarehouseReceiptActions = ({
           </SheetHeader>
           <div className="flex flex-col gap-3">
             {/* Save & Edit Actions */}
-            <div className={receipt.status === 'draft' && onSave ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
+            <div className={receipt.status === 'draft' ? (onSave ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3") : "hidden"}>
               {receipt.status === 'draft' && onSave && (
                 <Button
                   className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 gap-1 flex"
@@ -64,21 +64,17 @@ const MobileWarehouseReceiptActions = ({
                   <span className="text-xs">Lưu</span>
                 </Button>
               )}
-              <Button
-                className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 gap-1 flex"
-                onClick={() => {
-                  if (receipt.status === 'draft') {
-                    handleAction(onEdit)
-                  } else {
-                    toast.warning('Chỉ có thể sửa phiếu kho ở trạng thái nháp')
-                  }
-                }}
-              >
-                <Pencil className="h-5 w-5" />
-                <span className="text-xs">Sửa</span>
-              </Button>
+              {receipt.status === 'draft' && (
+                <Button
+                  className="bg-orange-600 text-white hover:bg-orange-700 h-auto py-3 gap-1 flex"
+                  onClick={() => handleAction(onEdit)}
+                >
+                  <Pencil className="h-5 w-5" />
+                  <span className="text-xs">Sửa</span>
+                </Button>
+              )}
             </div>
-            <Separator />
+            {receipt.status === 'draft' && <Separator />}
 
             {/* Print & Export Actions */}
             <div className="space-y-2">
@@ -106,11 +102,11 @@ const MobileWarehouseReceiptActions = ({
             <Separator />
 
             {/* Delete & Close Actions */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  if (['draft', 'cancelled'].includes(receipt?.status)) {
+            <div className={['draft', 'cancelled'].includes(receipt?.status) ? "grid grid-cols-2 gap-3" : "grid grid-cols-1 gap-3"}>
+              {['draft', 'cancelled'].includes(receipt?.status) && (
+                <Button
+                  variant="destructive"
+                  onClick={() => {
                     // Show confirmation
                     setOpen(false)
                     setTimeout(() => {
@@ -118,14 +114,12 @@ const MobileWarehouseReceiptActions = ({
                         handleDeleteReceipt()
                       }
                     }, 100)
-                  } else {
-                    toast.warning('Chỉ có thể xóa phiếu kho ở trạng thái nháp hoặc đã hủy')
-                  }
-                }}
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                Xóa
-              </Button>
+                  }}
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Xóa
+                </Button>
+              )}
 
               <Button
                 variant="outline"

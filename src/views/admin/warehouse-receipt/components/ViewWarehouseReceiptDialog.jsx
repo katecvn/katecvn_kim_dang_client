@@ -37,6 +37,9 @@ import ViewProductDialog from '../../product/components/ViewProductDialog'
 import CustomerDetailDialog from '../../customer/components/CustomerDetailDialog'
 import ViewSupplierDialog from '../../supplier/components/ViewSupplierDialog'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -159,6 +162,7 @@ const ViewWarehouseReceiptDialog = ({
       await dispatch(updateWarehouseReceipt({ id: receipt.id, data: payload })).unwrap()
       toast.success('Cập nhật phiếu kho thành công')
       fetchData()
+      onSuccess?.()
     } catch (error) {
       console.error(error)
       toast.error('Cập nhật thất bại')
@@ -618,39 +622,31 @@ const ViewWarehouseReceiptDialog = ({
               <Printer className="h-4 w-4" />
               In phiếu
             </Button>
-            <Can permission={receipt?.receiptType === 1 ? 'WAREHOUSE_IMPORT_UPDATE' : 'WAREHOUSE_EXPORT_UPDATE'}>
-              <Button
-                size="sm"
-                className="gap-2 bg-orange-600 hover:bg-orange-700 text-white"
-                onClick={() => {
-                  if (receipt?.status === 'draft') {
-                    setShowUpdateReceiptDialog(true)
-                  } else {
-                    toast.warning('Chỉ có thể sửa phiếu kho ở trạng thái nháp')
-                  }
-                }}
-              >
-                <Pencil className="h-4 w-4" />
-                Sửa
-              </Button>
-            </Can>
-            <Can permission={receipt?.receiptType === 1 ? 'WAREHOUSE_IMPORT_DELETE' : 'WAREHOUSE_EXPORT_DELETE'}>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="gap-2"
-                onClick={() => {
-                  if (['draft', 'cancelled'].includes(receipt?.status)) {
-                    setShowDeleteDialog(true)
-                  } else {
-                    toast.warning('Chỉ có thể xóa phiếu kho ở trạng thái nháp hoặc đã hủy')
-                  }
-                }}
-              >
-                <Trash className="h-4 w-4" />
-                Xóa
-              </Button>
-            </Can>
+            {receipt?.status === 'draft' && (
+              <Can permission={receipt?.receiptType === 1 ? 'WAREHOUSE_IMPORT_UPDATE' : 'WAREHOUSE_EXPORT_UPDATE'}>
+                <Button
+                  size="sm"
+                  className="gap-2 bg-amber-500 hover:bg-amber-600 text-white"
+                  onClick={() => setShowUpdateReceiptDialog(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Sửa
+                </Button>
+              </Can>
+            )}
+            {['draft', 'cancelled'].includes(receipt?.status) && (
+              <Can permission={receipt?.receiptType === 1 ? 'WAREHOUSE_IMPORT_DELETE' : 'WAREHOUSE_EXPORT_DELETE'}>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash className="h-4 w-4" />
+                  Xóa
+                </Button>
+              </Can>
+            )}
             <DialogClose asChild>
               <Button type="button" variant="outline" size="sm" className="gap-2">
                 <X className="h-4 w-4" />

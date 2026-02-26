@@ -12,7 +12,7 @@ import UpdatePaymentStatusDialog from './UpdatePaymentStatusDialog'
 import { paymentStatus, paymentMethods } from '../data'
 import { toast } from 'sonner'
 import ViewPaymentDialog from './ViewPaymentDialog'
-import { Pencil } from 'lucide-react'
+import { Pencil, User, Building2, Contact, CircleHelp } from 'lucide-react'
 
 export const columns = [
   {
@@ -77,15 +77,37 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Người nhận" />
     ),
-    cell: ({ row }) => (
-      <div className="w-28">
-        <Badge variant="outline">
-          {row.getValue('receiverType') === 'customer' ? 'Khách hàng' :
-            row.getValue('receiverType') === 'supplier' ? 'Nhà cung cấp' :
-              row.getValue('receiverType') || 'Khác'}
-        </Badge>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const type = row.getValue('receiverType')
+      let label = 'Khác'
+      let Icon = CircleHelp
+      let colorClass = 'text-gray-600'
+
+      if (type === 'customer') {
+        label = 'Khách hàng'
+        Icon = User
+        colorClass = 'text-blue-600'
+      } else if (type === 'supplier') {
+        label = 'Nhà cung cấp'
+        Icon = Building2
+        colorClass = 'text-orange-600'
+      } else if (type === 'employee' || type === 'user') {
+        label = 'Nhân viên'
+        Icon = Contact
+        colorClass = 'text-purple-600'
+      } else if (type) {
+        label = type
+      }
+
+      return (
+        <div className="w-28">
+          <Badge variant="outline" className={`whitespace-nowrap border-transparent bg-transparent px-0 font-medium ${colorClass}`}>
+            <Icon className="mr-1.5 h-3.5 w-3.5" />
+            {label}
+          </Badge>
+        </div>
+      )
+    },
     enableSorting: true,
     enableHiding: true,
   },
@@ -130,7 +152,7 @@ export const columns = [
 
       return (
         <div className="w-36">
-          <Badge variant="outline" className={`whitespace-nowrap ${paymentMethodObj?.color}`}>
+          <Badge variant="outline" className={`whitespace-nowrap border-transparent bg-transparent px-0 font-medium ${paymentMethodObj?.color}`}>
             {Icon && <Icon className="mr-1 h-3 w-3" />}
             {paymentMethodObj?.label || method}
           </Badge>

@@ -477,7 +477,7 @@ const MobileInvoiceCard = ({
             >
               {code}
             </div>
-            <div className="text-xs text-muted-foreground">{dateFormat(createdAt)}</div>
+            <div className="text-xs text-muted-foreground">{dateFormat(createdAt, true)}</div>
           </div>
 
           {/* Expand Button */}

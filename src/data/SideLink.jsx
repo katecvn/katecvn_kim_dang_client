@@ -10,15 +10,33 @@ import {
   IconListCheck,
   IconLogs,
   IconReceipt,
+  IconReceipt2,
   IconReceiptDollar,
-  IconReceiptPound,
-  IconReceiptRupee,
+  IconReceiptRefund,
   IconReceiptTax,
+  IconFileInvoice,
+  IconFileDescription,
+  IconFileText,
+  IconFileCertificate,
+  IconShoppingBag,
+  IconShoppingCart,
+  IconBasket,
+  IconPackage,
+  IconPackageExport,
+  IconPackageImport,
+  IconChartBar,
+  IconReportMoney,
   IconRulerMeasure2,
   IconSettings,
   IconShield,
   IconUserCog,
   IconUsers,
+  IconFileSpreadsheet,
+  IconBuildingWarehouse,
+  IconBook,
+  IconReport,
+  IconTags,
+  IconRulerMeasure
 } from '@tabler/icons-react'
 
 export const sideLinks = [
@@ -36,37 +54,37 @@ export const sideLinks = [
       {
         title: 'Đơn bán',
         href: '/invoice',
-        icon: <IconReceiptDollar size={18} />,
+        icon: <IconFileInvoice size={18} />,
         permission: 'GET_INVOICE',
       },
       {
         title: 'Đơn bán của tôi',
         href: '/invoice-user',
-        icon: <IconReceiptPound size={18} />,
+        icon: <IconFileDescription size={18} />,
         permission: ['GET_INVOICE_USER', 'GET_INVOICE'],
       },
       {
         title: 'Hợp đồng bán hàng',
         href: '/sales-contracts',
-        icon: <IconReceipt size={18} />,
+        icon: <IconFileCertificate size={18} />,
         permission: 'SALES_CONTRACT_VIEW_ALL',
       },
       {
         title: 'Hợp đồng của tôi',
         href: '/sales-contract-user',
-        icon: <IconReceiptRupee size={18} />,
+        icon: <IconFileText size={18} />,
         permission: ['SALES_CONTRACT_VIEW_ALL'],
       },
       {
         title: 'Phiếu thu',
         href: '/receipt',
-        icon: <IconReceipt size={18} />,
+        icon: <IconReceipt2 size={18} />,
         permission: 'RECEIPT_VIEW_ALL',
       },
       {
         title: 'Phiếu thu của tôi',
         href: '/receipt-user',
-        icon: <IconReceiptRupee size={18} />,
+        icon: <IconReceipt size={18} />,
         permission: 'RECEIPT_VIEW_OWN',
       },
       {
@@ -80,43 +98,43 @@ export const sideLinks = [
 
   {
     title: 'Đơn mua & Chi',
-    icon: <IconReceiptDollar size={18} />,
+    icon: <IconShoppingBag size={18} />,
     permission: ['PURCHASE_ORDER_VIEW_ALL'],
     sub: [
       {
         title: 'Đơn mua',
         href: '/purchase-order',
-        icon: <IconReceiptDollar size={18} />,
+        icon: <IconShoppingCart size={18} />,
         permission: 'PURCHASE_ORDER_VIEW_ALL',
       },
       {
         title: 'Đơn mua của tôi',
         href: '/purchase-order-user',
-        icon: <IconReceiptPound size={18} />,
+        icon: <IconBasket size={18} />,
         permission: ['PURCHASE_ORDER_VIEW_ALL'],
       },
       {
         title: 'Hợp đồng mua hàng',
         href: '/purchase-contracts',
-        icon: <IconReceipt size={18} />,
+        icon: <IconFileSpreadsheet size={18} />,
         permission: 'PURCHASE_CONTRACT_VIEW_ALL',
       },
       {
         title: 'Hợp đồng của tôi',
         href: '/purchase-contract-user',
-        icon: <IconReceiptRupee size={18} />,
+        icon: <IconFileText size={18} />,
         permission: ['PURCHASE_CONTRACT_VIEW_ALL'],
       },
       {
         title: 'Phiếu chi',
         href: '/payment',
-        icon: <IconReceipt size={18} />,
+        icon: <IconReceiptRefund size={18} />,
         permission: 'PAYMENT_VIEW_ALL',
       },
       {
         title: 'Phiếu chi của tôi',
         href: '/payment-user',
-        icon: <IconReceiptRupee size={18} />,
+        icon: <IconReceipt2 size={18} />,
         permission: 'PAYMENT_VIEW_OWN',
       },
 
@@ -124,7 +142,7 @@ export const sideLinks = [
   },
   {
     title: 'Báo cáo',
-    icon: <IconDatabaseDollar size={18} />,
+    icon: <IconChartBar size={18} />,
     permission: ['GET_REPORT', 'REPORT_PURCHASE_VIEW', 'REPORT_UNDELIVERED_VIEW', 'REPORT_UNRECEIVED_VIEW'],
     sub: [
       {
@@ -136,19 +154,19 @@ export const sideLinks = [
       {
         title: 'Báo cáo tiền mua',
         href: '/purchase-report',
-        icon: <IconDatabaseDollar size={18} />,
+        icon: <IconReportMoney size={18} />,
         permission: 'REPORT_PURCHASE_VIEW',
       },
       {
         title: 'Đơn chưa giao',
         href: '/sales-backlog',
-        icon: <IconReceipt size={18} />,
+        icon: <IconPackageExport size={18} />,
         permission: 'REPORT_UNDELIVERED_VIEW',
       },
       {
         title: 'Đơn chưa nhận',
         href: '/purchase-backlog',
-        icon: <IconReceipt size={18} />,
+        icon: <IconPackageImport size={18} />,
         permission: 'REPORT_UNRECEIVED_VIEW',
       },
     ],
@@ -232,13 +250,13 @@ export const sideLinks = [
       {
         title: 'Thuộc tính sản phẩm',
         href: '/attribute',
-        icon: <IconAdjustments size={18} />,
+        icon: <IconTags size={18} />,
         permission: 'GET_ATTRIBUTE',
       },
       {
         title: 'Đơn vị tính',
         href: '/unit',
-        icon: <IconRulerMeasure2 size={18} />,
+        icon: <IconRulerMeasure size={18} />,
         permission: 'GET_UNIT',
       },
       {
@@ -252,7 +270,7 @@ export const sideLinks = [
 
   {
     title: 'Kho',
-    icon: <IconBox size={18} />,
+    icon: <IconBuildingWarehouse size={18} />,
     permission: [
       'WAREHOUSE_IMPORT_VIEW_ALL',
     ],
@@ -260,13 +278,13 @@ export const sideLinks = [
       {
         title: 'Nhập kho',
         href: '/warehouse-in',
-        icon: <IconBox size={18} />,
+        icon: <IconPackageImport size={18} />,
         permission: 'WAREHOUSE_IMPORT_VIEW_ALL',
       },
       {
         title: 'Xuất kho',
         href: '/warehouse-out',
-        icon: <IconBox size={18} />,
+        icon: <IconPackageExport size={18} />,
         permission: 'WAREHOUSE_EXPORT_VIEW_ALL',
       },
       // {
@@ -278,13 +296,13 @@ export const sideLinks = [
       {
         title: ' Tổng hợp X-N-T',
         href: '/warehouse-report/summary',
-        icon: <IconBox size={18} />,
+        icon: <IconReport size={18} />,
         permission: 'INVENTORY_NXT_VIEW',
       },
       {
         title: 'Sổ chi tiết',
         href: '/warehouse-report/detail',
-        icon: <IconBox size={18} />,
+        icon: <IconBook size={18} />,
         permission: 'INVENTORY_LEDGER_VIEW',
       },
     ],
@@ -292,19 +310,19 @@ export const sideLinks = [
 
   {
     title: 'Cài đặt',
-    icon: <IconUserCog size={18} />,
+    icon: <IconSettings size={18} />,
     permission: ['GET_USER', 'GET_ROLE', 'SESSION_SETTING'],
     sub: [
       {
         title: 'Danh sách người dùng',
         href: '/user',
-        icon: <IconUserCog size={18} />,
+        icon: <IconUsers size={18} />,
         permission: 'GET_USER',
       },
       {
         title: 'Vai trò & Quyền',
         href: '/role-and-permissions',
-        icon: <IconShield size={18} />,
+        icon: <IconUserCog size={18} />,
         permission: 'GET_ROLE',
       },
       {
@@ -316,7 +334,7 @@ export const sideLinks = [
       {
         title: 'Hệ thống',
         href: '/setting',
-        icon: <IconSettings size={18} />,
+        icon: <IconAdjustments size={18} />,
         permission: 'GET_SETTING',
       },
     ],

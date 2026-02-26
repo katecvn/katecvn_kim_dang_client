@@ -6,7 +6,7 @@ import api from '@/utils/axios'
 import { moneyFormat } from '@/utils/money-format'
 import { IconArrowUp, IconArrowDown, IconShoppingCart, IconTruckDelivery } from '@tabler/icons-react'
 
-const DashboardSummary = ({ todayIncome = 0, todayExpense = 0, loading: parentLoading = false }) => {
+const DashboardSummary = ({ loading: parentLoading = false }) => {
   const [data, setData] = useState(null)
   const [internalLoading, setInternalLoading] = useState(true)
 
@@ -42,14 +42,14 @@ const DashboardSummary = ({ todayIncome = 0, todayExpense = 0, loading: parentLo
     <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       <SummaryCard
         title="Thu hôm nay"
-        value={moneyFormat(todayIncome)}
-        subValue="Tổng tiền thu thực tế"
+        value={moneyFormat(data.actualCollectedToday)}
+        subValue={`Tháng này: ${moneyFormat(data.actualCollectedMonth)}`}
         icon={<IconArrowUp className="h-4 w-4 text-emerald-600" />}
       />
       <SummaryCard
         title="Chi hôm nay"
-        value={moneyFormat(todayExpense)}
-        subValue="Tổng tiền chi thực tế"
+        value={moneyFormat(data.actualPaidToday)}
+        subValue={`Tháng này: ${moneyFormat(data.actualPaidMonth)}`}
         icon={<IconArrowDown className="h-4 w-4 text-rose-600" />}
       />
 
@@ -67,13 +67,13 @@ const DashboardSummary = ({ todayIncome = 0, todayExpense = 0, loading: parentLo
       />
 
       <SummaryCard
-        title="Đơn bán"
+        title="Đơn bán hôm nay"
         value={data.salesBacklogCount}
         subValue="Đơn hàng"
         icon={<IconShoppingCart className="h-4 w-4 text-orange-500" />}
       />
       <SummaryCard
-        title="Đơn mua"
+        title="Đơn mua hôm nay"
         value={data.purchaseBacklogCount}
         subValue="Đơn hàng"
         icon={<IconTruckDelivery className="h-4 w-4 text-blue-500" />}

@@ -3,6 +3,13 @@ import {
   Circle,
   Loader2,
   XCircle,
+  ArrowDown,
+  Minus,
+  ArrowUp,
+  Phone,
+  Mail,
+  MessageSquare,
+  Monitor
 } from 'lucide-react'
 
 export const ticketStatuses = [
@@ -37,14 +44,14 @@ export const ticketStatuses = [
 ]
 
 export const ticketPriorities = [
-  { value: 'low', label: 'Thấp', variant: 'outline' },
-  { value: 'normal', label: 'Trung bình', variant: 'secondary' },
-  { value: 'high', label: 'Cao', variant: 'default' },
+  { value: 'low', label: 'Thấp', icon: ArrowDown, color: 'text-green-600' },
+  { value: 'normal', label: 'Trung bình', icon: Minus, color: 'text-blue-600' },
+  { value: 'high', label: 'Cao', icon: ArrowUp, color: 'text-red-600' },
 ]
 
 export const ticketChannels = [
-  { value: 'phone', label: 'Điện thoại', variant: 'outline' },
-  { value: 'email', label: 'Email', variant: 'outline' },
-  { value: 'chat', label: 'Chat', variant: 'outline' },
-  { value: 'portal', label: 'Portal', variant: 'outline' },
+  { value: 'phone', label: 'Điện thoại', icon: Phone, color: 'text-slate-600' },
+  { value: 'email', label: 'Email', icon: Mail, color: 'text-slate-600' },
+  { value: 'chat', label: 'Chat', icon: MessageSquare, color: 'text-slate-600' },
+  { value: 'portal', label: 'Portal', icon: Monitor, color: 'text-slate-600' },
 ]

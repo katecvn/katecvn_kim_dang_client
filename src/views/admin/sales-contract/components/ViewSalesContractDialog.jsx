@@ -1740,38 +1740,38 @@ const ViewSalesContractDialog = ({
           />
 
           <DialogFooter className="hidden md:flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0 p-4 pt-0">
-            <Button
-              size="sm"
-              onClick={handleCreateReceipt}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Tạo Phiếu Thu
-            </Button>
+            {(!['draft', 'cancelled'].includes(contract?.status) && contract?.paymentStatus !== 'paid') && (
+              <Button
+                size="sm"
+                onClick={handleCreateReceipt}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Tạo Phiếu Thu
+              </Button>
+            )}
 
-            <Button
-              size="sm"
-              onClick={handleCreateWarehouseReceipt}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Tạo Phiếu xuất kho
-            </Button>
+            {contract?.status === 'confirmed' && (
+              <Button
+                size="sm"
+                onClick={handleCreateWarehouseReceipt}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Tạo Phiếu xuất kho
+              </Button>
+            )}
 
-            <Button
-              size="sm"
-              onClick={() => {
-                if (contract?.status !== 'confirmed') {
-                  toast.warning('Chỉ có thể thanh lý hợp đồng ở trạng thái chờ nhận hàng')
-                  return
-                }
-                setShowLiquidationDialog(true)
-              }}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              <FileCheck className="mr-2 h-4 w-4" />
-              Thanh lý
-            </Button>
+            {contract?.status === 'confirmed' && (
+              <Button
+                size="sm"
+                onClick={() => setShowLiquidationDialog(true)}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                <FileCheck className="mr-2 h-4 w-4" />
+                Thanh lý
+              </Button>
+            )}
 
             <Button
               size="sm"
@@ -1784,20 +1784,16 @@ const ViewSalesContractDialog = ({
               In Hợp Đồng
             </Button>
 
-            <Button
-              size="sm"
-              onClick={() => {
-                if (contract?.status !== 'draft') {
-                  toast.warning('Chỉ có thể xóa hợp đồng ở trạng thái nháp')
-                  return
-                }
-                setShowDeleteDialog(true)
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Xóa
-            </Button>
+            {contract?.status === 'draft' && (
+              <Button
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Xóa
+              </Button>
+            )}
 
             <DialogClose asChild>
               <Button type="button" variant="outline" size="sm" className={cn(!isDesktop && "flex-1")}>

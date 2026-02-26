@@ -131,11 +131,13 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
                     toast.warning('Vui lòng chọn ít nhất 1 đơn hàng')
                     return
                   }
-                  const invalidOrders = selectedRows.filter(row => ['draft', 'cancelled'].includes(row.original.status))
-                  if (invalidOrders.length > 0) {
-                    toast.warning('Chỉ có thể gửi nhắc nhở cho đơn hàng đã đặt')
+
+                  const validOrders = selectedRows.filter(row => !['draft', 'completed', 'received', 'cancelled'].includes(row.original.status))
+                  if (validOrders.length === 0) {
+                    toast.warning('Không có đơn hàng nào hợp lệ để nhắc nhở (chỉ nhắc các đơn đang giao, đã đặt...)')
                     return
                   }
+
                   setShowReceiptReminderDialog(true)
                 }}
                 className="text-xs text-orange-600"
@@ -217,7 +219,6 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
     <div
       className="
     flex w-full justify-between gap-3 overflow-x-auto
-    p-1
     md:flex-wrap md:overflow-visible
   "
     >
@@ -281,10 +282,10 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
               toast.warning('Vui lòng chọn ít nhất 1 đơn hàng')
               return
             }
-            // Filter out draft/cancelled orders
-            const invalidOrders = selectedRows.filter(row => ['draft', 'cancelled'].includes(row.original.status))
-            if (invalidOrders.length > 0) {
-              toast.warning('Chỉ có thể gửi nhắc nhở cho đơn hàng đã đặt')
+
+            const validOrders = selectedRows.filter(row => !['draft', 'completed', 'received', 'cancelled'].includes(row.original.status))
+            if (validOrders.length === 0) {
+              toast.warning('Không có đơn hàng nào hợp lệ để nhắc nhở (chỉ nhắc các đơn đang giao, đã đặt...)')
               return
             }
 

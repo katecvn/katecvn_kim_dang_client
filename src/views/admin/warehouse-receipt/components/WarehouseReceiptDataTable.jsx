@@ -32,10 +32,16 @@ const WarehouseReceiptDataTable = ({
   pagination,
   onPaginationChange,
   pageCount,
+  columnFilters = [],
+  onColumnFiltersChange,
 }) => {
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
-  const [columnFilters, setColumnFilters] = useState([])
+  const [internalColumnFilters, setInternalColumnFilters] = useState([])
+
+  const finalColumnFilters = onColumnFiltersChange ? columnFilters : internalColumnFilters
+  const finalSetColumnFilters = onColumnFiltersChange ? onColumnFiltersChange : setInternalColumnFilters
+
   const [sorting, setSorting] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
   const isMobile = useMediaQuery('(max-width: 768px)')
@@ -55,14 +61,14 @@ const WarehouseReceiptDataTable = ({
       sorting,
       columnVisibility,
       rowSelection,
-      columnFilters,
+      columnFilters: finalColumnFilters,
       globalFilter,
       ...(pagination && { pagination }),
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: finalSetColumnFilters,
     ...(onPaginationChange && { onPaginationChange }),
     onGlobalFilterChange: (updater) => {
       const value = typeof updater === 'function' ? updater(globalFilter) : updater

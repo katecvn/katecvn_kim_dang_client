@@ -76,7 +76,7 @@ export const columns = [
 
       return (
         <div className="flex w-[120px] items-center">
-          <Badge variant={priority.variant || 'outline'}>
+          <Badge variant="outline" className={`border-transparent bg-transparent px-0 font-medium ${priority.color || ''}`}>
             {priority.icon && <priority.icon className="mr-2 h-4 w-4" />}
             {priority.label}
           </Badge>
@@ -103,7 +103,7 @@ export const columns = [
 
       return (
         <div className="flex w-[120px] items-center">
-          <Badge variant={channel.variant || 'outline'}>
+          <Badge variant="outline" className={`border-transparent bg-transparent px-0 font-medium ${channel.color || ''}`}>
             {channel.icon && <channel.icon className="mr-2 h-4 w-4" />}
             {channel.label}
           </Badge>

@@ -1,4 +1,5 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
+import { Printer } from 'lucide-react'
 import { Button } from '@/components/custom/Button'
 import {
   DropdownMenu,
@@ -44,6 +45,9 @@ const DataTableRowActions = ({ row }) => {
   // Chỉ có thể xóa khi status = 'draft' (Đang chờ)
   const canDelete = contract.status === 'draft'
 
+  // Chỉ có thể xuất kho khi status = 'confirmed'
+  const canExport = contract.status === 'confirmed'
+
   const dispatch = useDispatch()
   const [warehouseLoading, setWarehouseLoading] = useState(false)
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
@@ -55,27 +59,34 @@ const DataTableRowActions = ({ row }) => {
   const [installmentFileName, setInstallmentFileName] = useState('hop-dong-ban-hang.docx')
   const [showInstallmentPreview, setShowInstallmentPreview] = useState(false)
   const [installmentExporting, setInstallmentExporting] = useState(false)
+  const [printLoading, setPrintLoading] = useState(false)
 
   const handlePrintContract = async () => {
     try {
+      setPrintLoading(true)
+      // Fetch contract detail to ensure we have the invoices array
+      const contractDetail = await dispatch(getSalesContractDetail(contract.id)).unwrap()
+
       // Get first invoice from the selected contract
-      if (!contract.invoices || contract.invoices.length === 0) {
-        toast.warning('Hợp đồng này không có hóa đơn')
+      if (!contractDetail.invoices || contractDetail.invoices.length === 0) {
+        toast.warning('Hợp đồng này chưa có hóa đơn')
         return
       }
 
       // Fetch full invoice detail to ensure all data is present
-      const invoiceId = contract.invoices[0].id
+      const invoiceId = contractDetail.invoices[0].id
       const fullInvoiceData = await getInvoiceDetail(invoiceId)
 
       const baseInstallmentData = await buildInstallmentData(fullInvoiceData)
 
       setInstallmentData(baseInstallmentData)
-      setInstallmentFileName(`hop-dong-ban-hang-${contract.code || 'contract'}.docx`)
+      setInstallmentFileName(`hop-dong-ban-hang-${contractDetail.code || 'contract'}.docx`)
       setShowInstallmentPreview(true)
     } catch (error) {
       console.error('Load installment data error:', error)
       toast.error('Không lấy được dữ liệu hợp đồng bán hàng')
+    } finally {
+      setPrintLoading(false)
     }
   }
 
@@ -200,12 +211,12 @@ const DataTableRowActions = ({ row }) => {
           <Can permission={'SALES_CONTRACT_VIEW_ALL'}>
             <DropdownMenuItem
               onClick={handlePrintContract}
-              className="text-orange-600"
-              disabled={installmentExporting}
+              className="text-blue-600"
+              disabled={installmentExporting || printLoading}
             >
               In Hợp Đồng
               <DropdownMenuShortcut>
-                <IconFileTypePdf className="h-4 w-4" />
+                <Printer className="h-4 w-4" />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
           </Can>
@@ -223,18 +234,19 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can> */}
 
-          <Can permission={'WAREHOUSE_EXPORT_CREATE'}>
-            <DropdownMenuItem
-              onClick={handleCreateWarehouseReceipt}
-              disabled={warehouseLoading || !contract.invoices?.[0] || contract.invoices?.[0]?.warehouseReceipts?.length > 0}
-              className="text-blue-600"
-            >
-              Xuất kho
-              <DropdownMenuShortcut>
-                <IconPackageExport className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </Can>
+          {canExport && (
+            <Can permission={'WAREHOUSE_EXPORT_CREATE'}>
+              <DropdownMenuItem
+                onClick={handleCreateWarehouseReceipt}
+                className="text-blue-600"
+              >
+                Xuất kho
+                <DropdownMenuShortcut>
+                  <IconPackageExport className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
 
           {contract.status === 'confirmed' && (
             <Can permission={'SALES_CONTRACT_LIQUIDATE'}>
@@ -252,18 +264,19 @@ const DataTableRowActions = ({ row }) => {
 
           <DropdownMenuSeparator />
 
-          <Can permission={'SALES_CONTRACT_DELETE'}>
-            <DropdownMenuItem
-              onClick={() => setShowDeleteDialog(true)}
-              className={`text-red-600 ${!canDelete ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={!canDelete}
-            >
-              Xóa
-              <DropdownMenuShortcut>
-                <IconTrash className="h-4 w-4" />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </Can>
+          {canDelete && (
+            <Can permission={'SALES_CONTRACT_DELETE'}>
+              <DropdownMenuItem
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-red-600"
+              >
+                Xóa
+                <DropdownMenuShortcut>
+                  <IconTrash className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

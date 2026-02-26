@@ -56,7 +56,7 @@ const DataTableRowActions = ({ row }) => {
           <Can permission="UPDATE_CUSTOMER_CARE">
             <DropdownMenuItem
               onSelect={() => setShowUpdateTicketDialog(true)}
-              className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+              className="text-amber-500 focus:text-amber-600 hover:text-amber-600 focus:bg-amber-50"
             >
               Sửa
               <DropdownMenuShortcut>

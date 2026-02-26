@@ -57,11 +57,11 @@ const DataTableRowActions = ({ row }) => {
             <Can permission="PAYMENT_UPDATE">
               <DropdownMenuItem
                 onSelect={() => setShowUpdatePaymentDialog(true)}
-                className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+                className="text-amber-500 focus:text-amber-600 hover:text-amber-600 focus:bg-amber-50"
               >
-                Chỉnh sửa
+                Sửa
                 <DropdownMenuShortcut>
-                  <Pencil className="h-4 w-4 text-orange-600" />
+                  <Pencil className="h-4 w-4" />
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
             </Can>

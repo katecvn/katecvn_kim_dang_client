@@ -17,6 +17,9 @@ import { DateRange } from '@/components/custom/DateRange.jsx'
 import { useDebounce } from '@/hooks/useDebounce'
 
 const MyPurchaseContractPage = () => {
+  const authUserWithRoleHasPermissions =
+    useSelector((state) => state.auth.authUserWithRoleHasPermissions) || {}
+  const fullName = authUserWithRoleHasPermissions?.fullName
   const dispatch = useDispatch()
   const pagination = useSelector((state) => state.purchaseContract.pagination)
   const contracts = useSelector((state) => state.purchaseContract.contracts)
@@ -82,11 +85,8 @@ const MyPurchaseContractPage = () => {
         <div className="mb-2 -mx-4 px-1 flex flex-col sm:mx-0 sm:px-0 sm:flex-row sm:items-center justify-between gap-2">
           <div className="w-full sm:w-auto">
             <h2 className="text-2xl font-bold tracking-tight">
-              Hợp đồng mua hàng của tôi
+              Hợp đồng mua hàng của tôi: {fullName}
             </h2>
-            <p className="text-muted-foreground hidden sm:block">
-              Quản lý các hợp đồng mua hàng do bạn tạo
-            </p>
           </div>
           <div className="w-full sm:w-auto">
             <DateRange

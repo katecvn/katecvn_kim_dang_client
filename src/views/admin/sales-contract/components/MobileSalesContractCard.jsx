@@ -5,8 +5,8 @@ import { Button } from '@/components/custom/Button'
 import { moneyFormat } from '@/utils/money-format'
 import { dateFormat } from '@/utils/date-format'
 import { cn } from '@/lib/utils'
-import { ChevronDown, MoreVertical, Eye, Phone, CreditCard, Mail } from 'lucide-react'
-import { IconFileTypePdf, IconPencil, IconPackageExport, IconArchive, IconTrash } from '@tabler/icons-react'
+import { ChevronDown, MoreVertical, Eye, Phone, CreditCard, Mail, CheckCircle, PackageOpen, FileText, Printer } from 'lucide-react'
+import { IconFileTypePdf, IconPencil, IconPackageExport, IconArchive, IconTrash, IconFileTypeDocx, IconPlus } from '@tabler/icons-react'
 import { useState } from 'react'
 import {
   DropdownMenu,
@@ -32,6 +32,8 @@ import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData
 import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWord'
 import React from 'react'
 import { MobileIcon } from '@radix-ui/react-icons'
+import ReceiptDialog from '@/views/admin/receipt/components/ReceiptDialog'
+import { getInvoiceDetail } from '@/api/invoice'
 
 const MobileSalesContractCard = ({
   contract,
@@ -53,6 +55,22 @@ const MobileSalesContractCard = ({
   const [installmentFileName, setInstallmentFileName] = useState('hop-dong-ban-hang.docx')
   const [showInstallmentPreview, setShowInstallmentPreview] = useState(false)
   const [installmentExporting, setInstallmentExporting] = useState(false)
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false)
+
+  const handleCreateReceipt = async () => {
+    // Check if contract has invoices
+    if (!contract?.invoices || contract.invoices.length === 0) {
+      toast.warning('Hợp đồng chưa có hóa đơn để tạo phiếu thu')
+      return
+    }
+    setShowReceiptDialog(true)
+  }
+
+  const handleCreateReceiptSuccess = () => {
+    setShowReceiptDialog(false)
+    toast.success('Tạo phiếu thu thành công')
+    dispatch(getSalesContracts({}))
+  }
 
   const dispatch = useDispatch()
 
@@ -69,7 +87,7 @@ const MobileSalesContractCard = ({
     return (
       <Badge
         variant="outline"
-        className={`cursor-pointer ${statusObj?.color}`}
+        className={`cursor-pointer border-0 border-transparent bg-transparent px-0 ${statusObj?.color}`}
       >
         <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
           {statusObj?.icon ? React.createElement(statusObj.icon, { className: 'h-3 w-3' }) : null}
@@ -84,7 +102,7 @@ const MobileSalesContractCard = ({
       (s) => s.value === paymentStatusValue
     )
     return (
-      <Badge variant="outline" className={paymentStatusObj?.color}>
+      <Badge variant="outline" className={`border-0 border-transparent bg-transparent px-0 ${paymentStatusObj?.color}`}>
         <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
           {paymentStatusObj?.icon ? React.createElement(paymentStatusObj.icon, { className: 'h-3 w-3' }) : null}
         </span>
@@ -118,6 +136,36 @@ const MobileSalesContractCard = ({
     }
 
     return <span className="text-xs text-muted-foreground">Chưa thanh toán</span>
+  }
+
+  const getWarehouseStatusBadge = (statusValue) => {
+    const status = statusValue || 'none'
+    let Icon = PackageOpen
+    let label = 'Chưa xuất'
+    let colorClass = 'text-gray-400'
+
+    if (status === 'draft') {
+      Icon = FileText
+      label = 'Đã tạo nháp'
+      colorClass = 'text-yellow-600'
+    } else if (status === 'posted_partial') {
+      Icon = CheckCircle
+      label = 'Xuất một phần'
+      colorClass = 'text-blue-600'
+    } else if (status === 'posted_full') {
+      Icon = CheckCircle
+      label = 'Đã xuất đủ'
+      colorClass = 'text-green-500'
+    }
+
+    return (
+      <Badge variant="outline" className={`border-0 border-transparent bg-transparent px-0 ${colorClass}`}>
+        <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
+          <Icon className="h-3 w-3" />
+        </span>
+        {label}
+      </Badge>
+    )
   }
 
   const handlePrintContract = async () => {
@@ -313,6 +361,16 @@ const MobileSalesContractCard = ({
         />
       )}
 
+      {showReceiptDialog && (
+        <ReceiptDialog
+          open={showReceiptDialog}
+          onOpenChange={setShowReceiptDialog}
+          invoices={contract?.invoices?.[0]?.id ? [contract.invoices[0].id] : []}
+          showTrigger={false}
+          onSuccess={handleCreateReceiptSuccess}
+        />
+      )}
+
       <div className="border rounded-lg bg-card mb-3 overflow-hidden">
         {/* Header - Always Visible */}
         <div className="p-3 border-b bg-background/50 flex items-center gap-2">
@@ -357,10 +415,21 @@ const MobileSalesContractCard = ({
                 Xem
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={handlePrintContract} className="text-orange-600">
-                <IconFileTypePdf className="mr-2 h-4 w-4" />
-                In Hợp Đồng
-              </DropdownMenuItem>
+              <Can permission={'SALES_CONTRACT_VIEW_ALL'}>
+                <DropdownMenuItem onClick={handlePrintContract} className="text-purple-600" disabled={installmentExporting}>
+                  <IconFileTypeDocx className="mr-2 h-4 w-4" />
+                  In Hợp Đồng
+                </DropdownMenuItem>
+              </Can>
+
+              {(!['draft', 'cancelled'].includes(contract?.status) && contract?.paymentStatus !== 'paid') && (
+                <Can permission="RECEIPT_CREATE">
+                  <DropdownMenuItem onClick={handleCreateReceipt} className="text-emerald-600">
+                    <IconPlus className="mr-2 h-4 w-4" />
+                    Tạo Phiếu Thu
+                  </DropdownMenuItem>
+                </Can>
+              )}
 
               {/* <Can permission={'UPDATE_SALES_CONTRACT'}>
                 <DropdownMenuItem
@@ -373,36 +442,40 @@ const MobileSalesContractCard = ({
                 </DropdownMenuItem>
               </Can> */}
 
-              <Can permission={'CREATE_INVOICE'}>
-                <DropdownMenuItem
-                  onClick={handleCreateWarehouseReceipt}
-                  disabled={warehouseLoading || !contract.invoices?.[0] || contract.invoices?.[0]?.warehouseReceipts?.length > 0}
-                  className="text-blue-600"
-                >
-                  <IconPackageExport className="mr-2 h-4 w-4" />
-                  Xuất kho
-                </DropdownMenuItem>
-              </Can>
+              {status === 'confirmed' && (
+                <Can permission={'WAREHOUSE_EXPORT_CREATE'}>
+                  <DropdownMenuItem
+                    onClick={handleCreateWarehouseReceipt}
+                    className="text-blue-600"
+                  >
+                    <IconPackageExport className="mr-2 h-4 w-4" />
+                    Xuất kho
+                  </DropdownMenuItem>
+                </Can>
+              )}
 
               {status === 'confirmed' && (
-                <DropdownMenuItem onClick={() => setShowLiquidationDialog(true)} className="text-orange-600">
-                  <IconArchive className="mr-2 h-4 w-4" />
-                  Thanh Lý
-                </DropdownMenuItem>
+                <Can permission={'SALES_CONTRACT_LIQUIDATE'}>
+                  <DropdownMenuItem onClick={() => setShowLiquidationDialog(true)} className="text-orange-600">
+                    <IconArchive className="mr-2 h-4 w-4" />
+                    Thanh Lý
+                  </DropdownMenuItem>
+                </Can>
               )}
 
               <DropdownMenuSeparator />
 
-              <Can permission={'SALES_CONTRACT_DELETE'}>
-                <DropdownMenuItem
-                  onClick={() => setShowDeleteDialog(true)}
-                  className={`text-red-600 ${!canDelete ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={!canDelete}
-                >
-                  <IconTrash className="mr-2 h-4 w-4" />
-                  Xóa
-                </DropdownMenuItem>
-              </Can>
+              {canDelete && (
+                <Can permission={'SALES_CONTRACT_DELETE'}>
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-red-600"
+                  >
+                    <IconTrash className="mr-2 h-4 w-4" />
+                    Xóa
+                  </DropdownMenuItem>
+                </Can>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -443,12 +516,12 @@ const MobileSalesContractCard = ({
             {getStatusBadge(status)}
           </div>
           <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">Trạng thái xuất:</span>
+            {getWarehouseStatusBadge(contract.warehouseReceiptStatus)}
+          </div>
+          <div className="flex justify-between items-center">
             <span className="text-xs text-muted-foreground">Thanh toán:</span>
-            {contract.invoices?.[0] ? (
-              getPaymentStatusBadge(contract.invoices[0].paymentStatus || 'unpaid')
-            ) : (
-              <span className="text-muted-foreground text-xs">—</span>
-            )}
+            {getPaymentStatusBadge(paymentStatus || 'unpaid')}
           </div>
           <div className="flex justify-between items-start">
             <span className="text-xs text-muted-foreground">Công nợ:</span>

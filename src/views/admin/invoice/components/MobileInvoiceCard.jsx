@@ -483,7 +483,7 @@ const MobileInvoiceCard = ({
                 Xem
               </DropdownMenuItem>
 
-              {status !== 'accepted' && (
+              {status === 'pending' && (
                 <Can permission="CREATE_INVOICE">
                   <DropdownMenuItem onClick={() => setShowUpdateDialog(true)} className="text-blue-600">
                     <Pencil className="mr-2 h-4 w-4" />
@@ -515,7 +515,7 @@ const MobileInvoiceCard = ({
               <DropdownMenuSeparator />
 
               {/* Create Receipt */}
-              {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && (
+              {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && invoice?.paymentStatus !== 'paid' && (
                 <Can permission="RECEIPT_CREATE">
                   <DropdownMenuItem onClick={handleCreateReceipt} className="text-emerald-600">
                     <IconPlus className="mr-2 h-4 w-4" />
@@ -571,15 +571,17 @@ const MobileInvoiceCard = ({
                 </DropdownMenuItem>
               )}
 
-              <Can permission="DELETE_INVOICE">
-                <DropdownMenuItem
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="text-red-600"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Xóa
-                </DropdownMenuItem>
-              </Can>
+              {status === 'pending' && (
+                <Can permission="DELETE_INVOICE" permission2="DELETE_INVOICE_USER" isOwner={true} ownerId={invoice?.createdById || invoice?.user?.id}>
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-red-600"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Xóa
+                  </DropdownMenuItem>
+                </Can>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 

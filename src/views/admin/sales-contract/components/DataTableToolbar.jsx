@@ -71,66 +71,68 @@ const DataTableToolbar = ({ table, isMyContract }) => {
       return
     }
 
+    const invalidStatusContracts = selectedContracts.filter(
+      (contract) => !['confirmed'].includes(contract.status)
+    )
+
+    if (invalidStatusContracts.length > 0) {
+      toast.warning('Chỉ có thể gửi nhắc giao hàng cho hợp đồng ở trạng thái chờ lấy hàng')
+      return
+    }
+
     setShowDeliveryReminderDialog(true)
   }
 
   if (isMobile) {
     return (
-      <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
         {/* Search */}
-        <Input
-          placeholder="Tìm kiếm..."
-          value={table.getState().globalFilter ?? ''}
-          onChange={(event) => table.setGlobalFilter(event.target.value)}
-          className="h-8 w-full text-sm"
-        />
+        <div className="flex-1">
+          <Input
+            placeholder="Tìm kiếm..."
+            value={table.getState().globalFilter ?? ''}
+            onChange={(event) => table.setGlobalFilter(event.target.value)}
+            className="h-8 w-full text-sm"
+          />
+        </div>
 
-        <div className="flex justify-between gap-2">
-          {/* Filters can go here if needed, or simplified */}
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {table.getColumn('status') && (
-              <DataTableFacetedFilter
-                column={table.getColumn('status')}
-                title="Trạng thái"
-                options={statuses}
-              />
-            )}
-          </div>
+        {/* Actions */}
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 px-2">
+                <EllipsisVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem
+                onClick={handleShowDeliveryReminderDialog}
+                className="text-xs text-blue-500"
+              >
+                <TruckIcon className="mr-2 h-3 w-3" />
+                Gửi nhắc giao hàng
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {/* Actions */}
-          <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 px-2">
-                  <EllipsisVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem
-                  onClick={handleShowDeliveryReminderDialog}
-                  className="text-xs text-blue-500"
-                >
-                  <TruckIcon className="mr-2 h-3 w-3" />
-                  Gửi nhắc giao hàng
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {showDeliveryReminderDialog && (
-              <DeliveryReminderDialog
-                open={showDeliveryReminderDialog}
-                onOpenChange={setShowDeliveryReminderDialog}
-                selectedInvoices={table.getSelectedRowModel().rows.flatMap(row =>
-                  row.original.invoices.map(inv => ({
+          {showDeliveryReminderDialog && (
+            <DeliveryReminderDialog
+              open={showDeliveryReminderDialog}
+              onOpenChange={setShowDeliveryReminderDialog}
+              selectedInvoices={table.getSelectedRowModel().rows.flatMap(row => {
+                const contract = row.original
+                if (contract.invoices && contract.invoices.length > 0) {
+                  return contract.invoices.map(inv => ({
                     ...inv,
-                    customer: row.original.customer,
-                    amount: inv.totalAmount,
-                    salesContract: row.original
+                    customer: contract.customer,
+                    amount: contract.totalAmount, // Map to contract's amount since invoice only has ID
+                    salesContract: contract
                   }))
-                )}
-              />
-            )}
-          </div>
+                }
+                return []
+              })}
+            />
+          )}
         </div>
       </div>
     )
@@ -187,7 +189,19 @@ const DataTableToolbar = ({ table, isMyContract }) => {
       </div>
 
       <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-
+        {selectedContracts.length > 0 && (
+          <Can permission="SALES_CONTRACT_DELETE">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-8"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+              Xóa ({selectedContracts.length})
+            </Button>
+          </Can>
+        )}
 
         {/* Gửi nhắc giao hàng */}
         <Button
@@ -204,29 +218,19 @@ const DataTableToolbar = ({ table, isMyContract }) => {
           <DeliveryReminderDialog
             open={showDeliveryReminderDialog}
             onOpenChange={setShowDeliveryReminderDialog}
-            selectedInvoices={table.getSelectedRowModel().rows.flatMap(row =>
-              row.original.invoices.map(inv => ({
-                ...inv,
-                customer: row.original.customer,
-                amount: inv.totalAmount,
-                salesContract: row.original
-              }))
-            )}
+            selectedInvoices={table.getSelectedRowModel().rows.flatMap(row => {
+              const contract = row.original
+              if (contract.invoices && contract.invoices.length > 0) {
+                return contract.invoices.map(inv => ({
+                  ...inv,
+                  customer: contract.customer,
+                  amount: contract.totalAmount, // Map to contract's amount since invoice only has ID
+                  salesContract: contract
+                }))
+              }
+              return []
+            })}
           />
-        )}
-
-        {selectedContracts.length > 0 && (
-          <Can permission="SALES_CONTRACT_DELETE">
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-8"
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              <TrashIcon className="mr-2 size-4" aria-hidden="true" />
-              Xóa ({selectedContracts.length})
-            </Button>
-          </Can>
         )}
 
         <DeleteMultipleSalesContractsDialog

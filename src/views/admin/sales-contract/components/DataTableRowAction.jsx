@@ -16,6 +16,8 @@ import {
   IconFileInvoice,
   IconPackageExport,
   IconArchive,
+  IconFileTypeDocx,
+  IconPlus,
 } from '@tabler/icons-react'
 import Can from '@/utils/can'
 import { useState } from 'react'
@@ -32,6 +34,7 @@ import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData
 import InstallmentPreviewDialog from '../../invoice/components/InstallmentPreviewDialog'
 import { getInvoiceDetail } from '@/api/invoice'
 import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWord'
+import ReceiptDialog from '@/views/admin/receipt/components/ReceiptDialog'
 
 const DataTableRowActions = ({ row }) => {
   const contract = row?.original || {}
@@ -60,6 +63,22 @@ const DataTableRowActions = ({ row }) => {
   const [showInstallmentPreview, setShowInstallmentPreview] = useState(false)
   const [installmentExporting, setInstallmentExporting] = useState(false)
   const [printLoading, setPrintLoading] = useState(false)
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false)
+
+  const handleCreateReceipt = () => {
+    // Check if contract has invoices
+    if (!contract?.invoices || contract.invoices.length === 0) {
+      toast.warning('Hợp đồng chưa có hóa đơn để tạo phiếu thu')
+      return
+    }
+    setShowReceiptDialog(true)
+  }
+
+  const handleCreateReceiptSuccess = () => {
+    setShowReceiptDialog(false)
+    toast.success('Tạo phiếu thu thành công')
+    dispatch(getSalesContracts({}))
+  }
 
   const handlePrintContract = async () => {
     try {
@@ -214,15 +233,26 @@ const DataTableRowActions = ({ row }) => {
           <Can permission={'SALES_CONTRACT_VIEW_ALL'}>
             <DropdownMenuItem
               onClick={handlePrintContract}
-              className="text-blue-600"
+              className="text-purple-600"
               disabled={installmentExporting || printLoading}
             >
               In Hợp Đồng
               <DropdownMenuShortcut>
-                <Printer className="h-4 w-4" />
+                <IconFileTypeDocx className="h-4 w-4" />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
           </Can>
+
+          {(!['draft', 'cancelled'].includes(contract?.status) && contract?.paymentStatus !== 'paid') && (
+            <Can permission="RECEIPT_CREATE">
+              <DropdownMenuItem onClick={handleCreateReceipt} className="text-emerald-600">
+                Tạo Phiếu Thu
+                <DropdownMenuShortcut>
+                  <IconPlus className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
 
           {/* <Can permission={'UPDATE_SALES_CONTRACT'}>
             <DropdownMenuItem
@@ -343,6 +373,16 @@ const DataTableRowActions = ({ row }) => {
               setInstallmentExporting(false)
             }
           }}
+        />
+      )}
+
+      {showReceiptDialog && (
+        <ReceiptDialog
+          open={showReceiptDialog}
+          onOpenChange={setShowReceiptDialog}
+          invoices={contract?.invoices?.[0]?.id ? [contract.invoices[0].id] : []}
+          showTrigger={false}
+          onSuccess={handleCreateReceiptSuccess}
         />
       )}
     </>

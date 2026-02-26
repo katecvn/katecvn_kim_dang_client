@@ -10,12 +10,14 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   IconFileTypePdf,
+  IconFileTypeDocx,
   IconPencil,
   IconPlus,
   IconTrash,
   IconEye,
   IconPackageExport,
 } from '@tabler/icons-react'
+import { Printer } from 'lucide-react'
 import Can from '@/utils/can'
 import { useState } from 'react'
 import DeleteInvoiceDialog from './DeleteInvoiceDialog'
@@ -345,7 +347,7 @@ const DataTableRowActions = ({ row, table }) => {
           <DropdownMenuItem onClick={handlePrintInvoice} className="text-purple-600">
             In Hóa Đơn
             <DropdownMenuShortcut>
-              <IconFileTypePdf className="h-4 w-4" />
+              <Printer className="h-4 w-4" />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 
@@ -361,14 +363,14 @@ const DataTableRowActions = ({ row, table }) => {
           <DropdownMenuItem onClick={handlePrintInstallment} className="text-purple-600">
             In Hợp Đồng Bán Hàng
             <DropdownMenuShortcut>
-              <IconFileTypePdf className="h-4 w-4" />
+              <IconFileTypeDocx className="h-4 w-4" />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 
           {/* Create Receipt */}
-          {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && (
+          {(invoice?.status === 'accepted' || invoice?.status === 'delivered') && invoice?.paymentStatus !== 'paid' && (
             <Can permission="RECEIPT_CREATE">
               <DropdownMenuItem onClick={handleCreateReceipt} className="text-emerald-600">
                 Tạo Phiếu Thu

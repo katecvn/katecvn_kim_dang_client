@@ -16,7 +16,6 @@ import RichTextEditor from '@/components/custom/RichTextEditor'
 import { Checkbox } from '@/components/ui/checkbox'
 
 const DeliveryReminderDialog = ({ open, onOpenChange, selectedInvoices = [] }) => {
-  console.log(selectedInvoices);
   const [subject, setSubject] = useState('')
   const [content, setContent] = useState('')
   const [selectedIds, setSelectedIds] = useState([])

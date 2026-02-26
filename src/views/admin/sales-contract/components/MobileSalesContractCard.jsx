@@ -163,9 +163,14 @@ const MobileSalesContractCard = ({
 
       const mappedItems = contractDetail?.items?.map(item => ({
         id: item.id,
+        productId: item.productId,
         productName: item.product?.name,
+        productCode: item.product?.code,
+        image: item.product?.image,
+        product: item.product,
         quantity: item.quantity,
         unitName: item.unit?.name,
+        unitId: item.unitId,
         salesContractItemId: item.id,
       })) || []
 

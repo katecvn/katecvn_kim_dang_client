@@ -558,6 +558,18 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
             contentClassName
           )}
           overlayClassName={overlayClassName}
+          onInteractOutside={(e) => {
+            // Prevent Radix from closing the parent dialog when interacting with child dialogs/selects
+            e.preventDefault();
+          }}
+          onPointerDownOutside={(e) => {
+            // Additional prevention for mobile touch events on child overlays
+            const target = e.target;
+            // If the user clicked inside a dialog overlay/content that is not THIS dialog, we prevent closing.
+            if (target.closest('[role="dialog"]') || target.closest('[data-radix-popper-content-wrapper]')) {
+              e.preventDefault();
+            }
+          }}
         >
           <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
             <DialogTitle className={cn(!isDesktop && "text-base")}>
@@ -752,10 +764,10 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                   <span className="text-muted-foreground">Thuế: </span>
                                   <span className="font-medium">{moneyFormat(product.taxAmount)}</span>
                                 </div>
-                                <div>
+                                {/* <div>
                                   <span className="text-muted-foreground">Giảm: </span>
                                   <span className="font-medium text-red-500">{moneyFormat(product.discount)}</span>
-                                </div>
+                                </div> */}
                               </div>
 
                               {/* Total - prominent */}
@@ -790,10 +802,10 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                           "space-y-4 text-sm",
                           isDesktop ? "order-2" : "order-1"
                         )}>
-                          <div className="flex justify-between">
+                          {/* <div className="flex justify-between">
                             <strong>Giảm giá:</strong>
                             <span>{moneyFormat(invoice?.discount)}</span>
-                          </div>
+                          </div> */}
                           <div className="flex justify-between">
                             <strong>Thuế:</strong>
                             <span>{moneyFormat(invoice?.taxAmount)}</span>
@@ -821,89 +833,58 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                             <strong>Trạng thái đơn bán: </strong>
                             {invoice?.status && (
                               <>
-                                {isDesktop ? (
-                                  <>
-                                    {showUpdateStatusDialog && (
-                                      <UpdateInvoiceStatusDialog
-                                        open={showUpdateStatusDialog}
-                                        onOpenChange={setShowUpdateStatusDialog}
-                                        invoiceId={invoice.id}
-                                        currentStatus={invoice.status}
-                                        paymentStatus={invoice.paymentStatus}
-                                        statuses={statuses}
-                                        onSubmit={handleUpdateStatus}
-                                      />
-                                    )}
-                                    <div className="ml-2 flex flex-col gap-2">
-                                      {(() => {
-                                        const statusObj = statuses.find(s => s.value === invoice.status)
-                                        const paymentStatusObj = paymentStatuses.find(s => s.value === invoice.paymentStatus)
-                                        return (
-                                          <>
-                                            <Badge
-                                              variant={invoice.status === 'delivered' ? 'outline' : 'default'}
-                                              className={invoice.status === 'delivered'
-                                                ? `cursor-default select-none border-0 ${statusObj?.textColor || 'text-green-500'}`
-                                                : `cursor-pointer select-none ${statusObj?.color || ''}`}
-                                              onClick={() => {
-                                                if (invoice.status !== 'delivered') {
-                                                  setShowUpdateStatusDialog(true)
-                                                }
-                                              }}
-                                              title={invoice.status === 'delivered' ? '' : "Bấm để cập nhật trạng thái"}
-                                            >
-                                              <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
-                                                {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
-                                              </span>
-                                              {statusObj?.label || 'Không xác định'}
-                                            </Badge>
-                                            <Badge
-                                              variant="outline"
-                                              className={`cursor-default select-none border-0 ${paymentStatusObj?.color || 'text-gray-500'}`}
-                                            >
-                                              <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
-                                                {paymentStatusObj?.icon ? <paymentStatusObj.icon className="h-4 w-4" /> : null}
-                                              </span>
-                                              {paymentStatusObj?.label || 'Không xác định'}
-                                            </Badge>
-                                          </>
-                                        )
-                                      })()}
-                                    </div>
-                                  </>
-                                ) : (
-                                  <div className="ml-2 w-[140px]">
-                                    <Select
-                                      value={invoice.status}
-                                      onValueChange={handleSelectStatusChange}
-                                      disabled={isActionDisabled}
-                                    >
-                                      <SelectTrigger className="h-7 text-xs px-2 bg-transparent border-input">
-                                        <SelectValue placeholder="Chọn trạng thái">
-                                          {(() => {
-                                            const sObj = statuses.find(s => s.value === invoice.status)
-                                            return sObj ? (
-                                              <span className={`flex items-center gap-1 ${sObj.textColor || 'text-gray-600'}`}>
-                                                {sObj.icon && React.createElement(sObj.icon, { className: 'h-3 w-3' })}
-                                                {sObj.label}
-                                              </span>
-                                            ) : null
-                                          })()}
-                                        </SelectValue>
-                                      </SelectTrigger>
-                                      <SelectContent position="popper" align="start" className="w-[140px] z-[100005]" modal={false}>
-                                        {filteredStatuses.map((s) => (
-                                          <SelectItem key={s.value} value={s.value} className="text-xs cursor-pointer">
-                                            <span className={`flex items-center gap-1 ${s.textColor || 'text-gray-600'}`}>
-                                              {s.icon && React.createElement(s.icon, { className: 'h-3 w-3' })}
-                                              {s.label}
-                                            </span>
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
+                                {showUpdateStatusDialog && (
+                                  <UpdateInvoiceStatusDialog
+                                    open={showUpdateStatusDialog}
+                                    onOpenChange={setShowUpdateStatusDialog}
+                                    invoiceId={invoice.id}
+                                    currentStatus={invoice.status}
+                                    paymentStatus={invoice.paymentStatus}
+                                    statuses={statuses}
+                                    onSubmit={handleUpdateStatus}
+                                  />
                                 )}
+                                <div className="ml-2 flex flex-col gap-2">
+                                  {(() => {
+                                    const statusObj = statuses.find(s => s.value === invoice.status)
+                                    const paymentStatusObj = paymentStatuses.find(s => s.value === invoice.paymentStatus)
+                                    return (
+                                      <>
+                                        <Badge
+                                          variant={invoice.status === 'delivered' ? 'outline' : 'default'}
+                                          className={cn(
+                                            invoice.status === 'delivered'
+                                              ? `cursor-default select-none border-0 ${statusObj?.textColor || 'text-green-500'}`
+                                              : `cursor-pointer select-none ${statusObj?.color || ''}`,
+                                            isActionDisabled && invoice.status !== 'delivered' ? "opacity-70 cursor-not-allowed" : ""
+                                          )}
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (!isActionDisabled && invoice.status !== 'delivered') {
+                                              setShowUpdateStatusDialog(true)
+                                            }
+                                          }}
+                                          title={invoice.status === 'delivered' ? '' : "Bấm để cập nhật trạng thái"}
+                                        >
+                                          <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
+                                            {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
+                                          </span>
+                                          {statusObj?.label || 'Không xác định'}
+                                        </Badge>
+                                        <Badge
+                                          variant="outline"
+                                          className={`cursor-default select-none border-0 ${paymentStatusObj?.color || 'text-gray-500'}`}
+                                        >
+                                          <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
+                                            {paymentStatusObj?.icon ? <paymentStatusObj.icon className="h-4 w-4" /> : null}
+                                          </span>
+                                          {paymentStatusObj?.label || 'Không xác định'}
+                                        </Badge>
+                                      </>
+                                    )
+                                  })()}
+                                </div>
                               </>
                             )}
                           </div>

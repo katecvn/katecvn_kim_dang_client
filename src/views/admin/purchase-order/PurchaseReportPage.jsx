@@ -45,12 +45,12 @@ const PurchaseReportPage = () => {
   return (
     <Layout>
       <LayoutBody className="flex flex-col" fixedHeight>
-        <div className="mb-4 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 -mx-4 px-1 sm:mx-0 sm:px-0">
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-bold tracking-tight">Báo cáo tiền mua</h2>
           </div>
-          <div className="flex items-center gap-2">
-            <div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex-1">
               <DateRange
                 defaultValue={{
                   from: filters?.fromDate,
@@ -68,7 +68,7 @@ const PurchaseReportPage = () => {
             <Button
               variant="outline"
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white gap-2"
+              className="bg-green-600 hover:bg-green-700 text-white gap-2 w-full sm:w-auto mt-2 sm:mt-0"
               onClick={() => setShowExportPreview(true)}
             >
               <FileSpreadsheet className="h-4 w-4" />
@@ -86,9 +86,9 @@ const PurchaseReportPage = () => {
           />
         )}
 
-        <div className="flex-1 overflow-auto space-y-6">
+        <div className="-mx-4 px-1 sm:px-4 flex-1 overflow-auto space-y-4 sm:space-y-6">
           {/* Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-4">
             <SummaryCard
               title="Tổng đơn mua"
               value={data?.totals?.totalOrders}

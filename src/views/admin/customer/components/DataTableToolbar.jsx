@@ -15,6 +15,9 @@ import { useDispatch } from 'react-redux'
 import { TrashIcon } from '@radix-ui/react-icons'
 import { IconFileTypeXls } from '@tabler/icons-react'
 import ExportCustomerDialog from './ExportCustomerDialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
+import { EllipsisVertical } from 'lucide-react'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
 
 const DataTableToolbar = ({ table }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -26,6 +29,7 @@ const DataTableToolbar = ({ table }) => {
 
   const dispatch = useDispatch()
   const selectedRows = table.getSelectedRowModel().rows
+  const isMobile = useMediaQuery('(max-width: 768px)')
 
   const handleDelete = async () => {
     const selectedIds = selectedRows.map((row) => row.original.id)
@@ -36,6 +40,107 @@ const DataTableToolbar = ({ table }) => {
     } catch (error) {
       console.log(error)
     }
+  }
+
+  if (isMobile) {
+    return (
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Tìm kiếm tên, SĐT..."
+          value={table.getState().globalFilter || ''}
+          onChange={(event) => table.setGlobalFilter(String(event.target.value))}
+          className="h-8 flex-1 text-sm"
+        />
+
+        <div className="flex gap-x-2">
+          {table.getColumn('type') && (
+            <DataTableFacetedFilter
+              column={table.getColumn('type')}
+              title="Loại khách hàng"
+              options={types}
+            />
+          )}
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 px-2">
+              <EllipsisVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <Can permission={'CREATE_CUSTOMER'}>
+              <DropdownMenuItem
+                onClick={() => setShowCreateCustomerDialog(true)}
+                className="text-xs text-green-600"
+              >
+                <PlusIcon className="mr-2 h-3 w-3" />
+                Thêm mới
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setShowImportDialog(true)}
+                className="text-xs text-emerald-600"
+              >
+                <FileSpreadsheet className="mr-2 h-3 w-3" />
+                Import Excel
+              </DropdownMenuItem>
+            </Can>
+            <Can permission={'GET_CUSTOMER'}>
+              <DropdownMenuItem
+                onClick={() => setShowExportDialog(true)}
+                className="text-xs text-green-600"
+              >
+                <IconFileTypeXls className="mr-2 h-3 w-3" />
+                Xuất Excel
+              </DropdownMenuItem>
+            </Can>
+
+            {selectedRows.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-xs text-destructive focus:text-destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <TrashIcon className="mr-2 h-3 w-3" />
+                  Xóa đã chọn ({selectedRows.length})
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {showImportDialog && (
+          <ImportCustomerDialog
+            open={showImportDialog}
+            onOpenChange={setShowImportDialog}
+          />
+        )}
+
+        {showCreateCustomerDialog && (
+          <CreateCustomerDialog
+            open={showCreateCustomerDialog}
+            onOpenChange={setShowCreateCustomerDialog}
+            showTrigger={false}
+          />
+        )}
+
+        {showExportDialog && (
+          <ExportCustomerDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+            showTrigger={false}
+          />
+        )}
+
+        <DeleteMultipleCustomersDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          count={selectedRows.length}
+        />
+      </div>
+    )
   }
 
   return (

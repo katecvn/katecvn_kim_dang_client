@@ -23,7 +23,7 @@ const DataTableViewOptions = ({ table }) => {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="ml-auto h-8 lg:flex">
+          <Button variant="outline" size="sm" className="hidden lg:flex ml-auto h-8">
             <MixerHorizontalIcon className="mr-2 h-4 w-4" />
             Xem
           </Button>

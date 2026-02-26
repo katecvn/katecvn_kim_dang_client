@@ -62,12 +62,12 @@ const PurchaseBacklogPage = () => {
   return (
     <Layout>
       <LayoutBody className="flex flex-col" fixedHeight>
-        <div className="mb-4 flex flex-wrap items-center justify-between space-y-2 sm:flex-nowrap">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 -mx-4 px-1 sm:mx-0 sm:px-0">
           <h2 className="text-2xl font-bold tracking-tight">Đơn mua chưa nhận</h2>
           <Button
             variant="outline"
             size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white gap-2"
+            className="bg-green-600 hover:bg-green-700 text-white gap-2 w-full sm:w-auto"
             onClick={() => setShowExportPreview(true)}
           >
             <FileSpreadsheet className="h-4 w-4" />
@@ -83,7 +83,7 @@ const PurchaseBacklogPage = () => {
           />
         )}
 
-        <div className="flex-1 overflow-auto rounded-md border mb-4">
+        <div className="-mx-4 px-1 sm:px-4 flex-1 overflow-auto rounded-md border mb-4">
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-secondary">
               <TableRow>

@@ -117,27 +117,7 @@ const MobileInvoiceCard = ({
 
   const selectedStatusObj = statuses.find((s) => s.value === status)
 
-  const getStatusBadge = (statusValue) => {
-    const statusObj = statuses.find((s) => s.value === statusValue)
-    // Extract text color from color class string if possible, or use explicit mapping
-    // Assuming statusObj.color might look like "bg-green-100 text-green-700"
-    // We want just "text-green-700" or similar.
-    // For now, let's use a mapping based on value if data doesn't have partials.
-    // Or we can just use the provided color class but override background?
-    // "bg-green-100" will show background.
-    // Let's assume I need to find the text color.
 
-    let textColor = "text-gray-600"
-    return (
-      <div
-        className={`cursor-pointer inline-flex items-center gap-1 font-medium text-xs ${statusObj?.textColor || 'text-gray-600'}`}
-        onClick={() => setShowUpdateStatusDialog(true)}
-      >
-        {statusObj?.icon ? <statusObj.icon className="h-3 w-3" /> : null}
-        {statusObj?.label || 'Không xác định'}
-      </div>
-    )
-  }
 
   const getPaymentStatusBadge = (paymentStatusValue) => {
     const paymentStatusObj = paymentStatuses.find(
@@ -545,16 +525,14 @@ const MobileInvoiceCard = ({
               )}
 
               {/* Create Sales Contract */}
-              {invoice?.status === 'accepted' && !invoice?.salesContract && (
+              {/* {invoice?.status === 'accepted' && !invoice?.salesContract && (
                 <Can permission="SALES_CONTRACT_CREATE">
                   <DropdownMenuItem onClick={handleCreateSalesContract} className="text-indigo-600">
                     <IconPlus className="mr-2 h-4 w-4" />
                     Tạo Hợp Đồng
                   </DropdownMenuItem>
                 </Can>
-              )}
-
-              <DropdownMenuSeparator />
+              )} */}
 
               {/* Warehouse Actions */}
               {invoice?.status === 'accepted' && !invoice?.warehouseReceiptId && (
@@ -645,6 +623,12 @@ const MobileInvoiceCard = ({
               <span className="text-xs text-red-500">-{moneyFormat(discount)}</span>
             </div>
           )}
+          {invoice?.paidAmount > 0 && (
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-muted-foreground">Đã thu:</span>
+              <span className="text-xs text-green-600">{moneyFormat(invoice.paidAmount)}</span>
+            </div>
+          )}
         </div>
 
         {/* Status & Debt Section */}
@@ -652,49 +636,22 @@ const MobileInvoiceCard = ({
           <div className="flex justify-between items-center">
             <span className="text-xs text-muted-foreground">Trạng thái:</span>
 
-            <div className="w-[140px]">
-              <Select
-                value={status}
-                onValueChange={handleStatusUpdate}
-                disabled={isActionDisabled}
+            <div className="flex justify-end relative">
+              <Badge
+                className={cn(
+                  "select-none",
+                  status === 'delivered'
+                    ? "cursor-default bg-transparent p-0 text-green-500 hover:bg-transparent shadow-none border-0"
+                    : `cursor-pointer ${selectedStatusObj?.color || ''}`,
+                  isActionDisabled && status !== 'delivered' ? "opacity-70 cursor-not-allowed" : ""
+                )}
+                onClick={() => !isActionDisabled && status !== 'delivered' && setShowUpdateStatusDialog(true)}
               >
-                <SelectTrigger className="h-7 text-xs px-2">
-                  <SelectValue placeholder="Chọn trạng thái">
-                    {selectedStatusObj ? (
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1 font-medium",
-                          invoice.status === 'delivered'
-                            ? "text-green-600"
-                            : selectedStatusObj.textColor || selectedStatusObj.color || ''
-                        )}
-                      >
-                        {selectedStatusObj.icon ? (
-                          <selectedStatusObj.icon className="h-3 w-3" />
-                        ) : null}
-                        {selectedStatusObj.label}
-                      </span>
-                    ) : null}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent position="popper" align="end" className="w-[140px] z-[10005]">
-                  {filteredStatuses.map((s) => (
-                    <SelectItem
-                      key={s.value}
-                      value={s.value}
-                      className="cursor-pointer text-xs"
-                    >
-                      <span
-                        className={`inline-flex items-center gap-1 font-medium ${s.textColor || s.color || ''
-                          }`}
-                      >
-                        {s.icon ? <s.icon className="h-3 w-3" /> : null}
-                        {s.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
+                  {selectedStatusObj?.icon ? <selectedStatusObj.icon className="h-3 w-3" /> : null}
+                </span>
+                {selectedStatusObj?.label || 'Không xác định'}
+              </Badge>
             </div>
           </div>
           <div className="flex justify-between items-center">

@@ -140,6 +140,18 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              {selectedInvoices.length > 0 && (
+                <Can permission="DELETE_INVOICE">
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-xs text-red-600 focus:text-red-700 focus:bg-red-50"
+                  >
+                    <TrashIcon className="mr-2 h-3 w-3" />
+                    Xóa ({selectedInvoices.length})
+                  </DropdownMenuItem>
+                </Can>
+              )}
+
               <DropdownMenuItem
                 onClick={() => setShowExportDialog(true)}
                 className="text-xs text-green-600 focus:text-green-700 focus:bg-green-50"
@@ -230,6 +242,14 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
             selectedInvoices={table.getSelectedRowModel().rows.map((r) => r.original)}
           />
         )}
+        {showDeleteDialog && (
+          <DeleteMultipleInvoicesDialog
+            open={showDeleteDialog}
+            onOpenChange={setShowDeleteDialog}
+            onConfirm={handleDelete}
+            count={selectedInvoices.length}
+          />
+        )}
       </div>
     )
   }
@@ -292,6 +312,20 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
 
         {/* Right side: Action buttons */}
         <div className="flex flex-wrap items-center justify-end gap-2 whitespace-nowrap">
+          {selectedInvoices.length > 0 && (
+            <Can permission="DELETE_INVOICE">
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-8"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+                Xóa ({selectedInvoices.length})
+              </Button>
+            </Can>
+          )}
+
           {/* Xuất Excel */}
           <Button
             className="text-green-600 border-green-200 hover:bg-green-50"
@@ -327,20 +361,6 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
               open={showImportDialog}
               onOpenChange={setShowImportDialog}
             />
-          )}
-
-          {selectedInvoices.length > 0 && (
-            <Can permission="DELETE_INVOICE">
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-8"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <TrashIcon className="mr-2 size-4" aria-hidden="true" />
-                Xóa ({selectedInvoices.length})
-              </Button>
-            </Can>
           )}
 
           {/* Gửi nhắc giao hàng */}

@@ -9,7 +9,14 @@ import { deleteMultiplePayments } from '@/stores/PaymentSlice'
 import { DataTableViewOptions } from './DataTableViewOption'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { DeleteMultiplePaymentVouchersDialog } from './DeleteMultiplePaymentVouchersDialog'
-import { paymentStatus as paymentStatuses } from '../data'
+import { useMediaQuery } from '@/hooks/UseMediaQuery'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { EllipsisVertical } from 'lucide-react'
 import { IconFileTypeXls } from '@tabler/icons-react'
 import ExportPaymentDialog from './ExportPaymentDialog'
 
@@ -23,6 +30,7 @@ export function DataTableToolbar({ table, isMyPayment = false }) {
 
   const selectedRows = table.getSelectedRowModel().rows
   const dispatch = useDispatch()
+  const isMobile = useMediaQuery('(max-width: 768px)')
 
   useEffect(() => {
     const payments = selectedRows.map((row) => row.original)
@@ -47,6 +55,46 @@ export function DataTableToolbar({ table, isMyPayment = false }) {
     } catch (error) {
       console.log(error)
     }
+  }
+
+  // Mobile View
+  if (isMobile) {
+    return (
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Tìm kiếm theo mã phiếu chi..."
+          value={table.getState().globalFilter || ''}
+          onChange={(e) => table.setGlobalFilter(e.target.value)}
+          className="h-8 flex-1 text-sm"
+        />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 px-2">
+              <EllipsisVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem
+              onClick={() => setShowExportDialog(true)}
+              className="text-xs text-green-600"
+            >
+              <IconFileTypeXls className="mr-2 h-3 w-3" />
+              Xuất Excel
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {showExportDialog && (
+          <ExportPaymentDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+            showTrigger={false}
+            isMyPayment={isMyPayment}
+          />
+        )}
+      </div>
+    )
   }
 
   return (

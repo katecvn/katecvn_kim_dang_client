@@ -14,15 +14,15 @@ const DataTableToolbar = ({ table }) => {
   const [showCreateTaxDialog, setShowCreateTaxDialog] = useState(false)
 
   return (
-    <div className="flex w-full items-center justify-between space-x-2 overflow-auto">
-      <div className="flex flex-1 items-center space-x-2">
+    <div className="flex w-full items-center justify-between gap-2 overflow-auto">
+      <div className="flex flex-1 items-center space-x-2 w-full">
         <Input
           placeholder="Tìm kiếm..."
           value={table.getColumn('title')?.getFilterValue() || ''}
           onChange={(event) =>
             table.getColumn('title')?.setFilterValue(event.target.value)
           }
-          className="h-8 w-[150px] lg:w-[250px]"
+          className="h-8 w-[150px] lg:w-[250px] flex-1"
         />
 
         {isFiltered && (
@@ -40,10 +40,10 @@ const DataTableToolbar = ({ table }) => {
       <Can permission={'CREATE_TAX'}>
         <Button
           onClick={() => setShowCreateTaxDialog(true)}
-          className="mx-2 bg-green-600 hover:bg-green-700 text-white"
+          className="bg-green-600 hover:bg-green-700 text-white shrink-0"
           size="sm"
         >
-          <PlusIcon className="mr-2 size-4" aria-hidden="true" />
+          <PlusIcon className="mr-1 sm:mr-2 size-4" aria-hidden="true" />
           Thêm mới
         </Button>
 

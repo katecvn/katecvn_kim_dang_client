@@ -381,7 +381,7 @@ export const invoiceSlice = createSlice({
         toast.error(state.error)
       })
       .addCase(updateInvoiceStatus.pending, (state) => {
-        state.loading = true
+        // Do not set global loading to true to prevent table remounting which closes dialogs
         state.error = null
       })
       .addCase(getInvoiceDetail.pending, (state) => {

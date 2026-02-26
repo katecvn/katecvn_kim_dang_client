@@ -206,7 +206,7 @@ export const columns = [
       } else if (status === 'posted_full') {
         Icon = CheckCircle
         label = 'Đã xuất đủ'
-        colorClass = 'text-green-600'
+        colorClass = 'text-green-500'
       } else if (status === 'none') {
         Icon = PackageOpen
         label = 'Chưa xuất'

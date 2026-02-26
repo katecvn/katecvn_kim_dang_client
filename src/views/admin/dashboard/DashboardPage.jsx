@@ -140,11 +140,11 @@ const DashboardPage = () => {
   return (
     <Layout>
       <LayoutBody className="flex flex-col h-full" fixedHeight>
-        <div className="flex-none flex items-center justify-between mb-4">
+        <div className="flex-none flex items-center justify-between mb-4 -mx-4 px-1 sm:mx-0 sm:px-0">
           <h2 className="text-2xl font-bold tracking-tight">Tổng quan</h2>
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 -mx-4 px-1 sm:mx-0 sm:px-0">
           <div className="space-y-6 pb-8">
             <DashboardSummary
               loading={loading}

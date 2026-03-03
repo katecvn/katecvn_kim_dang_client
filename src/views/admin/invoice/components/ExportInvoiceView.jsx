@@ -52,7 +52,7 @@ const ExportInvoiceView = ({
     if (email) phoneEmail.push(`Email: ${email}`)
     if (website) phoneEmail.push(`Website: ${website}`)
 
-    worksheet.mergeCells('A1:AD1')
+    worksheet.mergeCells('A1:AC1')
     const companyCell = worksheet.getCell('A1')
     companyCell.value = {
       richText: [
@@ -74,9 +74,9 @@ const ExportInvoiceView = ({
     worksheet.getRow(1).height = 72
 
     // === TIÊU ĐỀ BÁO CÁO (Row 2) === //
-    worksheet.mergeCells('A2:AD2')
+    worksheet.mergeCells('A2:AC2')
     worksheet.getCell('A2').value =
-      `Báo cáo danh sách hóa đơn từ ${fromDate} đến ${toDate}`
+      `Báo cáo danh sách đơn bán từ ${fromDate} đến ${toDate}`
 
     const rows = table.querySelectorAll('tr')
     const data = []
@@ -147,13 +147,13 @@ const ExportInvoiceView = ({
       6,  // A  STT
       22, // B  Mã HĐ
       22, // C  Mã HĐ/Bán
-      25, // D  KH
-      15, // E  SĐT
-      35, // F  Địa chỉ
-      20, // G  Người tạo
-      30, // H  Sản phẩm
-      8,  // I  SL
-      8,  // J  Tặng
+      18, // D  TT HĐ Bán
+      25, // E  KH
+      15, // F  SĐT
+      35, // G  Địa chỉ
+      20, // H  Người tạo
+      30, // I  Sản phẩm
+      8,  // J  SL
       10, // K  ĐVT
       15, // L  Giá
       15, // M  Thành tiền
@@ -161,28 +161,27 @@ const ExportInvoiceView = ({
       15, // O  Tiền Thuế
       12, // P  Giảm giá (%)
       15, // Q  Tiền giảm giá
-      15, // R  Tổng hóa đơn
-      15, // S  (cũ) Thuế
-      15, // T  (cũ) Giảm giá
-      15, // U  Chia DS
-      15, // V  Tổng chia DS
-      20, // W  Người được chia
-      20, // X  Công nợ
-      22, // Y  Thanh toán
-      28, // Z  DS phiếu xuất
-      15, // AA Trạng thái
-      20, // AB Ngày HĐ
-      20, // AC Ngày tạo
-      30, // AD Ghi chú
+      15, // R  Tổng dòng
+      15, // S  Tổng cộng
+      20, // T  Công nợ
+      22, // U  Thanh toán
+      28, // V  DS phiếu xuất
+      15, // W  Trạng thái
+      20, // X  Ngày HĐ
+      20, // Y  Ngày tạo
+      20, // Z  Giá trị BL
+      20, // AA Ngày BL
+      20, // AB Còn lại sau BL
+      30, // AC Ghi chú
     ]
     worksheet.columns.forEach((column, index) => {
       column.width = customColumnWidths[index] || 15
     })
 
-    // B=2,C=3,D=4,E=5,F=6,G=7,H=8,K=11,W=23,AD=30
-    const customColumnsAlignment = [2, 3, 4, 5, 6, 7, 8, 11, 23, 30]
-    // SL(9),Tặng(10),Giá(12),Thành tiền(13),Tiền Thuế(15),Tiền GG(17),Tổng HĐ(18),Thuế(19),GG(20),Chia DS(21),Tổng chia(22),CN(24)
-    const customColumnConvertToNumber = [9, 10, 12, 13, 15, 17, 18, 19, 20, 21, 22, 24]
+    // B=2,C=3,E=5,F=6,G=7,H=8,I=9(TênSP),K=11,U=21(ThanhToán),AC=29
+    const customColumnsAlignment = [2, 3, 5, 6, 7, 8, 9, 11, 21, 29]
+    // SL(10),Giá(12),Thành tiền(13),Tiền Thuế(15),Tiền GG(17),Tổng dòng(18),Tổng cộng(19),CN(20),Giá trị BL(26),Còn lại(28)
+    const customColumnConvertToNumber = [10, 12, 13, 15, 17, 18, 19, 20, 26, 28]
 
     customColumnsAlignment.forEach((column) => {
       // Canh trái các cột
@@ -193,8 +192,8 @@ const ExportInvoiceView = ({
       }
     })
 
-      // Căn giữa STT (col 1), SL (col 9), Tặng (col 10) – chỉ ở dòng dữ liệu (row > 3)
-      ;[1, 9, 10].forEach((colIdx) => {
+      // Căn giữa: STT(1), TT HĐ Bán(4), SL(10), Trạng thái(23)
+      ;[1, 4, 10, 23].forEach((colIdx) => {
         worksheet.getColumn(colIdx).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
           if (rowNumber > 3) {
             cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false }
@@ -272,7 +271,7 @@ const ExportInvoiceView = ({
 
       <DialogContent className="md:h-auto md:max-w-full">
         <DialogHeader>
-          <DialogTitle>Danh sách hóa đơn</DialogTitle>
+          <DialogTitle>Danh sách đơn bán</DialogTitle>
         </DialogHeader>
 
         <div className="max-h-[65vh] overflow-auto md:max-h-[75vh]">
@@ -283,13 +282,13 @@ const ExportInvoiceView = ({
                   <TableHead className="w-8">STT</TableHead>
                   <TableHead className="min-w-40">Mã HĐ</TableHead>
                   <TableHead className="min-w-36">Mã HĐ/Bán</TableHead>
+                  <TableHead className="min-w-28">TT HĐ Bán</TableHead>
                   <TableHead className="min-w-40">KH</TableHead>
                   <TableHead className="min-w-16">SĐT</TableHead>
                   <TableHead className="min-w-40">Địa chỉ</TableHead>
                   <TableHead className="min-w-40">Người tạo</TableHead>
                   <TableHead className="min-w-28">Tên sản phẩm</TableHead>
                   <TableHead className="min-w-16">SL</TableHead>
-                  <TableHead className="min-w-16">Tặng</TableHead>
                   <TableHead className="min-w-16">ĐVT</TableHead>
                   <TableHead className="min-w-32">Giá</TableHead>
                   <TableHead className="min-w-32">Thành tiền</TableHead>
@@ -299,18 +298,17 @@ const ExportInvoiceView = ({
                   <TableHead className="min-w-24">Giảm giá (%)</TableHead>
                   <TableHead className="min-w-28">Tiền giảm giá</TableHead>
                   {/* Merge */}
-                  <TableHead className="min-w-32">Tổng hóa đơn</TableHead>
-                  <TableHead className="min-w-28">Thuế</TableHead>
-                  <TableHead className="min-w-28">Giảm giá</TableHead>
-                  <TableHead className="min-w-28">Chia DS</TableHead>
-                  <TableHead className="min-w-28">Tổng chia DS</TableHead>
-                  <TableHead className="min-w-28">Người được chia</TableHead>
+                  <TableHead className="min-w-32">Tổng dòng</TableHead>
+                  <TableHead className="min-w-32">Tổng cộng</TableHead>
                   <TableHead className="min-w-32">Công nợ</TableHead>
                   <TableHead className="min-w-36">Thanh toán</TableHead>
                   <TableHead className="min-w-40">DS phiếu xuất</TableHead>
                   <TableHead className="min-w-28">Trạng thái</TableHead>
                   <TableHead className="min-w-28">Ngày HĐ</TableHead>
                   <TableHead className="min-w-28">Ngày tạo</TableHead>
+                  <TableHead className="min-w-32">Giá trị BL</TableHead>
+                  <TableHead className="min-w-28">Ngày BL</TableHead>
+                  <TableHead className="min-w-32">Còn lại sau BL</TableHead>
                   <TableHead className="min-w-40">Ghi chú</TableHead>
                 </TableRow>
               </TableHeader>
@@ -321,13 +319,20 @@ const ExportInvoiceView = ({
                       <TableCell>{indexTable++}</TableCell>
                       <TableCell>{invoice.code}</TableCell>
                       <TableCell>{invoice.salesContract?.code ?? '—'}</TableCell>
+                      <TableCell>{
+                        invoice.salesContract?.status === 'draft' ? 'Nháp' :
+                          invoice.salesContract?.status === 'confirmed' ? 'Chờ giao' :
+                            invoice.salesContract?.status === 'completed' ? 'Hoàn thành' :
+                              invoice.salesContract?.status === 'cancelled' ? 'Đã hủy' :
+                                invoice.salesContract?.status === 'liquidated' ? 'Đã thanh lý' :
+                                  invoice.salesContract?.status ?? '—'
+                      }</TableCell>
                       <TableCell>{invoice.customerName}</TableCell>
                       <TableCell>{invoice.customerPhone}</TableCell>
                       <TableCell>{invoice.customerAddress}</TableCell>
                       <TableCell>{invoice.user?.fullName}</TableCell>
                       <TableCell>{invoiceItem.productName}</TableCell>
                       <TableCell>{moneyFormat(invoiceItem.quantity, false)}</TableCell>
-                      <TableCell>{moneyFormat(invoiceItem.giveaway, false)}</TableCell>
                       <TableCell>{invoiceItem.unitName}</TableCell>
                       <TableCell>
                         {moneyFormat(invoiceItem.price, false)}
@@ -358,31 +363,15 @@ const ExportInvoiceView = ({
                         {moneyFormat(invoiceItem.discountAmount ?? invoiceItem.discount ?? 0, false)}
                       </TableCell>
                       <TableCell>
+                        {moneyFormat(
+                          (Number(invoiceItem.total || 0)) +
+                          (Number(invoiceItem.taxAmount ?? invoiceItem.tax_amount ?? 0)) -
+                          (Number(invoiceItem.discountAmount ?? invoiceItem.discount ?? 0)),
+                          false
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {moneyFormat(invoice.totalAmount || invoice.amount, false)}
-                      </TableCell>
-                      <TableCell>
-                        {moneyFormat(invoice.taxAmount, false)}
-                      </TableCell>
-                      <TableCell>
-                        {moneyFormat(invoice.discountAmount || invoice.discount, false)}
-                      </TableCell>
-                      <TableCell>
-                        {invoice.invoiceRevenueShare
-                          ? invoice.invoiceRevenueShare?.sharePercentage * 100 +
-                          '%'
-                          : 0}
-                      </TableCell>
-                      <TableCell>
-                        {invoice.invoiceRevenueShare
-                          ? moneyFormat(
-                            invoice.invoiceRevenueShare?.amount,
-                            false,
-                          )
-                          : 0}
-                      </TableCell>
-                      <TableCell>
-                        {invoice.invoiceRevenueShare?.user?.fullName ||
-                          'Không có'}
                       </TableCell>
                       <TableCell>
                         {(() => {
@@ -427,6 +416,9 @@ const ExportInvoiceView = ({
                       <TableCell>
                         {dateFormat(invoiceItem.createdAt, false)}
                       </TableCell>
+                      <TableCell>{invoice.salesContract?.liquidationValue != null ? moneyFormat(invoice.salesContract.liquidationValue, false) : '—'}</TableCell>
+                      <TableCell>{invoice.salesContract?.liquidationDate ? dateFormat(invoice.salesContract.liquidationDate, false) : '—'}</TableCell>
+                      <TableCell>{invoice.salesContract?.liquidationRemainingAmount != null ? moneyFormat(invoice.salesContract.liquidationRemainingAmount, false) : '—'}</TableCell>
                       <TableCell>{invoice.note || invoiceItem.note}</TableCell>
                     </TableRow>
                   )),

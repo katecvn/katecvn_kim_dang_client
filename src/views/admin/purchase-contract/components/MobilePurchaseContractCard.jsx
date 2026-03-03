@@ -155,7 +155,7 @@ const MobilePurchaseContractCard = ({
               // code: `NK-${contract.code}-${Date.now().toString().slice(-4)}`,
               receiptType: 1, // IMPORT
               businessType: 'purchase_in',
-              receiptDate: new Date().toISOString(),
+
               reason: `Nhập kho theo hợp đồng ${contract.code}`,
               note: contract.note || '',
               warehouseId: null,

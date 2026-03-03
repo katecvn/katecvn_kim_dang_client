@@ -8,6 +8,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -27,7 +37,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useEffect, useState } from 'react'
-import { getPurchaseContractDetail } from '@/stores/PurchaseContractSlice'
+import { getPurchaseContractDetail, cancelLiquidatePurchaseContract } from '@/stores/PurchaseContractSlice'
 import { Skeleton } from '@/components/ui/skeleton'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
@@ -40,7 +50,7 @@ import { cn } from '@/lib/utils'
 import { PlusIcon, MobileIcon } from '@radix-ui/react-icons'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import React from 'react'
-import { Package, Mail, MapPin, CreditCard, Trash2, X, FileCheck, Pencil } from 'lucide-react'
+import { Package, Mail, MapPin, CreditCard, Trash2, X, FileCheck, Pencil, Printer } from 'lucide-react'
 import { getPublicUrl } from '@/utils/file'
 import { purchaseContractStatuses } from '../data'
 import { toast } from 'sonner'
@@ -72,6 +82,9 @@ import {
 } from '@/stores/WarehouseReceiptSlice'
 import { IconPlus } from '@tabler/icons-react'
 import ViewSupplierDialog from '../../supplier/components/ViewSupplierDialog'
+import PurchaseContractPreviewDialog from './PurchaseContractPreviewDialog'
+import { buildPurchaseContractData } from '../helpers/BuildPurchaseContractData'
+import { exportPurchaseContractWord } from '../helpers/ExportPurchaseContractWord'
 
 const ViewPurchaseContractDialog = ({
   open,
@@ -118,10 +131,18 @@ const ViewPurchaseContractDialog = ({
   const [showDeleteWarehouseReceiptDialog, setShowDeleteWarehouseReceiptDialog] = useState(false)
   const [warehouseReceiptToDelete, setWarehouseReceiptToDelete] = useState(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showCancelLiquidateConfirm, setShowCancelLiquidateConfirm] = useState(false)
+  const [cancelLiquidateLoading, setCancelLiquidateLoading] = useState(false)
 
   const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false)
   const [showConfirmImportDialog, setShowConfirmImportDialog] = useState(false)
   const [warehouseLoading, setWarehouseLoading] = useState(false)
+
+  // Print contract
+  const [showPrintContractDialog, setShowPrintContractDialog] = useState(false)
+  const [printContractData, setPrintContractData] = useState(null)
+  const [printContractFileName, setPrintContractFileName] = useState('hop-dong-mua-hang.docx')
+  const [printContractExporting, setPrintContractExporting] = useState(false)
 
   useEffect(() => {
     if (open && purchaseContractId) {
@@ -139,6 +160,13 @@ const ViewPurchaseContractDialog = ({
     } finally {
       setLoading(false)
     }
+  }
+
+  const handlePrintContract = () => {
+    const data = buildPurchaseContractData(contract)
+    setPrintContractData(data)
+    setPrintContractFileName(`hop-dong-mua-hang-${contract.code || 'contract'}.docx`)
+    setShowPrintContractDialog(true)
   }
 
   const handleCreatePayment = () => {
@@ -171,7 +199,7 @@ const ViewPurchaseContractDialog = ({
 
   const handleCreateWarehouseReceipt = () => {
     if (contract?.status !== 'confirmed') {
-      toast.warning('Chỉ có thể tạo phiếu nhập kho cho hợp đồng đã duyệt')
+      toast.warning('Chỉ có thể tạo phiếu nhập kho cho hợp đồng đang giao hàng')
       return
     }
     setShowConfirmImportDialog(true)
@@ -199,7 +227,7 @@ const ViewPurchaseContractDialog = ({
       // code: `NK-${contract.code}-${Date.now().toString().slice(-4)}`,
       receiptType: 1, // IMPORT
       businessType: 'purchase_in',
-      receiptDate: new Date().toISOString(),
+
       actualReceiptDate: actualReceiptDate || null,
       reason: `Nhập kho từ hợp đồng ${contract.code}`,
       note: contract.note || '',
@@ -505,7 +533,7 @@ const ViewPurchaseContractDialog = ({
                                       ) : null}
                                       <div>
                                         <div className="font-medium text-blue-600 hover:underline">{item.productName}</div>
-                                        <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                                        <div className="text-xs text-muted-foreground">{item.productCode || item.product?.code}</div>
                                       </div>
                                     </div>
                                   </TableCell>
@@ -779,16 +807,18 @@ const ViewPurchaseContractDialog = ({
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <h3 className="font-semibold">Phiếu chi</h3>
-                          <Button
-                            size="sm"
-                            className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
-                            onClick={handleCreatePayment}
-                          >
-                            <IconPlus className="h-4 w-4" />
-                            <span>
-                              Thêm
-                            </span>
-                          </Button>
+                          {contract?.status !== 'liquidated' && (
+                            <Button
+                              size="sm"
+                              className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
+                              onClick={handleCreatePayment}
+                            >
+                              <IconPlus className="h-4 w-4" />
+                              <span>
+                                Thêm
+                              </span>
+                            </Button>
+                          )}
                         </div>
                         {contract?.paymentVouchers && contract.paymentVouchers.length > 0 ? (
                           isDesktop ? (
@@ -997,16 +1027,18 @@ const ViewPurchaseContractDialog = ({
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <h3 className="font-semibold">Phiếu nhập kho</h3>
-                          <Button
-                            size="sm"
-                            className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
-                            onClick={handleCreateWarehouseReceipt}
-                          >
-                            <IconPlus className="h-4 w-4" />
-                            <span>
-                              Thêm
-                            </span>
-                          </Button>
+                          {contract?.status !== 'liquidated' && (
+                            <Button
+                              size="sm"
+                              className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
+                              onClick={handleCreateWarehouseReceipt}
+                            >
+                              <IconPlus className="h-4 w-4" />
+                              <span>
+                                Thêm
+                              </span>
+                            </Button>
+                          )}
                         </div>
                         {contract?.warehouseReceipts && contract.warehouseReceipts.length > 0 ? (
                           isDesktop ? (
@@ -1018,7 +1050,9 @@ const ViewPurchaseContractDialog = ({
                                     <TableHead className="min-w-32">Mã phiếu</TableHead>
                                     <TableHead className="min-w-28 text-right">Tổng tiền</TableHead>
                                     <TableHead className="min-w-24">Trạng thái</TableHead>
-                                    <TableHead className="min-w-32">Ngày nhập</TableHead>
+                                    <TableHead className="min-w-32">Ngày nhập TT</TableHead>
+                                    <TableHead className="min-w-32">Ngày tạo</TableHead>
+                                    <TableHead className="min-w-28">Người tạo</TableHead>
                                     <TableHead className="w-10"></TableHead>
                                   </TableRow>
                                 </TableHeader>
@@ -1065,7 +1099,13 @@ const ViewPurchaseContractDialog = ({
                                             {statusLabel}
                                           </span>
                                         </TableCell>
-                                        <TableCell>{dateFormat(receipt.receiptDate, true)}</TableCell>
+                                        <TableCell className="text-sm">
+                                          {receipt.actualReceiptDate ? dateFormat(receipt.actualReceiptDate, false) : '—'}
+                                        </TableCell>
+                                        <TableCell className="text-sm">{dateFormat(receipt.receiptDate, true)}</TableCell>
+                                        <TableCell className="text-sm">
+                                          {receipt.createdByUser?.fullName || '—'}
+                                        </TableCell>
                                         <TableCell>
                                           {['draft', 'cancelled'].includes(receipt.status) && (
                                             <div
@@ -1339,10 +1379,33 @@ const ViewPurchaseContractDialog = ({
         </div>
 
         <DialogFooter className="hidden md:flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0 p-4 pt-0">
+          {contract?.customerId && !contract?.supplierId && (
+            <Button
+              size="sm"
+              onClick={handlePrintContract}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              In H&#7907;p &#272;&#7891;ng
+            </Button>
+          )}
+
           {contract?.status === 'confirmed' && (
             <Button size="sm" onClick={handleLiquidate} className="bg-orange-600 hover:bg-orange-700 text-white">
               <FileCheck className="mr-2 h-4 w-4" />
               Thanh lý
+            </Button>
+          )}
+
+          {contract?.status === 'liquidated' && (
+            <Button
+              size="sm"
+              onClick={() => setShowCancelLiquidateConfirm(true)}
+              loading={cancelLiquidateLoading}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Hủy Thanh Lý
             </Button>
           )}
 
@@ -1573,6 +1636,57 @@ const ViewPurchaseContractDialog = ({
             overlayClassName="z-[100069]"
           />
         )}
+
+        {printContractData && (
+          <PurchaseContractPreviewDialog
+            open={showPrintContractDialog}
+            onOpenChange={(open) => {
+              if (!open) setShowPrintContractDialog(false)
+            }}
+            initialData={printContractData}
+            contentClassName="!z-[100060]"
+            overlayClassName="z-[100059]"
+            onConfirm={async (finalData) => {
+              try {
+                setPrintContractExporting(true)
+                await exportPurchaseContractWord(finalData, printContractFileName)
+                setShowPrintContractDialog(false)
+              } catch (error) {
+                console.error('Export error:', error)
+              } finally {
+                setPrintContractExporting(false)
+              }
+            }}
+          />
+        )}
+
+        <AlertDialog open={showCancelLiquidateConfirm} onOpenChange={setShowCancelLiquidateConfirm}>
+          <AlertDialogContent className="z-[100070]" overlayClassName="z-[100069]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận hủy thanh lý</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn có chắc muốn hủy thanh lý hợp đồng <strong>{contract?.code}</strong> không? Hành động này sẽ đưa hợp đồng về trạng thái trước khi thanh lý.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Hủy</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-yellow-600 hover:bg-yellow-700"
+                onClick={async () => {
+                  setCancelLiquidateLoading(true)
+                  try {
+                    await dispatch(cancelLiquidatePurchaseContract(purchaseContractId)).unwrap()
+                    fetchContractDetail()
+                    onSuccess?.()
+                  } catch (e) { /* toast handled by thunk */ }
+                  finally { setCancelLiquidateLoading(false) }
+                }}
+              >
+                Xác nhận
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   )

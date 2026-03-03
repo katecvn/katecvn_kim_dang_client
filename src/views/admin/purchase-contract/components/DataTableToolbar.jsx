@@ -21,6 +21,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useEffect } from 'react'
 import { getUsers } from '@/stores/UserSlice'
 import { purchaseContractPaymentStatuses } from '../data'
+import { IconFileTypeXls } from '@tabler/icons-react'
+import ExportPurchaseContractDialog from './ExportPurchaseContractDialog'
 
 const DataTableToolbar = ({ table, isMyPurchaseContract }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -32,6 +34,7 @@ const DataTableToolbar = ({ table, isMyPurchaseContract }) => {
   const [selectedContractIds, setSelectedContractIds] = useState([])
   const [selectedContracts, setSelectedContracts] = useState([])
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
 
   const selectedRows = table.getSelectedRowModel().rows
   const dispatch = useDispatch()
@@ -230,6 +233,16 @@ const DataTableToolbar = ({ table, isMyPurchaseContract }) => {
 
       <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
         <Button
+          className="text-green-600 border-green-200 hover:bg-green-50"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowExportDialog(true)}
+        >
+          <IconFileTypeXls className="mr-2 size-4" />
+          Xuất Excel
+        </Button>
+
+        <Button
           className="text-blue-500 border-blue-500 hover:bg-blue-50"
           variant="outline"
           size="sm"
@@ -265,6 +278,13 @@ const DataTableToolbar = ({ table, isMyPurchaseContract }) => {
         />
 
         <DataTableViewOptions table={table} />
+
+        {showExportDialog && (
+          <ExportPurchaseContractDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+          />
+        )}
 
         {showReminderDialog && (
           <ContractReminderDialog

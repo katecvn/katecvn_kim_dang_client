@@ -274,7 +274,7 @@ const UpdateWarehouseReceiptDialog = ({
       const payload = {
         receiptType: data.receiptType,
         businessType: data.businessType,
-        receiptDate: data.receiptDate.toISOString(),
+
         reason: data.reason,
         note: data.note,
         details: details,

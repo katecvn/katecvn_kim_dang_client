@@ -9,6 +9,16 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   IconEye,
   IconPencil,
   IconTrash,
@@ -24,7 +34,7 @@ import LiquidatePurchaseContractDialog from './LiquidatePurchaseContractDialog'
 import ConfirmImportWarehouseDialog from '@/views/admin/warehouse-receipt/components/ConfirmImportWarehouseDialog'
 import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { useDispatch } from 'react-redux'
-import { getPurchaseContracts, getPurchaseContractDetail } from '@/stores/PurchaseContractSlice'
+import { getPurchaseContracts, getPurchaseContractDetail, cancelLiquidatePurchaseContract } from '@/stores/PurchaseContractSlice'
 import { toast } from 'sonner'
 import { IconPackageImport } from '@tabler/icons-react'
 import { CreditCard, Printer } from 'lucide-react'
@@ -40,6 +50,7 @@ const DataTableRowActions = ({ row }) => {
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
+  const [showCancelLiquidateConfirm, setShowCancelLiquidateConfirm] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false)
 
@@ -98,7 +109,7 @@ const DataTableRowActions = ({ row }) => {
       // code: `NK-${contract.code}-${Date.now().toString().slice(-4)}`,
       receiptType: 1, // IMPORT
       businessType: 'purchase_in',
-      receiptDate: new Date().toISOString(),
+
       reason: `Nhập kho theo hợp đồng ${contract.code}`,
       note: contract.note || '',
       warehouseId: null,
@@ -220,6 +231,18 @@ const DataTableRowActions = ({ row }) => {
             </Can>
           )}
 
+          {contract.status === 'liquidated' && (
+            <DropdownMenuItem
+              onClick={() => setShowCancelLiquidateConfirm(true)}
+              className="text-yellow-600"
+            >
+              Hủy Thanh Lý
+              <DropdownMenuShortcut>
+                <IconReceiptRefund className="h-4 w-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
+
           <DropdownMenuSeparator />
 
           {canDelete && (
@@ -327,6 +350,30 @@ const DataTableRowActions = ({ row }) => {
           }}
         />
       )}
+
+      <AlertDialog open={showCancelLiquidateConfirm} onOpenChange={setShowCancelLiquidateConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận hủy thanh lý</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc muốn hủy thanh lý hợp đồng <strong>{contract.code}</strong> không?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-yellow-600 hover:bg-yellow-700"
+              onClick={async () => {
+                try {
+                  await dispatch(cancelLiquidatePurchaseContract(contract.id)).unwrap()
+                } catch (e) { /* toast handled by thunk */ }
+              }}
+            >
+              Xác nhận
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

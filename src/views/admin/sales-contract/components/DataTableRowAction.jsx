@@ -10,6 +10,16 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   IconEye,
   IconPencil,
   IconTrash,
@@ -27,7 +37,7 @@ import LiquidateContractDialog from './LiquidateContractDialog'
 import { useDispatch } from 'react-redux'
 import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { toast } from 'sonner'
-import { getSalesContracts, getSalesContractDetail } from '@/stores/SalesContractSlice'
+import { getSalesContracts, getSalesContractDetail, cancelLiquidateSalesContract } from '@/stores/SalesContractSlice'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
 import { IconFileTypePdf } from '@tabler/icons-react'
 import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
@@ -56,6 +66,7 @@ const DataTableRowActions = ({ row }) => {
   const [showConfirmWarehouseDialog, setShowConfirmWarehouseDialog] = useState(false)
   const [dialogData, setDialogData] = useState(null)
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
+  const [showCancelLiquidateConfirm, setShowCancelLiquidateConfirm] = useState(false)
 
   // Print Contract State
   const [installmentData, setInstallmentData] = useState(null)
@@ -187,7 +198,7 @@ const DataTableRowActions = ({ row }) => {
       const payload = {
         receiptType: 2,
         businessType: 'sale_out',
-        receiptDate: actualReceiptDate ? new Date(actualReceiptDate).toISOString() : new Date().toISOString(),
+
         actualReceiptDate: actualReceiptDate || null,
         reason: `Xuất kho cho HĐ ${contract.code}`,
         note: contract.note || '',
@@ -243,7 +254,7 @@ const DataTableRowActions = ({ row }) => {
             </DropdownMenuItem>
           </Can>
 
-          {(!['draft', 'cancelled'].includes(contract?.status) && contract?.paymentStatus !== 'paid') && (
+          {(!['draft', 'cancelled', 'liquidated'].includes(contract?.status) && contract?.paymentStatus !== 'paid') && (
             <Can permission="RECEIPT_CREATE">
               <DropdownMenuItem onClick={handleCreateReceipt} className="text-emerald-600">
                 Tạo Phiếu Thu
@@ -293,6 +304,18 @@ const DataTableRowActions = ({ row }) => {
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
             </Can>
+          )}
+
+          {contract.status === 'liquidated' && (
+            <DropdownMenuItem
+              onClick={() => setShowCancelLiquidateConfirm(true)}
+              className="text-yellow-600"
+            >
+              Hủy Thanh Lý
+              <DropdownMenuShortcut>
+                <IconArchive className="h-4 w-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
           )}
 
           <DropdownMenuSeparator />
@@ -385,6 +408,30 @@ const DataTableRowActions = ({ row }) => {
           onSuccess={handleCreateReceiptSuccess}
         />
       )}
+      <AlertDialog open={showCancelLiquidateConfirm} onOpenChange={setShowCancelLiquidateConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận hủy thanh lý</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc muốn hủy thanh lý hợp đồng <strong>{contract.code}</strong> không?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-yellow-600 hover:bg-yellow-700"
+              onClick={async () => {
+                try {
+                  await dispatch(cancelLiquidateSalesContract(contract.id)).unwrap()
+                  dispatch(getSalesContracts({}))
+                } catch (e) { /* toast handled by thunk */ }
+              }}
+            >
+              Xác nhận
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

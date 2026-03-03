@@ -38,6 +38,13 @@ const statuses = [
     color: 'bg-red-500 text-white',
     textColor: 'text-red-500',
   },
+  {
+    value: 'cancelled',
+    label: 'Đã hủy',
+    icon: IconX,
+    color: 'bg-gray-500 text-white',
+    textColor: 'text-gray-500',
+  },
 ]
 
 // Payment Status (Trạng thái thanh toán - tách riêng)

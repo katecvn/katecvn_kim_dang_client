@@ -248,11 +248,28 @@ export const liquidatePurchaseContract = createAsyncThunk(
       return response.data
     } catch (error) {
       const message = handleError(error)
-      toast.error(message)
+      toast.error(message?.message || 'Có lỗi xảy ra')
       return rejectWithValue(message)
     }
   },
 )
+
+export const cancelLiquidatePurchaseContract = createAsyncThunk(
+  'purchaseContract/cancel-liquidate',
+  async (id, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await api.post(`/purchase-contracts/${id}/revert-liquidate`)
+      toast.success('Hủy thanh lý hợp đồng thành công')
+      dispatch(getPurchaseContracts({}))
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      toast.error(message?.message || 'Có lỗi xảy ra')
+      return rejectWithValue(message)
+    }
+  },
+)
+
 
 const purchaseContractSlice = createSlice({
   name: 'purchaseContract',

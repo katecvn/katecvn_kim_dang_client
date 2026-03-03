@@ -481,7 +481,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
         // code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
         receiptType: 2, // ISSUE
         businessType: 'sale_out',
-        receiptDate: actualReceiptDate ? new Date(actualReceiptDate).toISOString() : new Date().toISOString(),
+
         actualReceiptDate: actualReceiptDate || null,
         reason: `Xuất kho cho đơn bán ${invoice.code}`,
         note: invoice.note || 'Xuất kho từ hóa đơn',
@@ -1515,11 +1515,13 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                 <Table className="min-w-full">
                                   <TableHeader>
                                     <TableRow className="bg-secondary text-xs">
-                                      <TableHead className="w-12">STT</TableHead>
+                                      <TableHead className="w-8">STT</TableHead>
                                       <TableHead className="min-w-32">Mã phiếu</TableHead>
                                       <TableHead className="min-w-32">Loại phiếu</TableHead>
                                       <TableHead className="min-w-32">Trạng thái</TableHead>
                                       <TableHead className="min-w-32 text-right">Tổng tiền</TableHead>
+                                      <TableHead className="min-w-32">Ngày xuất TT</TableHead>
+                                      <TableHead className="min-w-28">Người tạo</TableHead>
                                       <TableHead className="min-w-32">Ngày tạo</TableHead>
                                       <TableHead className="w-10"></TableHead>
                                     </TableRow>
@@ -1527,7 +1529,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                   <TableBody>
                                     {invoice.warehouseReceipts.map((receipt, index) => (
                                       <TableRow key={receipt.id}>
-                                        <TableCell>{index + 1}</TableCell>
+                                        <TableCell className="text-center text-sm">{index + 1}</TableCell>
                                         <TableCell>
                                           <span
                                             className="cursor-pointer font-medium text-primary hover:underline hover:text-blue-600"
@@ -1570,7 +1572,15 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                         <TableCell className="text-right font-semibold">
                                           {moneyFormat(receipt.totalAmount)}
                                         </TableCell>
-                                        <TableCell>{dateFormat(receipt.receiptDate, true)}</TableCell>
+                                        <TableCell className="text-sm">
+                                          {receipt.actualReceiptDate ? dateFormat(receipt.actualReceiptDate) : '—'}
+                                        </TableCell>
+                                        <TableCell className="text-sm">
+                                          {receipt.createdByUser?.fullName || receipt.user?.fullName || '—'}
+                                        </TableCell>
+                                        <TableCell className="text-sm">
+                                          {dateFormat(receipt.receiptDate, true)}
+                                        </TableCell>
                                         <TableCell>
                                           {/* Action buttons */}
                                           <div className="flex items-center justify-end gap-1">

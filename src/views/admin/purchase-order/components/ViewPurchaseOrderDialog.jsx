@@ -279,7 +279,7 @@ const ViewPurchaseOrderDialog = ({
       // code: `NK-${purchaseOrder.code}-${Date.now().toString().slice(-4)}`,
       receiptType: 1, // IMPORT / RECEIPT
       businessType: 'purchase_in',
-      receiptDate: new Date().toISOString(),
+
       actualReceiptDate: actualReceiptDate || null,
       reason: `Nhập kho từ đơn mua hàng ${purchaseOrder.code}`,
       note: purchaseOrder.note || '',
@@ -426,7 +426,7 @@ const ViewPurchaseOrderDialog = ({
                                   )}
                                   <div>
                                     <div className="font-medium text-blue-600 hover:underline">{item.productName}</div>
-                                    <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                                    <div className="text-xs text-muted-foreground">{item.productCode || item.product?.code}</div>
                                   </div>
                                 </div>
                               </TableCell>
@@ -994,7 +994,9 @@ const ViewPurchaseOrderDialog = ({
                                   <TableHead className="min-w-32">Loại phiếu</TableHead>
                                   <TableHead className="min-w-32">Trạng thái</TableHead>
                                   <TableHead className="min-w-32 text-right">Tổng tiền</TableHead>
+                                  <TableHead className="min-w-32">Ngày nhập TT</TableHead>
                                   <TableHead className="min-w-32">Ngày tạo</TableHead>
+                                  <TableHead className="min-w-28">Người tạo</TableHead>
                                   <TableHead className="w-10"></TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -1038,7 +1040,13 @@ const ViewPurchaseOrderDialog = ({
                                     <TableCell className="text-right font-semibold">
                                       {moneyFormat(receipt.totalAmount)}
                                     </TableCell>
-                                    <TableCell>{dateFormat(receipt.receiptDate, true)}</TableCell>
+                                    <TableCell className="text-sm">
+                                      {receipt.actualReceiptDate ? dateFormat(receipt.actualReceiptDate, false) : '—'}
+                                    </TableCell>
+                                    <TableCell className="text-sm">{dateFormat(receipt.receiptDate, true)}</TableCell>
+                                    <TableCell className="text-sm">
+                                      {receipt.createdByUser?.fullName || '—'}
+                                    </TableCell>
                                     <TableCell>
                                       {['draft', 'cancelled'].includes(receipt.status) && (
                                         <Button

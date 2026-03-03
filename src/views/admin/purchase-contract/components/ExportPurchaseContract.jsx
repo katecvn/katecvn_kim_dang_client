@@ -52,7 +52,7 @@ export default function ExportPurchaseContract({ data = {} }) {
       {/* COMPANY INFO (Đơn vị mua hàng = Công ty) */}
       <div style={{ marginBottom: '8px' }}>
         <p style={{ margin: '0', lineHeight: '1.4' }}>
-          Căn cứ từ hợp đồng bán hàng số:
+          Căn cứ từ hợp đồng bán hàng số: <strong>{safe(data?.sale_contract_no, '.......................')}</strong>
         </p>
         <p style={{ margin: '0', lineHeight: '1.4' }}>
           <strong>Đơn vị mua hàng :</strong> Công ty TNHH MTV Vàng Bạc Đá Quý Kim Đặng

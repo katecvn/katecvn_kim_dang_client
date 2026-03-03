@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useDispatch, useSelector } from 'react-redux'
 import { getUsers } from '@/stores/UserSlice'
+import ExportSalesContractDialog from './ExportSalesContractDialog'
+import { IconFileTypeXls } from '@tabler/icons-react'
 
 const DataTableToolbar = ({ table, isMyContract }) => {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -31,6 +33,7 @@ const DataTableToolbar = ({ table, isMyContract }) => {
   const [selectedContractIds, setSelectedContractIds] = useState([])
   const [selectedContracts, setSelectedContracts] = useState([])
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
 
   const selectedRows = table.getSelectedRowModel().rows
   const dispatch = useDispatch()
@@ -214,6 +217,16 @@ const DataTableToolbar = ({ table, isMyContract }) => {
           Gửi nhắc giao hàng
         </Button>
 
+        <Button
+          className="text-green-600 border-green-200 hover:bg-green-50"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowExportDialog(true)}
+        >
+          <IconFileTypeXls className="mr-2 h-4 w-4" />
+          Xuất Excel
+        </Button>
+
         {showDeliveryReminderDialog && (
           <DeliveryReminderDialog
             open={showDeliveryReminderDialog}
@@ -240,6 +253,13 @@ const DataTableToolbar = ({ table, isMyContract }) => {
           count={selectedContracts.length}
         />
         <DataTableViewOptions table={table} />
+
+        {showExportDialog && (
+          <ExportSalesContractDialog
+            open={showExportDialog}
+            onOpenChange={setShowExportDialog}
+          />
+        )}
       </div>
     </div>
   )

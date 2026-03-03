@@ -295,7 +295,7 @@ const ExportPurchaseOrderView = ({
                   <TableHead className="min-w-40">Mã ĐĐH</TableHead>
                   {/* ── CỘT MỚI ── */}
                   <TableHead className="min-w-36">Mã HĐ/NCC</TableHead>
-                  <TableHead className="min-w-40">NCC</TableHead>
+                  <TableHead className="min-w-40">NCC/KH</TableHead>
                   <TableHead className="min-w-16">SĐT</TableHead>
                   <TableHead className="min-w-40">Địa chỉ</TableHead>
                   <TableHead className="min-w-40">Người tạo</TableHead>
@@ -337,12 +337,12 @@ const ExportPurchaseOrderView = ({
                         <TableCell>
                           {order.purchaseContract?.code ?? '—'}
                         </TableCell>
-                        {/* D – NCC */}
-                        <TableCell>{order.supplier?.name}</TableCell>
+                        {/* D – NCC/KH */}
+                        <TableCell>{order.supplier?.name ?? order.customer?.name ?? '—'}</TableCell>
                         {/* E – SĐT */}
-                        <TableCell>{order.supplier?.phone}</TableCell>
+                        <TableCell>{order.supplier?.phone ?? order.customer?.phone ?? '—'}</TableCell>
                         {/* F – Địa chỉ */}
-                        <TableCell>{order.supplier?.address ?? ''}</TableCell>
+                        <TableCell>{order.supplier?.address ?? order.customer?.address ?? ''}</TableCell>
                         {/* G – Người tạo */}
                         <TableCell>
                           {order.createdByUser?.fullName ??

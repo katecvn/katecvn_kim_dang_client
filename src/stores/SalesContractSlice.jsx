@@ -284,6 +284,23 @@ export const liquidateSalesContract = createAsyncThunk(
   },
 )
 
+export const cancelLiquidateSalesContract = createAsyncThunk(
+  'salesContract/cancel-liquidate',
+  async (id, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await api.post(`/sales-contracts/${id}/revert-liquidate`)
+      toast.success('Hủy thanh lý hợp đồng thành công')
+      dispatch(getSalesContracts({}))
+      return response.data
+    } catch (error) {
+      const message = handleError(error)
+      toast.error(message?.message || 'Có lỗi xảy ra')
+      return rejectWithValue(message)
+    }
+  },
+)
+
+
 export const increasePrintAttempt = createAsyncThunk(
   'salesContract/increase-print-attempt',
   async (id, { rejectWithValue }) => {

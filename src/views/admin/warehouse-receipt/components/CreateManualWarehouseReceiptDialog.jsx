@@ -223,7 +223,7 @@ const CreateManualWarehouseReceiptDialog = ({
       const payload = {
         receiptType: data.receiptType,
         businessType: data.businessType,
-        receiptDate: data.receiptDate.toISOString(),
+
         actualReceiptDate: data.actualReceiptDate ? data.actualReceiptDate.toISOString().split('T')[0] : null,
         reason: data.reason,
         note: data.note,
@@ -311,7 +311,7 @@ const CreateManualWarehouseReceiptDialog = ({
             )}
           >
             <div className="flex-1 overflow-auto space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField
                   control={form.control}
                   name="receiptType"
@@ -360,23 +360,7 @@ const CreateManualWarehouseReceiptDialog = ({
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="receiptDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ngày tạo</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          value={field.value ? field.value.toISOString().split('T')[0] : ''}
-                          onChange={(e) => field.onChange(new Date(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
 
                 <FormField
                   control={form.control}

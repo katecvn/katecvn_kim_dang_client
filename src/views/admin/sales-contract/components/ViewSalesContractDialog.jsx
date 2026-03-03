@@ -9,6 +9,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Table,
   TableBody,
   TableCell,
@@ -17,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useEffect, useState } from 'react'
-import { getSalesContractDetail } from '@/stores/SalesContractSlice'
+import { getSalesContractDetail, cancelLiquidateSalesContract } from '@/stores/SalesContractSlice'
 import { Skeleton } from '@/components/ui/skeleton'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
@@ -75,6 +85,7 @@ import UpdateReceiptStatusDialog from '../../receipt/components/UpdateReceiptSta
 import { IconPencil, IconCheck, IconFileText, IconCircleCheck, IconCircleX } from '@tabler/icons-react'
 import { Trash2, QrCode } from 'lucide-react'
 import { toast } from 'sonner'
+import ViewPurchaseContractDialog from '../../purchase-contract/components/ViewPurchaseContractDialog'
 
 const ViewSalesContractDialog = ({
   open,
@@ -119,8 +130,14 @@ const ViewSalesContractDialog = ({
   // Liquidation State
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
 
+  // Liquidation Purchase Contract
+  const [showPurchaseContractDialog, setShowPurchaseContractDialog] = useState(false)
+  const [selectedPurchaseContractId, setSelectedPurchaseContractId] = useState(null)
+
   // Delete State
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [cancelLiquidateLoading, setCancelLiquidateLoading] = useState(false)
+  const [showCancelLiquidateConfirm, setShowCancelLiquidateConfirm] = useState(false)
 
   // Print Contract State
   const [installmentData, setInstallmentData] = useState(null)
@@ -344,7 +361,7 @@ const ViewSalesContractDialog = ({
       const payload = {
         receiptType: 2,
         businessType: 'sale_out',
-        receiptDate: actualReceiptDate ? new Date(actualReceiptDate).toISOString() : new Date().toISOString(),
+
         actualReceiptDate: actualReceiptDate || null,
         reason: `Xuất kho cho HĐ ${contract.code}`,
         note: contract.note || '',
@@ -578,13 +595,27 @@ const ViewSalesContractDialog = ({
                             {contract?.paymentTerm === 'cash' ? 'Tiền mặt' : contract?.paymentTerm}
                           </p>
                         </div>
+                        {contract?.status === 'liquidated' && contract?.liquidationPurchaseContract && (
+                          <div>
+                            <span className="text-muted-foreground">HĐ mua thanh lý:</span>
+                            <p
+                              className="font-medium text-blue-600 hover:underline cursor-pointer"
+                              onClick={() => {
+                                setSelectedPurchaseContractId(contract.liquidationPurchaseContractId)
+                                setShowPurchaseContractDialog(true)
+                              }}
+                            >
+                              {contract.liquidationPurchaseContract.code}
+                            </p>
+                          </div>
+                        )}
                         <div>
                           <span className="text-muted-foreground">Người tạo:</span>
                           <p className="font-medium">
                             {contract?.createdByUser?.fullName || 'N/A'}
                           </p>
                         </div>
-                        <div className="col-span-2">
+                        <div >
                           <span className="text-muted-foreground">Ghi chú:</span>
                           <p className="font-medium text-sm">
                             {contract?.note || 'Không có ghi chú'}
@@ -1067,16 +1098,18 @@ const ViewSalesContractDialog = ({
                               )}>
                                 Phiếu thu
                               </h3>
-                              <Button
-                                size="sm"
-                                className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
-                                onClick={handleCreateReceipt}
-                              >
-                                <PlusIcon className="h-4 w-4" />
-                                <span>
-                                  Thêm
-                                </span>
-                              </Button>
+                              {contract?.status !== 'liquidated' && contract?.paymentStatus !== 'paid' && (
+                                <Button
+                                  size="sm"
+                                  className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
+                                  onClick={handleCreateReceipt}
+                                >
+                                  <PlusIcon className="h-4 w-4" />
+                                  <span>
+                                    Thêm
+                                  </span>
+                                </Button>
+                              )}
                             </div>
 
                             {isDesktop ? (
@@ -1352,16 +1385,18 @@ const ViewSalesContractDialog = ({
                               )}>
                                 Phiếu xuất kho
                               </h3>
-                              <Button
-                                size="sm"
-                                className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
-                                onClick={handleCreateWarehouseReceipt}
-                              >
-                                <PlusIcon className="h-4 w-4" />
-                                <span>
-                                  Thêm
-                                </span>
-                              </Button>
+                              {contract?.status !== 'liquidated' && (
+                                <Button
+                                  size="sm"
+                                  className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
+                                  onClick={handleCreateWarehouseReceipt}
+                                >
+                                  <PlusIcon className="h-4 w-4" />
+                                  <span>
+                                    Thêm
+                                  </span>
+                                </Button>
+                              )}
                             </div>
 
                             {isDesktop ? (
@@ -1370,12 +1405,19 @@ const ViewSalesContractDialog = ({
                                   <Table className="min-w-full">
                                     <TableHeader>
                                       <TableRow className="bg-secondary text-xs">
+                                        <TableHead className="w-8">TT</TableHead>
                                         <TableHead className="min-w-32">Mã phiếu</TableHead>
                                         <TableHead className="min-w-28 text-right">
                                           Tổng tiền
                                         </TableHead>
                                         <TableHead className="min-w-28">
                                           Trạng thái
+                                        </TableHead>
+                                        <TableHead className="min-w-32">
+                                          Ngày xuất TT
+                                        </TableHead>
+                                        <TableHead className="min-w-28">
+                                          Người tạo
                                         </TableHead>
                                         <TableHead className="min-w-32">
                                           Ngày tạo
@@ -1398,6 +1440,7 @@ const ViewSalesContractDialog = ({
 
                                         return (
                                           <TableRow key={receipt.id || index}>
+                                            <TableCell className="text-center text-sm">{index + 1}</TableCell>
                                             <TableCell>
                                               <span
                                                 className="font-medium text-blue-600 cursor-pointer hover:underline"
@@ -1432,6 +1475,12 @@ const ViewSalesContractDialog = ({
                                                       : receipt.status === 'cancelled' ? 'Đã hủy' : receipt.status}
                                                 </span>
                                               </div>
+                                            </TableCell>
+                                            <TableCell className="text-sm">
+                                              {receipt.actualReceiptDate ? dateFormat(receipt.actualReceiptDate) : '—'}
+                                            </TableCell>
+                                            <TableCell className="text-sm">
+                                              {receipt.createdByUser?.fullName || receipt.user?.fullName || '—'}
                                             </TableCell>
                                             <TableCell className="text-sm">
                                               {dateFormat(receipt.createdAt, true)}
@@ -1743,7 +1792,7 @@ const ViewSalesContractDialog = ({
           />
 
           <DialogFooter className="hidden md:flex flex-row flex-wrap items-center justify-center sm:justify-end gap-2 !space-x-0 p-4 pt-0">
-            {(!['draft', 'cancelled'].includes(contract?.status) && contract?.paymentStatus !== 'paid') && (
+            {(!['draft', 'cancelled', 'liquidated'].includes(contract?.status) && contract?.paymentStatus !== 'paid') && (
               <Button
                 size="sm"
                 onClick={handleCreateReceipt}
@@ -1773,6 +1822,18 @@ const ViewSalesContractDialog = ({
               >
                 <FileCheck className="mr-2 h-4 w-4" />
                 Thanh lý
+              </Button>
+            )}
+
+            {contract?.status === 'liquidated' && (
+              <Button
+                size="sm"
+                onClick={() => setShowCancelLiquidateConfirm(true)}
+                loading={cancelLiquidateLoading}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Hủy Thanh Lý
               </Button>
             )}
 
@@ -1845,6 +1906,34 @@ const ViewSalesContractDialog = ({
               }}
             />
           )}
+
+          <AlertDialog open={showCancelLiquidateConfirm} onOpenChange={setShowCancelLiquidateConfirm}>
+            <AlertDialogContent className="z-[100070]" overlayClassName="z-[100069]">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Xác nhận hủy thanh lý</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Bạn có chắc muốn hủy thanh lý hợp đồng <strong>{contract?.code}</strong> không? Hành động này sẽ đưa hợp đồng về trạng thái trước khi thanh lý.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                  onClick={async () => {
+                    setCancelLiquidateLoading(true)
+                    try {
+                      await dispatch(cancelLiquidateSalesContract(contractId)).unwrap()
+                      fetchContractDetail()
+                      onSuccess?.()
+                    } catch (e) { /* toast handled by thunk */ }
+                    finally { setCancelLiquidateLoading(false) }
+                  }}
+                >
+                  Xác nhận
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {showDeleteDialog && contract?.status === 'draft' && (
             <DeleteSalesContractDialog
@@ -1999,6 +2088,22 @@ const ViewSalesContractDialog = ({
           />
         </DialogContent>
       </Dialog>
+
+      {selectedPurchaseContractId && (
+        <ViewPurchaseContractDialog
+          open={showPurchaseContractDialog}
+          onOpenChange={(open) => {
+            if (!open) {
+              setShowPurchaseContractDialog(false)
+              setSelectedPurchaseContractId(null)
+            }
+          }}
+          purchaseContractId={selectedPurchaseContractId}
+          showTrigger={false}
+          contentClassName="!z-[100030]"
+          overlayClassName="z-[100029]"
+        />
+      )}
     </>
   )
 }

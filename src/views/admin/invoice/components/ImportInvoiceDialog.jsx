@@ -356,9 +356,9 @@ const ImportInvoiceDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Import Excel Hóa Đơn</DialogTitle>
+          <DialogTitle>Import Excel Đơn Bán</DialogTitle>
           <DialogDescription>
-            Chọn file Excel chứa danh sách hóa đơn.
+            Chọn file Excel chứa danh sách đơn bán.
             <br />
             <span className="text-xs text-muted-foreground">Hệ thống sẽ gom nhóm các dòng cùng CMND + Ngày đơn hàng thành 1 hóa đơn.</span>
           </DialogDescription>

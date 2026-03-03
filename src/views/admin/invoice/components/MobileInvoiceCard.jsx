@@ -242,7 +242,7 @@ const MobileInvoiceCard = ({
       const payload = {
         receiptType: 2,
         businessType: 'sale_out',
-        receiptDate: actualReceiptDate ? new Date(actualReceiptDate).toISOString() : new Date().toISOString(),
+
         actualReceiptDate: actualReceiptDate || null,
         reason: `Xuất kho cho đơn bán ${invoice.code}`,
         note: invoice.note || 'Xuất kho từ hóa đơn',

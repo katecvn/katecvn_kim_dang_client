@@ -60,7 +60,6 @@ const LiquidatePurchaseContractDialog = ({
     setLoading(true)
     try {
       const result = await dispatch(getLiquidationPreview(contractId)).unwrap()
-      console.log(result)
       if (result && result.data) {
         setPreviewData(result.data)
         // Initialize editable items with current market prices from preview
@@ -167,19 +166,21 @@ const LiquidatePurchaseContractDialog = ({
                 <p className="font-medium">{previewData.contract?.code}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Nhà cung cấp:</span>
-                <p className="font-medium">{previewData.contract?.supplierName}</p>
+                <span className="text-muted-foreground">NCC/KH:</span>
+                <p className="font-medium">
+                  {previewData.contract?.supplierName ?? previewData.contract?.customerName}
+                </p>
               </div>
               <div>
                 <span className="text-muted-foreground">Giá trị HĐ:</span>
                 <p className="font-medium text-primary">
-                  {moneyFormat(previewData.contract?.totalAmount || previewData.summary?.contractValue)}
+                  {moneyFormat(previewData.summary?.totalActualValue)}
                 </p>
               </div>
               <div>
                 <span className="text-muted-foreground">Đã thanh toán:</span>
                 <p className="font-medium text-green-600">
-                  {moneyFormat(previewData.contract?.paidAmount || previewData.summary?.depositAmount)}
+                  {moneyFormat(previewData.contract?.paidAmount)}
                 </p>
               </div>
             </div>

@@ -89,7 +89,7 @@ const DataTableRowActions = ({ row, table }) => {
       // code: `NK-${purchaseOrder.code}-${Date.now().toString().slice(-4)}`,
       receiptType: 1, // IMPORT / RECEIPT
       businessType: 'purchase_in',
-      receiptDate: new Date().toISOString(),
+
       reason: `Nhập kho từ đơn mua hàng ${purchaseOrder.code}`,
       note: purchaseOrder.note || '',
       warehouseId: null,

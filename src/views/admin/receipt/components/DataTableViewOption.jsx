@@ -14,6 +14,7 @@ const DataTableViewOptions = ({ table }) => {
   const options = {
     code: 'Mã phiếu',
     receiverType: 'Loại',
+    receiverName: 'Người nộp',
     reason: 'Lý do',
     paymentDate: 'Ngày thanh toán',
     amount: 'Số tiền',

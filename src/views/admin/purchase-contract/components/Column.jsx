@@ -9,7 +9,8 @@ import { useState } from 'react'
 import Can from '@/utils/can'
 import ViewPurchaseContractDialog from './ViewPurchaseContractDialog'
 import { Badge } from '@/components/ui/badge'
-import { CreditCard, Phone, FileText, CheckCircle, XCircle, PackageOpen } from 'lucide-react'
+import { CreditCard, Phone, FileText, CheckCircle, XCircle, PackageOpen, Receipt } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export const columns = [
   {
@@ -62,42 +63,69 @@ export const columns = [
   {
     accessorKey: 'supplierName',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nhà cung cấp" />
+      <DataTableColumnHeader column={column} title="Nhà CC / Khách hàng" />
     ),
     cell: function Cell({ row }) {
+      const { supplier, customer } = row.original
+      const party = supplier || customer
+      const isCustomer = !supplier && !!customer
+
+      // Fallback to flat fields if nested objects not present
+      const name = party?.name || row.original.supplierName || row.original.customerName
+      const phone = party?.phone || row.original.supplierPhone || row.original.customerPhone
+      const taxCode = party?.taxCode || row.original.supplierTaxCode
+      const identityCard = party?.identityCard || row.original.supplierIdentityNo
+
+      if (!name) return <span className="text-muted-foreground italic">—</span>
+
       return (
-        <div className="flex w-40 flex-col break-words" title={row.original.supplierName}>
-          <span className="font-semibold">{row.original.supplierName}</span>
+        <div className="flex w-44 flex-col break-words gap-0.5" title={name}>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={cn(
+                'shrink-0 rounded px-1 py-0 text-[10px] font-semibold leading-4',
+                isCustomer
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-orange-100 text-orange-700',
+              )}
+            >
+              {isCustomer ? 'KH' : 'NCC'}
+            </span>
+            <span className="font-semibold truncate">{name}</span>
+          </div>
 
-          {row.original.supplierIdentityNo && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <CreditCard className="h-3 w-3" />
-              {row.original.supplierIdentityNo}
+          {!isCustomer && taxCode && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Receipt className="h-3 w-3 shrink-0" />
+              {taxCode}
             </span>
           )}
 
-          {(row.original.supplierTaxCode || row.original.supplier?.taxCode) && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <CreditCard className="h-3 w-3" />
-              MST: {row.original.supplierTaxCode || row.original.supplier?.taxCode}
+          {isCustomer && identityCard && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <CreditCard className="h-3 w-3 shrink-0" />
+              {identityCard}
             </span>
           )}
 
-          <span className="text-primary underline hover:text-secondary-foreground flex items-center gap-1">
-            <Phone className="h-3 w-3" />
-            <a href={`tel:${row.original.supplierPhone}`}>{row.original.supplierPhone}</a>
-          </span>
+          {phone && (
+            <span className="flex items-center gap-1 text-primary underline hover:text-secondary-foreground">
+              <Phone className="h-3 w-3" />
+              <a href={`tel:${phone}`}>{phone}</a>
+            </span>
+          )}
         </div>
       )
     },
     enableSorting: true,
     enableHiding: true,
     filterFn: (row, id, value) => {
+      const supplier = row.original.supplier
+      const customer = row.original.customer
       const searchableText = normalizeText(
-        `${row.original.supplierName || ''} ${row.original.supplierPhone || ''}`,
+        `${supplier?.name || ''} ${supplier?.taxCode || ''} ${customer?.name || ''} ${row.original.supplierName || ''} ${row.original.supplierPhone || ''}`,
       )
-      const searchValue = normalizeText(value)
-      return searchableText.includes(searchValue)
+      return searchableText.includes(normalizeText(value))
     },
   },
   {
@@ -278,5 +306,16 @@ export const columns = [
     cell: ({ row }) => <DataTableRowActions row={row} />,
     enableSorting: false,
     enableHiding: false,
+  },
+  {
+    id: 'sourceType',
+    accessorKey: 'sourceType',
+    header: () => null,
+    cell: () => null,
+    enableSorting: false,
+    enableHiding: false,
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
   },
 ]

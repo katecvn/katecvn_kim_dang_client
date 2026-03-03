@@ -68,6 +68,7 @@ const formSchema = z.object({
   receiptType: z.coerce.number(),
   businessType: z.string().min(1, 'Vui lòng chọn loại nghiệp vụ'),
   receiptDate: z.date(),
+  actualReceiptDate: z.date().optional().nullable(),
   reason: z.string().optional(),
   note: z.string().optional(),
   partnerId: z.string().optional(),
@@ -80,6 +81,7 @@ const CreateManualWarehouseReceiptDialog = ({
   open,
   onOpenChange,
   showTrigger = true,
+  onSuccess,
 }) => {
   const dispatch = useDispatch()
   const { products, loading: productsLoading } = useSelector((state) => state.product)
@@ -96,6 +98,7 @@ const CreateManualWarehouseReceiptDialog = ({
       receiptType: 1, // Default: Import
       businessType: '',
       receiptDate: new Date(),
+      actualReceiptDate: new Date(),
       reason: '',
       note: '',
       partnerId: '',
@@ -221,6 +224,7 @@ const CreateManualWarehouseReceiptDialog = ({
         receiptType: data.receiptType,
         businessType: data.businessType,
         receiptDate: data.receiptDate.toISOString(),
+        actualReceiptDate: data.actualReceiptDate ? data.actualReceiptDate.toISOString().split('T')[0] : null,
         reason: data.reason,
         note: data.note,
         details: details,
@@ -235,7 +239,7 @@ const CreateManualWarehouseReceiptDialog = ({
       form.reset()
       setSelectedProducts([])
       onOpenChange(false)
-      dispatch(getWarehouseReceipts())
+      if (onSuccess) onSuccess()
     } catch (error) {
       console.error(error)
       // Toast error is handled in slice usually, but safety net:
@@ -307,7 +311,7 @@ const CreateManualWarehouseReceiptDialog = ({
             )}
           >
             <div className="flex-1 overflow-auto space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <FormField
                   control={form.control}
                   name="receiptType"
@@ -367,6 +371,24 @@ const CreateManualWarehouseReceiptDialog = ({
                           type="date"
                           value={field.value ? field.value.toISOString().split('T')[0] : ''}
                           onChange={(e) => field.onChange(new Date(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="actualReceiptDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ngày nhận hàng thực tế</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          value={field.value ? (field.value instanceof Date ? field.value.toISOString().split('T')[0] : field.value) : ''}
+                          onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
                         />
                       </FormControl>
                       <FormMessage />

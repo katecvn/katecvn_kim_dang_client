@@ -36,6 +36,7 @@ import InvoiceDialog from '../../invoice/components/InvoiceDialog'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
 import CustomerDetailDialog from '../../customer/components/CustomerDetailDialog'
 import ViewSupplierDialog from '../../supplier/components/ViewSupplierDialog'
+import ViewSalesContractDialog from '../../sales-contract/components/ViewSalesContractDialog'
 import {
   Select,
   SelectContent,
@@ -79,6 +80,7 @@ const ViewWarehouseReceiptDialog = ({
 
   const [showCustomerDialog, setShowCustomerDialog] = useState(false)
   const [showSupplierDialog, setShowSupplierDialog] = useState(false)
+  const [showSalesContractDialog, setShowSalesContractDialog] = useState(false)
 
   const handleUpdateStatus = async (newStatus, id) => {
     try {
@@ -242,8 +244,25 @@ const ViewWarehouseReceiptDialog = ({
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Ngày lập:</span>
-                      <p className="font-medium">{receipt?.receiptDate ? dateFormat(receipt.receiptDate, true) : 'Chưa cập nhật'}</p>
+                      <p className="font-medium">{receipt?.createdAt ? dateFormat(receipt.createdAt, true) : 'Chưa cập nhật'}</p>
                     </div>
+                    {receipt?.actualReceiptDate && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Ngày nhận hàng thực tế:</span>
+                        <p className="font-medium text-blue-600">{dateFormat(receipt.actualReceiptDate)}</p>
+                      </div>
+                    )}
+                    {receipt?.salesContract && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Hợp đồng bán:</span>
+                        <p
+                          className="font-medium text-primary cursor-pointer hover:underline hover:text-blue-600"
+                          onClick={() => setShowSalesContractDialog(true)}
+                        >
+                          {receipt.salesContract.code}
+                        </p>
+                      </div>
+                    )}
                     {receipt?.invoice && (
                       <div>
                         <span className="text-sm text-muted-foreground">Hóa đơn:</span>
@@ -795,6 +814,17 @@ const ViewWarehouseReceiptDialog = ({
           open={showSupplierDialog}
           onOpenChange={setShowSupplierDialog}
           supplierId={partner.id}
+          showTrigger={false}
+          contentClassName="z-[100070]"
+          overlayClassName="z-[100069]"
+        />
+      )}
+
+      {showSalesContractDialog && receipt?.salesContract && (
+        <ViewSalesContractDialog
+          open={showSalesContractDialog}
+          onOpenChange={setShowSalesContractDialog}
+          contractId={receipt.salesContract.id}
           showTrigger={false}
           contentClassName="z-[100070]"
           overlayClassName="z-[100069]"

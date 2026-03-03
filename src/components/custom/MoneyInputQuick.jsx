@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Input } from '../ui/input'
 
-export const MoneyInputQuick = ({ value, onChange, ...props }) => {
+export const MoneyInputQuick = ({ value, onChange, onFocus, ...props }) => {
   const [display, setDisplay] = useState('')
 
   useEffect(() => {
@@ -19,6 +19,12 @@ export const MoneyInputQuick = ({ value, onChange, ...props }) => {
     onChange(num || 0)
   }
 
+  const handleFocus = (e) => {
+    const target = e.target
+    setTimeout(() => target.select(), 0)
+    onFocus?.(e)
+  }
+
   return (
     <Input
       type="text"
@@ -27,6 +33,7 @@ export const MoneyInputQuick = ({ value, onChange, ...props }) => {
       placeholder="0"
       value={display}
       onChange={handleChange}
+      onFocus={handleFocus}
       {...props}
     />
   )

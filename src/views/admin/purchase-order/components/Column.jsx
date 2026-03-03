@@ -18,7 +18,7 @@ import {
 } from '@/stores/PurchaseOrderSlice'
 import { Badge } from '@/components/ui/badge'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
-import { Phone } from 'lucide-react'
+import { Phone, CreditCard, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export const getColumns = (onView) => [
@@ -64,30 +64,63 @@ export const getColumns = (onView) => [
     },
   },
   {
+    id: 'sourceType',
+    accessorFn: (row) => row.supplier ? 'supplier' : row.customer ? 'customer' : null,
+    header: () => null,
+    cell: () => null,
+    enableHiding: true,
+    enableSorting: false,
+    filterFn: (row, id, value) => {
+      const val = row.supplier ? 'supplier' : row.customer ? 'customer' : null
+      return value.includes(val)
+    },
+  },
+  {
     accessorKey: 'supplier',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nhà cung cấp" />
+      <DataTableColumnHeader column={column} title="Nhà CC / Khách hàng" />
     ),
     cell: function Cell({ row }) {
-      const { supplier } = row.original
+      const { supplier, customer } = row.original
+      const party = supplier || customer
+      const isCustomer = !supplier && !!customer
+
+      if (!party) return <span className="text-muted-foreground italic">—</span>
 
       return (
-        <div
-          className="flex w-40 flex-col break-words"
-          title={supplier?.name}
-        >
-          <span className="font-semibold">{supplier?.name}</span>
+        <div className="flex w-44 flex-col break-words gap-0.5" title={party.name}>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={cn(
+                'shrink-0 rounded px-1 py-0 text-[10px] font-semibold leading-4',
+                isCustomer
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-orange-100 text-orange-700',
+              )}
+            >
+              {isCustomer ? 'KH' : 'NCC'}
+            </span>
+            <span className="font-semibold truncate">{party.name}</span>
+          </div>
 
-          {supplier?.taxCode && (
-            <span className="text-xs text-muted-foreground">
-              MST: {supplier?.taxCode}
+          {!isCustomer && party.taxCode && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Receipt className="h-3 w-3 shrink-0" />
+              {party.taxCode}
             </span>
           )}
 
-          {supplier?.phone && (
+          {isCustomer && party.identityCard && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <CreditCard className="h-3 w-3 shrink-0" />
+              {party.identityCard}
+            </span>
+          )}
+
+          {party.phone && (
             <span className="flex items-center gap-1 text-primary underline hover:text-secondary-foreground">
               <Phone className="h-3 w-3" />
-              <a href={`tel:${supplier.phone}`}>{supplier.phone}</a>
+              <a href={`tel:${party.phone}`}>{party.phone}</a>
             </span>
           )}
         </div>
@@ -97,11 +130,11 @@ export const getColumns = (onView) => [
     enableHiding: true,
     filterFn: (row, id, value) => {
       const supplier = row.original.supplier
+      const customer = row.original.customer
       const searchableText = normalizeText(
-        `${supplier?.name || ''} ${supplier?.taxCode || ''}`,
+        `${supplier?.name || ''} ${supplier?.taxCode || ''} ${customer?.name || ''} ${customer?.code || ''}`,
       )
-      const searchValue = normalizeText(value)
-      return searchableText.includes(searchValue)
+      return searchableText.includes(normalizeText(value))
     },
   },
   {

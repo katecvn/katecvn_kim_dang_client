@@ -13,6 +13,7 @@ import {
   IconPencil,
   IconTrash,
   IconReceiptRefund,
+  IconFileTypeDocx,
 } from '@tabler/icons-react'
 import Can from '@/utils/can'
 import { useState } from 'react'
@@ -23,11 +24,14 @@ import LiquidatePurchaseContractDialog from './LiquidatePurchaseContractDialog'
 import ConfirmImportWarehouseDialog from '@/views/admin/warehouse-receipt/components/ConfirmImportWarehouseDialog'
 import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { useDispatch } from 'react-redux'
-import { getPurchaseContracts } from '@/stores/PurchaseContractSlice'
+import { getPurchaseContracts, getPurchaseContractDetail } from '@/stores/PurchaseContractSlice'
 import { toast } from 'sonner'
 import { IconPackageImport } from '@tabler/icons-react'
-import { CreditCard } from 'lucide-react'
+import { CreditCard, Printer } from 'lucide-react'
 import PaymentFormDialog from '../../payment/components/PaymentDialog'
+import PurchaseContractPreviewDialog from './PurchaseContractPreviewDialog'
+import { buildPurchaseContractData } from '../helpers/BuildPurchaseContractData'
+import { exportPurchaseContractWord } from '../helpers/ExportPurchaseContractWord'
 
 const DataTableRowActions = ({ row }) => {
   const contract = row?.original || {}
@@ -38,6 +42,16 @@ const DataTableRowActions = ({ row }) => {
   const [showLiquidationDialog, setShowLiquidationDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false)
+
+  // Print contract state
+  const [installmentData, setInstallmentData] = useState(null)
+  const [installmentFileName, setInstallmentFileName] = useState('hop-dong.docx')
+  const [showInstallmentPreview, setShowInstallmentPreview] = useState(false)
+  const [installmentExporting, setInstallmentExporting] = useState(false)
+  const [printLoading, setPrintLoading] = useState(false)
+
+  // Có customerId => hợp đồng của khách hàng
+  const isCustomerContract = !!contract?.customerId
 
   // Check if editable based on status
   const canEdit = contract.status === 'draft'
@@ -61,6 +75,22 @@ const DataTableRowActions = ({ row }) => {
     }
 
     setShowCreatePaymentDialog(true)
+  }
+
+  const handlePrintContract = async () => {
+    try {
+      setPrintLoading(true)
+      const contractDetail = await dispatch(getPurchaseContractDetail(contract.id)).unwrap()
+      const data = buildPurchaseContractData(contractDetail)
+      setInstallmentData(data)
+      setInstallmentFileName(`hop-dong-mua-hang-${contractDetail.code || 'contract'}.docx`)
+      setShowInstallmentPreview(true)
+    } catch (error) {
+      console.error('Load purchase contract data error:', error)
+      toast.error('Không lấy được dữ liệu hợp đồng')
+    } finally {
+      setPrintLoading(false)
+    }
   }
 
   const handleCreateWarehouseReceipt = async (selectedItems) => {
@@ -134,6 +164,21 @@ const DataTableRowActions = ({ row }) => {
               </DropdownMenuShortcut>
             </DropdownMenuItem>
           </Can> */}
+
+          {isCustomerContract && (
+            <Can permission={'PURCHASE_CONTRACT_VIEW_ALL'}>
+              <DropdownMenuItem
+                onClick={handlePrintContract}
+                className="text-purple-600"
+                disabled={printLoading || installmentExporting}
+              >
+                In Hợp Đồng
+                <DropdownMenuShortcut>
+                  <IconFileTypeDocx className="h-4 w-4" />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </Can>
+          )}
 
           {canImport && (
             <Can permission={'WAREHOUSE_IMPORT_CREATE'}>
@@ -259,6 +304,29 @@ const DataTableRowActions = ({ row }) => {
           />
         )
       }
+
+      {installmentData && (
+        <PurchaseContractPreviewDialog
+          open={showInstallmentPreview}
+          onOpenChange={(open) => {
+            if (!open) setShowInstallmentPreview(false)
+          }}
+          initialData={installmentData}
+          onConfirm={async (finalData) => {
+            try {
+              setInstallmentExporting(true)
+              await exportPurchaseContractWord(finalData, installmentFileName)
+              toast.success('Đã xuất hợp đồng thành công')
+              setShowInstallmentPreview(false)
+            } catch (error) {
+              console.error('Export purchase contract error:', error)
+              toast.error('Xuất hợp đồng thất bại')
+            } finally {
+              setInstallmentExporting(false)
+            }
+          }}
+        />
+      )}
     </>
   )
 }

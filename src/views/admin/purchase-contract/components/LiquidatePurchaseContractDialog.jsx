@@ -30,6 +30,7 @@ import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { MoneyInputQuick } from '@/components/custom/MoneyInputQuick'
+import { getPublicUrl } from '@/utils/file'
 
 const LiquidatePurchaseContractDialog = ({
   open,
@@ -85,7 +86,7 @@ const LiquidatePurchaseContractDialog = ({
     setItems((prevItems) =>
       prevItems.map((item) =>
         item.productId === productId
-          ? { ...item, marketPrice: Number(newPrice) }
+          ? { ...item, unitPrice: Number(newPrice) }
           : item
       )
     )
@@ -95,60 +96,24 @@ const LiquidatePurchaseContractDialog = ({
   const summary = useMemo(() => {
     if (!previewData || !items.length) return null
 
-    const totalContractValue = previewData.summary?.contractValue || previewData.summary?.totalContractValue || 0
-    const depositAmount = previewData.summary?.depositAmount || 0
+    const depositAmount = Number(previewData.summary?.depositAmount || 0)
 
-    const totalMarketValue = items.reduce((sum, item) => {
-      return sum + (item.quantity * item.marketPrice)
+    const newTotalAmount = items.reduce((sum, item) => {
+      const subTotal = Number(item.quantity) * Number(item.unitPrice)
+      const taxAmount = subTotal * Number(item.taxRate || 0) / 100
+      const discountAmount = subTotal * Number(item.discountRate || 0) / 100
+      return sum + subTotal + taxAmount - discountAmount
     }, 0)
 
-    const priceDifference = totalMarketValue - totalContractValue
-
-    // Logic for Purchase Contract Liquidation
-    // Similar to Sales:
-    // estimatedSettlement = depositAmount + priceDifference
-    // If Settlement > 0: 'payment_out' (Company pays Supplier?) or 'payment_in'?
-    // Let's re-evaluate context:
-    // Sales Contract: "Payment Out" meant Company pays Customer.
-    // Purchase Contract: We are the Buyer (Company). Supplier is the Seller.
-    // If Market Price > Contract Price (Price Diff > 0):
-    //    We contracted to buy at LOW price. Market is HIGH.
-    //    If we liquidate (don't buy), we technically GAIN the difference?
-    //    Or does the Supplier gain?
-    //    Usually, if we cancel/liquidate, we settle the difference.
-    //    Assuming symmetry with Sales:
-    //    Sales: Customer bought at X. Market is X+10. Customer "sells back" at X+10. Company pays Customer diff.
-    //    Purchase: We bought at X. Market is X+10. We "sell back" (return rights) to Supplier at X+10?
-    //    If we liquidate, it means we STOP the contract.
-    //
-    //    Let's stick to the mathematical formula first and adjust label text.
-    //    estimatedSettlement = depositAmount + priceDifference
-    //
-    //    If estimatedSettlement > 0:
-    //      In Sales: Company PAYS Customer.
-    //      In Purchase: Does Supplier PAY Company?
-    //      If we put down Deposit. We want it back.
-    //      If Market > Contract (We have a 'gain' in position), we should be compensated for giving it up?
-    //      So Supplier pays Company. (Payment IN)
-    //
-    //    If estimatedSettlement < 0:
-    //      In Sales: Customer PAYS Company.
-    //      In Purchase: Company PAYS Supplier. (Payment OUT)
-
-    //    Let's use safer labels: "Công ty thu về" vs "Công ty trả thêm"
-
-    const estimatedSettlement = depositAmount + priceDifference
+    // settlement > 0: công ty cần trả thêm NCC (payment_out)
+    // settlement < 0: NCC trả lại công ty (payment_in)
+    const settlement = newTotalAmount - depositAmount
 
     return {
-      totalContractValue,
-      totalMarketValue,
-      priceDifference,
+      newTotalAmount,
       depositAmount,
-      estimatedSettlement,
-      // For Purchase:
-      // Settlement > 0 => Company Receives (Payment IN)
-      // Settlement < 0 => Company Pays (Payment OUT)
-      settlementType: estimatedSettlement >= 0 ? 'payment_in' : 'payment_out'
+      settlement,
+      settlementType: settlement > 0 ? 'payment_out' : 'payment_in'
     }
   }, [previewData, items])
 
@@ -158,9 +123,9 @@ const LiquidatePurchaseContractDialog = ({
     setSubmitting(true)
     try {
       const payload = {
-        liquidationItems: items.map((item) => ({
+        items: items.map((item) => ({
           productId: item.productId,
-          marketPrice: item.marketPrice,
+          price: item.unitPrice,
         })),
       }
 
@@ -229,35 +194,49 @@ const LiquidatePurchaseContractDialog = ({
                     <TableRow>
                       <TableHead>Sản phẩm</TableHead>
                       <TableHead className="text-right">SL</TableHead>
-                      <TableHead className="text-right">Đơn giá HĐ</TableHead>
-                      <TableHead className="text-right w-[180px]">Giá thị trường</TableHead>
-                      <TableHead className="text-right">Chênh lệch</TableHead>
+                      <TableHead className="text-right w-[180px]">Đơn giá</TableHead>
+                      <TableHead className="text-right">Tiền thuế</TableHead>
+                      <TableHead className="text-right">Tiền giảm giá</TableHead>
+                      <TableHead className="text-right">Thành tiền</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {items.map((item) => {
-                      const diff = (item.marketPrice - item.contractPrice) * item.quantity
+                      const subTotal = Number(item.quantity) * Number(item.unitPrice)
+                      const taxAmount = subTotal * Number(item.taxRate || 0) / 100
+                      const discountAmount = subTotal * Number(item.discountRate || 0) / 100
+                      const totalAmount = subTotal + taxAmount - discountAmount
                       return (
                         <TableRow key={item.productId}>
                           <TableCell className="font-medium">
-                            {item.productName}
-                            <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                            <div className="flex items-center gap-2">
+                              {item.productImage && (
+                                <img src={getPublicUrl(item.productImage)} alt={item.productName} className="w-8 h-8 rounded object-cover shrink-0" />
+                              )}
+                              <div>
+                                {item.productName}
+                                <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">{item.quantity}</TableCell>
                           <TableCell className="text-right">
-                            {moneyFormat(item.contractPrice)}
-                          </TableCell>
-                          <TableCell className="text-right">
                             <MoneyInputQuick
                               className="text-right h-8"
-                              value={item.marketPrice}
+                              value={item.unitPrice}
                               onChange={(value) => handlePriceChange(item.productId, value)}
                               onFocus={(e) => e.target.select()}
                               min={0}
                             />
                           </TableCell>
-                          <TableCell className={cn("text-right font-medium", diff > 0 ? "text-green-600" : diff < 0 ? "text-red-500" : "")}>
-                            {moneyFormat(diff)}
+                          <TableCell className="text-right">
+                            {moneyFormat(taxAmount)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {moneyFormat(discountAmount)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {moneyFormat(totalAmount)}
                           </TableCell>
                         </TableRow>
                       )
@@ -268,41 +247,51 @@ const LiquidatePurchaseContractDialog = ({
             ) : (
               <div className="space-y-3">
                 {items.map((item) => {
-                  const diff = (item.marketPrice - item.contractPrice) * item.quantity
+                  const subTotal = item.quantity * item.unitPrice
+                  const taxAmount = subTotal * (item.taxRate || 0)
+                  const discountAmount = subTotal * (item.discountRate || 0)
+                  const totalAmount = subTotal + taxAmount - discountAmount
                   return (
                     <div key={item.productId} className="rounded-lg border p-3 space-y-2 bg-card">
-                      <div className="font-medium">
-                        {item.productName}
-                        <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                      <div className="flex items-center gap-2 font-medium">
+                        {item.productImage && (
+                          <img src={getPublicUrl(item.productImage)} alt={item.productName} className="w-10 h-10 rounded object-cover shrink-0" />
+                        )}
+                        <div>
+                          {item.productName}
+                          <div className="text-xs text-muted-foreground">{item.productCode}</div>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">SL:</span>
-                          <span className="ml-2 font-medium">{item.quantity}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-muted-foreground">Đơn giá HĐ:</span>
-                          <div className="font-medium">{moneyFormat(item.contractPrice)}</div>
-                        </div>
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">SL:</span>
+                        <span className="ml-2 font-medium">{item.quantity}</span>
                       </div>
 
                       <div>
-                        <label className="text-xs text-muted-foreground mb-1 block">Giá thị trường</label>
+                        <label className="text-xs text-muted-foreground mb-1 block">Đơn giá</label>
                         <MoneyInputQuick
                           className="text-right h-9 w-full"
-                          value={item.marketPrice}
+                          value={item.unitPrice}
                           onChange={(value) => handlePriceChange(item.productId, value)}
                           onFocus={(e) => e.target.select()}
                           min={0}
                         />
                       </div>
 
-                      <div className="flex justify-between items-center pt-2 border-t">
-                        <span className="text-sm text-muted-foreground">Chênh lệch:</span>
-                        <span className={cn("font-semibold", diff > 0 ? "text-green-600" : diff < 0 ? "text-red-500" : "")}>
-                          {moneyFormat(diff)}
-                        </span>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Tiền thuế ({(item.taxRate || 0)}%):</span>
+                        <span className="font-medium">{moneyFormat(taxAmount)}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Tiền giảm giá ({(item.discountRate || 0)}%):</span>
+                        <span className="font-medium">{moneyFormat(discountAmount)}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-sm font-semibold border-t pt-2">
+                        <span>Thành tiền:</span>
+                        <span>{moneyFormat(totalAmount)}</span>
                       </div>
                     </div>
                   )
@@ -313,25 +302,23 @@ const LiquidatePurchaseContractDialog = ({
             {/* Summary */}
             <div className="bg-muted/50 p-4 rounded-lg space-y-3 text-sm">
               <div className="flex justify-between">
-                <span>Tổng giá trị thị trường:</span>
-                <span className="font-medium">{moneyFormat(summary?.totalMarketValue)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Chênh lệch giá (Thị trường - HĐ):</span>
-                <span className={cn("font-medium", summary?.priceDifference > 0 ? "text-green-600" : summary?.priceDifference < 0 ? "text-red-500" : "")}>
-                  {moneyFormat(summary?.priceDifference)}
-                </span>
+                <span>Tổng giá trị hợp đồng:</span>
+                <span className="font-medium">{moneyFormat(summary?.newTotalAmount)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Đã thanh toán (Cọc):</span>
-                <span className="font-medium">{moneyFormat(summary?.depositAmount)}</span>
+                <span className="font-medium text-green-600">{moneyFormat(previewData.summary?.depositAmount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Còn lại:</span>
+                <span className="font-medium text-orange-500">{moneyFormat(summary?.settlement)}</span>
               </div>
               <Separator className="bg-border" />
               <div className="flex justify-between items-center text-base">
                 <span className="font-bold">Quyết toán:</span>
                 <div className="text-right">
                   <span className={cn("font-bold text-lg", summary?.settlementType === 'payment_in' ? "text-green-600" : "text-red-600")}>
-                    {moneyFormat(Math.abs(summary?.estimatedSettlement))}
+                    {moneyFormat(Math.abs(summary?.settlement))}
                   </span>
                   <p className="text-xs text-muted-foreground mt-1">
                     {summary?.settlementType === 'payment_in'

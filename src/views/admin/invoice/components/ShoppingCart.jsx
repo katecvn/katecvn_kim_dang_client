@@ -52,6 +52,8 @@ const ShoppingCart = ({
   getDisplayPrice,
   calculateSubTotal,
   calculateTaxForProduct,
+  calculatePreDiscountTotal,
+  calculateTotalDiscount,
   applyWarrantyItems,
   onApplyWarrantyChange,
 }) => {
@@ -238,163 +240,180 @@ const ShoppingCart = ({
 
                 {/* Inputs and Totals (Full Width) */}
                 <div className="mt-3 space-y-3">
-                  {/* Price and Quantity Row */}
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    {/* Group 1: Unit & Price */}
-                    <div className="flex flex-1 gap-2">
-                      {/* Unit Selection */}
-                      <div className="flex-1">
-                        <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Đơn vị
-                        </label>
-                        <Select
-                          value={String(currentUnitId)}
-                          onValueChange={(val) => onUnitChange(product.id, val)}
-                        >
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {unitOptions.map((opt) => (
-                              <SelectItem
-                                key={opt.unitId}
-                                value={String(opt.unitId)}
-                              >
-                                {opt.unitName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                  {/* Row 1: Đơn vị & Đơn giá */}
+                  <div className="flex gap-2">
+                    {/* Unit Selection */}
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        Đơn vị
+                      </label>
+                      <Select
+                        value={String(currentUnitId)}
+                        onValueChange={(val) => onUnitChange(product.id, val)}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {unitOptions.map((opt) => (
+                            <SelectItem
+                              key={opt.unitId}
+                              value={String(opt.unitId)}
+                            >
+                              {opt.unitName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                      {/* Editable Price */}
-                      <div className="flex-1">
-                        <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Đơn giá
-                        </label>
-                        <MoneyInputQuick
-                          value={currentPrice}
-                          onChange={(num) =>
-                            onPriceChange(product.id, String(num))
+                    {/* Editable Price */}
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        Đơn giá
+                      </label>
+                      <MoneyInputQuick
+                        value={currentPrice}
+                        onChange={(num) =>
+                          onPriceChange(product.id, String(num))
+                        }
+                        onFocus={(e) => e.target.select()}
+                        className={cn("h-8 text-sm", priceErrors[product.id] && "border-destructive focus-visible:ring-destructive")}
+                      />
+                      {priceErrors[product.id] && (
+                        <div className="text-[10px] text-destructive mt-1 font-medium">{priceErrors[product.id]}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Row 2: Số lượng + Thuế + Giảm giá (%) */}
+                  <div className="flex gap-2">
+                    {/* Quantity Controls */}
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        Số lượng
+                      </label>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={() =>
+                            onQuantityChange(
+                              product.id,
+                              Math.max(1, currentQuantity - 1),
+                            )
+                          }
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={currentQuantity}
+                          onChange={(e) =>
+                            onQuantityChange(
+                              product.id,
+                              Number(e.target.value),
+                            )
                           }
                           onFocus={(e) => e.target.select()}
-                          className={cn("h-8 text-sm", priceErrors[product.id] && "border-destructive focus-visible:ring-destructive")}
+                          className="h-8 w-full min-w-0 p-0 text-center text-sm"
                         />
-                        {priceErrors[product.id] && (
-                          <div className="text-[10px] text-destructive mt-1 font-medium">{priceErrors[product.id]}</div>
-                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={() =>
+                            onQuantityChange(product.id, currentQuantity + 1)
+                          }
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
 
-                    {/* Group 2: Quantity & Tax */}
-                    <div className="flex flex-1 gap-2">
-                      {/* Tax Selection */}
-                      <div className="flex-1">
-                        <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Thuế
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              className="h-8 w-full justify-between text-xs px-2"
-                            >
-                              <span className="truncate">
-                                {selectedProductTaxes.length > 0
-                                  ? `${selectedProductTaxes.length} loại`
-                                  : 'Chọn'}
-                              </span>
-                              <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[200px] p-0">
-                            <Command>
-                              <CommandList>
-                                <CommandGroup>
-                                  {productTaxes.length > 0 ? (
-                                    productTaxes.map((tax) => (
-                                      <CommandItem
-                                        key={tax.id}
-                                        value={tax.id.toString()}
-                                        onSelect={() => {
-                                          const isChecked = !selectedProductTaxes.includes(tax.id)
-                                          onTaxChange(product.id, tax.id, isChecked)
-                                        }}
+                    {/* Tax Selection */}
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        Thuế
+                      </label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className="h-8 w-full justify-between text-xs px-2"
+                          >
+                            <span className="truncate">
+                              {selectedProductTaxes.length > 0
+                                ? `${selectedProductTaxes.length} loại`
+                                : 'Chọn'}
+                            </span>
+                            <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[200px] p-0">
+                          <Command>
+                            <CommandList>
+                              <CommandGroup>
+                                {productTaxes.length > 0 ? (
+                                  productTaxes.map((tax) => (
+                                    <CommandItem
+                                      key={tax.id}
+                                      value={tax.id.toString()}
+                                      onSelect={() => {
+                                        const isChecked = !selectedProductTaxes.includes(tax.id)
+                                        onTaxChange(product.id, tax.id, isChecked)
+                                      }}
+                                    >
+                                      <div
+                                        className={cn(
+                                          'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                          selectedProductTaxes.includes(tax.id)
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'opacity-50 [&_svg]:invisible',
+                                        )}
                                       >
-                                        <div
-                                          className={cn(
-                                            'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                                            selectedProductTaxes.includes(tax.id)
-                                              ? 'bg-primary text-primary-foreground'
-                                              : 'opacity-50 [&_svg]:invisible',
-                                          )}
-                                        >
-                                          <CheckIcon className={cn('h-4 w-4')} />
-                                        </div>
-                                        {tax.title} ({tax.percentage}%)
-                                      </CommandItem>
-                                    ))
-                                  ) : (
-                                    <div className="py-6 text-center text-sm text-muted-foreground">
-                                      Không có thông tin thuế
-                                    </div>
-                                  )}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
+                                        <CheckIcon className={cn('h-4 w-4')} />
+                                      </div>
+                                      {tax.title} ({tax.percentage}%)
+                                    </CommandItem>
+                                  ))
+                                ) : (
+                                  <div className="py-6 text-center text-sm text-muted-foreground">
+                                    Không có thông tin thuế
+                                  </div>
+                                )}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
 
-                      {/* Quantity Controls */}
-                      <div className="flex-1">
-                        <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Số lượng
-                        </label>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              onQuantityChange(
-                                product.id,
-                                Math.max(1, currentQuantity - 1),
-                              )
-                            }
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={currentQuantity}
-                            onChange={(e) =>
-                              onQuantityChange(
-                                product.id,
-                                Number(e.target.value),
-                              )
-                            }
-                            onFocus={(e) => e.target.select()}
-                            className="h-8 w-full min-w-0 p-0 text-center text-sm"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              onQuantityChange(product.id, currentQuantity + 1)
-                            }
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
+                    {/* Discount (%) */}
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        Giảm giá (%)
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="0"
+                          value={currentDiscount === '' ? 0 : currentDiscount}
+                          onChange={(e) => onDiscountChange(product.id, e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          className="h-8 pr-6 text-sm"
+                        />
+                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">%</span>
                       </div>
                     </div>
                   </div>
+
 
                   {/* Warranty Checkbox */}
                   {product.warrantyPolicy && (
@@ -446,9 +465,21 @@ const ShoppingCart = ({
       </ScrollArea>
 
       {/* Cart Summary */}
-      <div className="border-t bg-muted/30 p-4">
+      <div className="border-t bg-muted/30 p-4 space-y-1.5">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Tạm tính:</span>
+          <span className="text-sm text-muted-foreground">Tạm tính:</span>
+          <span className="text-sm font-medium">
+            {moneyFormat(calculatePreDiscountTotal ? calculatePreDiscountTotal() : 0)}
+          </span>
+        </div>
+        {calculateTotalDiscount && calculateTotalDiscount() > 0 && (
+          <div className="flex items-center justify-between text-destructive">
+            <span className="text-sm">Giảm giá:</span>
+            <span className="text-sm font-medium">-{moneyFormat(calculateTotalDiscount())}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between border-t pt-1.5">
+          <span className="text-sm font-semibold">Tổng:</span>
           <span className="text-lg font-bold text-primary">
             {moneyFormat(
               selectedProducts.reduce((total, product) => {

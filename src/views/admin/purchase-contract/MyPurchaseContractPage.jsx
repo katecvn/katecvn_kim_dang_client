@@ -46,6 +46,7 @@ const MyPurchaseContractPage = () => {
   const refreshData = () => {
     const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
     const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+    const sourceTypeFilter = columnFilters.find((f) => f.id === 'sourceType')?.value
 
     dispatch(getMyPurchaseContracts({
       ...filters,
@@ -54,7 +55,8 @@ const MyPurchaseContractPage = () => {
       ...pageParams,
       search: debouncedSearch,
       status: statusFilter,
-      paymentStatus: paymentStatusFilter
+      paymentStatus: paymentStatusFilter,
+      type: sourceTypeFilter
     }))
   }
 
@@ -62,6 +64,7 @@ const MyPurchaseContractPage = () => {
     document.title = 'Hợp đồng mua hàng của tôi'
     const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
     const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+    const sourceTypeFilter = columnFilters.find((f) => f.id === 'sourceType')?.value
 
     dispatch(getMyPurchaseContracts({
       ...filters,
@@ -70,7 +73,8 @@ const MyPurchaseContractPage = () => {
       ...pageParams,
       search: debouncedSearch,
       status: statusFilter,
-      paymentStatus: paymentStatusFilter
+      paymentStatus: paymentStatusFilter,
+      type: sourceTypeFilter
     }))
   }, [dispatch, filters, pageParams, debouncedSearch, columnFilters])
 

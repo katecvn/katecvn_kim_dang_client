@@ -159,7 +159,7 @@ const DataTableRowActions = ({ row }) => {
     }
   }
 
-  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems, actualReceiptDate) => {
     const firstInvoice = contract.invoices?.[0]
     if (!firstInvoice) return
 
@@ -169,8 +169,8 @@ const DataTableRowActions = ({ row }) => {
       // Selected items details
       const selectedDetails = selectedItems
         .map(item => ({
-          productId: item.productId || item.id, // Ensure correct ID mapping from what was set in handleCreateWarehouseReceipt
-          unitId: item.unitId || item.unit?.id, // Assuming structure
+          productId: item.productId || item.id,
+          unitId: item.unitId || item.unit?.id,
           movement: 'out',
           qtyActual: item.quantity,
           unitPrice: item.price || 0,
@@ -185,13 +185,13 @@ const DataTableRowActions = ({ row }) => {
       }
 
       const payload = {
-        // code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`, // Auto-gen code example
-        receiptType: 2, // ISSUE / EXPORT
+        receiptType: 2,
         businessType: 'sale_out',
-        receiptDate: new Date().toISOString(),
+        receiptDate: actualReceiptDate ? new Date(actualReceiptDate).toISOString() : new Date().toISOString(),
+        actualReceiptDate: actualReceiptDate || null,
         reason: `Xuất kho cho HĐ ${contract.code}`,
         note: contract.note || '',
-        warehouseId: null, // Let backend decide or need to select? User example didn't establish this.
+        warehouseId: null,
         customerId: contract.customerId,
         salesContractId: contract.id,
         details: selectedDetails

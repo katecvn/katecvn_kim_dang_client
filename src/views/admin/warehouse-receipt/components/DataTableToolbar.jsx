@@ -21,7 +21,7 @@ import { deleteMultipleWarehouseReceipts } from '@/stores/WarehouseReceiptSlice'
 import { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
 
-export function DataTableToolbar({ table }) {
+export function DataTableToolbar({ table, onRefresh }) {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const isFiltered = table.getState().columnFilters.length > 0
   const [selectedReceiptIds, setSelectedReceiptIds] = useState([])
@@ -51,6 +51,7 @@ export function DataTableToolbar({ table }) {
       await dispatch(deleteMultipleWarehouseReceipts(selectedIds)).unwrap()
       table.resetRowSelection()
       setShowDeleteDialog(false)
+      if (onRefresh) onRefresh()
     } catch (error) {
       console.log(error)
     }
@@ -128,6 +129,7 @@ export function DataTableToolbar({ table }) {
             open={showCreateDialog}
             onOpenChange={setShowCreateDialog}
             showTrigger={false}
+            onSuccess={onRefresh}
           />
         </div>
       </div>
@@ -202,6 +204,7 @@ export function DataTableToolbar({ table }) {
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
           showTrigger={false}
+          onSuccess={onRefresh}
         />
 
         <DataTableViewOptions table={table} />

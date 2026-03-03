@@ -238,7 +238,7 @@ const MobileSalesContractCard = ({
     }
   }
 
-  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems, actualReceiptDate) => {
     const firstInvoice = contract.invoices?.[0]
     if (!firstInvoice) return
 
@@ -262,10 +262,10 @@ const MobileSalesContractCard = ({
       }
 
       const payload = {
-        // code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`,
         receiptType: 2,
         businessType: 'sale_out',
-        receiptDate: new Date().toISOString(),
+        receiptDate: actualReceiptDate ? new Date(actualReceiptDate).toISOString() : new Date().toISOString(),
+        actualReceiptDate: actualReceiptDate || null,
         reason: `Xuất kho cho HĐ ${contract.code}`,
         note: contract.note || '',
         warehouseId: null,

@@ -8,7 +8,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ShoppingCart as CartIcon, Minus, Plus, Package, X } from 'lucide-react'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { ShoppingCart as CartIcon, Minus, Plus, Package, X, Check as CheckIcon, ChevronsUpDown } from 'lucide-react'
 import { moneyFormat } from '@/utils/money-format'
 import { MoneyInputQuick } from '@/components/custom/MoneyInputQuick'
 import { getPublicUrl } from '@/utils/file'
@@ -159,9 +170,9 @@ const PurchaseOrderCart = ({
                 <div className="mt-3 space-y-3">
                   <div className="flex flex-col gap-2">
                     {/* Row 1: Unit & Price */}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="flex gap-2">
                       {/* Unit Selection */}
-                      <div>
+                      <div className="flex-1">
                         <label className="mb-1 block text-[10px] text-muted-foreground">
                           Đơn vị
                         </label>
@@ -186,7 +197,7 @@ const PurchaseOrderCart = ({
                       </div>
 
                       {/* Editable Price */}
-                      <div>
+                      <div className="flex-1">
                         <label className="mb-1 block text-[10px] text-muted-foreground">
                           Đơn giá
                         </label>
@@ -206,75 +217,144 @@ const PurchaseOrderCart = ({
                       </div>
                     </div>
 
-                    {/* Row 2: Discount & Quantity */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Discount Rate */}
-                      <div>
-                        <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Giảm giá (%)
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="any"
-                          value={discountRates[product.id] ?? 0}
-                          onChange={(e) =>
-                            onDiscountRateChange(product.id, e.target.value)
-                          }
-                          placeholder="0"
-                          className="h-8 text-sm"
-                          onFocus={(e) => e.target.select()}
-                        />
-                      </div>
+                    {/* Row 2: Số lượng + Thuế + Giảm giá (%) */}
+                    {(() => {
+                      const productTaxes = product?.prices?.[0]?.taxes || []
+                      const selectedProductTaxes = selectedTaxes[product.id] || []
+                      const taxAmount = calculateTaxForProduct(product.id)
+                      return (
+                        <div className="flex gap-2">
+                          {/* Quantity Controls */}
+                          <div className="flex-1">
+                            <label className="mb-1 block text-[10px] text-muted-foreground">
+                              Số lượng
+                            </label>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={() =>
+                                  onQuantityChange(
+                                    product.id,
+                                    Math.max(1, currentQuantity - 1),
+                                  )
+                                }
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={currentQuantity}
+                                onChange={(e) =>
+                                  onQuantityChange(
+                                    product.id,
+                                    Number(e.target.value),
+                                  )
+                                }
+                                className="h-8 w-full min-w-0 p-0 text-center text-sm"
+                                onFocus={(e) => e.target.select()}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={() =>
+                                  onQuantityChange(product.id, currentQuantity + 1)
+                                }
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
 
-                      {/* Quantity Controls */}
-                      <div>
-                        <label className="mb-1 block text-[10px] text-muted-foreground">
-                          Số lượng
-                        </label>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={() =>
-                              onQuantityChange(
-                                product.id,
-                                Math.max(1, currentQuantity - 1),
-                              )
-                            }
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={currentQuantity}
-                            onChange={(e) =>
-                              onQuantityChange(
-                                product.id,
-                                Number(e.target.value),
-                              )
-                            }
-                            className="h-8 w-full min-w-0 p-0 text-center text-sm"
-                            onFocus={(e) => e.target.select()}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={() =>
-                              onQuantityChange(product.id, currentQuantity + 1)
-                            }
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
+                          {/* Tax Selection */}
+                          <div className="flex-1">
+                            <label className="mb-1 block text-[10px] text-muted-foreground">
+                              Thuế
+                            </label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="h-8 w-full justify-between text-xs px-2"
+                                >
+                                  <span className="truncate">
+                                    {selectedProductTaxes.length > 0
+                                      ? `${selectedProductTaxes.length} loại`
+                                      : 'Chọn'}
+                                  </span>
+                                  <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[220px] p-0">
+                                <Command>
+                                  <CommandList>
+                                    <CommandGroup>
+                                      {productTaxes.length > 0 ? (
+                                        productTaxes.map((tax) => (
+                                          <CommandItem
+                                            key={tax.id}
+                                            value={tax.id.toString()}
+                                            onSelect={() => {
+                                              const isChecked = !selectedProductTaxes.includes(tax.id)
+                                              onTaxChange(product.id, tax.id, isChecked)
+                                            }}
+                                          >
+                                            <div
+                                              className={cn(
+                                                'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                                selectedProductTaxes.includes(tax.id)
+                                                  ? 'bg-primary text-primary-foreground'
+                                                  : 'opacity-50 [&_svg]:invisible',
+                                              )}
+                                            >
+                                              <CheckIcon className={cn('h-4 w-4')} />
+                                            </div>
+                                            {tax.title || tax.name} ({tax.percentage}%)
+                                          </CommandItem>
+                                        ))
+                                      ) : (
+                                        <div className="py-6 text-center text-sm text-muted-foreground">
+                                          Không có thông tin thuế
+                                        </div>
+                                      )}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+
+                          {/* Discount Rate */}
+                          <div className="flex-1">
+                            <label className="mb-1 block text-[10px] text-muted-foreground">
+                              Giảm giá (%)
+                            </label>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="any"
+                                value={discountRates[product.id] ?? 0}
+                                onChange={(e) =>
+                                  onDiscountRateChange(product.id, e.target.value)
+                                }
+                                placeholder="0"
+                                className="h-8 pr-6 text-sm"
+                                onFocus={(e) => e.target.select()}
+                              />
+                              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">%</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      )
+                    })()}
                   </div>
 
                   {/* Subtotal */}
@@ -286,6 +366,18 @@ const PurchaseOrderCart = ({
                       {moneyFormat(subtotal)}
                     </span>
                   </div>
+
+                  {/* Tax Amount Display */}
+                  {calculateTaxForProduct(product.id) > 0 && (
+                    <div className="flex items-center justify-between border-t border-dashed pt-2">
+                      <span className="text-xs text-muted-foreground">
+                        Tiền thuế:
+                      </span>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {moneyFormat(calculateTaxForProduct(product.id))}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             )

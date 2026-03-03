@@ -47,6 +47,7 @@ const PurchaseContractPage = () => {
     const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
     const userFilter = columnFilters.find((f) => f.id === 'user')?.value
     const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+    const sourceTypeFilter = columnFilters.find((f) => f.id === 'sourceType')?.value
 
     dispatch(getPurchaseContracts({
       ...filters,
@@ -56,7 +57,8 @@ const PurchaseContractPage = () => {
       search: debouncedSearch,
       status: statusFilter,
       creator: userFilter,
-      paymentStatus: paymentStatusFilter
+      paymentStatus: paymentStatusFilter,
+      type: sourceTypeFilter
     }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, filters, pageParams.page, pageParams.limit, debouncedSearch, columnFilters])
@@ -65,6 +67,7 @@ const PurchaseContractPage = () => {
     const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
     const userFilter = columnFilters.find((f) => f.id === 'user')?.value
     const paymentStatusFilter = columnFilters.find((f) => f.id === 'paymentStatus')?.value
+    const sourceTypeFilter = columnFilters.find((f) => f.id === 'sourceType')?.value
 
     dispatch(getPurchaseContracts({
       ...filters,
@@ -74,7 +77,8 @@ const PurchaseContractPage = () => {
       search: debouncedSearch,
       status: statusFilter,
       creator: userFilter,
-      paymentStatus: paymentStatusFilter
+      paymentStatus: paymentStatusFilter,
+      type: sourceTypeFilter
     }))
   }
 

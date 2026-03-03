@@ -1,7 +1,6 @@
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogClose,
   DialogHeader,
@@ -194,13 +193,14 @@ const ViewPurchaseContractDialog = ({
     setShowDeleteDialog(true)
   }
 
-  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems, actualReceiptDate) => {
     const firstPO = contract?.purchaseOrders?.[0] || {}
     const payload = {
       // code: `NK-${contract.code}-${Date.now().toString().slice(-4)}`,
       receiptType: 1, // IMPORT
       businessType: 'purchase_in',
       receiptDate: new Date().toISOString(),
+      actualReceiptDate: actualReceiptDate || null,
       reason: `Nhập kho từ hợp đồng ${contract.code}`,
       note: contract.note || '',
       warehouseId: null,
@@ -468,10 +468,15 @@ const ViewPurchaseContractDialog = ({
                             <TableHeader>
                               <TableRow className="bg-secondary text-xs">
                                 <TableHead className="w-8">STT</TableHead>
-                                <TableHead className="min-w-64">Sản phẩm</TableHead>
-                                <TableHead className="min-w-20">ĐVT</TableHead>
-                                <TableHead className="min-w-20 text-right">SL</TableHead>
-                                <TableHead className="min-w-28 text-right">Đơn giá</TableHead>
+                                <TableHead className="min-w-40">Sản phẩm</TableHead>
+                                <TableHead className="min-w-20 text-center">ĐVT</TableHead>
+                                <TableHead className="min-w-16 text-right">Số lượng</TableHead>
+                                <TableHead className="min-w-16 text-right">Đã nhận</TableHead>
+                                <TableHead className="min-w-20 text-right">Giá nhập</TableHead>
+                                <TableHead className="min-w-16 text-center">% Thuế</TableHead>
+                                <TableHead className="min-w-24 text-right">Tiền thuế</TableHead>
+                                <TableHead className="min-w-16 text-center">% CK</TableHead>
+                                <TableHead className="min-w-16 text-right">CK</TableHead>
                                 <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -481,7 +486,7 @@ const ViewPurchaseContractDialog = ({
                                   <TableCell>{index + 1}</TableCell>
                                   <TableCell>
                                     <div
-                                      className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                                      className="flex items-start gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                                       onClick={() => {
                                         if (item.productId) {
                                           setSelectedProductId(item.productId)
@@ -489,28 +494,29 @@ const ViewPurchaseContractDialog = ({
                                         }
                                       }}
                                     >
-                                      <div className="size-10 shrink-0 overflow-hidden rounded-md border">
-                                        {item.product?.image || item.image ? (
+                                      {item.product?.image || item.image ? (
+                                        <div className="size-16 overflow-hidden rounded-md border shrink-0">
                                           <img
                                             src={getPublicUrl(item.product?.image || item.image)}
                                             alt={item.productName}
                                             className="h-full w-full object-cover"
                                           />
-                                        ) : (
-                                          <div className="flex h-full w-full items-center justify-center bg-secondary">
-                                            <Package className="h-4 w-4 text-muted-foreground" />
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="font-medium text-sm hover:underline text-blue-600">{item.productName}</span>
-                                        <span className="text-xs text-muted-foreground">{item.productCode}</span>
+                                        </div>
+                                      ) : null}
+                                      <div>
+                                        <div className="font-medium text-blue-600 hover:underline">{item.productName}</div>
+                                        <div className="text-xs text-muted-foreground">{item.productCode}</div>
                                       </div>
                                     </div>
                                   </TableCell>
-                                  <TableCell>{item.unitName}</TableCell>
-                                  <TableCell className="text-right">{parseInt(item.quantity)}</TableCell>
+                                  <TableCell className="text-center">{item.unitName}</TableCell>
+                                  <TableCell className="text-right">{Number(item.quantity)}</TableCell>
+                                  <TableCell className="text-right">{Number(item.receivedQuantity ?? 0)}</TableCell>
                                   <TableCell className="text-right">{moneyFormat(item.unitPrice)}</TableCell>
+                                  <TableCell className="text-center">{Number(item.taxRate ?? 0)}%</TableCell>
+                                  <TableCell className="text-right">{moneyFormat(item.taxAmount ?? 0)}</TableCell>
+                                  <TableCell className="text-center">{Number(item.discountRate ?? 0)}%</TableCell>
+                                  <TableCell className="text-right">{moneyFormat(item.discountAmount ?? 0)}</TableCell>
                                   <TableCell className="text-right font-medium">{moneyFormat(item.totalAmount)}</TableCell>
                                 </TableRow>
                               ))}
@@ -541,8 +547,17 @@ const ViewPurchaseContractDialog = ({
                                 <div className="font-medium text-sm truncate text-blue-600 hover:underline">{index + 1}. {item.productName}</div>
                                 <div className="text-xs text-muted-foreground truncate">{item.productCode || '---'}</div>
                                 <div className="text-xs">
-                                  <span className="font-medium">{parseInt(item.quantity)}</span> {item.unitName || ''} x {moneyFormat(item.unitPrice)}
+                                  <span className="font-medium">{Number(item.quantity)}</span> {item.unitName || ''} x {moneyFormat(item.unitPrice)}
                                 </div>
+                                {Number(item.receivedQuantity ?? 0) > 0 && (
+                                  <div className="text-xs text-muted-foreground">Đã nhận: <span className="font-medium">{Number(item.receivedQuantity)}</span></div>
+                                )}
+                                {Number(item.taxRate ?? 0) > 0 && (
+                                  <div className="text-xs text-blue-600">Thuế: {Number(item.taxRate)}% = <span className="font-medium">{moneyFormat(item.taxAmount ?? 0)}</span></div>
+                                )}
+                                {Number(item.discountRate ?? 0) > 0 && (
+                                  <div className="text-xs text-destructive">CK: {Number(item.discountRate)}% = <span className="font-medium">{moneyFormat(item.discountAmount ?? 0)}</span></div>
+                                )}
                               </div>
                               <div className="shrink-0 text-right">
                                 <div className="text-sm font-bold text-primary">{moneyFormat(item.totalAmount)}</div>
@@ -559,33 +574,44 @@ const ViewPurchaseContractDialog = ({
 
                     {/* Totals Section */}
                     <div className={cn('space-y-3 p-4 rounded-lg border bg-card', isDesktop ? 'text-sm' : 'text-xs')}>
-                      {contract?.otherCosts > 0 && (
+                      {/* Tổng tiền hàng */}
+                      <div className="flex justify-between">
+                        <strong>Tổng tiền hàng:</strong>
+                        <span>{moneyFormat(contract?.subTotalAmount ?? (
+                          Number(contract?.totalCurrentAmount ?? contract?.totalAmount ?? 0)
+                          + Number(contract?.totalDiscountAmount ?? contract?.discountAmount ?? 0)
+                          - Number(contract?.totalTaxAmount ?? contract?.taxAmount ?? 0)
+                          - Number(contract?.otherCosts ?? 0)
+                        ))}</span>
+                      </div>
+
+                      {Number(contract?.totalDiscountAmount ?? contract?.discountAmount ?? 0) > 0 && (
+                        <div className="flex justify-between text-destructive">
+                          <strong>Giảm giá:</strong>
+                          <span>-{moneyFormat(contract?.totalDiscountAmount ?? contract?.discountAmount)}</span>
+                        </div>
+                      )}
+
+                      {Number(contract?.totalTaxAmount ?? contract?.taxAmount ?? 0) > 0 && (
+                        <div className="flex justify-between text-blue-600">
+                          <strong>Tiền thuế:</strong>
+                          <span>+{moneyFormat(contract?.totalTaxAmount ?? contract?.taxAmount)}</span>
+                        </div>
+                      )}
+
+                      {Number(contract?.otherCosts ?? 0) > 0 && (
                         <div className="flex justify-between">
                           <strong>Chi phí khác:</strong>
                           <span>{moneyFormat(contract.otherCosts)}</span>
                         </div>
                       )}
 
-                      {contract?.taxAmount > 0 && (
-                        <div className="flex justify-between">
-                          <strong>Thuế:</strong>
-                          <span>{moneyFormat(contract.taxAmount)}</span>
-                        </div>
-                      )}
-
-                      {contract?.discountAmount > 0 && (
-                        <div className="flex justify-between">
-                          <strong>Giảm giá:</strong>
-                          <span className="text-red-500">{moneyFormat(contract.discountAmount)}</span>
-                        </div>
-                      )}
-
                       <div className="flex justify-between border-t pt-2">
                         <strong>Tổng giá trị:</strong>
-                        <span className="font-bold text-primary text-lg">{moneyFormat(contract?.totalAmount)}</span>
+                        <span className="font-bold text-primary text-lg">{moneyFormat(contract?.totalCurrentAmount ?? contract?.totalAmount)}</span>
                       </div>
 
-                      {contract?.paidAmount > 0 && (
+                      {Number(contract?.paidAmount ?? 0) > 0 && (
                         <div className="flex justify-between">
                           <strong>Đã thanh toán:</strong>
                           <span className="font-medium text-green-600">{moneyFormat(contract.paidAmount)}</span>
@@ -601,7 +627,7 @@ const ViewPurchaseContractDialog = ({
 
                       <div className="flex flex-col border-t pt-2">
                         <strong className="text-muted-foreground mb-1">Số tiền viết bằng chữ:</strong>
-                        <span className="font-bold text-primary">{toVietnamese(contract?.totalAmount)}</span>
+                        <span className="font-bold text-primary">{toVietnamese(contract?.totalCurrentAmount ?? contract?.totalAmount)}</span>
                       </div>
                     </div>
 
@@ -1164,76 +1190,113 @@ const ViewPurchaseContractDialog = ({
 
                 {/* SIDEBAR */}
                 <div className={cn('rounded-lg border p-4 bg-card', isDesktop ? 'w-72 sticky top-0 h-fit' : 'w-full')}>
-                  {/* Supplier Info */}
-                  <div className="flex items-center justify-between">
-                    <h2 className={cn('py-2 font-semibold', isDesktop ? 'text-lg' : 'text-base')}>
-                      Nhà cung cấp
-                    </h2>
-                  </div>
+                  {/* Supplier / Customer Info */}
+                  {(() => {
+                    const isCustomer = !!contract?.customerId && !contract?.supplierId
+                    const supplierName = contract?.supplier?.name || contract?.supplierName
+                    const supplierPhone = contract?.supplier?.phone || contract?.supplierPhone
+                    const supplierEmail = contract?.supplier?.email
+                    const supplierAddress = contract?.supplier?.address || contract?.supplierAddress
+                    const supplierTaxCode = contract?.supplier?.taxCode || contract?.supplierTaxCode
+                    const customer = contract?.customer
 
-                  <div className={cn(isDesktop ? 'space-y-6' : 'space-y-4')}>
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage
-                          src={`https://ui-avatars.com/api/?bold=true&background=random&name=${contract?.supplier?.name}`}
-                          alt={contract?.supplier?.name}
-                        />
-                        <AvatarFallback>NCC</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div
-                          className="font-medium cursor-pointer text-primary hover:underline"
-                          onClick={() => setShowSupplierDetail(true)}
-                        >
-                          {contract?.supplier?.name}
-                        </div>
-                        {showSupplierDetail && contract?.supplier && (
-                          <ViewSupplierDialog
-                            open={showSupplierDetail}
-                            onOpenChange={setShowSupplierDetail}
-                            supplierId={contract?.supplier?.id}
-                            showTrigger={false}
-                            contentClassName="z-[100020]"
-                            overlayClassName="z-[100019]"
-                          />
-                        )}
-                      </div>
-                    </div>
+                    const partyName = isCustomer ? (customer?.name || contract?.customerName) : supplierName
+                    const partyPhone = isCustomer ? (customer?.phone || contract?.customerPhone) : supplierPhone
+                    const partyEmail = isCustomer ? customer?.email : supplierEmail
+                    const partyAddress = isCustomer ? (customer?.address || contract?.customerAddress) : supplierAddress
 
-                    <div>
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="font-medium">Thông tin liên hệ</div>
-                      </div>
-
-                      <div className="mt-4 space-y-2 text-sm">
-                        <div className="flex cursor-pointer items-center text-primary hover:text-secondary-foreground">
-                          <MobileIcon className="mr-2 h-4 w-4" />
-                          <a href={`tel:${contract?.supplier?.phone}`}>
-                            {contract?.supplier?.phone || 'Chưa cập nhật'}
-                          </a>
+                    return (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <h2 className={cn('py-2 font-semibold', isDesktop ? 'text-lg' : 'text-base')}>
+                            {isCustomer ? 'Khách hàng' : 'Nhà cung cấp'}
+                          </h2>
+                          <span className={cn(
+                            'rounded px-1.5 py-0.5 text-xs font-semibold',
+                            isCustomer ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                          )}>
+                            {isCustomer ? 'KH' : 'NCC'}
+                          </span>
                         </div>
 
-                        {contract?.supplier?.email && (
-                          <div className="flex items-center text-muted-foreground">
-                            <Mail className="mr-2 h-4 w-4" />
-                            <a href={`mailto:${contract.supplier.email}`}>{contract.supplier.email}</a>
+                        <div className={cn(isDesktop ? 'space-y-6' : 'space-y-4')}>
+                          <div className="flex items-center gap-4">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage
+                                src={`https://ui-avatars.com/api/?bold=true&background=random&name=${partyName}`}
+                                alt={partyName}
+                              />
+                              <AvatarFallback>{isCustomer ? 'KH' : 'NCC'}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              {!isCustomer ? (
+                                <div
+                                  className="font-medium cursor-pointer text-primary hover:underline"
+                                  onClick={() => setShowSupplierDetail(true)}
+                                >
+                                  {partyName || 'Chưa cập nhật'}
+                                </div>
+                              ) : (
+                                <div className="font-medium">
+                                  {partyName || 'Chưa cập nhật'}
+                                </div>
+                              )}
+                              {showSupplierDetail && contract?.supplier && (
+                                <ViewSupplierDialog
+                                  open={showSupplierDetail}
+                                  onOpenChange={setShowSupplierDetail}
+                                  supplierId={contract?.supplier?.id}
+                                  showTrigger={false}
+                                  contentClassName="z-[100020]"
+                                  overlayClassName="z-[100019]"
+                                />
+                              )}
+                            </div>
                           </div>
-                        )}
 
-                        <div className="flex items-center text-primary hover:text-secondary-foreground">
-                          <MapPin className="mr-2 h-4 w-4" />
-                          {contract?.supplier?.address || 'Chưa cập nhật'}
-                        </div>
+                          <div>
+                            <div className="mb-2 flex items-center justify-between">
+                              <div className="font-medium">Thông tin liên hệ</div>
+                            </div>
 
-                        {contract?.supplier?.taxCode && (
-                          <div className="flex items-center text-muted-foreground">
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            <span>MST: {contract.supplier.taxCode}</span>
+                            <div className="mt-4 space-y-2 text-sm">
+                              <div className="flex cursor-pointer items-center text-primary hover:text-secondary-foreground">
+                                <MobileIcon className="mr-2 h-4 w-4" />
+                                <a href={`tel:${partyPhone}`}>
+                                  {partyPhone || 'Chưa cập nhật'}
+                                </a>
+                              </div>
+
+                              {partyEmail && (
+                                <div className="flex items-center text-muted-foreground">
+                                  <Mail className="mr-2 h-4 w-4" />
+                                  <a href={`mailto:${partyEmail}`}>{partyEmail}</a>
+                                </div>
+                              )}
+
+                              <div className="flex items-center text-primary hover:text-secondary-foreground">
+                                <MapPin className="mr-2 h-4 w-4" />
+                                {partyAddress || 'Chưa cập nhật'}
+                              </div>
+
+                              {!isCustomer && supplierTaxCode && (
+                                <div className="flex items-center text-muted-foreground">
+                                  <CreditCard className="mr-2 h-4 w-4" />
+                                  <span>MST: {supplierTaxCode}</span>
+                                </div>
+                              )}
+                              {isCustomer && customer?.identityCard && (
+                                <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                                  <CreditCard className="h-3 w-3 shrink-0" />
+                                  {customer.identityCard}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                        </div>
+                      </>
+                    )
+                  })()}
 
                   <Separator className="my-4" />
 

@@ -215,14 +215,13 @@ const MobileInvoiceCard = ({
     setShowConfirmWarehouseDialog(true)
   }
 
-  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems, actualReceiptDate) => {
     const invoiceId = invoice.id
     if (!invoiceId) return
 
     try {
       setWarehouseLoading(true)
 
-      // Selected items details
       const selectedDetails = selectedItems
         .map(item => ({
           productId: item.productId || item.id,
@@ -241,10 +240,10 @@ const MobileInvoiceCard = ({
       }
 
       const payload = {
-        // code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
-        receiptType: 2, // ISSUE
+        receiptType: 2,
         businessType: 'sale_out',
-        receiptDate: new Date().toISOString(),
+        receiptDate: actualReceiptDate ? new Date(actualReceiptDate).toISOString() : new Date().toISOString(),
+        actualReceiptDate: actualReceiptDate || null,
         reason: `Xuất kho cho đơn bán ${invoice.code}`,
         note: invoice.note || 'Xuất kho từ hóa đơn',
         warehouseId: null,
@@ -257,7 +256,6 @@ const MobileInvoiceCard = ({
       await dispatch(createWarehouseReceipt(payload)).unwrap()
       toast.success('Đã tạo phiếu xuất kho thành công')
 
-      // Refresh invoice list
       await dispatch(
         getInvoices({
           fromDate: getStartOfCurrentMonth(),

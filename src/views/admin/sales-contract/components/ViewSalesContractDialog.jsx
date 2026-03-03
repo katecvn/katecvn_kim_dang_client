@@ -317,16 +317,13 @@ const ViewSalesContractDialog = ({
     }
   }
 
-  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
-    // Use the first invoice as context for now, or finding the relevant one
-    // This logic might need refinement if multiple invoices exist
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems, actualReceiptDate) => {
     const invoice = contract.invoices[0]
     if (!invoice) return
 
     try {
       setWarehouseLoading(true)
 
-      // Selected items details
       const selectedDetails = selectedItems
         .map(item => ({
           productId: item.productId || item.id,
@@ -345,23 +342,21 @@ const ViewSalesContractDialog = ({
       }
 
       const payload = {
-        // code: `XK-${contract.code}-${Date.now().toString().slice(-4)}`,
-        receiptType: 2, // ISSUE
+        receiptType: 2,
         businessType: 'sale_out',
-        receiptDate: new Date().toISOString(),
+        receiptDate: actualReceiptDate ? new Date(actualReceiptDate).toISOString() : new Date().toISOString(),
+        actualReceiptDate: actualReceiptDate || null,
         reason: `Xuất kho cho HĐ ${contract.code}`,
         note: contract.note || '',
         warehouseId: null,
         customerId: contract.customerId,
         salesContractId: contract.id,
-        // invoiceId: invoice.id, // Removed to match DataTableRowAction logic
         details: selectedDetails
       }
 
       await dispatch(createWarehouseReceipt(payload)).unwrap()
       toast.success('Đã tạo phiếu xuất kho thành công')
 
-      // Refresh data
       fetchContractDetail()
       onSuccess?.()
     } catch (error) {
@@ -601,61 +596,33 @@ const ViewSalesContractDialog = ({
                     <div className={cn('space-y-6', !isDesktop && 'space-y-4')}>
                       {/* Product Items Table */}
                       {isDesktop ? (
-                        <div className="overflow-x-auto rounded-lg border">
-                          <Table className="min-w-full">
-                            <TableHeader>
-                              <TableRow className="bg-secondary text-xs">
-                                <TableHead className="w-8">TT</TableHead>
-                                <TableHead className="min-w-64">
-                                  Sản phẩm
-                                </TableHead>
-                                <TableHead className="min-w-20">
-                                  ĐVT
-                                </TableHead>
-                                <TableHead className="min-w-20 text-right">
-                                  SL
-                                </TableHead>
-                                <TableHead className="min-w-28 text-right">
-                                  Đơn giá
-                                </TableHead>
-                                <TableHead className="min-w-24 text-right">
-                                  Thuế
-                                </TableHead>
-                                <TableHead className="min-w-28 text-right">
-                                  Thành tiền
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {contract?.items?.map((item, index) => (
-                                <TableRow key={item.id || index}>
-                                  <TableCell>{index + 1}</TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-3">
-                                      <div
-                                        className="size-10 shrink-0 overflow-hidden rounded-md border cursor-pointer"
-                                        onClick={() => {
-                                          if (item?.productId) {
-                                            setSelectedProductId(item.productId)
-                                            setShowViewProductDialog(true)
-                                          }
-                                        }}
-                                      >
-                                        {item?.product?.image ? (
-                                          <img
-                                            src={getPublicUrl(item.product.image)}
-                                            alt={item.productName}
-                                            className="h-full w-full object-cover"
-                                          />
-                                        ) : (
-                                          <div className="flex h-full w-full items-center justify-center bg-secondary">
-                                            <Package className="h-4 w-4 text-muted-foreground" />
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span
-                                          className="font-medium text-sm text-blue-600 cursor-pointer hover:underline truncate"
+                        <div className="w-full overflow-hidden">
+                          <div className="overflow-auto max-h-72 rounded-lg border">
+                            <Table className="min-w-[950px]">
+                              <TableHeader>
+                                <TableRow className="bg-secondary text-xs">
+                                  <TableHead className="w-8">TT</TableHead>
+                                  <TableHead className="min-w-48">Sản phẩm</TableHead>
+                                  <TableHead className="min-w-16 text-right">SL</TableHead>
+                                  <TableHead className="min-w-16">ĐVT</TableHead>
+                                  <TableHead className="min-w-28 text-right">Đơn giá</TableHead>
+                                  <TableHead className="min-w-28 text-right">Tổng tiền</TableHead>
+                                  <TableHead className="min-w-16 text-right">Thuế (%)</TableHead>
+                                  <TableHead className="min-w-24 text-right">Tiền thuế</TableHead>
+                                  <TableHead className="min-w-20 text-right">Giảm (%)</TableHead>
+                                  <TableHead className="min-w-24 text-right">Tiền giảm</TableHead>
+                                  <TableHead className="min-w-28 text-right">Tổng cộng</TableHead>
+                                  {/* <TableHead className="min-w-20">Bảo hành</TableHead> */}
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {contract?.items?.map((item, index) => (
+                                  <TableRow key={item.id || index}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center gap-3">
+                                        <div
+                                          className="size-10 shrink-0 overflow-hidden rounded-md border cursor-pointer"
                                           onClick={() => {
                                             if (item?.productId) {
                                               setSelectedProductId(item.productId)
@@ -663,33 +630,51 @@ const ViewSalesContractDialog = ({
                                             }
                                           }}
                                         >
-                                          {item.productName}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                          {item.productCode}
-                                        </span>
+                                          {item?.product?.image ? (
+                                            <img
+                                              src={getPublicUrl(item.product.image)}
+                                              alt={item.productName}
+                                              className="h-full w-full object-cover"
+                                            />
+                                          ) : (
+                                            <div className="flex h-full w-full items-center justify-center bg-secondary">
+                                              <Package className="h-4 w-4 text-muted-foreground" />
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <span
+                                            className="font-medium text-sm text-blue-600 cursor-pointer hover:underline"
+                                            onClick={() => {
+                                              if (item?.productId) {
+                                                setSelectedProductId(item.productId)
+                                                setShowViewProductDialog(true)
+                                              }
+                                            }}
+                                          >
+                                            {item.productName}
+                                          </span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {item.productCode}
+                                          </span>
+                                        </div>
                                       </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    {item.unitName}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    {parseInt(item.quantity)}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    {moneyFormat(item.unitPrice)}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    {moneyFormat(item.taxAmount || 0)}
-                                  </TableCell>
-                                  <TableCell className="text-right font-medium">
-                                    {moneyFormat(Number(item.unitPrice) + Number(item.taxAmount))}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
+                                    </TableCell>
+                                    <TableCell className="text-right">{parseInt(item.quantity)}</TableCell>
+                                    <TableCell>{item.unitName}</TableCell>
+                                    <TableCell className="text-right">{moneyFormat(item.unitPrice)}</TableCell>
+                                    <TableCell className="text-right">{moneyFormat(item.grossAmount || (Number(item.unitPrice) * Number(item.quantity)))}</TableCell>
+                                    <TableCell className="text-right">{item.taxRate > 0 ? `${item.taxRate}%` : '—'}</TableCell>
+                                    <TableCell className="text-right">{item.taxAmount > 0 ? moneyFormat(item.taxAmount) : '—'}</TableCell>
+                                    <TableCell className="text-right">{item.discountRate > 0 ? `${item.discountRate}%` : '—'}</TableCell>
+                                    <TableCell className="text-right text-destructive">{item.discountAmount > 0 ? moneyFormat(item.discountAmount) : '—'}</TableCell>
+                                    <TableCell className="text-right font-semibold">{moneyFormat(item.totalAmount)}</TableCell>
+                                    {/* <TableCell>{item.warranty || '—'}</TableCell> */}
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -760,22 +745,37 @@ const ViewSalesContractDialog = ({
                       >
                         <div className="flex justify-between">
                           <strong>Tổng tiền hàng:</strong>
-                          <span className="font-medium text-primary">
-                            {moneyFormat(contract?.totalAmount)}
+                          <span className="font-medium">
+                            {moneyFormat(
+                              Number(contract?.totalAmount || 0)
+                              - Number(contract?.taxAmount || 0)
+                              + Number(contract?.discountAmount || 0)
+                            )}
                           </span>
                         </div>
 
-                        <div className="flex justify-between">
-                          <strong>Tiền thuế:</strong>
-                          <span className="font-medium text-muted-foreground">
-                            {moneyFormat(contract?.totalTaxAmount || 0)}
-                          </span>
-                        </div>
+                        {Number(contract?.taxAmount) > 0 && (
+                          <div className="flex justify-between">
+                            <strong>Tiền thuế:</strong>
+                            <span className="font-medium text-blue-600">
+                              +{moneyFormat(contract?.taxAmount)}
+                            </span>
+                          </div>
+                        )}
+
+                        {Number(contract?.discountAmount) > 0 && (
+                          <div className="flex justify-between">
+                            <strong>Tổng giảm giá:</strong>
+                            <span className="font-medium text-destructive">
+                              -{moneyFormat(contract?.discountAmount)}
+                            </span>
+                          </div>
+                        )}
 
                         <div className="flex justify-between border-t pt-2 mt-2">
                           <strong>Tổng cộng:</strong>
                           <span className="font-bold text-primary text-lg">
-                            {moneyFormat(contract?.totalCurrentAmount || contract?.totalAmount)}
+                            {moneyFormat(contract?.totalAmount)}
                           </span>
                         </div>
 
@@ -806,7 +806,7 @@ const ViewSalesContractDialog = ({
                             Số tiền viết bằng chữ:
                           </strong>
                           <span className="font-bold text-primary">
-                            {toVietnamese(contract?.totalCurrentAmount || contract?.totalAmount)}
+                            {toVietnamese(contract?.totalAmount)}
                           </span>
                         </div>
 

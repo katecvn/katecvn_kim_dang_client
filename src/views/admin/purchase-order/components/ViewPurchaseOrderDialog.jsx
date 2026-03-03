@@ -39,7 +39,7 @@ import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { getPublicUrl } from '@/utils/file'
-import { Mail, MapPin, Pencil, Trash2, Printer, X, CreditCard, PackagePlus } from 'lucide-react'
+import { Mail, MapPin, Pencil, Trash2, Printer, X, CreditCard, Receipt, PackagePlus } from 'lucide-react'
 import { IconPlus, IconPencil, IconCheck } from '@tabler/icons-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
@@ -274,12 +274,13 @@ const ViewPurchaseOrderDialog = ({
     setShowCreatePaymentDialog(true)
   }
 
-  const handleCreateWarehouseReceipt = async (selectedItems) => {
+  const handleCreateWarehouseReceipt = async (selectedItems, actualReceiptDate) => {
     const payload = {
       // code: `NK-${purchaseOrder.code}-${Date.now().toString().slice(-4)}`,
       receiptType: 1, // IMPORT / RECEIPT
       businessType: 'purchase_in',
       receiptDate: new Date().toISOString(),
+      actualReceiptDate: actualReceiptDate || null,
       reason: `Nhập kho từ đơn mua hàng ${purchaseOrder.code}`,
       note: purchaseOrder.note || '',
       warehouseId: null,
@@ -393,8 +394,8 @@ const ViewPurchaseOrderDialog = ({
                             <TableHead className="min-w-16 text-right">Số lượng</TableHead>
                             <TableHead className="min-w-16 text-right">Đã nhận</TableHead>
                             <TableHead className="min-w-20 text-right">Giá nhập</TableHead>
-                            {/* <TableHead className="min-w-16 text-center">% Thuế</TableHead>
-                            <TableHead className="min-w-16 text-right">Thuế</TableHead> */}
+                            <TableHead className="min-w-16 text-center">% Thuế</TableHead>
+                            <TableHead className="min-w-24 text-right">Tiền thuế</TableHead>
                             <TableHead className="min-w-16 text-center">% CK</TableHead>
                             <TableHead className="min-w-16 text-right">CK</TableHead>
                             <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
@@ -433,8 +434,8 @@ const ViewPurchaseOrderDialog = ({
                               <TableCell className="text-right">{Number(item.quantity)}</TableCell>
                               <TableCell className="text-right">{Number(item.receivedQuantity)}</TableCell>
                               <TableCell className="text-right">{moneyFormat(item.unitPrice)}</TableCell>
-                              {/* <TableCell className="text-center">{Number(item.taxRate)}%</TableCell>
-                              <TableCell className="text-right">{moneyFormat(item.taxAmount)}</TableCell> */}
+                              <TableCell className="text-center">{Number(item.taxRate)}%</TableCell>
+                              <TableCell className="text-right">{moneyFormat(item.taxAmount)}</TableCell>
                               <TableCell className="text-center">{Number(item.discountRate)}%</TableCell>
                               <TableCell className="text-right">{moneyFormat(item.discountAmount)}</TableCell>
                               <TableCell className="text-right font-medium">{moneyFormat(item.totalAmount)}</TableCell>
@@ -501,25 +502,29 @@ const ViewPurchaseOrderDialog = ({
                     )}>
                       <div className="flex justify-between">
                         <strong>Tổng tiền hàng:</strong>
-                        <span>{moneyFormat(purchaseOrder.subTotal || 0)}</span>
+                        <span>{moneyFormat(purchaseOrder.subTotalAmount ?? purchaseOrder.subTotal ?? 0)}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <strong>Thuế:</strong>
-                        <span>{moneyFormat(purchaseOrder.taxAmount)}</span>
-                      </div>
+                      {(purchaseOrder.totalDiscountAmount ?? purchaseOrder.discount ?? 0) > 0 && (
+                        <div className="flex justify-between text-destructive">
+                          <strong>Giảm giá:</strong>
+                          <span>-{moneyFormat(purchaseOrder.totalDiscountAmount ?? purchaseOrder.discount ?? 0)}</span>
+                        </div>
+                      )}
+                      {(purchaseOrder.totalTaxAmount ?? purchaseOrder.taxAmount ?? 0) > 0 && (
+                        <div className="flex justify-between text-blue-600">
+                          <strong>Tiền thuế:</strong>
+                          <span>+{moneyFormat(purchaseOrder.totalTaxAmount ?? purchaseOrder.taxAmount ?? 0)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <strong>Chi phí khác:</strong>
                         <span>{moneyFormat(purchaseOrder.otherCosts || 0)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <strong>Giảm giá:</strong>
-                        <span>{moneyFormat(purchaseOrder.discount)}</span>
                       </div>
 
                       <div className="flex justify-between items-center text-lg border-t pt-2 mt-2">
                         <strong>Tổng cộng:</strong>
                         <span className="font-bold text-primary">
-                          {moneyFormat(purchaseOrder.totalAmount)}
+                          {moneyFormat(purchaseOrder.totalCurrentAmount ?? purchaseOrder.totalAmount ?? 0)}
                         </span>
                       </div>
 
@@ -527,7 +532,7 @@ const ViewPurchaseOrderDialog = ({
                         <div className={cn("font-bold", isDesktop ? "text-sm" : "text-xs")}>
                           Số tiền viết bằng chữ:{' '}
                           <span className="font-bold">
-                            {toVietnamese(purchaseOrder.totalAmount)}
+                            {toVietnamese(purchaseOrder.totalCurrentAmount ?? purchaseOrder.totalAmount ?? 0)}
                           </span>
                         </div>
                       </div>
@@ -693,7 +698,35 @@ const ViewPurchaseOrderDialog = ({
                               <strong>Ngày ký:</strong>
                               <span>{dateFormat(purchaseOrder.purchaseContract.contractDate, true)}</span>
                             </div>
+                            {/* Tổng tiền hàng = totalAmount + discount - tax - otherCosts */}
                             <div className="flex justify-between">
+                              <strong>Tổng tiền hàng:</strong>
+                              <span>{moneyFormat(
+                                Number(purchaseOrder.purchaseContract.totalAmount ?? 0)
+                                + Number(purchaseOrder.purchaseContract.discountAmount ?? 0)
+                                - Number(purchaseOrder.purchaseContract.taxAmount ?? 0)
+                                - Number(purchaseOrder.purchaseContract.otherCosts ?? 0)
+                              )}</span>
+                            </div>
+                            {Number(purchaseOrder.purchaseContract.discountAmount ?? 0) > 0 && (
+                              <div className="flex justify-between text-destructive">
+                                <strong>Giảm giá:</strong>
+                                <span>-{moneyFormat(purchaseOrder.purchaseContract.discountAmount)}</span>
+                              </div>
+                            )}
+                            {Number(purchaseOrder.purchaseContract.taxAmount ?? 0) > 0 && (
+                              <div className="flex justify-between text-blue-600">
+                                <strong>Tiền thuế:</strong>
+                                <span>+{moneyFormat(purchaseOrder.purchaseContract.taxAmount)}</span>
+                              </div>
+                            )}
+                            {Number(purchaseOrder.purchaseContract.otherCosts ?? 0) > 0 && (
+                              <div className="flex justify-between">
+                                <strong>Chi phí khác:</strong>
+                                <span>{moneyFormat(purchaseOrder.purchaseContract.otherCosts)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between border-t pt-2">
                               <strong>Tổng giá trị:</strong>
                               <span className="font-bold text-primary">{moneyFormat(purchaseOrder.purchaseContract.totalAmount)}</span>
                             </div>
@@ -707,12 +740,6 @@ const ViewPurchaseOrderDialog = ({
                               <div className="flex justify-between">
                                 <strong>Hết hạn:</strong>
                                 <span>{dateFormat(purchaseOrder.purchaseContract.validUntil, true)}</span>
-                              </div>
-                            )}
-                            {purchaseOrder.purchaseContract.otherCosts > 0 && (
-                              <div className="flex justify-between">
-                                <strong>Chi phí khác:</strong>
-                                <span>{moneyFormat(purchaseOrder.purchaseContract.otherCosts)}</span>
                               </div>
                             )}
                             {purchaseOrder.purchaseContract.terms && (
@@ -1119,74 +1146,105 @@ const ViewPurchaseOrderDialog = ({
                 "rounded-lg border p-4 bg-card",
                 isDesktop ? "w-72 sticky top-0 h-fit" : "w-full"
               )}>
-                {/* SUPPLIER INFO */}
-                <div className="flex items-center justify-between">
-                  <h2 className={cn(
-                    "py-2 font-semibold",
-                    isDesktop ? "text-lg" : "text-base"
-                  )}>Nhà cung cấp</h2>
-                </div>
+                {/* SUPPLIER / CUSTOMER INFO */}
+                {(() => {
+                  const party = purchaseOrder?.supplier || purchaseOrder?.customer
+                  const isCustomer = !purchaseOrder?.supplier && !!purchaseOrder?.customer
+                  return (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <h2 className={cn("py-2 font-semibold", isDesktop ? "text-lg" : "text-base")}>
+                          {isCustomer ? 'Khách hàng' : 'Nhà cung cấp'}
+                        </h2>
+                        <span className={cn(
+                          'rounded px-1.5 py-0.5 text-xs font-semibold',
+                          isCustomer ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                        )}>
+                          {isCustomer ? 'KH' : 'NCC'}
+                        </span>
+                      </div>
 
-                <div className={cn(isDesktop ? "space-y-6" : "space-y-4")}>
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={`https://ui-avatars.com/api/?bold=true&background=random&name=${purchaseOrder?.supplier?.name}`}
-                        alt={purchaseOrder?.supplier?.name}
-                      />
-                      <AvatarFallback>NCC</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div
-                        className="font-medium cursor-pointer text-primary hover:underline"
-                        onClick={() => setShowSupplierDetail(true)}
-                      >
-                        {purchaseOrder?.supplier?.name}
-                      </div>
-                      {showSupplierDetail && purchaseOrder?.supplier && (
-                        <ViewSupplierDialog
-                          open={showSupplierDetail}
-                          onOpenChange={setShowSupplierDetail}
-                          supplierId={purchaseOrder?.supplier?.id}
-                          showTrigger={false}
-                          contentClassName="z-[100050]"
-                          overlayClassName="z-[100049]"
-                        />
-                      )}
-                    </div>
-                  </div>
+                      <div className={cn(isDesktop ? "space-y-6" : "space-y-4")}>
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage
+                              src={`https://ui-avatars.com/api/?bold=true&background=random&name=${party?.name}`}
+                              alt={party?.name}
+                            />
+                            <AvatarFallback>{isCustomer ? 'KH' : 'NCC'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            {isCustomer ? (
+                              <div className="font-medium">
+                                <div>{party?.name}</div>
+                                {party?.code && <div className="text-xs text-muted-foreground">{party.code}</div>}
+                              </div>
+                            ) : (
+                              <div
+                                className="font-medium cursor-pointer text-primary hover:underline"
+                                onClick={() => setShowSupplierDetail(true)}
+                              >
+                                {party?.name}
+                              </div>
+                            )}
+                            {showSupplierDetail && purchaseOrder?.supplier && (
+                              <ViewSupplierDialog
+                                open={showSupplierDetail}
+                                onOpenChange={setShowSupplierDetail}
+                                supplierId={purchaseOrder?.supplier?.id}
+                                showTrigger={false}
+                                contentClassName="z-[100050]"
+                                overlayClassName="z-[100049]"
+                              />
+                            )}
+                          </div>
+                        </div>
 
-                  <div>
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="font-medium">Thông tin liên hệ</div>
-                    </div>
-
-                    <div className="mt-4 space-y-2 text-sm">
-                      <div className="flex cursor-pointer items-center text-primary hover:text-secondary-foreground">
-                        <div className="mr-2 h-4 w-4 ">
-                          <MobileIcon className="h-4 w-4" />
+                        <div>
+                          <div className="mb-2 flex items-center justify-between">
+                            <div className="font-medium">Thông tin liên hệ</div>
+                          </div>
+                          <div className="mt-4 space-y-2 text-sm">
+                            <div className="flex cursor-pointer items-center text-primary hover:text-secondary-foreground">
+                              <div className="mr-2 h-4 w-4">
+                                <MobileIcon className="h-4 w-4" />
+                              </div>
+                              <a href={`tel:${party?.phone}`}>
+                                {party?.phone || 'Chưa cập nhật'}
+                              </a>
+                            </div>
+                            <div className="flex items-center text-muted-foreground">
+                              <div className="mr-2 h-4 w-4">
+                                <Mail className="h-4 w-4" />
+                              </div>
+                              <a href={`mailto:${party?.email}`}>
+                                {party?.email || 'Chưa cập nhật'}
+                              </a>
+                            </div>
+                            <div className="flex items-center text-primary hover:text-secondary-foreground">
+                              <div className="mr-2 h-4 w-4">
+                                <MapPin className="h-4 w-4" />
+                              </div>
+                              {party?.address || 'Chưa cập nhật'}
+                            </div>
+                            {isCustomer && party?.identityCard && (
+                              <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                                <CreditCard className="h-3 w-3 shrink-0" />
+                                {party.identityCard}
+                              </div>
+                            )}
+                            {!isCustomer && party?.taxCode && (
+                              <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                                <Receipt className="h-3 w-3 shrink-0" />
+                                {party.taxCode}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <a href={`tel:${purchaseOrder?.supplier?.phone}`}>
-                          {purchaseOrder?.supplier?.phone || 'Chưa cập nhật'}
-                        </a>
                       </div>
-                      <div className="flex items-center text-muted-foreground">
-                        <div className="mr-2 h-4 w-4 ">
-                          <Mail className="h-4 w-4" />
-                        </div>
-                        <a href={`mailto:${purchaseOrder?.supplier?.email}`}>
-                          {purchaseOrder?.supplier?.email || 'Chưa cập nhật'}
-                        </a>
-                      </div>
-                      <div className="flex items-center text-primary hover:text-secondary-foreground">
-                        <div className="mr-2 h-4 w-4 ">
-                          <MapPin className="h-4 w-4" />
-                        </div>
-                        {purchaseOrder?.supplier?.address || 'Chưa cập nhật'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                    </>
+                  )
+                })()}
 
                 <Separator className="my-4" />
 

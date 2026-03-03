@@ -104,14 +104,13 @@ const DataTableRowActions = ({ row, table }) => {
     setShowConfirmWarehouseDialog(true)
   }
 
-  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems, actualReceiptDate) => {
     const invoiceId = invoice?.id
     if (!invoiceId) return
 
     try {
       setWarehouseLoading(true)
 
-      // Selected items details
       const selectedDetails = selectedItems
         .map(item => ({
           productId: item.productId || item.id,
@@ -130,16 +129,16 @@ const DataTableRowActions = ({ row, table }) => {
       }
 
       const payload = {
-        // code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
-        receiptType: 2, // ISSUE / EXPORT
+        receiptType: 2,
         businessType: 'sale_out',
-        receiptDate: new Date().toISOString(),
+        receiptDate: actualReceiptDate ? new Date(actualReceiptDate).toISOString() : new Date().toISOString(),
+        actualReceiptDate: actualReceiptDate || null,
         reason: `Xuất kho cho đơn bán ${invoice.code}`,
         note: invoice.note || 'Xuất kho từ hóa đơn',
         warehouseId: null,
         customerId: invoice.customerId,
         salesContractId: invoice.salesContractId,
-        invoiceId: invoice.id, // Link to invoice
+        invoiceId: invoice.id,
         details: selectedDetails
       }
 
@@ -147,7 +146,6 @@ const DataTableRowActions = ({ row, table }) => {
 
       toast.success('Đã tạo phiếu xuất kho thành công')
 
-      // Refresh invoice list
       await dispatch(
         getInvoices({
           fromDate: getStartOfCurrentMonth(),
@@ -293,6 +291,14 @@ const DataTableRowActions = ({ row, table }) => {
           onOpenChange={setShowReceiptDialog}
           showTrigger={false}
           table={{ resetRowSelection: () => { } }} // Mock table object needed for dialog
+          onSuccess={() => {
+            setShowReceiptDialog(false)
+            toast.success('Đã tạo phiếu thu thành công')
+            dispatch(getInvoices({
+              fromDate: getStartOfCurrentMonth(),
+              toDate: getEndOfCurrentMonth(),
+            }))
+          }}
         />
       )}
 
@@ -400,7 +406,7 @@ const DataTableRowActions = ({ row, table }) => {
 
           <DropdownMenuSeparator />
 
-          {row?.original?.status === 'pending' && (
+          {(row?.original?.status === 'pending' || row?.original?.status === 'rejected') && (
             <Can permission="DELETE_INVOICE" permission2="DELETE_INVOICE_USER" isOwner={true} ownerId={row?.original?.createdById || row?.original?.user?.id}>
               <DropdownMenuItem
                 onSelect={() => setShowDeleteInvoiceDialog(true)}

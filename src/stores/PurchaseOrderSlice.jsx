@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 
 export const getPurchaseOrders = createAsyncThunk(
   'purchaseOrder/get-purchase-orders',
-  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '', status = null, creator = null }, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 15, search = '', status = null, creator = null, type = null }, { rejectWithValue }) => {
     try {
       const response = await api.get('/purchase-orders', {
         headers: {
@@ -24,7 +24,8 @@ export const getPurchaseOrders = createAsyncThunk(
           limit,
           search,
           status: Array.isArray(status) && status.length > 0 ? status.join(',') : status,
-          creator: Array.isArray(creator) && creator.length > 0 ? creator.join(',') : creator
+          creator: Array.isArray(creator) && creator.length > 0 ? creator.join(',') : creator,
+          type: type ?? undefined,
         },
       })
       const responseData = response.data

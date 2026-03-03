@@ -22,6 +22,8 @@ import {
 import { PlusIcon } from '@radix-ui/react-icons'
 import ExcelJS from 'exceljs'
 import { IconDownload } from '@tabler/icons-react'
+import { useDispatch } from 'react-redux'
+import { getSetting } from '@/stores/SettingSlice'
 
 const ExportInvoiceView = ({
   open,
@@ -29,18 +31,51 @@ const ExportInvoiceView = ({
   showTrigger = true,
   ...props
 }) => {
+  const dispatch = useDispatch()
   const fromDate = dateFormat(props.fromDate)
   const toDate = dateFormat(props.toDate)
 
   const handleExport = async () => {
+    // Lấy thông tin công ty
+    const response = await dispatch(getSetting('general_information'))
+    const { brandName, address, phone, email, website } = response?.payload?.payload || {}
+
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('Chi tiết hóa đơn', {
       views: [{ showGridLines: true }],
     })
     const table = document.getElementById('exportTable')
 
-    worksheet.mergeCells('A1:X1')
-    worksheet.getCell('A1').value =
+    // === THÔNG TIN CÔNG TY (Row 1 – richText nhiều dòng) === //
+    const phoneEmail = []
+    if (phone) phoneEmail.push(`SĐT: ${phone}`)
+    if (email) phoneEmail.push(`Email: ${email}`)
+    if (website) phoneEmail.push(`Website: ${website}`)
+
+    worksheet.mergeCells('A1:AD1')
+    const companyCell = worksheet.getCell('A1')
+    companyCell.value = {
+      richText: [
+        {
+          font: { name: 'Times New Roman', size: 13, bold: true },
+          text: brandName ? brandName.toUpperCase() : 'TÊN CÔNG TY',
+        },
+        {
+          font: { name: 'Times New Roman', size: 11 },
+          text: address ? `\nĐịa chỉ: ${address}` : '\nĐịa chỉ:',
+        },
+        {
+          font: { name: 'Times New Roman', size: 11 },
+          text: phoneEmail.length > 0 ? `\n${phoneEmail.join(' - ')}` : '',
+        },
+      ],
+    }
+    companyCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
+    worksheet.getRow(1).height = 72
+
+    // === TIÊU ĐỀ BÁO CÁO (Row 2) === //
+    worksheet.mergeCells('A2:AD2')
+    worksheet.getCell('A2').value =
       `Báo cáo danh sách hóa đơn từ ${fromDate} đến ${toDate}`
 
     const rows = table.querySelectorAll('tr')
@@ -53,35 +88,6 @@ const ExportInvoiceView = ({
       })
       data.push(rowData)
     })
-
-    const columnIndexForCheck = 1 // Cột B (index 1) để kiểm tra nhóm dữ liệu
-
-    // Các cột cần gộp giống thông tin master (Hóa đơn)
-    let mergeRows_B = [] // Mã HĐ
-    let mergeRows_C = [] // Mã HĐ/Bán
-    let mergeRows_D = [] // KH
-    let mergeRows_E = [] // SĐT
-    let mergeRows_F = [] // Địa chỉ
-    let mergeRows_G = [] // Người tạo
-    let mergeRows_M = [] // Tổng hóa đơn
-    let mergeRows_O = [] // Giảm giá HD
-    let mergeRows_P = [] // Chia DS
-    let mergeRows_Q = [] // Tổng chia DS
-    let mergeRows_R = [] // Người được chia
-    let mergeRows_S = [] // Công nợ
-    let mergeRows_T = [] // Thanh toán
-    let mergeRows_U = [] // DS phiếu xuất
-    let mergeRows_V = [] // Trạng thái
-    let mergeRows_W = [] // Ngày T.Toán/HĐ
-    let mergeRows_X = [] // Ngày tạo
-
-    let previousInvoiceCode = null
-
-    const doMerge = (rows, colLetter) => {
-      if (rows.length > 1) {
-        worksheet.mergeCells(`${colLetter}${rows[0]}:${colLetter}${rows[rows.length - 1]}`)
-      }
-    }
 
     data.forEach((row, rowIndex) => {
       const excelRow = worksheet.addRow(row)
@@ -103,101 +109,30 @@ const ExportInvoiceView = ({
             wrapText: true,
           }
         })
-
-        // Kiểm tra nếu Mã HĐ trùng
-        if (row[columnIndexForCheck] === previousInvoiceCode) {
-          mergeRows_B.push(excelRow.number)
-          mergeRows_C.push(excelRow.number)
-          mergeRows_D.push(excelRow.number)
-          mergeRows_E.push(excelRow.number)
-          mergeRows_F.push(excelRow.number)
-          mergeRows_G.push(excelRow.number)
-          mergeRows_M.push(excelRow.number)
-          mergeRows_O.push(excelRow.number) // Assuming column indexing might shift, we will just merge specific structural end-columns based on their letter: 
-          mergeRows_P.push(excelRow.number)
-          mergeRows_Q.push(excelRow.number)
-          mergeRows_R.push(excelRow.number)
-          mergeRows_S.push(excelRow.number)
-          mergeRows_T.push(excelRow.number)
-          mergeRows_U.push(excelRow.number)
-          mergeRows_V.push(excelRow.number)
-          mergeRows_W.push(excelRow.number)
-          mergeRows_X.push(excelRow.number)
-        } else {
-          // Thực hiện gộp ô nhóm trước đó
-          doMerge(mergeRows_B, 'B')
-          doMerge(mergeRows_C, 'C')
-          doMerge(mergeRows_D, 'D')
-          doMerge(mergeRows_E, 'E')
-          doMerge(mergeRows_F, 'F')
-          doMerge(mergeRows_G, 'G')
-          doMerge(mergeRows_M, 'N') // Actually refers to N if columns shift, we map dynamically based on TableHead
-          doMerge(mergeRows_O, 'O')
-          doMerge(mergeRows_P, 'P')
-          doMerge(mergeRows_Q, 'Q')
-          doMerge(mergeRows_R, 'R')
-          doMerge(mergeRows_S, 'S')
-          doMerge(mergeRows_T, 'T')
-          doMerge(mergeRows_U, 'U')
-          doMerge(mergeRows_V, 'V')
-          doMerge(mergeRows_W, 'W')
-          doMerge(mergeRows_X, 'X')
-
-          // Bắt đầu nhóm mới
-          mergeRows_B = [excelRow.number]
-          mergeRows_C = [excelRow.number]
-          mergeRows_D = [excelRow.number]
-          mergeRows_E = [excelRow.number]
-          mergeRows_F = [excelRow.number]
-          mergeRows_G = [excelRow.number]
-          mergeRows_M = [excelRow.number]
-          mergeRows_O = [excelRow.number]
-          mergeRows_P = [excelRow.number]
-          mergeRows_Q = [excelRow.number]
-          mergeRows_R = [excelRow.number]
-          mergeRows_S = [excelRow.number]
-          mergeRows_T = [excelRow.number]
-          mergeRows_U = [excelRow.number]
-          mergeRows_V = [excelRow.number]
-          mergeRows_W = [excelRow.number]
-          mergeRows_X = [excelRow.number]
-        }
-        previousInvoiceCode = row[columnIndexForCheck]
       }
     })
-    // Gộp ô nhóm cuối cùng
-    doMerge(mergeRows_B, 'B')
-    doMerge(mergeRows_C, 'C')
-    doMerge(mergeRows_D, 'D')
-    doMerge(mergeRows_E, 'E')
-    doMerge(mergeRows_F, 'F')
-    doMerge(mergeRows_G, 'G')
-    doMerge(mergeRows_M, 'N')
-    doMerge(mergeRows_O, 'O')
-    doMerge(mergeRows_P, 'P')
-    doMerge(mergeRows_Q, 'Q')
-    doMerge(mergeRows_R, 'R')
-    doMerge(mergeRows_S, 'S')
-    doMerge(mergeRows_T, 'T')
-    doMerge(mergeRows_U, 'U')
-    doMerge(mergeRows_V, 'V')
-    doMerge(mergeRows_W, 'W')
-    doMerge(mergeRows_X, 'X')
 
-    worksheet.getCell('A1').font = {
+    // Style tiêu đề báo cáo (row 2)
+    worksheet.getCell('A2').font = {
       name: 'Times New Roman',
-      size: 14,
+      size: 13,
       bold: true,
     }
+    worksheet.getCell('A2').alignment = {
+      vertical: 'middle',
+      horizontal: 'left',
+      wrapText: true,
+    }
+    worksheet.getRow(2).height = 26
 
     worksheet.pageSetup = {
       margins: {
-        left: 0.5, // Lề trái 0.5 inch
-        right: 0.5, // Lề phải 0.5 inch
-        top: 0.75, // Lề trên 0.75 inch
-        bottom: 0.75, // Lề dưới 0.75 inch
-        header: 0.3, // Khoảng cách từ header tới nội dung là 0.3 inch
-        footer: 0.3, // Khoảng cách từ footer tới nội dung là 0.3 inch
+        left: 0.5,
+        right: 0.5,
+        top: 0.75,
+        bottom: 0.75,
+        header: 0.3,
+        footer: 0.3,
       },
       orientation: 'landscape',
       paperSize: 9,
@@ -205,43 +140,49 @@ const ExportInvoiceView = ({
       fitToWidth: 1,
       fitToHeight: 0,
     }
-    worksheet.getRow(1).height = 2 * 15
+    // row 1 height đã set ở trên khi tạo company cell
 
     // Chỉnh độ rộng của từng cột
     const customColumnWidths = [
-      6, // STT
-      22, // Mã HĐ
-      22, // Mã HĐ/Bán
-      25, // KH
-      15, // SĐT
-      35, // Địa chỉ
-      20, // Người tạo
-      30, // Sản phẩm
-      8, // SL
-      8, // Tặng
-      10, // ĐVT
-      15, // Giá
-      15, // Thành tiền
-      15, // Tổng hóa đơn
-      15, // Thuế
-      15, // Giảm giá
-      15, // Chia DS
-      15, // Tổng chia DS
-      20, // Người được chia
-      20, // Công nợ
-      22, // Thanh toán
-      28, // DS phiếu xuất
-      15, // Trạng thái
-      20, // Ngày HĐ
-      20, // Ngày tạo
-      30, // Ghi chú
+      6,  // A  STT
+      22, // B  Mã HĐ
+      22, // C  Mã HĐ/Bán
+      25, // D  KH
+      15, // E  SĐT
+      35, // F  Địa chỉ
+      20, // G  Người tạo
+      30, // H  Sản phẩm
+      8,  // I  SL
+      8,  // J  Tặng
+      10, // K  ĐVT
+      15, // L  Giá
+      15, // M  Thành tiền
+      12, // N  Thuế (%)
+      15, // O  Tiền Thuế
+      12, // P  Giảm giá (%)
+      15, // Q  Tiền giảm giá
+      15, // R  Tổng hóa đơn
+      15, // S  (cũ) Thuế
+      15, // T  (cũ) Giảm giá
+      15, // U  Chia DS
+      15, // V  Tổng chia DS
+      20, // W  Người được chia
+      20, // X  Công nợ
+      22, // Y  Thanh toán
+      28, // Z  DS phiếu xuất
+      15, // AA Trạng thái
+      20, // AB Ngày HĐ
+      20, // AC Ngày tạo
+      30, // AD Ghi chú
     ]
     worksheet.columns.forEach((column, index) => {
       column.width = customColumnWidths[index] || 15
     })
 
-    const customColumnsAlignment = [2, 3, 4, 5, 6, 7, 8, 10, 23, 24, 25, 26]
-    const customColumnConvertToNumber = [9, 10, 12, 13, 14, 15, 16, 17, 18, 20]
+    // B=2,C=3,D=4,E=5,F=6,G=7,H=8,K=11,W=23,AD=30
+    const customColumnsAlignment = [2, 3, 4, 5, 6, 7, 8, 11, 23, 30]
+    // SL(9),Tặng(10),Giá(12),Thành tiền(13),Tiền Thuế(15),Tiền GG(17),Tổng HĐ(18),Thuế(19),GG(20),Chia DS(21),Tổng chia(22),CN(24)
+    const customColumnConvertToNumber = [9, 10, 12, 13, 15, 17, 18, 19, 20, 21, 22, 24]
 
     customColumnsAlignment.forEach((column) => {
       // Canh trái các cột
@@ -252,11 +193,22 @@ const ExportInvoiceView = ({
       }
     })
 
+      // Căn giữa STT (col 1), SL (col 9), Tặng (col 10) – chỉ ở dòng dữ liệu (row > 3)
+      ;[1, 9, 10].forEach((colIdx) => {
+        worksheet.getColumn(colIdx).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+          if (rowNumber > 3) {
+            cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false }
+          }
+        })
+      })
+    // Khôi phục alignment cho thông tin công ty (A1) và tiêu đề (A2)
+    worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
+    worksheet.getCell('A2').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
     // Chuyển thành số
     customColumnConvertToNumber.forEach((column) => {
       const col = worksheet.getColumn(column)
       col.eachCell((cell, rowNumber) => {
-        if (typeof cell.value === 'string' && rowNumber > 2) {
+        if (typeof cell.value === 'string' && rowNumber > 3) {
           // Remove dots (thousands separator in VN) before parsing
           const numValue = parseFloat(cell.value.replace(/\./g, '').replace(/,/g, '.'))
 
@@ -268,11 +220,11 @@ const ExportInvoiceView = ({
       col.numFmt = '#,##0'
     })
 
-    // Định dang header
-    worksheet.getRow(2).eachCell({ includeEmpty: true }, (cell) => {
+    // Định dạng header cột (row 3)
+    worksheet.getRow(3).eachCell({ includeEmpty: true }, (cell) => {
       cell.font = {
         name: 'Times New Roman',
-        size: 14,
+        size: 12,
         bold: true,
       }
       cell.alignment = {
@@ -287,12 +239,7 @@ const ExportInvoiceView = ({
         right: { style: 'thin' },
       }
     })
-    // Định dạng tiêu đề báo cáo
-    worksheet.getCell('A1').alignment = {
-      vertical: 'middle',
-      horizontal: 'center',
-      wrapText: true,
-    }
+    worksheet.getRow(3).height = 36
 
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], {
@@ -346,6 +293,11 @@ const ExportInvoiceView = ({
                   <TableHead className="min-w-16">ĐVT</TableHead>
                   <TableHead className="min-w-32">Giá</TableHead>
                   <TableHead className="min-w-32">Thành tiền</TableHead>
+                  {/* 4 cột mới */}
+                  <TableHead className="min-w-24">Thuế (%)</TableHead>
+                  <TableHead className="min-w-28">Tiền Thuế</TableHead>
+                  <TableHead className="min-w-24">Giảm giá (%)</TableHead>
+                  <TableHead className="min-w-28">Tiền giảm giá</TableHead>
                   {/* Merge */}
                   <TableHead className="min-w-32">Tổng hóa đơn</TableHead>
                   <TableHead className="min-w-28">Thuế</TableHead>
@@ -382,6 +334,28 @@ const ExportInvoiceView = ({
                       </TableCell>
                       <TableCell>
                         {moneyFormat(invoiceItem.total, false)}
+                      </TableCell>
+                      {/* Thuế (%) */}
+                      <TableCell>
+                        {invoiceItem.taxRate != null
+                          ? `${invoiceItem.taxRate}%`
+                          : invoiceItem.taxes?.length > 0
+                            ? invoiceItem.taxes.map(t => `${t.percentage}%`).join(', ')
+                            : '—'}
+                      </TableCell>
+                      {/* Tiền Thuế */}
+                      <TableCell>
+                        {moneyFormat(invoiceItem.taxAmount ?? invoiceItem.tax_amount ?? 0, false)}
+                      </TableCell>
+                      {/* Giảm giá (%) */}
+                      <TableCell>
+                        {invoiceItem.discountRate != null
+                          ? `${invoiceItem.discountRate}%`
+                          : '—'}
+                      </TableCell>
+                      {/* Tiền giảm giá */}
+                      <TableCell>
+                        {moneyFormat(invoiceItem.discountAmount ?? invoiceItem.discount ?? 0, false)}
                       </TableCell>
                       <TableCell>
                         {moneyFormat(invoice.totalAmount || invoice.amount, false)}

@@ -47,6 +47,7 @@ const PurchaseOrderPage = () => {
     document.title = 'Danh sách đơn đặt hàng'
     const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
     const userFilter = columnFilters.find((f) => f.id === 'user')?.value
+    const sourceTypeFilter = columnFilters.find((f) => f.id === 'sourceType')?.value
 
     const apiFilters = {
       ...filters,
@@ -56,7 +57,8 @@ const PurchaseOrderPage = () => {
       limit: pageSize,
       search: debouncedSearch,
       status: statusFilter,
-      creator: userFilter
+      creator: userFilter,
+      type: sourceTypeFilter?.[0] ?? undefined,
     }
     dispatch(getPurchaseOrders(apiFilters))
   }, [dispatch, filters, pageIndex, pageSize, debouncedSearch, columnFilters])

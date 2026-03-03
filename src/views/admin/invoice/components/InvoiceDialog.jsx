@@ -307,11 +307,11 @@ const InvoiceDialog = ({
           const product = item.product
 
           qty[pid] = Number(item.quantity || 1)
-          dis[pid] = Number(item.discount || 0)
+          dis[pid] = Number(item.discountRate ?? item.discount ?? 0)
           nt[pid] = item.note || ''
           give[pid] = Number(item.giveaway || 0)
-          tax[pid] = item.taxes?.map((t) => t.id) || []
-          warr[pid] = !!item.applyWarranty
+          tax[pid] = item.taxes?.map((t) => t.id) || item.taxIds || []
+          warr[pid] = !!item.applyWarranty || !!(item.warranty && item.warranty !== '0' && item.warranty !== 'false')
 
           expApply[pid] = !!item.applyExpiry
           expDur[pid] = {
@@ -342,6 +342,16 @@ const InvoiceDialog = ({
                 factor: factor > 0 ? factor : 1,
               }
               : null
+
+            // Synthesize warrantyPolicy so ShoppingCart shows the warranty checkbox
+            if (!product.warrantyPolicy && (item.warranty || item.warranties?.length > 0)) {
+              const w = item.warranties?.[0]
+              product.warrantyPolicy = {
+                periodMonths: w?.periodMonths || parseInt(item.warranty) || 0,
+                warrantyCost: w?.warrantyCost || 0,
+                note: w?.note || item.warranty || '',
+              }
+            }
           }
 
           return product
@@ -864,9 +874,18 @@ const InvoiceDialog = ({
         giveaway: giveaway[product.id] || 0,
         price: priceUnit,
 
+        // taxRate = tổng % thuế đã chọn
+        taxRate: (() => {
+          const productTaxes = selectedTaxes[product.id] || []
+          const allTaxes = product?.prices?.[0]?.taxes || []
+          return allTaxes
+            .filter((t) => productTaxes.includes(t.id))
+            .reduce((sum, t) => sum + t.percentage, 0)
+        })(),
+        taxIds: selectedTaxes[product.id] || [],
         taxAmount: calculateTaxForProduct(product.id),
         subTotal: calculateSubTotal(product.id),
-        discount: discounts[product.id] || 0,
+        discountRate: parseFloat(discounts[product.id]) || 0,
         total:
           calculateSubTotal(product.id) + calculateTaxForProduct(product.id),
 
@@ -1163,18 +1182,29 @@ const InvoiceDialog = ({
     const product = selectedProducts.find((prod) => prod.id === productId)
     if (!product) return 0
 
-    const discount = discounts[productId] || 0
+    const discountPct = parseFloat(discounts[productId]) || 0
     const price = getDisplayPrice(product)
 
     const subtotal = quantity * price
-    return subtotal - discount > 0 ? subtotal - discount : 0
+    const discountAmount = subtotal * discountPct / 100
+    return subtotal - discountAmount > 0 ? subtotal - discountAmount : 0
   }
 
   const handleDiscountChange = (productId, value) => {
-    const numericValue = Number(value.replace(/,/g, '').replace(/\D/g, ''))
+    // Allow empty string (so user can clear/delete the field)
+    if (value === '' || value === null || value === undefined) {
+      setDiscounts((prev) => ({ ...prev, [productId]: '' }))
+      return
+    }
+    // Allow intermediate states like "1." or "1.5" while typing
+    const sanitized = value.replace(/,/g, '')
+    // Accept digits and at most one decimal dot, max 100
+    if (!/^\d*\.?\d*$/.test(sanitized)) return
+    const numericValue = sanitized === '' ? '' : parseFloat(sanitized)
+    if (!isNaN(numericValue) && numericValue > 100) return
     setDiscounts((prev) => ({
       ...prev,
-      [productId]: numericValue,
+      [productId]: isNaN(numericValue) ? '' : (sanitized.endsWith('.') ? sanitized : numericValue),
     }))
   }
 
@@ -1203,18 +1233,23 @@ const InvoiceDialog = ({
   const calculateInvoiceTotal = () => {
     return selectedProducts.reduce((total, product) => {
       const quantity = quantities[product.id] || 1
-      const discount = discounts[product.id] || 0
+      const discountPct = parseFloat(discounts[product.id]) || 0
       const price = getDisplayPrice(product)
 
       const subtotal = quantity * price
-      const totalForProduct = subtotal - discount > 0 ? subtotal - discount : 0
+      const discountAmount = subtotal * discountPct / 100
+      const totalForProduct = subtotal - discountAmount > 0 ? subtotal - discountAmount : 0
       return total + totalForProduct
     }, 0)
   }
 
   const calculateTotalDiscount = () => {
     return selectedProducts.reduce((totalDiscount, product) => {
-      return totalDiscount + (discounts[product.id] || 0)
+      const quantity = quantities[product.id] || 1
+      const discountPct = parseFloat(discounts[product.id]) || 0
+      const price = getDisplayPrice(product)
+      const subtotal = quantity * price
+      return totalDiscount + (subtotal * discountPct / 100)
     }, 0)
   }
 
@@ -1681,6 +1716,8 @@ const InvoiceDialog = ({
                         getDisplayPrice={getDisplayPrice}
                         calculateSubTotal={calculateSubTotal}
                         calculateTaxForProduct={calculateTaxForProduct}
+                        calculatePreDiscountTotal={handleCalculateSubTotalInvoice}
+                        calculateTotalDiscount={calculateTotalDiscount}
                       />
                     </div>
 
@@ -1959,6 +1996,8 @@ const InvoiceDialog = ({
                   getDisplayPrice={getDisplayPrice}
                   calculateSubTotal={calculateSubTotal}
                   calculateTaxForProduct={calculateTaxForProduct}
+                  calculatePreDiscountTotal={handleCalculateSubTotalInvoice}
+                  calculateTotalDiscount={calculateTotalDiscount}
                   applyWarrantyItems={applyWarrantyItems}
                   onApplyWarrantyChange={handleApplyWarrantyChange}
                 />

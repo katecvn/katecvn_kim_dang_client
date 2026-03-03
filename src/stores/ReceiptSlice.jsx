@@ -43,11 +43,15 @@ export const getReceipts = createAsyncThunk(
 
 export const getMyReceipts = createAsyncThunk(
   'receipt/get-my-receipts',
-  async (_, { rejectWithValue }) => {
+  async ({ fromDate = null, toDate = null, page = 1, limit = 20 } = {}, { rejectWithValue }) => {
     try {
       const response = await api.get('/payment-vouchers/my-payment-vouchers', {
         params: {
           voucherType: 'receipt_in',
+          fromDate: fromDate ?? undefined,
+          toDate: toDate ?? undefined,
+          page,
+          limit,
         },
       })
       // API returns: { data: { data: [...], pagination: {...} } }
@@ -158,6 +162,12 @@ export const updateReceipt = createAsyncThunk(
 const initialState = {
   receipt: {},
   receipts: [],
+  pagination: {
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+  },
   qrCodeData: null,
   loading: false,
   error: null,
@@ -187,6 +197,7 @@ export const receiptSlice = createSlice({
         state.loading = false
         if (action.payload?.data && Array.isArray(action.payload.data)) {
           state.receipts = action.payload.data
+          state.pagination = action.payload.pagination || state.pagination
         } else if (Array.isArray(action.payload)) {
           state.receipts = action.payload
         } else {
@@ -205,6 +216,7 @@ export const receiptSlice = createSlice({
         state.loading = false
         if (action.payload?.data && Array.isArray(action.payload.data)) {
           state.receipts = action.payload.data
+          state.pagination = action.payload.pagination || state.pagination
         } else if (Array.isArray(action.payload)) {
           state.receipts = action.payload
         } else {

@@ -13,7 +13,8 @@ import {
 export function DataTableViewOptions({ table }) {
   const options = {
     code: 'Mã PC',
-    receiverType: 'Người nhận',
+    receiverType: 'Loại',
+    receiverName: 'Người nhận',
     reason: 'Lý do chi',
     paymentDate: 'Ngày chi',
     amount: 'Số tiền',

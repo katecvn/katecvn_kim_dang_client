@@ -87,7 +87,12 @@ const PaymentDialog = ({
   const effectivePurchaseOrder = payment?.purchaseOrder || purchaseOrder
   const salesContract = payment?.salesContract
 
-  const supplier = propSupplier || payment?.receiver || effectivePurchaseOrder?.supplier
+  // Determine if this is a customer purchase order
+  const isCustomerPO = !!(effectivePurchaseOrder?.customer || effectivePurchaseOrder?.customerId) && !effectivePurchaseOrder?.supplier
+  const party = propSupplier || payment?.receiver ||
+    (isCustomerPO ? effectivePurchaseOrder?.customer : effectivePurchaseOrder?.supplier) ||
+    effectivePurchaseOrder?.supplier
+  const supplier = party // keep alias for backward compat below
 
   let items = []
   if (effectivePurchaseOrder?.items?.length > 0) {
@@ -244,8 +249,8 @@ const PaymentDialog = ({
           purchaseOrderId: effectivePurchaseOrder?.id,
           voucherType: 'payment_out',
           transactionType: 'payment',
-          receiverType: 'supplier',
-          receiverId: supplier?.id,
+          receiverType: isCustomerPO ? 'customer' : 'supplier',
+          receiverId: party?.id,
           voucherDate: new Date().toISOString(),
           paymentDate: new Date().toISOString(),
         }
@@ -620,23 +625,35 @@ const PaymentDialog = ({
                   </div>
                 </div>
 
-                {supplier && (
+                {party && (
                   <div className="w-full rounded-lg border p-4 lg:w-72">
                     <div className="flex items-center justify-between">
-                      <h2 className="py-2 text-lg font-semibold">{payment?.receiverType === 'supplier' || effectivePurchaseOrder ? 'Nhà cung cấp' : 'Người nhận'}</h2>
+                      <h2 className="py-2 text-lg font-semibold">
+                        {isCustomerPO || payment?.receiverType === 'customer' ? 'Khách hàng' : 'Nhà cung cấp'}
+                      </h2>
+                      <span className={cn(
+                        'rounded px-1.5 py-0.5 text-xs font-semibold',
+                        isCustomerPO || payment?.receiverType === 'customer'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-orange-100 text-orange-700'
+                      )}>
+                        {isCustomerPO || payment?.receiverType === 'customer' ? 'KH' : 'NCC'}
+                      </span>
                     </div>
 
                     <div className="space-y-6">
                       <div className="flex items-center gap-4">
                         <Avatar className="h-8 w-8">
                           <AvatarImage
-                            src={`https://ui-avatars.com/api/?bold=true&background=random&name=${supplier?.name}`}
-                            alt={supplier?.name}
+                            src={`https://ui-avatars.com/api/?bold=true&background=random&name=${party?.name}`}
+                            alt={party?.name}
                           />
-                          <AvatarFallback>NCC</AvatarFallback>
+                          <AvatarFallback>
+                            {isCustomerPO || payment?.receiverType === 'customer' ? 'KH' : 'NCC'}
+                          </AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-medium">{supplier?.name}</div>
+                          <div className="font-medium">{party?.name}</div>
                         </div>
                       </div>
 
@@ -647,27 +664,27 @@ const PaymentDialog = ({
 
                         <div className="mt-4 space-y-2 text-sm">
                           <div className="flex cursor-pointer items-center text-primary hover:text-secondary-foreground">
-                            <div className="mr-2 h-4 w-4 ">
+                            <div className="mr-2 h-4 w-4">
                               <MobileIcon className="h-4 w-4" />
                             </div>
-                            <a href={`tel:${supplier?.phone}`}>
-                              {supplier?.phone || 'Chưa cập nhật'}
+                            <a href={`tel:${party?.phone}`}>
+                              {party?.phone || 'Chưa cập nhật'}
                             </a>
                           </div>
                           <div className="flex items-center text-muted-foreground">
-                            <div className="mr-2 h-4 w-4 ">
+                            <div className="mr-2 h-4 w-4">
                               <Mail className="h-4 w-4" />
                             </div>
-                            <a href={`mailto:${supplier?.email}`}>
-                              {supplier?.email || 'Chưa cập nhật'}
+                            <a href={`mailto:${party?.email}`}>
+                              {party?.email || 'Chưa cập nhật'}
                             </a>
                           </div>
 
                           <div className="flex items-center text-primary hover:text-secondary-foreground">
-                            <div className="mr-2 h-4 w-4 ">
+                            <div className="mr-2 h-4 w-4">
                               <MapPin className="h-4 w-4" />
                             </div>
-                            {supplier?.address || 'Chưa cập nhật'}
+                            {party?.address || 'Chưa cập nhật'}
                           </div>
                         </div>
                       </div>

@@ -5,7 +5,7 @@ import { DataTableViewOptions } from './DataTableViewOption'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { purchaseContractStatuses } from '../data'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
-import { TruckIcon, EllipsisVertical, TrashIcon } from 'lucide-react'
+import { TruckIcon, EllipsisVertical, TrashIcon, Building2, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { useState, useRef } from 'react'
 import { DeleteMultiplePurchaseContractsDialog } from './DeleteMultiplePurchaseContractsDialog'
@@ -86,6 +86,16 @@ const DataTableToolbar = ({ table, isMyPurchaseContract }) => {
                 column={table.getColumn('status')}
                 title="Trạng thái"
                 options={purchaseContractStatuses}
+              />
+            )}
+            {table.getColumn('sourceType') && (
+              <DataTableFacetedFilter
+                column={table.getColumn('sourceType')}
+                title="Loại đơn"
+                options={[
+                  { value: 'supplier', label: 'Nhà cung cấp', icon: Building2 },
+                  { value: 'customer', label: 'Khách hàng', icon: Users },
+                ]}
               />
             )}
           </div>
@@ -183,6 +193,18 @@ const DataTableToolbar = ({ table, isMyPurchaseContract }) => {
             column={table.getColumn('status')}
             title="Trạng thái"
             options={purchaseContractStatuses}
+          />
+        )}
+
+        {/* Filter Loại đơn */}
+        {table.getColumn('sourceType') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('sourceType')}
+            title="Loại đơn"
+            options={[
+              { value: 'supplier', label: 'Nhà cung cấp', icon: Building2 },
+              { value: 'customer', label: 'Khách hàng', icon: Users },
+            ]}
           />
         )}
 

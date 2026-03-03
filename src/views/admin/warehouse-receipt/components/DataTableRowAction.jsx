@@ -37,9 +37,20 @@ export function DataTableRowActions({ row, onRefresh }) {
   const setting = useSelector((state) => state.setting.setting)
   const [printData, setPrintData] = useState(null)
 
-  const handlePrintReceipt = () => {
-    setPrintData(receipt)
-    setTimeout(() => setPrintData(null), 100)
+  const [isPrinting, setIsPrinting] = useState(false)
+
+  const handlePrintReceipt = async () => {
+    try {
+      setIsPrinting(true)
+      const data = await dispatch(getWarehouseReceiptById(receipt.id)).unwrap()
+      setPrintData(data)
+      setTimeout(() => setPrintData(null), 100)
+    } catch (error) {
+      console.error(error)
+      toast.error('Không thể lấy dữ liệu phiếu kho')
+    } finally {
+      setIsPrinting(false)
+    }
   }
 
   const handleExportClick = async () => {
@@ -161,9 +172,10 @@ export function DataTableRowActions({ row, onRefresh }) {
 
           <DropdownMenuItem
             onClick={handlePrintReceipt}
+            disabled={isPrinting}
             className="text-violet-600 hover:text-violet-700 focus:text-violet-700"
           >
-            In phiếu
+            {isPrinting ? 'Đang tải...' : 'In phiếu'}
             <DropdownMenuShortcut>
               <Printer className="h-4 w-4" />
             </DropdownMenuShortcut>

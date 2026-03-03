@@ -29,6 +29,7 @@ const WarehouseReceiptDataTable = ({
   data,
   loading = false,
   onSearchChange,
+  onRefresh,
   pagination,
   onPaginationChange,
   pageCount,
@@ -88,7 +89,7 @@ const WarehouseReceiptDataTable = ({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} />
+      <DataTableToolbar table={table} onRefresh={onRefresh} />
 
       <div className={isMobile ? '' : 'rounded-md border'}>
         {isMobile ? (

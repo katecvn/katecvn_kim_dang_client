@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 const createPurchaseOrderSchema = z.object({
   supplierId: z.string().optional(),
+  customerId: z.string().optional(),
   orderDate: z.date({
     required_error: 'Ngày đặt hàng là bắt buộc',
   }),
@@ -9,7 +10,7 @@ const createPurchaseOrderSchema = z.object({
     required_error: 'Ngày dự kiến giao hàng là bắt buộc',
     invalid_type_error: 'Ngày dự kiến giao hàng là bắt buộc',
   }),
-  contractNumber: z.string().min(1, 'Số hợp đồng là bắt buộc'),
+  contractNumber: z.string().optional(),
   note: z.string().max(500).nullable().optional(),
   paymentTerms: z.string().max(500).nullable().optional(),
   status: z.string().nonempty('Trạng thái là bắt buộc'),
@@ -21,6 +22,7 @@ const createPurchaseOrderSchema = z.object({
 
 const updatePurchaseOrderSchema = z.object({
   supplierId: z.string().optional(),
+  customerId: z.string().optional(),
   expectedDeliveryDate: z.union([
     z.date({
       invalid_type_error: 'Ngày dự kiến giao hàng là bắt buộc',
@@ -28,7 +30,7 @@ const updatePurchaseOrderSchema = z.object({
     }),
     z.string().min(1, 'Ngày dự kiến giao hàng là bắt buộc')
   ]),
-  contractNumber: z.string().min(1, 'Số hợp đồng là bắt buộc'),
+  contractNumber: z.string().optional(),
   note: z.string().max(500).nullable().optional(),
   paymentTerms: z.string().max(500).nullable().optional(),
   paymentMethod: z.string().nonempty('Bắt buộc'),

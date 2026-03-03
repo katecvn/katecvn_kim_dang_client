@@ -48,6 +48,7 @@ const ConfirmWarehouseReceiptDialog = ({
   const [selectedItems, setSelectedItems] = useState({})
   const [detailInvoice, setDetailInvoice] = useState(null)
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
+  const [actualReceiptDate, setActualReceiptDate] = useState(() => new Date().toISOString().split('T')[0])
 
   // Determine which invoice object to use: the fetched detail or the passed prop
   const activeInvoice = detailInvoice || invoice
@@ -184,7 +185,7 @@ const ConfirmWarehouseReceiptDialog = ({
         }
       })
 
-    await onConfirm?.(selectedItemObjects)
+    await onConfirm?.(selectedItemObjects, actualReceiptDate || null)
     onOpenChange(false)
   }
 
@@ -222,7 +223,9 @@ const ConfirmWarehouseReceiptDialog = ({
         <DialogHeader className="px-6 py-4 border-b shrink-0">
           <DialogTitle>Xác nhận tạo phiếu xuất kho</DialogTitle>
           <DialogDescription>
-            Chọn sản phẩm cần xuất kho từ hóa đơn này
+            {type === 'contract'
+              ? 'Chọn sản phẩm cần xuất kho từ hợp đồng bán này'
+              : 'Chọn sản phẩm cần xuất kho từ đơn bán này'}
           </DialogDescription>
         </DialogHeader>
 
@@ -238,7 +241,9 @@ const ConfirmWarehouseReceiptDialog = ({
                 <div className="font-medium">{activeInvoice.customer?.name}</div>
               </div>
               <div>
-                <span className="text-muted-foreground">Mã hóa đơn:</span>
+                <span className="text-muted-foreground">
+                  {type === 'contract' ? 'Mã hợp đồng:' : 'Mã đơn bán:'}
+                </span>
                 <div className="font-medium">{activeInvoice.code}</div>
               </div>
             </div>
@@ -517,6 +522,17 @@ const ConfirmWarehouseReceiptDialog = ({
               </p>
             </div>
           )}
+
+          {/* Actual Receipt Date */}
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium whitespace-nowrap shrink-0">Ngày xuất hàng thực tế:</label>
+            <input
+              type="date"
+              className="flex h-9 max-w-[180px] rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              value={actualReceiptDate}
+              onChange={(e) => setActualReceiptDate(e.target.value)}
+            />
+          </div>
 
           {/* Warning */}
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">

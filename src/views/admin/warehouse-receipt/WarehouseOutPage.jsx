@@ -118,7 +118,7 @@ const WarehouseOutPage = () => {
               onSearchChange={(value) => setSearch(value)}
               pagination={pagination}
               onPaginationChange={setPagination}
-              pageCount={paginationMeta?.last_page || -1}
+              pageCount={paginationMeta?.last_page ?? -1}
               columnFilters={columnFilters}
               onColumnFiltersChange={setColumnFilters}
             />

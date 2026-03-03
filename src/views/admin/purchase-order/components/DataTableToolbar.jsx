@@ -15,6 +15,7 @@ import { FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
 import { DataTableFacetedFilter } from './DataTableFacetedFilter'
 import { purchaseOrderStatuses } from '../data'
+import { Building2, Users } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getUsers } from '@/stores/UserSlice'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
@@ -255,6 +256,18 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
               value: s.value,
               label: s.label,
             }))}
+          />
+        )}
+
+        {/* Filter loại đơn */}
+        {table.getColumn('sourceType') && (
+          <DataTableFacetedFilter
+            column={table.getColumn('sourceType')}
+            title="Loại đơn"
+            options={[
+              { value: 'supplier', label: 'Nhà cung cấp', icon: Building2 },
+              { value: 'customer', label: 'Khách hàng', icon: Users },
+            ]}
           />
         )}
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useDispatch } from 'react-redux'
 import { getPurchaseOrderDetail } from '@/stores/PurchaseOrderSlice'
 import { getPurchaseContractDetail } from '@/stores/PurchaseContractSlice'
@@ -42,6 +42,7 @@ const ConfirmImportWarehouseDialog = ({
   const [loading, setLoading] = useState(false)
   const [selectedItems, setSelectedItems] = useState({})
   const [receiptDetailsMap, setReceiptDetailsMap] = useState({})
+  const [actualReceiptDate, setActualReceiptDate] = useState(() => new Date().toISOString().split('T')[0])
   const dispatch = useDispatch()
   const isMobile = useMediaQuery('(max-width: 768px)')
 
@@ -196,7 +197,7 @@ const ConfirmImportWarehouseDialog = ({
           }
         })
 
-      await onConfirm?.(selectedItemObjects)
+      await onConfirm?.(selectedItemObjects, actualReceiptDate || null)
       onOpenChange(false)
     } catch (error) {
       console.error(error)
@@ -413,6 +414,17 @@ const ConfirmImportWarehouseDialog = ({
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Actual Receipt Date Input */}
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium whitespace-nowrap shrink-0">Ngày nhận hàng thực tế:</label>
+            <input
+              type="date"
+              className="flex h-9 max-w-[180px] rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              value={actualReceiptDate}
+              onChange={(e) => setActualReceiptDate(e.target.value)}
+            />
           </div>
 
           {/* Warning for existing receipts */}

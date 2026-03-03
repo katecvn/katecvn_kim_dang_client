@@ -22,6 +22,7 @@ const MyReceiptPage = () => {
   const dispatch = useDispatch()
   const receipts = useSelector((state) => state.receipt.receipts)
   const loading = useSelector((state) => state.receipt.loading)
+  const pagination = useSelector((state) => state.receipt.pagination)
 
   const current = new Date()
 
@@ -29,6 +30,8 @@ const MyReceiptPage = () => {
     search: '',
     fromDate: addHours(startOfDay(startOfMonth(current)), 12),
     toDate: addHours(endOfDay(endOfMonth(current)), 0),
+    page: 1,
+    limit: 20
   })
 
   useEffect(() => {
@@ -58,6 +61,7 @@ const MyReceiptPage = () => {
               onChange={(range) => {
                 setFilters((prev) => ({
                   ...prev,
+                  page: 1, // Reset page on date change
                   fromDate: range?.from
                     ? addHours(startOfDay(range.from), 12)
                     : addHours(startOfDay(startOfMonth(current)), 12),
@@ -76,6 +80,9 @@ const MyReceiptPage = () => {
               columns={columns}
               loading={loading}
               isMyReceipt={true}
+              pagination={pagination}
+              onPageChange={(page) => setFilters(prev => ({ ...prev, page }))}
+              onPageSizeChange={(limit) => setFilters(prev => ({ ...prev, limit, page: 1 }))}
             />
           )}
         </div>

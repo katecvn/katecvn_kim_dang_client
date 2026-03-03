@@ -75,7 +75,7 @@ export const columns = [
   {
     accessorKey: 'receiverType',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Người nhận" />
+      <DataTableColumnHeader column={column} title="Loại" />
     ),
     cell: ({ row }) => {
       const type = row.getValue('receiverType')
@@ -100,13 +100,46 @@ export const columns = [
       }
 
       return (
-        <div className="w-28">
+        <div className="shrink-0 flex pr-2">
           <Badge variant="outline" className={`whitespace-nowrap border-transparent bg-transparent px-0 font-medium ${colorClass}`}>
             <Icon className="mr-1.5 h-3.5 w-3.5" />
             {label}
           </Badge>
         </div>
       )
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    id: 'receiverName',
+    accessorFn: (row) => row.receiver?.name,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Người nhận" />
+    ),
+    cell: ({ row }) => {
+      const receiver = row.original.receiver;
+      if (!receiver) return <div className="text-gray-500">Không có</div>;
+
+      return (
+        <div className="flex flex-col gap-1 min-w-[150px] pr-4">
+          <span className="font-semibold truncate text-[15px]" title={receiver.name}>
+            {receiver.name}
+          </span>
+          {receiver.phone && (
+            <div className="flex items-center text-[13px] text-blue-600 gap-1.5">
+              <svg xmlns="http://www.w3.org/0000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+              <a href={`tel:${receiver.phone}`} className="hover:underline">{receiver.phone}</a>
+            </div>
+          )}
+          {receiver.identityCard && (
+            <div className="flex items-center text-[13px] text-gray-600 gap-1.5">
+              <svg xmlns="http://www.w3.org/0000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /></svg>
+              <span>{receiver.identityCard}</span>
+            </div>
+          )}
+        </div>
+      );
     },
     enableSorting: true,
     enableHiding: true,

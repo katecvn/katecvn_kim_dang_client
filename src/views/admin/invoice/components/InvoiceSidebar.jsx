@@ -862,18 +862,6 @@ const InvoiceSidebar = ({
                     onExpectedDeliveryDateChange(date ? date.toISOString() : null)
                     setOpenDeliveryDatePicker(false)
                   }}
-                  disabled={(date) => date < new Date().setHours(0, 0, 0, 0)} // Should not be in past? Prompt said "validate Identity Date (no future)". Does user want Delivery Date no future? Usually Delivery Date is in FUTURE. "Ngày dự kiến giao hàng" usually means future.
-                // User Request about "Ngày đặt hàng" and "Ngày cấp" -> "no future".
-                // For "Expected Delivery Date", user didn't explicitly strict "no future" or "no past". 
-                // But previously user said "Ngày đặt hàng ... không cho chọn trong tương lai".
-                // "Ngày cấp ... không được chọn ngày trong tương lai".
-                // "Ngày dự kiến giao hàng" -> normally IS in future.
-                // I will leave disabled logic as is (none) or basic. But user asked for "Inline Error". I will stick to adding the error display.
-
-                // Wait, I noticed I missed adding "disabled" to DatePicker in my previous edit for this field.
-                // Does "Ngày dự kiến giao hàng" need restriction?
-                // User prompt: "chỉ bắt buộc tên, só điện thoại, cccd, ngày đặt hàng, loại giao dịch, và ngày dự kiến giao hàng"
-                // I will just add the error display.
                 />
               </PopoverContent>
             </Popover>

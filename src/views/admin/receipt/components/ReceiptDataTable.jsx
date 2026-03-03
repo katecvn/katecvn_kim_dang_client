@@ -24,7 +24,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import MobileReceiptCard from './MobileReceiptCard'
 
-const ReceiptDataTable = ({ columns, data, loading = false, isMyReceipt = false }) => {
+const ReceiptDataTable = ({
+  columns,
+  data,
+  loading = false,
+  pagination = { page: 1, limit: 20, totalPages: 1 },
+  onPageChange,
+  onPageSizeChange,
+  isMyReceipt = false
+}) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState({})
@@ -34,16 +42,32 @@ const ReceiptDataTable = ({ columns, data, loading = false, isMyReceipt = false 
   const table = useReactTable({
     data,
     columns,
-    initialState: {
-      pagination: {
-        pageSize: 30, //custom default page size
-      },
-    },
+    pageCount: pagination.totalPages,
+    manualPagination: true,
     state: {
       sorting,
       columnVisibility,
       rowSelection,
       columnFilters,
+      pagination: {
+        pageIndex: pagination.page - 1,
+        pageSize: pagination.limit
+      }
+    },
+    onPaginationChange: (updater) => {
+      if (typeof updater === 'function') {
+        const newState = updater({
+          pageIndex: pagination.page - 1,
+          pageSize: pagination.limit
+        })
+        onPageChange?.(newState.pageIndex + 1)
+        if (newState.pageSize !== pagination.limit) {
+          onPageSizeChange?.(newState.pageSize)
+        }
+      } else {
+        onPageChange?.(updater.pageIndex + 1)
+        onPageSizeChange?.(updater.pageSize)
+      }
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,

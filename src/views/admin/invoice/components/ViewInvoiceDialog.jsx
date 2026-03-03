@@ -452,7 +452,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
     setShowConfirmWarehouseDialog(true)
   }
 
-  const handleConfirmCreateWarehouseReceipt = async (selectedItems) => {
+  const handleConfirmCreateWarehouseReceipt = async (selectedItems, actualReceiptDate) => {
     const invoiceId = invoice?.id
     if (!invoiceId) return
 
@@ -481,7 +481,8 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
         // code: `XK-${invoice.code}-${Date.now().toString().slice(-4)}`,
         receiptType: 2, // ISSUE
         businessType: 'sale_out',
-        receiptDate: new Date().toISOString(),
+        receiptDate: actualReceiptDate ? new Date(actualReceiptDate).toISOString() : new Date().toISOString(),
+        actualReceiptDate: actualReceiptDate || null,
         reason: `Xuất kho cho đơn bán ${invoice.code}`,
         note: invoice.note || 'Xuất kho từ hóa đơn',
         warehouseId: null,
@@ -615,20 +616,27 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                               <TableRow className="bg-secondary text-xs">
                                 <TableHead className="w-8">TT</TableHead>
                                 <TableHead className="min-w-40">Sản phẩm</TableHead>
-                                <TableHead className="min-w-20">Số Lượng</TableHead>
+                                <TableHead className="min-w-20 text-right">Số Lượng</TableHead>
                                 <TableHead className="min-w-16">Đơn Vị Tính</TableHead>
                                 <TableHead className="min-w-20 text-right">Giá</TableHead>
-                                <TableHead className="min-w-16 text-right">Thuế</TableHead>
-                                {/* <TableHead className="min-w-28 md:w-16 text-right">
-                                  Giảm giá
-                                </TableHead> */}
+                                <TableHead className="min-w-28 text-right">
+                                  Tổng tiền
+                                </TableHead>
+                                <TableHead className="min-w-16 text-right">Thuế (%)</TableHead>
+                                <TableHead className="min-w-24 text-right">Tiền thuế</TableHead>
+                                <TableHead className="min-w-28 md:w-16 text-right">
+                                  Giảm giá (%)
+                                </TableHead>
+                                <TableHead className="min-w-28 md:w-20 text-right">
+                                  Tiền giảm
+                                </TableHead>
                                 <TableHead className="min-w-28 text-right">
                                   Tổng cộng
                                 </TableHead>
                                 <TableHead className="min-w-28 md:w-20">
                                   Bảo Hành
                                 </TableHead>
-                                <TableHead className="min-w-28">Ghi chú</TableHead>
+                                {/* <TableHead className="min-w-28">Ghi chú</TableHead> */}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -675,21 +683,30 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                       </div>
                                     </div>
                                   </TableCell>
-                                  <TableCell>{product.quantity}</TableCell>
+                                  <TableCell className="text-end">{product.quantity}</TableCell>
                                   <TableCell>
                                     {product.unitName || 'Không có'}
                                   </TableCell>
                                   <TableCell className="text-end">
-                                    {moneyFormat(product.price)}
+                                    {moneyFormat(product.unitPrice)}
                                   </TableCell>
                                   <TableCell className="text-end">
-                                    {moneyFormat(product.taxAmount)}
+                                    {moneyFormat(product.grossAmount)}
                                   </TableCell>
-                                  {/* <TableCell className="text-end">
-                                    {moneyFormat(product.discount)}
-                                  </TableCell> */}
                                   <TableCell className="text-end">
-                                    {moneyFormat(product.total)}
+                                    {product.taxRate > 0 ? `${product.taxRate}%` : '—'}
+                                  </TableCell>
+                                  <TableCell className="text-end">
+                                    {product.taxAmount > 0 ? moneyFormat(product.taxAmount) : '—'}
+                                  </TableCell>
+                                  <TableCell className="text-end">
+                                    {product.discountRate > 0 ? `${product.discountRate}%` : '—'}
+                                  </TableCell>
+                                  <TableCell className="text-end text-destructive">
+                                    {product.discountAmount > 0 ? moneyFormat(product.discountAmount) : '—'}
+                                  </TableCell>
+                                  <TableCell className="text-end">
+                                    {moneyFormat(product.totalAmount)}
                                   </TableCell>
                                   <TableCell>
                                     {product?.warranties[0]?.periodMonths &&
@@ -697,9 +714,9 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                       ? `${product.warranty}`
                                       : 'Không có'}
                                   </TableCell>
-                                  <TableCell>
+                                  {/* <TableCell>
                                     {product.note || 'Không có'}
-                                  </TableCell>
+                                  </TableCell> */}
 
                                 </TableRow>
                               ))}
@@ -758,22 +775,42 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Giá: </span>
-                                  <span className="font-medium">{moneyFormat(product.price)}</span>
+                                  <span className="font-medium">{moneyFormat(product.unitPrice)}</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Thuế: </span>
-                                  <span className="font-medium">{moneyFormat(product.taxAmount)}</span>
+                                  <span className="font-medium">
+                                    {product.taxRate > 0 ? `${product.taxRate}%` : '—'}
+                                  </span>
                                 </div>
-                                {/* <div>
-                                  <span className="text-muted-foreground">Giảm: </span>
-                                  <span className="font-medium text-red-500">{moneyFormat(product.discount)}</span>
-                                </div> */}
+                                {product.taxAmount > 0 && (
+                                  <div>
+                                    <span className="text-muted-foreground">Tiền thuế: </span>
+                                    <span className="font-medium">{moneyFormat(product.taxAmount)}</span>
+                                  </div>
+                                )}
+                                <div>
+                                  <span className="text-muted-foreground">Tổng trước giảm: </span>
+                                  <span className="font-medium">{moneyFormat(product.grossAmount)}</span>
+                                </div>
+                                {product.discountRate > 0 && (
+                                  <>
+                                    <div>
+                                      <span className="text-muted-foreground">Giảm: </span>
+                                      <span className="font-medium text-destructive">{product.discountRate}%</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">Tiền giảm: </span>
+                                      <span className="font-medium text-destructive">{moneyFormat(product.discountAmount)}</span>
+                                    </div>
+                                  </>
+                                )}
                               </div>
 
                               {/* Total - prominent */}
                               <div className="flex justify-between border-t pt-2 font-semibold text-sm">
                                 <span>Tổng cộng:</span>
-                                <span className="text-primary">{moneyFormat(product.total)}</span>
+                                <span className="text-primary">{moneyFormat(product.totalAmount)}</span>
                               </div>
 
                               {/* Warranty & Note */}
@@ -802,19 +839,19 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                           "space-y-4 text-sm",
                           isDesktop ? "order-2" : "order-1"
                         )}>
-                          {/* <div className="flex justify-between">
+                          <div className="flex justify-between">
+                            <strong>Tổng tiền: </strong>
+                            <span>
+                              {moneyFormat(invoice?.subTotal || 0)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
                             <strong>Giảm giá:</strong>
-                            <span>{moneyFormat(invoice?.discount)}</span>
-                          </div> */}
+                            <span className='text-red-600'>{moneyFormat(invoice?.discount)}</span>
+                          </div>
                           <div className="flex justify-between">
                             <strong>Thuế:</strong>
                             <span>{moneyFormat(invoice?.taxAmount)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <strong>Phí vận chuyển: </strong>
-                            <span>
-                              {moneyFormat(invoice?.otherExpenses?.price || 0)}
-                            </span>
                           </div>
                           <div className="flex justify-between">
                             <strong>Tổng cộng:</strong>
@@ -1066,11 +1103,38 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                     </span>
                                   </div>
 
-                                  <div className="flex justify-between border-t pt-2">
-                                    <strong>Tổng giá trị:</strong>
-                                    <span className="font-bold text-primary">
-                                      {moneyFormat(invoice.salesContract.totalAmount)}
-                                    </span>
+                                  <div className="border-t pt-2 space-y-2">
+                                    <div className="flex justify-between">
+                                      <strong>Tổng tiền:</strong>
+                                      <span className="font-medium">
+                                        {moneyFormat(Number(invoice.salesContract.totalAmount || 0) - Number(invoice.salesContract.taxAmount || 0) + Number(invoice.salesContract.discountAmount || 0))}
+                                      </span>
+                                    </div>
+
+                                    {(invoice.salesContract.taxAmount > 0) && (
+                                      <div className="flex justify-between">
+                                        <strong>Tổng thuế:</strong>
+                                        <span className="font-medium text-blue-600">
+                                          +{moneyFormat(invoice.salesContract.taxAmount)}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {(invoice.salesContract.discountAmount > 0) && (
+                                      <div className="flex justify-between">
+                                        <strong>Tổng giảm giá:</strong>
+                                        <span className="font-medium text-destructive">
+                                          -{moneyFormat(invoice.salesContract.discountAmount)}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    <div className="flex justify-between border-t pt-2">
+                                      <strong>Tổng giá trị:</strong>
+                                      <span className="font-bold text-primary">
+                                        {moneyFormat(invoice.salesContract.totalAmount)}
+                                      </span>
+                                    </div>
                                   </div>
 
                                   <div className="flex justify-between">
@@ -1083,29 +1147,31 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
 
                                 {/* Contract Items Table */}
                                 {invoice.salesContract.items && invoice.salesContract.items.length > 0 && (
-                                  <div className="overflow-x-auto rounded-lg border">
-                                    <Table className="min-w-full">
-                                      <TableHeader>
-                                        <TableRow className="bg-secondary text-xs">
-                                          <TableHead className="w-8">TT</TableHead>
-                                          <TableHead className="min-w-40">Sản phẩm</TableHead>
-                                          <TableHead className="min-w-20 text-right">Số lượng</TableHead>
-                                          <TableHead className="min-w-28 text-right">Đơn giá</TableHead>
-                                          <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {invoice.salesContract.items.map((item, index) => (
-                                          <TableRow key={item.id || index}>
-                                            <TableCell>{index + 1}</TableCell>
-                                            <TableCell className="font-medium">{item.productName}</TableCell>
-                                            <TableCell className="text-right">{parseInt(item.quantity)}</TableCell>
-                                            <TableCell className="text-right">{moneyFormat(item.unitPrice)}</TableCell>
-                                            <TableCell className="text-right font-medium">{moneyFormat(item.totalAmount)}</TableCell>
+                                  <div className="w-full overflow-hidden">
+                                    <div className="overflow-auto max-h-64 rounded-lg border">
+                                      <Table className="min-w-full">
+                                        <TableHeader>
+                                          <TableRow className="bg-secondary text-xs">
+                                            <TableHead className="w-8">TT</TableHead>
+                                            <TableHead className="min-w-40">Sản phẩm</TableHead>
+                                            <TableHead className="min-w-20 text-right">Số lượng</TableHead>
+                                            <TableHead className="min-w-28 text-right">Đơn giá</TableHead>
+                                            <TableHead className="min-w-28 text-right">Thành tiền</TableHead>
                                           </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {invoice.salesContract.items.map((item, index) => (
+                                            <TableRow key={item.id || index}>
+                                              <TableCell>{index + 1}</TableCell>
+                                              <TableCell className="font-medium">{item.productName}</TableCell>
+                                              <TableCell className="text-right">{parseInt(item.quantity)}</TableCell>
+                                              <TableCell className="text-right">{moneyFormat(item.unitPrice)}</TableCell>
+                                              <TableCell className="text-right font-medium">{moneyFormat(item.totalAmount)}</TableCell>
+                                            </TableRow>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -2397,6 +2463,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
           setShowReceiptDialog(false)
           setTimeout(() => setReceiptToEdit(null), 300)
           onSuccess?.()
+          toast.success('Đã tạo phiếu thu thành công')
         }}
         contentClassName="z-[100010]"
         overlayClassName="z-[100009]"

@@ -736,7 +736,7 @@ const InvoiceSidebar = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Loại giao dịch <span className="text-destructive"> *</span></FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value || 'RETAIL'}>
+                <Select onValueChange={field.onChange} value={field.value || 'RETAIL'}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn loại giao dịch" />

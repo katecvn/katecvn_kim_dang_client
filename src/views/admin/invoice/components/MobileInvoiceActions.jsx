@@ -56,7 +56,7 @@ const MobileInvoiceActions = ({
           </SheetHeader>
           <div className="flex flex-col gap-3">
             {/* Receipt & Warehouse Actions */}
-            {(!['draft', 'cancelled'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid') && (
+            {(!['draft', 'cancelled', 'delivered', 'rejected'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid') && (
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   className="bg-green-600 text-white hover:bg-green-700 h-auto py-3 flex-col gap-1"
@@ -124,7 +124,7 @@ const MobileInvoiceActions = ({
                 </Button>
               )}
 
-              {(canDelete && invoice.status === 'pending') && (
+              {(canDelete && ['pending', 'rejected'].includes(invoice.status)) && (
                 <ConfirmActionButton
                   title="Xác nhận xóa"
                   description="Bạn có chắc chắn muốn xóa đơn bán này?"

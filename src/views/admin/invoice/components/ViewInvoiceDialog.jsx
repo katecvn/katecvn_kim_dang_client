@@ -1189,16 +1189,18 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <h3 className="font-semibold">Phiếu thu</h3>
-                            <Button
-                              size="sm"
-                              className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
-                              onClick={handleCreateReceipt}
-                            >
-                              <IconPlus className="h-4 w-4" />
-                              <span>
-                                Thêm
-                              </span>
-                            </Button>
+                            {!['delivered', 'rejected', 'cancelled'].includes(invoice?.status) && (
+                              <Button
+                                size="sm"
+                                className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
+                                onClick={handleCreateReceipt}
+                              >
+                                <IconPlus className="h-4 w-4" />
+                                <span>
+                                  Thêm
+                                </span>
+                              </Button>
+                            )}
                           </div>
 
                           {invoice?.paymentVouchers && invoice.paymentVouchers.length > 0 ? (
@@ -2159,7 +2161,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
           )}>
             {invoice && (
               <>
-                {(!['draft', 'cancelled'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid') && (
+                {(!['draft', 'cancelled', 'delivered', 'rejected'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid') && (
                   <Button
                     size="sm"
                     className={cn("gap-2 bg-green-600 text-white hover:bg-green-700", !isDesktop && "w-full")}
@@ -2219,7 +2221,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                   </Button>
                 )}
 
-                {(canDelete && invoice.status === 'pending') && (
+                {(canDelete && ['pending', 'rejected'].includes(invoice.status)) && (
                   <ConfirmActionButton
                     title="Xác nhận xóa"
                     description="Bạn có chắc chắn muốn xóa đơn bán này? Hành động này không thể hoàn tác."

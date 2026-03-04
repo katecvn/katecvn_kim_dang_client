@@ -267,6 +267,7 @@ const InvoiceDialog = ({
           paymentMethod: data.paymentMethod || paymentMethods[0].value,
           paymentNote: data.paymentNote || '',
           orderDate: data.date || data.orderDate || new Date().toISOString(),
+          transactionType: data.transactionType || 'WHOLESALE',
         })
 
         // Set customer

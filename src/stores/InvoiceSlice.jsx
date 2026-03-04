@@ -191,13 +191,14 @@ export const createInvoice = createAsyncThunk(
 
 export const updateInvoice = createAsyncThunk(
   'invoice/update-invoice',
-  async (dataToSend, { rejectWithValue }) => {
+  async (dataToSend, { rejectWithValue, dispatch }) => {
     try {
       const response = await api.put(
         `/invoice/${dataToSend.invoiceId}/update-pending`,
         dataToSend,
       )
       toast.success('Cập nhật thành công')
+      dispatch(getInvoices({}))
       const { data } = response.data
       return data
     } catch (error) {

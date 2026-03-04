@@ -8,7 +8,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { IconTrash } from '@tabler/icons-react'
+import { IconEdit, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { DeletePaymentDialog } from './DeletePaymentDialog'
 import PaymentFormDialog from './PaymentDialog'
@@ -61,7 +61,7 @@ const DataTableRowActions = ({ row }) => {
               >
                 Sửa
                 <DropdownMenuShortcut>
-                  <Pencil className="h-4 w-4" />
+                  <IconEdit className="h-4 w-4" />
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
             </Can>

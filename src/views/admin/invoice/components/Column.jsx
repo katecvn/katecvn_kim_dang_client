@@ -330,12 +330,12 @@ export const columns = [
             <Badge
               className={cn(
                 "select-none",
-                currentStatus === 'delivered'
-                  ? "cursor-default bg-transparent p-0 text-green-500 hover:bg-transparent shadow-none border-0"
+                ['delivered', 'cancelled'].includes(currentStatus)
+                  ? `cursor-default p-0 shadow-none border-0 bg-transparent ${currentStatus === 'delivered' ? 'text-green-500' : 'text-slate-500'} hover:bg-transparent`
                   : `cursor-pointer ${statusObj?.color || ''}`
               )}
-              onClick={() => currentStatus !== 'delivered' && setOpenUpdateStatus(true)}
-              title={currentStatus !== 'delivered' ? "Bấm để cập nhật trạng thái" : ""}
+              onClick={() => !['delivered', 'cancelled'].includes(currentStatus) && setOpenUpdateStatus(true)}
+              title={!['delivered', 'cancelled'].includes(currentStatus) ? "Bấm để cập nhật trạng thái" : ""}
             >
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
                 {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}

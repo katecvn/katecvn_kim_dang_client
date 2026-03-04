@@ -72,11 +72,10 @@ export const getPurchaseContractDetail = createAsyncThunk(
 
 export const createPurchaseContract = createAsyncThunk(
   'purchaseContract/create-purchase-contract',
-  async (contractData, { rejectWithValue, dispatch }) => {
+  async (contractData, { rejectWithValue }) => {
     try {
       const response = await api.post('/purchase-contracts', contractData)
       toast.success('Tạo hợp đồng mua hàng thành công')
-      dispatch(getPurchaseContracts({}))
       return response.data
     } catch (error) {
       const message = handleError(error)
@@ -88,11 +87,10 @@ export const createPurchaseContract = createAsyncThunk(
 
 export const updatePurchaseContract = createAsyncThunk(
   'purchaseContract/update-purchase-contract',
-  async ({ id, data }, { rejectWithValue, dispatch }) => {
+  async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/purchase-contracts/${id}`, data)
       toast.success('Cập nhật hợp đồng thành công')
-      dispatch(getPurchaseContracts({}))
       return response.data
     } catch (error) {
       const message = handleError(error)
@@ -104,11 +102,10 @@ export const updatePurchaseContract = createAsyncThunk(
 
 export const deletePurchaseContract = createAsyncThunk(
   'purchaseContract/delete-purchase-contract',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       await api.delete(`/purchase-contracts/${id}`)
       toast.success('Xóa hợp đồng thành công')
-      dispatch(getPurchaseContracts({}))
       return id
     } catch (error) {
       const message = handleError(error)
@@ -120,11 +117,21 @@ export const deletePurchaseContract = createAsyncThunk(
 
 export const deleteMultiplePurchaseContracts = createAsyncThunk(
   'purchaseContract/deleteMultiple',
-  async (ids, { rejectWithValue, dispatch }) => {
+  async (ids, { rejectWithValue }) => {
     try {
-      await api.post('/purchase-contracts/bulk-delete', { ids })
-      await dispatch(getPurchaseContracts({}))
-      toast.success('Xóa các hợp đồng đã chọn thành công')
+      const response = await api.post('/purchase-contracts/bulk-delete', { ids })
+      const { success = [], failed = [] } = response.data || {}
+
+      if (success.length > 0) {
+        toast.success(`Đã xóa ${success.length} hợp đồng thành công`)
+      }
+      if (failed.length > 0) {
+        failed.forEach((f) => {
+          toast.error(f.message || `Không thể xóa hợp đồng ID ${f.id}`)
+        })
+      }
+      // Only return successfully deleted ids to remove from local state
+      return success.length > 0 ? success : ids
     } catch (error) {
       return rejectWithValue(handleError(error))
     }
@@ -133,11 +140,10 @@ export const deleteMultiplePurchaseContracts = createAsyncThunk(
 
 export const updatePurchaseContractStatus = createAsyncThunk(
   'purchaseContract/update-status',
-  async ({ id, status }, { rejectWithValue, dispatch }) => {
+  async ({ id, status }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/purchase-contracts/${id}/update-status`, { status })
       toast.success('Cập nhật trạng thái thành công')
-      dispatch(getPurchaseContracts({}))
       return response.data
     } catch (error) {
       const message = handleError(error)
@@ -149,12 +155,11 @@ export const updatePurchaseContractStatus = createAsyncThunk(
 
 export const confirmPurchaseContract = createAsyncThunk(
   'purchaseContract/confirm-purchase-contract',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       const response = await api.post(`/purchase-contracts/${id}/confirm`)
       toast.success('Xác nhận hợp đồng thành công')
-      dispatch(getPurchaseContracts({}))
-      return response.data
+      return { id, response: response.data }
     } catch (error) {
       const message = handleError(error)
       toast.error(message)
@@ -165,12 +170,11 @@ export const confirmPurchaseContract = createAsyncThunk(
 
 export const cancelPurchaseContract = createAsyncThunk(
   'purchaseContract/cancel-purchase-contract',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       const response = await api.post(`/purchase-contracts/${id}/cancel`)
       toast.success('Hủy hợp đồng thành công')
-      dispatch(getPurchaseContracts({}))
-      return response.data
+      return { id, response: response.data }
     } catch (error) {
       const message = handleError(error)
       toast.error(message)
@@ -227,8 +231,6 @@ export const getLiquidationPreview = createAsyncThunk(
   'purchaseContract/get-liquidation-preview',
   async (id, { rejectWithValue }) => {
     try {
-      // User requested singular 'purchase-contract' in prompt, but codebase uses plural 'purchase-contracts'.
-      // Using plural 'purchase-contracts' to match existing file convention and likely backend route structure.
       const response = await api.get(`/purchase-contracts/${id}/liquidation-preview`)
       return response.data
     } catch (error) {
@@ -240,12 +242,11 @@ export const getLiquidationPreview = createAsyncThunk(
 
 export const liquidatePurchaseContract = createAsyncThunk(
   'purchaseContract/liquidate',
-  async ({ id, data }, { rejectWithValue, dispatch }) => {
+  async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await api.post(`/purchase-contracts/${id}/liquidate`, data)
       toast.success('Thanh lý hợp đồng thành công')
-      dispatch(getPurchaseContracts({}))
-      return response.data
+      return { id, response: response.data }
     } catch (error) {
       const message = handleError(error)
       toast.error(message?.message || 'Có lỗi xảy ra')
@@ -256,12 +257,11 @@ export const liquidatePurchaseContract = createAsyncThunk(
 
 export const cancelLiquidatePurchaseContract = createAsyncThunk(
   'purchaseContract/cancel-liquidate',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       const response = await api.post(`/purchase-contracts/${id}/revert-liquidate`)
       toast.success('Hủy thanh lý hợp đồng thành công')
-      dispatch(getPurchaseContracts({}))
-      return response.data
+      return { id, response: response.data }
     } catch (error) {
       const message = handleError(error)
       toast.error(message?.message || 'Có lỗi xảy ra')
@@ -274,7 +274,7 @@ export const cancelLiquidatePurchaseContract = createAsyncThunk(
 const purchaseContractSlice = createSlice({
   name: 'purchaseContract',
   initialState: {
-    contracts: [], // Reusing 'contracts' name for consistency
+    contracts: [],
     pagination: {
       page: 1,
       limit: 20,
@@ -315,40 +315,141 @@ const purchaseContractSlice = createSlice({
         state.loading = false
         state.error = action.payload
       })
-      // Generic loading handlers for mutations
-      .addMatcher(
-        (action) =>
-          action.type.startsWith('purchaseContract') &&
-          action.type.endsWith('/pending') &&
-          !action.type.includes('get-purchase-contract-detail') &&
-          !action.type.includes('get-liquidation-preview'),
-        (state) => {
-          state.loading = true
+      // Create Purchase Contract
+      .addCase(createPurchaseContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(createPurchaseContract.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(createPurchaseContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Update Purchase Contract
+      .addCase(updatePurchaseContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(updatePurchaseContract.fulfilled, (state, action) => {
+        state.loading = false
+        const id = action.meta.arg?.id
+        if (id) {
+          const index = state.contracts.findIndex((c) => c.id === id)
+          if (index !== -1 && action.payload?.data) {
+            state.contracts[index] = { ...state.contracts[index], ...action.payload.data }
+          }
         }
-      )
-      .addMatcher(
-        (action) =>
-          action.type.startsWith('purchaseContract') &&
-          action.type.endsWith('/fulfilled') &&
-          !action.type.includes('get-purchase-contract-detail') &&
-          !action.type.includes('get-liquidation-preview'),
-        (state) => {
-          // If needed, we could set loading=false here for other actions
-          // But since the pending matcher didn't run for detail, this is fine
-          if (!state.contracts) state.loading = false
+      })
+      .addCase(updatePurchaseContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Delete Purchase Contract
+      .addCase(deletePurchaseContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(deletePurchaseContract.fulfilled, (state, action) => {
+        state.loading = false
+        if (action.payload) {
+          state.contracts = state.contracts.filter((c) => c.id !== action.payload)
         }
-      )
-      .addMatcher(
-        (action) =>
-          action.type.startsWith('purchaseContract') &&
-          action.type.endsWith('/rejected') &&
-          !action.type.includes('get-purchase-contract-detail') &&
-          !action.type.includes('get-liquidation-preview'),
-        (state, action) => {
-          state.loading = false
-          state.error = action.payload
+      })
+      .addCase(deletePurchaseContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Delete Multiple
+      .addCase(deleteMultiplePurchaseContracts.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(deleteMultiplePurchaseContracts.fulfilled, (state, action) => {
+        state.loading = false
+        if (Array.isArray(action.payload)) {
+          state.contracts = state.contracts.filter((c) => !action.payload.includes(c.id))
         }
-      )
+      })
+      .addCase(deleteMultiplePurchaseContracts.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Update Status
+      .addCase(updatePurchaseContractStatus.pending, (state) => {
+        state.error = null
+      })
+      .addCase(updatePurchaseContractStatus.fulfilled, (state, action) => {
+        const { id, status } = action.meta.arg
+        const index = state.contracts.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          state.contracts[index].status = status
+        }
+      })
+      .addCase(updatePurchaseContractStatus.rejected, (state, action) => {
+        state.error = action.payload
+      })
+      // Confirm Purchase Contract
+      .addCase(confirmPurchaseContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(confirmPurchaseContract.fulfilled, (state, action) => {
+        state.loading = false
+        const { id } = action.payload
+        const index = state.contracts.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          state.contracts[index].status = 'confirmed'
+        }
+      })
+      .addCase(confirmPurchaseContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Cancel Purchase Contract
+      .addCase(cancelPurchaseContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(cancelPurchaseContract.fulfilled, (state, action) => {
+        state.loading = false
+        const { id } = action.payload
+        const index = state.contracts.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          state.contracts[index].status = 'cancelled'
+        }
+      })
+      .addCase(cancelPurchaseContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Liquidate Purchase Contract
+      .addCase(liquidatePurchaseContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(liquidatePurchaseContract.fulfilled, (state, action) => {
+        state.loading = false
+        const { id } = action.payload
+        const index = state.contracts.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          state.contracts[index].status = 'liquidated'
+        }
+      })
+      .addCase(liquidatePurchaseContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Cancel Liquidate Purchase Contract
+      .addCase(cancelLiquidatePurchaseContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(cancelLiquidatePurchaseContract.fulfilled, (state, action) => {
+        state.loading = false
+        const { id } = action.payload
+        const index = state.contracts.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          state.contracts[index].status = 'confirmed'
+        }
+      })
+      .addCase(cancelLiquidatePurchaseContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
   },
 })
 

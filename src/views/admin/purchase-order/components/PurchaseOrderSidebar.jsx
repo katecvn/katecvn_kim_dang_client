@@ -1006,6 +1006,15 @@ const PurchaseOrderSidebar = ({
                         onExpectedDeliveryDateChange(date)
                         setOpenDeliveryDatePicker(false)
                       }}
+                      disabled={(date) => {
+                        const orderDate = form.getValues('orderDate')
+                        const minDate = orderDate ? new Date(orderDate) : new Date()
+                        const minDay = new Date(minDate)
+                        minDay.setHours(0, 0, 0, 0)
+                        const checkDay = new Date(date)
+                        checkDay.setHours(0, 0, 0, 0)
+                        return checkDay <= minDay
+                      }}
                     />
                   </PopoverContent>
                 </Popover>

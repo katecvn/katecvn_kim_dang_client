@@ -232,6 +232,25 @@ const DataTableToolbar = ({ table, isMyPurchaseContract }) => {
       </div>
 
       <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        {selectedContracts.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <TrashIcon className="mr-2 size-4" aria-hidden="true" />
+            Xóa ({selectedContracts.length})
+          </Button>
+        )}
+
+        <DeleteMultiplePurchaseContractsDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          count={selectedContracts.length}
+        />
+
         <Button
           className="text-green-600 border-green-200 hover:bg-green-50"
           variant="outline"
@@ -258,24 +277,6 @@ const DataTableToolbar = ({ table, isMyPurchaseContract }) => {
           <TruckIcon className="mr-2 size-4" aria-hidden="true" />
           Gửi nhắc hàng
         </Button>
-        {selectedContracts.length > 0 && (
-          <Button
-            variant="destructive"
-            size="sm"
-            className="h-8"
-            onClick={() => setShowDeleteDialog(true)}
-          >
-            <TrashIcon className="mr-2 size-4" aria-hidden="true" />
-            Xóa ({selectedContracts.length})
-          </Button>
-        )}
-
-        <DeleteMultiplePurchaseContractsDialog
-          open={showDeleteDialog}
-          onOpenChange={setShowDeleteDialog}
-          onConfirm={handleDelete}
-          count={selectedContracts.length}
-        />
 
         <DataTableViewOptions table={table} />
 

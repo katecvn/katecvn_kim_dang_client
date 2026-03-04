@@ -240,7 +240,7 @@ const ShoppingCart = ({
 
                 {/* Inputs and Totals (Full Width) */}
                 <div className="mt-3 space-y-3">
-                  {/* Row 1: Đơn vị & Đơn giá */}
+                  {/* Row 1: Đơn vị, Đơn giá, Số lượng */}
                   <div className="flex gap-2">
                     {/* Unit Selection */}
                     <div className="flex-1">
@@ -284,10 +284,7 @@ const ShoppingCart = ({
                         <div className="text-[10px] text-destructive mt-1 font-medium">{priceErrors[product.id]}</div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Row 2: Số lượng + Thuế + Giảm giá (%) */}
-                  <div className="flex gap-2">
                     {/* Quantity Controls */}
                     <div className="flex-1">
                       <label className="mb-1 block text-[10px] text-muted-foreground">
@@ -334,7 +331,10 @@ const ShoppingCart = ({
                         </Button>
                       </div>
                     </div>
+                  </div>
 
+                  {/* Row 2: Thuế + Giảm giá */}
+                  <div className="flex gap-2">
                     {/* Tax Selection */}
                     <div className="flex-1">
                       <label className="mb-1 block text-[10px] text-muted-foreground">
@@ -394,7 +394,7 @@ const ShoppingCart = ({
                       </Popover>
                     </div>
 
-                    {/* Discount (%) */}
+                    {/* Giảm giá (%) */}
                     <div className="flex-1">
                       <label className="mb-1 block text-[10px] text-muted-foreground">
                         Giảm giá (%)
@@ -405,12 +405,36 @@ const ShoppingCart = ({
                           inputMode="decimal"
                           placeholder="0"
                           value={currentDiscount === '' ? 0 : currentDiscount}
-                          onChange={(e) => onDiscountChange(product.id, e.target.value)}
+                          onChange={(e) => {
+                            const pct = e.target.value
+                            onDiscountChange(product.id, pct)
+                            const numPct = parseFloat(pct) || 0
+                            onDiscountAmountChange?.(product.id, Math.round(currentPrice * currentQuantity * numPct / 100))
+                          }}
                           onFocus={(e) => e.target.select()}
                           className="h-8 pr-6 text-sm"
                         />
                         <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">%</span>
                       </div>
+                    </div>
+
+                    {/* Tiền giảm giá */}
+                    <div className="flex-1">
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        Tiền giảm giá
+                      </label>
+                      <MoneyInputQuick
+                        value={Math.round(currentPrice * currentQuantity * (Number(currentDiscount) || 0) / 100)}
+                        onChange={(val) => {
+                          const base = currentPrice * currentQuantity
+                          const newPct = base > 0 ? (val / base) * 100 : 0
+                          onDiscountChange(product.id, String(parseFloat(newPct.toFixed(10))))
+                          onDiscountAmountChange?.(product.id, val)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className="h-8 text-sm w-full"
+                        placeholder="0"
+                      />
                     </div>
                   </div>
 

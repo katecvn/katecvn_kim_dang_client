@@ -191,14 +191,13 @@ export const createInvoice = createAsyncThunk(
 
 export const updateInvoice = createAsyncThunk(
   'invoice/update-invoice',
-  async (dataToSend, { rejectWithValue, dispatch }) => {
+  async (dataToSend, { rejectWithValue }) => {
     try {
       const response = await api.put(
         `/invoice/${dataToSend.invoiceId}/update-pending`,
         dataToSend,
       )
       toast.success('Cập nhật thành công')
-      dispatch(getInvoices({}))
       const { data } = response.data
       return data
     } catch (error) {
@@ -320,8 +319,10 @@ export const invoiceSlice = createSlice({
       })
       .addCase(deleteInvoice.fulfilled, (state, action) => {
         state.loading = false
-        // Optimistic update or just let refresh handle it
-        // We'll rely on the component to refresh the list 
+        // Remove deleted invoice from local state immediately
+        if (action.payload) {
+          state.invoices = state.invoices.filter((inv) => inv.id !== action.payload)
+        }
       })
       .addCase(deleteInvoice.rejected, (state, action) => {
         state.loading = false
@@ -344,8 +345,15 @@ export const invoiceSlice = createSlice({
         state.loading = true
         state.error = null
       })
-      .addCase(updateInvoice.fulfilled, (state) => {
+      .addCase(updateInvoice.fulfilled, (state, action) => {
         state.loading = false
+        // Update the invoice in local state without re-fetching
+        if (action.payload?.id) {
+          const index = state.invoices.findIndex((inv) => inv.id === action.payload.id)
+          if (index !== -1) {
+            state.invoices[index] = { ...state.invoices[index], ...action.payload }
+          }
+        }
       })
       .addCase(updateInvoice.rejected, (state, action) => {
         state.loading = false

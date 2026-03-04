@@ -71,11 +71,10 @@ export const getSalesContractDetail = createAsyncThunk(
 
 export const createSalesContract = createAsyncThunk(
   'salesContract/create-sales-contract',
-  async (contractData, { rejectWithValue, dispatch }) => {
+  async (contractData, { rejectWithValue }) => {
     try {
       const response = await api.post('/sales-contracts', contractData)
       toast.success('Tạo hợp đồng thành công')
-      dispatch(getSalesContracts({}))
       return response.data
     } catch (error) {
       const message = handleError(error)
@@ -87,11 +86,10 @@ export const createSalesContract = createAsyncThunk(
 
 export const updateSalesContract = createAsyncThunk(
   'salesContract/update-sales-contract',
-  async ({ id, data }, { rejectWithValue, dispatch }) => {
+  async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/sales-contracts/${id}`, data)
       toast.success('Cập nhật hợp đồng thành công')
-      dispatch(getSalesContracts({}))
       return response.data
     } catch (error) {
       const message = handleError(error)
@@ -103,11 +101,10 @@ export const updateSalesContract = createAsyncThunk(
 
 export const deleteSalesContract = createAsyncThunk(
   'salesContract/delete-sales-contract',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       await api.delete(`/sales-contracts/${id}`)
       toast.success('Xóa hợp đồng thành công')
-      dispatch(getSalesContracts({}))
       return id
     } catch (error) {
       const message = handleError(error)
@@ -119,11 +116,11 @@ export const deleteSalesContract = createAsyncThunk(
 
 export const deleteMultipleSalesContracts = createAsyncThunk(
   'salesContract/deleteMultiple',
-  async (ids, { rejectWithValue, dispatch }) => {
+  async (ids, { rejectWithValue }) => {
     try {
       await api.post('/sales-contracts/bulk-delete', { ids })
-      await dispatch(getSalesContracts({}))
       toast.success('Xóa các hợp đồng đã chọn thành công')
+      return ids
     } catch (error) {
       return rejectWithValue(handleError(error))
     }
@@ -132,11 +129,10 @@ export const deleteMultipleSalesContracts = createAsyncThunk(
 
 export const updateSalesContractStatus = createAsyncThunk(
   'salesContract/update-status',
-  async ({ id, status }, { rejectWithValue, dispatch }) => {
+  async ({ id, status }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/sales-contracts/${id}/update-status`, { status })
       toast.success('Cập nhật trạng thái thành công')
-      dispatch(getSalesContracts({}))
       return response.data
     } catch (error) {
       const message = handleError(error)
@@ -148,12 +144,11 @@ export const updateSalesContractStatus = createAsyncThunk(
 
 export const confirmSalesContract = createAsyncThunk(
   'salesContract/confirm-sales-contract',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       const response = await api.post(`/sales-contracts/${id}/confirm`)
       toast.success('Xác nhận hợp đồng thành công')
-      dispatch(getSalesContracts({}))
-      return response.data
+      return { id, response: response.data }
     } catch (error) {
       const message = handleError(error)
       toast.error(message?.message || 'Có lỗi xảy ra')
@@ -164,12 +159,11 @@ export const confirmSalesContract = createAsyncThunk(
 
 export const cancelSalesContract = createAsyncThunk(
   'salesContract/cancel-sales-contract',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       const response = await api.post(`/sales-contracts/${id}/cancel`)
       toast.success('Hủy hợp đồng thành công')
-      dispatch(getSalesContracts({}))
-      return response.data
+      return { id, response: response.data }
     } catch (error) {
       const message = handleError(error)
       toast.error(message?.message || 'Có lỗi xảy ra')
@@ -270,12 +264,11 @@ export const getLiquidationPreview = createAsyncThunk(
 
 export const liquidateSalesContract = createAsyncThunk(
   'salesContract/liquidate',
-  async ({ id, data }, { rejectWithValue, dispatch }) => {
+  async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await api.post(`/sales-contracts/${id}/liquidate`, data)
       toast.success('Thanh lý hợp đồng thành công')
-      dispatch(getSalesContracts({}))
-      return response.data
+      return { id, response: response.data }
     } catch (error) {
       const message = handleError(error)
       toast.error(message?.message || 'Có lỗi xảy ra')
@@ -286,12 +279,11 @@ export const liquidateSalesContract = createAsyncThunk(
 
 export const cancelLiquidateSalesContract = createAsyncThunk(
   'salesContract/cancel-liquidate',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       const response = await api.post(`/sales-contracts/${id}/revert-liquidate`)
       toast.success('Hủy thanh lý hợp đồng thành công')
-      dispatch(getSalesContracts({}))
-      return response.data
+      return { id, response: response.data }
     } catch (error) {
       const message = handleError(error)
       toast.error(message?.message || 'Có lỗi xảy ra')
@@ -384,8 +376,16 @@ const salesContractSlice = createSlice({
       .addCase(updateSalesContract.pending, (state) => {
         state.loading = true
       })
-      .addCase(updateSalesContract.fulfilled, (state) => {
+      .addCase(updateSalesContract.fulfilled, (state, action) => {
         state.loading = false
+        // Update the contract in local state if we have id
+        const id = action.meta.arg?.id
+        if (id) {
+          const index = state.contracts.findIndex((c) => c.id === id)
+          if (index !== -1 && action.payload?.data) {
+            state.contracts[index] = { ...state.contracts[index], ...action.payload.data }
+          }
+        }
       })
       .addCase(updateSalesContract.rejected, (state, action) => {
         state.loading = false
@@ -395,19 +395,49 @@ const salesContractSlice = createSlice({
       .addCase(deleteSalesContract.pending, (state) => {
         state.loading = true
       })
-      .addCase(deleteSalesContract.fulfilled, (state) => {
+      .addCase(deleteSalesContract.fulfilled, (state, action) => {
         state.loading = false
+        // Remove deleted contract from local state immediately
+        if (action.payload) {
+          state.contracts = state.contracts.filter((c) => c.id !== action.payload)
+        }
       })
       .addCase(deleteSalesContract.rejected, (state, action) => {
         state.loading = false
+        state.error = action.payload
+      })
+      // Delete Multiple Sales Contracts
+      .addCase(deleteMultipleSalesContracts.fulfilled, (state, action) => {
+        state.loading = false
+        if (Array.isArray(action.payload)) {
+          state.contracts = state.contracts.filter((c) => !action.payload.includes(c.id))
+        }
+      })
+      // Update Status
+      .addCase(updateSalesContractStatus.pending, (state) => {
+        state.error = null
+      })
+      .addCase(updateSalesContractStatus.fulfilled, (state, action) => {
+        const { id, status } = action.meta.arg
+        const index = state.contracts.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          state.contracts[index].status = status
+        }
+      })
+      .addCase(updateSalesContractStatus.rejected, (state, action) => {
         state.error = action.payload
       })
       // Confirm Sales Contract
       .addCase(confirmSalesContract.pending, (state) => {
         state.loading = true
       })
-      .addCase(confirmSalesContract.fulfilled, (state) => {
+      .addCase(confirmSalesContract.fulfilled, (state, action) => {
         state.loading = false
+        const { id } = action.payload
+        const index = state.contracts.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          state.contracts[index].status = 'confirmed'
+        }
       })
       .addCase(confirmSalesContract.rejected, (state, action) => {
         state.loading = false
@@ -417,8 +447,13 @@ const salesContractSlice = createSlice({
       .addCase(cancelSalesContract.pending, (state) => {
         state.loading = true
       })
-      .addCase(cancelSalesContract.fulfilled, (state) => {
+      .addCase(cancelSalesContract.fulfilled, (state, action) => {
         state.loading = false
+        const { id } = action.payload
+        const index = state.contracts.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          state.contracts[index].status = 'cancelled'
+        }
       })
       .addCase(cancelSalesContract.rejected, (state, action) => {
         state.loading = false
@@ -428,10 +463,31 @@ const salesContractSlice = createSlice({
       .addCase(liquidateSalesContract.pending, (state) => {
         state.loading = true
       })
-      .addCase(liquidateSalesContract.fulfilled, (state) => {
+      .addCase(liquidateSalesContract.fulfilled, (state, action) => {
         state.loading = false
+        const { id } = action.payload
+        const index = state.contracts.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          state.contracts[index].status = 'liquidated'
+        }
       })
       .addCase(liquidateSalesContract.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+      // Cancel Liquidate Sales Contract
+      .addCase(cancelLiquidateSalesContract.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(cancelLiquidateSalesContract.fulfilled, (state, action) => {
+        state.loading = false
+        const { id } = action.payload
+        const index = state.contracts.findIndex((c) => c.id === id)
+        if (index !== -1) {
+          state.contracts[index].status = 'confirmed'
+        }
+      })
+      .addCase(cancelLiquidateSalesContract.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })

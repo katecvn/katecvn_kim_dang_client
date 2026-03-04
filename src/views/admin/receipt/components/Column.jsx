@@ -7,7 +7,7 @@ import ViewReceiptDialog from './ViewReceiptDialog'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useDispatch } from 'react-redux'
-import { getReceiptById, updateReceiptStatus, getReceipts } from '@/stores/ReceiptSlice'
+import { getReceiptById, updateReceiptStatus } from '@/stores/ReceiptSlice'
 import UpdateReceiptStatusDialog from './UpdateReceiptStatusDialog'
 import { receiptStatus, paymentMethods } from '../data'
 import { toast } from 'sonner'
@@ -130,7 +130,7 @@ export const columns = [
 
       return (
         <div className="flex flex-col gap-1 min-w-[150px] pr-4">
-          <span className="font-semibold truncate text-[15px]" title={receiver.name}>
+          <span className="font-semibold text-[15px] break-words">
             {receiver.name}
           </span>
           {receiver.phone && (
@@ -157,7 +157,7 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Lý do" />
     ),
     cell: ({ row }) => (
-      <div className="w-48 truncate" title={row.getValue('reason')}>
+      <div className="min-w-[160px]">
         {row.getValue('reason') || 'Không có'}
       </div>
     ),
@@ -171,30 +171,18 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Số tiền" />
     ),
     cell: ({ row }) => {
-      return (
-        <div className="flex space-x-2">
-          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem] text-green-600 font-medium">
-            {moneyFormat(row.getValue('amount'))}
-          </span>
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: 'paymentMethod',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Phương thức" />
-    ),
-    cell: ({ row }) => {
-      const method = row.getValue('paymentMethod')
+      const method = row.original.paymentMethod
       const paymentMethodObj = paymentMethods.find(m => m.value === method)
       const Icon = paymentMethodObj?.icon
 
       return (
-        <div className="w-36">
+        <div className="flex flex-col gap-1 items-end">
+          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem] text-green-600 font-medium">
+            {moneyFormat(row.getValue('amount'))}
+          </span>
           <Badge variant="outline" className={`whitespace-nowrap border-transparent bg-transparent px-0 font-medium ${paymentMethodObj?.color}`}>
             {Icon && <Icon className="mr-1 h-3 w-3" />}
-            {paymentMethodObj?.label || method}
+            {paymentMethodObj?.label || method || '—'}
           </Badge>
         </div>
       )
@@ -217,22 +205,15 @@ export const columns = [
           await dispatch(updateReceiptStatus({ id, status: newStatus })).unwrap()
           toast.success('Cập nhật trạng thái thành công')
           setShowUpdateStatusDialog(false)
-          // Refresh list - assumes parent component handles it or we dispatch generic getReceipts
-          // But getReceipts usually needs params. 
-          // However, Since Redux updates state, if the list comes from Redux store, it might auto-update if we update the single item or refetch.
-          // Let's try dispatching a refresh if possible, or assume the slice handles updating the item in the list.
-          // Checking SalesContractSlice -> updateReceiptStatus usually just updates.
-          // Ideally we should refetch.
-          dispatch(getReceipts({}))
+          // ReceiptSlice.updateReceiptStatus.fulfilled updates local state directly — no need to refetch
         } catch (error) {
-          // Error handled in slice/thunk mostly
           console.error(error)
         }
       }
 
       return (
         <>
-          <div className="w-28 flex items-center gap-2">
+          <div className="w-28 flex items-center justify-center gap-2">
             <Badge
               className={`cursor-pointer hover:underline ${status === 'completed' ? 'bg-green-500' : status === 'cancelled' ? 'bg-red-500' : 'bg-yellow-500'}`}
               onClick={() => setShowUpdateStatusDialog(true)}

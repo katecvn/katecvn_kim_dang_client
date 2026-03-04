@@ -384,8 +384,8 @@ const CreateManualWarehouseReceiptDialog = ({
                   control={form.control}
                   name="partnerId"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col mt-2.5">
-                      <FormLabel>{receiptType === 1 ? 'Nhà cung cấp' : 'Khách hàng'}</FormLabel>
+                    <FormItem className="flex flex-col mt-2">
+                      <FormLabel className="mb-0.5">{receiptType === 1 ? 'Nhà cung cấp' : 'Khách hàng'}</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -393,7 +393,7 @@ const CreateManualWarehouseReceiptDialog = ({
                               variant="outline"
                               role="combobox"
                               className={cn(
-                                "w-full justify-between font-normal h-10 bg-background",
+                                "w-full justify-between font-normal h-9 bg-background",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
@@ -590,7 +590,7 @@ const CreateManualWarehouseReceiptDialog = ({
                                 <Input
                                   type="number"
                                   min="0"
-                                  className="h-8 text-sm"
+                                  className="h-8 text-sm text-right"
                                   value={item.quantity}
                                   onChange={(e) => handleProductChange(index, 'quantity', Number(e.target.value))}
                                   onFocus={(e) => e.target.select()}
@@ -630,7 +630,7 @@ const CreateManualWarehouseReceiptDialog = ({
                             <TableHead className="w-[50px]">#</TableHead>
                             <TableHead className="w-[60px]">Ảnh</TableHead>
                             <TableHead>Sản phẩm</TableHead>
-                            <TableHead className="w-[100px]">ĐVT</TableHead>
+                            <TableHead className="w-[100px]">Đơn vị</TableHead>
 
                             <TableHead className="w-[100px]">Số lượng</TableHead>
                             <TableHead className="w-[150px]">
@@ -692,7 +692,7 @@ const CreateManualWarehouseReceiptDialog = ({
                                   <Input
                                     type="number"
                                     min="0"
-                                    className="h-8"
+                                    className="h-8 text-right"
                                     value={item.quantity}
                                     onChange={(e) => handleProductChange(index, 'quantity', Number(e.target.value))}
                                     onFocus={(e) => e.target.select()}
@@ -733,7 +733,7 @@ const CreateManualWarehouseReceiptDialog = ({
                 name="note"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ghi chú chung</FormLabel>
+                    <FormLabel>Ghi chú</FormLabel>
                     <FormControl>
                       <Textarea {...field} placeholder="Ghi chú thêm..." />
                     </FormControl>

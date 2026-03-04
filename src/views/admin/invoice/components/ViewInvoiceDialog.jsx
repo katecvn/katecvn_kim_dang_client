@@ -888,21 +888,21 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                     return (
                                       <>
                                         <Badge
-                                          variant={invoice.status === 'delivered' ? 'outline' : 'default'}
+                                          variant={['delivered', 'cancelled'].includes(invoice.status) ? 'outline' : 'default'}
                                           className={cn(
-                                            invoice.status === 'delivered'
-                                              ? `cursor-default select-none border-0 ${statusObj?.textColor || 'text-green-500'}`
+                                            ['delivered', 'cancelled'].includes(invoice.status)
+                                              ? `cursor-default select-none border-0 bg-transparent ${invoice.status === 'delivered' ? (statusObj?.textColor || 'text-green-500') : 'text-slate-500'} hover:bg-transparent`
                                               : `cursor-pointer select-none ${statusObj?.color || ''}`,
-                                            isActionDisabled && invoice.status !== 'delivered' ? "opacity-70 cursor-not-allowed" : ""
+                                            isActionDisabled && !['delivered', 'cancelled'].includes(invoice.status) ? "opacity-70 cursor-not-allowed" : ""
                                           )}
                                           onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            if (!isActionDisabled && invoice.status !== 'delivered') {
+                                            if (!isActionDisabled && !['delivered', 'cancelled'].includes(invoice.status)) {
                                               setShowUpdateStatusDialog(true)
                                             }
                                           }}
-                                          title={invoice.status === 'delivered' ? '' : "Bấm để cập nhật trạng thái"}
+                                          title={['delivered', 'cancelled'].includes(invoice.status) ? '' : "Bấm để cập nhật trạng thái"}
                                         >
                                           <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
                                             {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
@@ -1189,7 +1189,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <h3 className="font-semibold">Phiếu thu</h3>
-                            {!['delivered', 'rejected', 'cancelled'].includes(invoice?.status) && (
+                            {!['pending', 'delivered', 'rejected', 'cancelled'].includes(invoice?.status) ? (
                               <Button
                                 size="sm"
                                 className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
@@ -1200,6 +1200,10 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                   Thêm
                                 </span>
                               </Button>
+                            ) : (
+                              invoice?.status === 'pending' ? (
+                                <span className="text-[12px] text-gray-500">Đơn hàng chưa được duyệt</span>
+                              ) : null
                             )}
                           </div>
 
@@ -2161,7 +2165,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
           )}>
             {invoice && (
               <>
-                {(!['draft', 'cancelled', 'delivered', 'rejected'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid') && (
+                {(!['pending', 'cancelled', 'delivered', 'rejected'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid') && (
                   <Button
                     size="sm"
                     className={cn("gap-2 bg-green-600 text-white hover:bg-green-700", !isDesktop && "w-full")}
@@ -2221,7 +2225,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                   </Button>
                 )}
 
-                {(canDelete && ['pending', 'rejected'].includes(invoice.status)) && (
+                {(canDelete && ['pending', 'rejected', 'cancelled'].includes(invoice.status)) && (
                   <ConfirmActionButton
                     title="Xác nhận xóa"
                     description="Bạn có chắc chắn muốn xóa đơn bán này? Hành động này không thể hoàn tác."

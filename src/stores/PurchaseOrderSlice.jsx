@@ -250,16 +250,11 @@ export const updatePurchaseOrder = createAsyncThunk(
 // Confirm PO
 export const confirmPurchaseOrder = createAsyncThunk(
   'purchaseOrder/confirm',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       await api.post(`/purchase-orders/${id}/confirm`)
-      await dispatch(
-        getMyPurchaseOrders({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      ).unwrap()
       toast.success('Đã xác nhận đơn hàng')
+      return { id, status: 'ordered' }
     } catch (error) {
       return rejectWithValue(handleError(error))
     }
@@ -289,16 +284,11 @@ export const importPurchaseOrder = createAsyncThunk(
 // Cancel PO
 export const cancelPurchaseOrder = createAsyncThunk(
   'purchaseOrder/cancel',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       await api.post(`/purchase-orders/${id}/cancel`)
-      await dispatch(
-        getMyPurchaseOrders({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      ).unwrap()
       toast.success('Đã hủy đơn hàng')
+      return { id, status: 'cancelled' }
     } catch (error) {
       return rejectWithValue(handleError(error))
     }
@@ -308,16 +298,11 @@ export const cancelPurchaseOrder = createAsyncThunk(
 // Revert PO
 export const revertPurchaseOrder = createAsyncThunk(
   'purchaseOrder/revert',
-  async (id, { rejectWithValue, dispatch }) => {
+  async (id, { rejectWithValue }) => {
     try {
       await api.post(`/purchase-orders/${id}/revert`)
-      await dispatch(
-        getMyPurchaseOrders({
-          fromDate: getStartOfCurrentMonth(),
-          toDate: getEndOfCurrentMonth(),
-        }),
-      ).unwrap()
       toast.success('Đã chuyển về nháp')
+      return { id, status: 'draft' }
     } catch (error) {
       return rejectWithValue(handleError(error))
     }
@@ -443,7 +428,14 @@ export const purchaseOrderSlice = createSlice({
         state.error = null
       })
       // Confirm
-      .addCase(confirmPurchaseOrder.fulfilled, (state) => { state.loading = false })
+      .addCase(confirmPurchaseOrder.fulfilled, (state, action) => {
+        state.loading = false
+        if (action.payload) {
+          const { id, status } = action.payload
+          const index = state.purchaseOrders.findIndex((po) => po.id === id)
+          if (index !== -1) state.purchaseOrders[index].status = status
+        }
+      })
       .addCase(confirmPurchaseOrder.pending, (state) => { state.loading = true })
       .addCase(confirmPurchaseOrder.rejected, (state, action) => {
         state.loading = false
@@ -451,7 +443,14 @@ export const purchaseOrderSlice = createSlice({
         toast.error(state.error)
       })
       // Cancel
-      .addCase(cancelPurchaseOrder.fulfilled, (state) => { state.loading = false })
+      .addCase(cancelPurchaseOrder.fulfilled, (state, action) => {
+        state.loading = false
+        if (action.payload) {
+          const { id, status } = action.payload
+          const index = state.purchaseOrders.findIndex((po) => po.id === id)
+          if (index !== -1) state.purchaseOrders[index].status = status
+        }
+      })
       .addCase(cancelPurchaseOrder.pending, (state) => { state.loading = true })
       .addCase(cancelPurchaseOrder.rejected, (state, action) => {
         state.loading = false
@@ -459,7 +458,14 @@ export const purchaseOrderSlice = createSlice({
         toast.error(state.error)
       })
       // Revert
-      .addCase(revertPurchaseOrder.fulfilled, (state) => { state.loading = false })
+      .addCase(revertPurchaseOrder.fulfilled, (state, action) => {
+        state.loading = false
+        if (action.payload) {
+          const { id, status } = action.payload
+          const index = state.purchaseOrders.findIndex((po) => po.id === id)
+          if (index !== -1) state.purchaseOrders[index].status = status
+        }
+      })
       .addCase(revertPurchaseOrder.pending, (state) => { state.loading = true })
       .addCase(revertPurchaseOrder.rejected, (state, action) => {
         state.loading = false

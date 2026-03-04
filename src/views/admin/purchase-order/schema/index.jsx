@@ -3,10 +3,10 @@ import { z } from 'zod'
 const createPurchaseOrderSchema = z.object({
   supplierId: z.string().optional(),
   customerId: z.string().optional(),
-  orderDate: z.date({
+  orderDate: z.coerce.date({
     required_error: 'Ngày đặt hàng là bắt buộc',
   }),
-  expectedDeliveryDate: z.date({
+  expectedDeliveryDate: z.coerce.date({
     required_error: 'Ngày dự kiến giao hàng là bắt buộc',
     invalid_type_error: 'Ngày dự kiến giao hàng là bắt buộc',
   }),

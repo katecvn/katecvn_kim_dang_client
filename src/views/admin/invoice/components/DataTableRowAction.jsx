@@ -406,7 +406,7 @@ const DataTableRowActions = ({ row, table }) => {
 
           <DropdownMenuSeparator />
 
-          {(row?.original?.status === 'pending' || row?.original?.status === 'rejected') && (
+          {(row?.original?.status === 'pending' || row?.original?.status === 'rejected' || row?.original?.status === 'cancelled') && (
             <Can permission="DELETE_INVOICE" permission2="DELETE_INVOICE_USER" isOwner={true} ownerId={row?.original?.createdById || row?.original?.user?.id}>
               <DropdownMenuItem
                 onSelect={() => setShowDeleteInvoiceDialog(true)}

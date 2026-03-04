@@ -569,7 +569,7 @@ const MobileInvoiceCard = ({
                 </DropdownMenuItem>
               )}
 
-              {status === 'pending' && (
+              {status === 'pending' || status === 'rejected' || status === 'cancelled' && (
                 <Can permission="DELETE_INVOICE" permission2="DELETE_INVOICE_USER" isOwner={true} ownerId={invoice?.createdById || invoice?.user?.id}>
                   <DropdownMenuItem
                     onClick={() => setShowDeleteDialog(true)}
@@ -640,12 +640,12 @@ const MobileInvoiceCard = ({
               <Badge
                 className={cn(
                   "select-none",
-                  status === 'delivered'
-                    ? "cursor-default bg-transparent p-0 text-green-500 hover:bg-transparent shadow-none border-0"
+                  ['delivered', 'cancelled'].includes(status)
+                    ? `cursor-default p-0 shadow-none border-0 bg-transparent ${status === 'delivered' ? 'text-green-500' : 'text-slate-500'} hover:bg-transparent`
                     : `cursor-pointer ${selectedStatusObj?.color || ''}`,
-                  isActionDisabled && status !== 'delivered' ? "opacity-70 cursor-not-allowed" : ""
+                  isActionDisabled && !['delivered', 'cancelled'].includes(status) ? "opacity-70 cursor-not-allowed" : ""
                 )}
-                onClick={() => !isActionDisabled && status !== 'delivered' && setShowUpdateStatusDialog(true)}
+                onClick={() => !isActionDisabled && !['delivered', 'cancelled'].includes(status) && setShowUpdateStatusDialog(true)}
               >
                 <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
                   {selectedStatusObj?.icon ? <selectedStatusObj.icon className="h-3 w-3" /> : null}

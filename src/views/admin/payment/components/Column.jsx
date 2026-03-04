@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { updatePaymentStatus, getPayments } from '@/stores/PaymentSlice'
+import { updatePaymentStatus } from '@/stores/PaymentSlice'
 import UpdatePaymentStatusDialog from './UpdatePaymentStatusDialog'
 import { paymentStatus, paymentMethods } from '../data'
 import { toast } from 'sonner'
@@ -123,7 +123,7 @@ export const columns = [
 
       return (
         <div className="flex flex-col gap-1 min-w-[150px] pr-4">
-          <span className="font-semibold truncate text-[15px]" title={receiver.name}>
+          <span className="font-semibold text-[15px] break-words" >
             {receiver.name}
           </span>
           {receiver.phone && (
@@ -150,7 +150,7 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Lý do chi" />
     ),
     cell: ({ row }) => (
-      <div className="w-48 truncate" title={row.getValue('reason')}>
+      <div className="min-w-[160px]">
         {row.getValue('reason') || 'Không có'}
       </div>
     ),
@@ -164,30 +164,18 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Số tiền" />
     ),
     cell: ({ row }) => {
-      return (
-        <div className="flex space-x-2">
-          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem] font-medium text-red-600">
-            {moneyFormat(row.getValue('amount'))}
-          </span>
-        </div>
-      )
-    },
-  },
-  {
-    accessorKey: 'paymentMethod',
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Phương thức" />
-    ),
-    cell: ({ row }) => {
-      const method = row.getValue('paymentMethod')
+      const method = row.original.paymentMethod
       const paymentMethodObj = paymentMethods.find(m => m.value === method)
       const Icon = paymentMethodObj?.icon
 
       return (
-        <div className="w-36">
+        <div className="flex flex-col gap-1 items-end">
+          <span className="max-w-32 truncate sm:max-w-72 md:max-w-[31rem] font-medium text-red-600">
+            {moneyFormat(row.getValue('amount'))}
+          </span>
           <Badge variant="outline" className={`whitespace-nowrap border-transparent bg-transparent px-0 font-medium ${paymentMethodObj?.color}`}>
             {Icon && <Icon className="mr-1 h-3 w-3" />}
-            {paymentMethodObj?.label || method}
+            {paymentMethodObj?.label || method || '—'}
           </Badge>
         </div>
       )
@@ -208,9 +196,7 @@ export const columns = [
       const handleUpdateStatus = async (newStatus, id) => {
         try {
           await dispatch(updatePaymentStatus({ id, status: newStatus })).unwrap()
-          // Optionally refresh list if needed, or rely on optimistic/Redux update.
-          // Re-fetching to be safe and consistent with other modules
-          dispatch(getPayments({}))
+          // PaymentSlice.updatePaymentStatus.fulfilled updates local state directly — no need to refetch
           setShowUpdateStatusDialog(false)
         } catch (error) {
           console.error(error)
@@ -219,7 +205,7 @@ export const columns = [
 
       return (
         <>
-          <div className="w-28 flex items-center gap-2">
+          <div className="w-28 flex items-center justify-center gap-2">
             <Badge
               className={cn(
                 "cursor-pointer hover:underline",

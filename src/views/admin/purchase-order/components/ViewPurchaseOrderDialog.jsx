@@ -345,13 +345,15 @@ const ViewPurchaseOrderDialog = ({
         <DialogHeader className={cn(!isDesktop && "px-4 pt-4")}>
           <DialogTitle className={cn(!isDesktop && "text-base")}>
             Thông tin chi tiết đơn mua hàng: <span className={cn(!isDesktop && "block")}>{purchaseOrder?.code}</span>
-            {/* <span className="text-sm font-normal text-muted-foreground">
-              Ngày đặt: {dateFormat(purchaseOrder?.orderDate, true)}
-            </span> */}
           </DialogTitle>
-          {/* <DialogDescription className={cn(!isDesktop && "text-xs")}>
-            Dưới đây là thông tin chi tiết đơn mua hàng: {purchaseOrder?.code}.
-          </DialogDescription> */}
+          {purchaseOrder?.salesContractCode && (
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="outline" className="border-purple-400 bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 gap-1.5 text-xs font-medium">
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-500 inline-block" />
+                Đơn từ thanh lý hợp đồng · {purchaseOrder.salesContractCode}
+              </Badge>
+            </div>
+          )}
         </DialogHeader>
 
         <div className={cn(
@@ -760,16 +762,18 @@ const ViewPurchaseOrderDialog = ({
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold">Phiếu chi</h3>
-                        <Button
-                          size="sm"
-                          className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
-                          onClick={handleCreatePayment}
-                        >
-                          <IconPlus className="h-4 w-4" />
-                          <span>
-                            Thêm
-                          </span>
-                        </Button>
+                        {!['draft', 'completed', 'cancelled'].includes(purchaseOrder?.status) && (
+                          <Button
+                            size="sm"
+                            className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
+                            onClick={handleCreatePayment}
+                          >
+                            <IconPlus className="h-4 w-4" />
+                            <span>
+                              Thêm
+                            </span>
+                          </Button>
+                        )}
                       </div>
 
                       {purchaseOrder?.paymentVouchers && purchaseOrder.paymentVouchers.length > 0 ? (
@@ -971,16 +975,18 @@ const ViewPurchaseOrderDialog = ({
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold">Phiếu nhập kho</h3>
-                        <Button
-                          size="sm"
-                          className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
-                          onClick={handleCreateImport}
-                        >
-                          <IconPlus className="h-4 w-4" />
-                          <span>
-                            Thêm
-                          </span>
-                        </Button>
+                        {!['draft', 'completed', 'cancelled'].includes(purchaseOrder?.status) && (
+                          <Button
+                            size="sm"
+                            className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
+                            onClick={handleCreateImport}
+                          >
+                            <IconPlus className="h-4 w-4" />
+                            <span>
+                              Thêm
+                            </span>
+                          </Button>
+                        )}
                       </div>
 
                       {purchaseOrder?.warehouseReceipts && purchaseOrder.warehouseReceipts.length > 0 ? (

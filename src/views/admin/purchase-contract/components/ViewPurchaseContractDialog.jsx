@@ -47,6 +47,7 @@ import { useDispatch } from 'react-redux'
 import { Separator } from '@/components/ui/separator'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { PlusIcon, MobileIcon } from '@radix-ui/react-icons'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import React from 'react'
@@ -388,6 +389,14 @@ const ViewPurchaseContractDialog = ({
             <span>Chi tiết hợp đồng mua hàng:</span>
             <span>{contract?.code}</span>
           </DialogTitle>
+          {contract?.salesContractCode && (
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="outline" className="border-purple-400 bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 gap-1.5 text-xs font-medium">
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-500 inline-block" />
+                Từ thanh lý hợp đồng bán · {contract.salesContractCode}
+              </Badge>
+            </div>
+          )}
         </DialogHeader>
 
         <div className={cn('overflow-auto', isDesktop ? 'max-h-[75vh]' : 'h-full px-4 pb-4 flex-1')}>
@@ -807,7 +816,7 @@ const ViewPurchaseContractDialog = ({
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <h3 className="font-semibold">Phiếu chi</h3>
-                          {contract?.status !== 'liquidated' && (
+                          {!['draft', 'completed', 'cancelled', 'liquidated'].includes(contract?.status) && (
                             <Button
                               size="sm"
                               className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
@@ -1027,7 +1036,7 @@ const ViewPurchaseContractDialog = ({
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <h3 className="font-semibold">Phiếu nhập kho</h3>
-                          {contract?.status !== 'liquidated' && (
+                          {!['draft', 'completed', 'cancelled', 'liquidated'].includes(contract?.status) && (
                             <Button
                               size="sm"
                               className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
@@ -1409,7 +1418,7 @@ const ViewPurchaseContractDialog = ({
             </Button>
           )}
 
-          {['ordered', 'partial', 'completed'].includes(contract?.purchaseOrders?.[0]?.status) && (
+          {!['draft', 'completed', 'cancelled', 'liquidated'].includes(contract?.status) && ['ordered', 'partial', 'completed'].includes(contract?.purchaseOrders?.[0]?.status) && (
             <Button
               size="sm"
               onClick={handleCreatePayment}

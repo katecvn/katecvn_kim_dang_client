@@ -87,7 +87,7 @@ const ExportPurchaseOrderView = ({
     if (email) phoneEmail.push(`Email: ${email}`)
     if (website) phoneEmail.push(`Website: ${website}`)
 
-    worksheet.mergeCells('A1:W1')
+    worksheet.mergeCells('A1:X1')
     const companyCell = worksheet.getCell('A1')
     companyCell.value = {
       richText: [
@@ -109,7 +109,7 @@ const ExportPurchaseOrderView = ({
     worksheet.getRow(1).height = 72
 
     // === TIÊU ĐỀ BÁO CÁO (Row 2) === //
-    worksheet.mergeCells('A2:W2')
+    worksheet.mergeCells('A2:X2')
     worksheet.getCell('A2').value =
       `Báo cáo danh sách đơn mua hàng từ ${fromDate} đến ${toDate}`
 
@@ -147,7 +147,7 @@ const ExportPurchaseOrderView = ({
     // Style tiêu đề báo cáo (row 2)
     worksheet.getCell('A2').font = {
       name: 'Times New Roman',
-      size: 13,
+      size: 14,
       bold: true,
     }
     worksheet.getCell('A2').alignment = {
@@ -170,7 +170,7 @@ const ExportPurchaseOrderView = ({
     }
     // row 1 height đã set ở trên khi tạo company cell
 
-    // ── Độ rộng cột (21 cột) ──────────────────────────────────────────────
+    // ── Độ rộng cột (24 cột) ──────────────────────────────────────────────
     const customColumnWidths = [
       6,  // A – STT
       22, // B – Mã ĐĐH
@@ -188,13 +188,14 @@ const ExportPurchaseOrderView = ({
       18, // N – Tiền Thuế
       12, // O – Giảm giá (%)
       18, // P – Tiền giảm giá
-      18, // Q – Tổng đơn
-      20, // R – Công nợ
-      22, // S – Thanh toán
-      28, // T – DS phiếu nhập
-      18, // U – Trạng thái
-      18, // V – Ngày đặt hàng
-      20, // W – Ngày tạo
+      20, // Q – Tổng dòng
+      18, // R – Tổng đơn
+      20, // S – Công nợ
+      22, // T – Thanh toán
+      28, // U – DS phiếu nhập
+      18, // V – Trạng thái
+      18, // W – Ngày đặt hàng
+      20, // X – Ngày tạo
     ]
     worksheet.columns.forEach((column, index) => {
       column.width = customColumnWidths[index] || 15
@@ -211,20 +212,20 @@ const ExportPurchaseOrderView = ({
       }
     })
 
-      // Căn giữa STT (col 1) và SL (col 9) – chỉ ở dòng dữ liệu (row > 3)
-      ;[1, 9].forEach((colIdx) => {
+      // Căn giữa ngang và trên dọc: STT (col 1), SL (col 9), Trạng thái (col 22)
+      ;[1, 9, 22].forEach((colIdx) => {
         worksheet.getColumn(colIdx).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
           if (rowNumber > 3) {
-            cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false }
+            cell.alignment = { vertical: 'top', horizontal: 'center', wrapText: false }
           }
         })
       })
     // Khôi phục alignment cho thông tin công ty (A1) và tiêu đề (A2)
     worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
     worksheet.getCell('A2').alignment = { vertical: 'middle', horizontal: 'left' }
-    // ── Format số (I=9, K=11, L=12, M=13, N=14, O=15, P=16) ─────────────
-    // Format số: I=9,K=11,L=12,N=14,P=16,Q=17,R=18
-    const numberCols = [9, 11, 12, 14, 16, 17, 18]
+    // ── Format số (I=9, K=11, L=12, N=14, P=16, Q=17, R=18, S=19) ─────────────
+    // Format số: I=9,K=11,L=12,N=14,P=16,Q=17,R=18,S=19
+    const numberCols = [9, 11, 12, 14, 16, 17, 18, 19]
     numberCols.forEach((colIdx) => {
       const col = worksheet.getColumn(colIdx)
       col.eachCell((cell, rowNumber) => {
@@ -309,6 +310,7 @@ const ExportPurchaseOrderView = ({
                   <TableHead className="min-w-28">Tiền Thuế</TableHead>
                   <TableHead className="min-w-24">Giảm giá (%)</TableHead>
                   <TableHead className="min-w-28">Tiền giảm giá</TableHead>
+                  <TableHead className="min-w-32">Tổng dòng</TableHead>
                   <TableHead className="min-w-32">Tổng đơn</TableHead>
                   <TableHead className="min-w-32">Công nợ</TableHead>
                   <TableHead className="min-w-36">Thanh toán</TableHead>
@@ -368,7 +370,6 @@ const ExportPurchaseOrderView = ({
                         {/* L – Thành tiền */}
                         <TableCell>
                           {moneyFormat(
-                            item.totalAmount ??
                             item.quantity * item.unitPrice,
                             false
                           )}
@@ -395,7 +396,11 @@ const ExportPurchaseOrderView = ({
                         <TableCell>
                           {moneyFormat(item.discountAmount ?? item.discount ?? 0, false)}
                         </TableCell>
-                        {/* Q – Tổng đơn */}
+                        {/* Q – Tổng dòng */}
+                        <TableCell>
+                          {moneyFormat(item.totalAmount ?? 0, false)}
+                        </TableCell>
+                        {/* R – Tổng đơn */}
                         <TableCell>
                           {moneyFormat(order.totalAmount, false)}
                         </TableCell>

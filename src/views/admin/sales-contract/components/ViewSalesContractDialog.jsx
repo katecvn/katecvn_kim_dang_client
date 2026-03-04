@@ -920,7 +920,7 @@ const ViewSalesContractDialog = ({
                                               onClick={(e) => {
                                                 e.stopPropagation()
                                                 // Check if status update is allowed
-                                                if (['delivered', 'rejected'].includes(invoice.status) || invoice.paymentStatus === 'paid') {
+                                                if (['delivered', 'rejected', 'cancelled'].includes(invoice.status) || invoice.paymentStatus === 'paid') {
                                                   return
                                                 }
                                                 setInvoiceToUpdateStatus(invoice)
@@ -930,10 +930,13 @@ const ViewSalesContractDialog = ({
                                               {(() => {
                                                 const sObj = invoiceStatuses.find(s => s.value === invoice.status)
                                                 // Determine if editable
-                                                const isEditable = !(['delivered', 'rejected'].includes(invoice.status) || invoice.paymentStatus === 'paid')
+                                                const isEditable = !(['delivered', 'rejected', 'cancelled'].includes(invoice.status) || invoice.paymentStatus === 'paid')
+
+                                                const isTransparent = ['delivered', 'cancelled'].includes(invoice.status)
+                                                const transparentColor = invoice.status === 'delivered' ? 'text-green-500' : 'text-slate-500'
 
                                                 return sObj ? (
-                                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium border ${sObj.color} ${isEditable ? 'hover:opacity-80' : ''}`}>
+                                                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${isTransparent ? `bg-transparent ${transparentColor}` : `border ${sObj.color}`} ${isEditable ? 'hover:opacity-80' : ''}`}>
                                                     {sObj.icon && React.createElement(sObj.icon, { className: "h-3 w-3" })}
                                                     {sObj.label}
                                                   </span>
@@ -1098,7 +1101,7 @@ const ViewSalesContractDialog = ({
                               )}>
                                 Phiếu thu
                               </h3>
-                              {contract?.status !== 'liquidated' && contract?.paymentStatus !== 'paid' && (
+                              {!['liquidated', 'draft', 'completed'].includes(contract?.status) && contract?.paymentStatus !== 'paid' && (
                                 <Button
                                   size="sm"
                                   className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
@@ -1385,7 +1388,7 @@ const ViewSalesContractDialog = ({
                               )}>
                                 Phiếu xuất kho
                               </h3>
-                              {contract?.status !== 'liquidated' && (
+                              {!['liquidated', 'draft', 'completed'].includes(contract?.status) && (
                                 <Button
                                   size="sm"
                                   className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"

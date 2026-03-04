@@ -115,7 +115,7 @@ const ExportInvoiceView = ({
     // Style tiêu đề báo cáo (row 2)
     worksheet.getCell('A2').font = {
       name: 'Times New Roman',
-      size: 13,
+      size: 14,
       bold: true,
     }
     worksheet.getCell('A2').alignment = {
@@ -148,7 +148,7 @@ const ExportInvoiceView = ({
       22, // B  Mã HĐ
       22, // C  Mã HĐ/Bán
       18, // D  TT HĐ Bán
-      25, // E  KH
+      25, // E  Khách Hàng
       15, // F  SĐT
       35, // G  Địa chỉ
       20, // H  Người tạo
@@ -192,11 +192,11 @@ const ExportInvoiceView = ({
       }
     })
 
-      // Căn giữa: STT(1), TT HĐ Bán(4), SL(10), Trạng thái(23)
+      // Căn giữa ngang, nhưng căn trên dọc: STT(1), TT HĐ Bán(4), SL(10), Trạng thái(23)
       ;[1, 4, 10, 23].forEach((colIdx) => {
         worksheet.getColumn(colIdx).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
           if (rowNumber > 3) {
-            cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: false }
+            cell.alignment = { vertical: 'top', horizontal: 'center', wrapText: false }
           }
         })
       })
@@ -283,7 +283,7 @@ const ExportInvoiceView = ({
                   <TableHead className="min-w-40">Mã HĐ</TableHead>
                   <TableHead className="min-w-36">Mã HĐ/Bán</TableHead>
                   <TableHead className="min-w-28">TT HĐ Bán</TableHead>
-                  <TableHead className="min-w-40">KH</TableHead>
+                  <TableHead className="min-w-40">Khách Hàng</TableHead>
                   <TableHead className="min-w-16">SĐT</TableHead>
                   <TableHead className="min-w-40">Địa chỉ</TableHead>
                   <TableHead className="min-w-40">Người tạo</TableHead>
@@ -338,7 +338,7 @@ const ExportInvoiceView = ({
                         {moneyFormat(invoiceItem.price, false)}
                       </TableCell>
                       <TableCell>
-                        {moneyFormat(invoiceItem.total, false)}
+                        {moneyFormat(invoiceItem.price * invoiceItem.quantity, false)}
                       </TableCell>
                       {/* Thuế (%) */}
                       <TableCell>
@@ -364,9 +364,7 @@ const ExportInvoiceView = ({
                       </TableCell>
                       <TableCell>
                         {moneyFormat(
-                          (Number(invoiceItem.total || 0)) +
-                          (Number(invoiceItem.taxAmount ?? invoiceItem.tax_amount ?? 0)) -
-                          (Number(invoiceItem.discountAmount ?? invoiceItem.discount ?? 0)),
+                          (Number(invoiceItem.totalAmount || 0)),
                           false
                         )}
                       </TableCell>
@@ -408,7 +406,9 @@ const ExportInvoiceView = ({
                               ? 'Chờ xác nhận'
                               : invoice.status === 'rejected'
                                 ? 'Từ chối'
-                                : invoice.status}
+                                : invoice.status === 'cancelled'
+                                  ? 'Đã hủy'
+                                  : invoice.status}
                       </TableCell>
                       <TableCell>
                         {invoice.invoiceDate ? dateFormat(invoice.invoiceDate, false) : '—'}

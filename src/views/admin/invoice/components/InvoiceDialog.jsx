@@ -133,6 +133,7 @@ const InvoiceDialog = ({
   })
 
   const [discounts, setDiscounts] = useState({})
+  const [discountAmounts, setDiscountAmounts] = useState({})
   const [quantities, setQuantities] = useState({})
   const [notes, setNotes] = useState({})
   const [giveaway, setGiveaway] = useState({})
@@ -887,6 +888,7 @@ const InvoiceDialog = ({
         taxAmount: calculateTaxForProduct(product.id),
         subTotal: calculateSubTotal(product.id),
         discountRate: parseFloat(discounts[product.id]) || 0,
+        discountAmount: discountAmounts[product.id] ?? Math.round(priceUnit * qtyUnit * (parseFloat(discounts[product.id]) || 0) / 100),
         total:
           calculateSubTotal(product.id) + calculateTaxForProduct(product.id),
 
@@ -1207,6 +1209,10 @@ const InvoiceDialog = ({
       ...prev,
       [productId]: isNaN(numericValue) ? '' : (sanitized.endsWith('.') ? sanitized : numericValue),
     }))
+  }
+
+  const handleDiscountAmountChange = (productId, value) => {
+    setDiscountAmounts((prev) => ({ ...prev, [productId]: value }))
   }
 
   // user sửa giá theo đơn vị đang chọn -> store override
@@ -1709,6 +1715,7 @@ const InvoiceDialog = ({
                         onUnitChange={handleUnitChange}
                         onPriceChange={handlePriceChange}
                         onDiscountChange={handleDiscountChange}
+                        onDiscountAmountChange={handleDiscountAmountChange}
                         onTaxChange={handleTaxChange}
                         onNoteChange={handleNoteChange}
                         onGiveawayChange={handleGiveawayChange}

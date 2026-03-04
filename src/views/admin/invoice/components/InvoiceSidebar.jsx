@@ -718,7 +718,6 @@ const InvoiceSidebar = ({
                         field.onChange(date ? date.toISOString() : null)
                         setOpenOrderDatePicker(false)
                       }}
-                      disabled={(date) => date > new Date()}
                     />
                   </PopoverContent>
                 </Popover>
@@ -861,6 +860,16 @@ const InvoiceSidebar = ({
                   onSelect={(date) => {
                     onExpectedDeliveryDateChange(date ? date.toISOString() : null)
                     setOpenDeliveryDatePicker(false)
+                  }}
+                  disabled={(date) => {
+                    const orderDate = form.getValues('orderDate')
+                    const minDate = orderDate ? new Date(orderDate) : new Date()
+                    // Disable dates <= orderDate (delivery must be strictly after order date)
+                    const minDay = new Date(minDate)
+                    minDay.setHours(0, 0, 0, 0)
+                    const checkDay = new Date(date)
+                    checkDay.setHours(0, 0, 0, 0)
+                    return checkDay <= minDay
                   }}
                 />
               </PopoverContent>

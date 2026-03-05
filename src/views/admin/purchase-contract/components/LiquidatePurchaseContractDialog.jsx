@@ -15,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEffect, useState, useMemo } from 'react'
@@ -62,14 +61,8 @@ const LiquidatePurchaseContractDialog = ({
       const result = await dispatch(getLiquidationPreview(contractId)).unwrap()
       if (result && result.data) {
         setPreviewData(result.data)
-        // Initialize editable items with current market prices from preview
         if (result.data.items) {
-          setItems(
-            result.data.items.map((item) => ({
-              ...item,
-              marketPrice: item.currentMarketPrice || 0,
-            }))
-          )
+          setItems(result.data.items)
         }
       }
     } catch (error) {
@@ -85,34 +78,33 @@ const LiquidatePurchaseContractDialog = ({
     setItems((prevItems) =>
       prevItems.map((item) =>
         item.productId === productId
-          ? { ...item, unitPrice: Number(newPrice) }
+          ? { ...item, marketPrice: Number(newPrice) }
           : item
       )
     )
   }
 
-  // Calculate summary based on current edited items
+  // Calculate summary based on current edited items (client-side recalc for live updates)
   const summary = useMemo(() => {
     if (!previewData || !items.length) return null
 
     const depositAmount = Number(previewData.summary?.depositAmount || 0)
+    const originalContractValue = Number(previewData.summary?.totalContractAmount || 0)
 
     const newTotalAmount = items.reduce((sum, item) => {
-      const subTotal = Number(item.quantity) * Number(item.unitPrice)
-      const taxAmount = subTotal * Number(item.taxRate || 0) / 100
-      const discountAmount = subTotal * Number(item.discountRate || 0) / 100
-      return sum + subTotal + taxAmount - discountAmount
+      return sum + Number(item.marketPrice || 0) * Number(item.quantity || 0)
     }, 0)
 
-    // settlement > 0: công ty cần trả thêm NCC (payment_out)
-    // settlement < 0: NCC trả lại công ty (payment_in)
-    const settlement = newTotalAmount - depositAmount
+    // settlement > 0: HĐ mới > HĐ cũ → công ty cần trả thêm NCC (payment_out)
+    // settlement < 0: HĐ mới < HĐ cũ → NCC hoàn lại công ty (payment_in)
+    const settlement = newTotalAmount - originalContractValue + depositAmount
 
     return {
       newTotalAmount,
+      originalContractValue,
       depositAmount,
       settlement,
-      settlementType: settlement > 0 ? 'payment_out' : 'payment_in'
+      settlementType: settlement > 0 ? 'payment_in' : settlement < 0 ? 'payment_out' : 'balanced'
     }
   }, [previewData, items])
 
@@ -122,9 +114,9 @@ const LiquidatePurchaseContractDialog = ({
     setSubmitting(true)
     try {
       const payload = {
-        items: items.map((item) => ({
+        liquidationItems: items.map((item) => ({
           productId: item.productId,
-          price: item.unitPrice,
+          marketPrice: item.marketPrice,
         })),
       }
 
@@ -166,15 +158,15 @@ const LiquidatePurchaseContractDialog = ({
                 <p className="font-medium">{previewData.contract?.code}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">NCC/KH:</span>
+                <span className="text-muted-foreground">Nhà cung cấp:</span>
                 <p className="font-medium">
                   {previewData.contract?.supplierName ?? previewData.contract?.customerName}
                 </p>
               </div>
               <div>
-                <span className="text-muted-foreground">Giá trị HĐ:</span>
+                <span className="text-muted-foreground">Giá trị Hợp Đồng:</span>
                 <p className="font-medium text-primary">
-                  {moneyFormat(previewData.summary?.totalActualValue)}
+                  {moneyFormat(previewData.contract?.totalAmount)}
                 </p>
               </div>
               <div>
@@ -194,19 +186,14 @@ const LiquidatePurchaseContractDialog = ({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Sản phẩm</TableHead>
-                      <TableHead className="text-right">SL</TableHead>
-                      <TableHead className="text-right w-[180px]">Đơn giá</TableHead>
-                      <TableHead className="text-right">Tiền thuế</TableHead>
-                      <TableHead className="text-right">Tiền giảm giá</TableHead>
+                      <TableHead className="text-right">Số Lượng</TableHead>
+                      <TableHead className="text-right">Đơn giá</TableHead>
                       <TableHead className="text-right">Thành tiền</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {items.map((item) => {
-                      const subTotal = Number(item.quantity) * Number(item.unitPrice)
-                      const taxAmount = subTotal * Number(item.taxRate || 0) / 100
-                      const discountAmount = subTotal * Number(item.discountRate || 0) / 100
-                      const totalAmount = subTotal + taxAmount - discountAmount
+                      const totalAmount = Number(item.marketPrice || 0) * Number(item.quantity || 0)
                       return (
                         <TableRow key={item.productId}>
                           <TableCell className="font-medium">
@@ -224,17 +211,11 @@ const LiquidatePurchaseContractDialog = ({
                           <TableCell className="text-right">
                             <MoneyInputQuick
                               className="text-right h-8"
-                              value={item.unitPrice}
+                              value={item.marketPrice}
                               onChange={(value) => handlePriceChange(item.productId, value)}
                               onFocus={(e) => e.target.select()}
                               min={0}
                             />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {moneyFormat(taxAmount)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {moneyFormat(discountAmount)}
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {moneyFormat(totalAmount)}
@@ -248,10 +229,7 @@ const LiquidatePurchaseContractDialog = ({
             ) : (
               <div className="space-y-3">
                 {items.map((item) => {
-                  const subTotal = item.quantity * item.unitPrice
-                  const taxAmount = subTotal * (item.taxRate || 0)
-                  const discountAmount = subTotal * (item.discountRate || 0)
-                  const totalAmount = subTotal + taxAmount - discountAmount
+                  const totalAmount = Number(item.marketPrice || 0) * Number(item.quantity || 0)
                   return (
                     <div key={item.productId} className="rounded-lg border p-3 space-y-2 bg-card">
                       <div className="flex items-center gap-2 font-medium">
@@ -265,7 +243,7 @@ const LiquidatePurchaseContractDialog = ({
                       </div>
 
                       <div className="text-sm">
-                        <span className="text-muted-foreground">SL:</span>
+                        <span className="text-muted-foreground">Số Lượng:</span>
                         <span className="ml-2 font-medium">{item.quantity}</span>
                       </div>
 
@@ -273,21 +251,11 @@ const LiquidatePurchaseContractDialog = ({
                         <label className="text-xs text-muted-foreground mb-1 block">Đơn giá</label>
                         <MoneyInputQuick
                           className="text-right h-9 w-full"
-                          value={item.unitPrice}
+                          value={item.marketPrice}
                           onChange={(value) => handlePriceChange(item.productId, value)}
                           onFocus={(e) => e.target.select()}
                           min={0}
                         />
-                      </div>
-
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Tiền thuế ({(item.taxRate || 0)}%):</span>
-                        <span className="font-medium">{moneyFormat(taxAmount)}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Tiền giảm giá ({(item.discountRate || 0)}%):</span>
-                        <span className="font-medium">{moneyFormat(discountAmount)}</span>
                       </div>
 
                       <div className="flex justify-between items-center text-sm font-semibold border-t pt-2">
@@ -303,28 +271,34 @@ const LiquidatePurchaseContractDialog = ({
             {/* Summary */}
             <div className="bg-muted/50 p-4 rounded-lg space-y-3 text-sm">
               <div className="flex justify-between">
-                <span>Tổng giá trị hợp đồng:</span>
+                <span>Tổng giá trị HĐ mới (sau điều chỉnh):</span>
                 <span className="font-medium">{moneyFormat(summary?.newTotalAmount)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Đã thanh toán (Cọc):</span>
-                <span className="font-medium text-green-600">{moneyFormat(previewData.summary?.depositAmount)}</span>
+                <span>Giá trị HĐ ban đầu:</span>
+                <span className="font-medium text-primary">{moneyFormat(summary?.originalContractValue)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Còn lại:</span>
-                <span className="font-medium text-orange-500">{moneyFormat(summary?.settlement)}</span>
+                <span>Đã thanh toán (Cọc):</span>
+                <span className="font-medium text-green-600">{moneyFormat(summary?.depositAmount)}</span>
               </div>
               <Separator className="bg-border" />
               <div className="flex justify-between items-center text-base">
                 <span className="font-bold">Quyết toán:</span>
                 <div className="text-right">
-                  <span className={cn("font-bold text-lg", summary?.settlementType === 'payment_in' ? "text-green-600" : "text-red-600")}>
-                    {moneyFormat(Math.abs(summary?.settlement))}
+                  <span className={cn("font-bold text-lg",
+                    summary?.settlementType === 'balanced' ? 'text-gray-600' :
+                      summary?.settlementType === 'payment_out' ? 'text-red-600' : 'text-green-600'
+                  )}>
+                    {summary?.settlementType === 'balanced' ? '' : summary?.settlementType === 'payment_in' ? '+' : '-'}
+                    {moneyFormat(Math.abs(summary?.settlement || 0))}
                   </span>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {summary?.settlementType === 'payment_in'
-                      ? 'Nhà cung cấp trả lại công ty'
-                      : 'Công ty cần trả thêm NCC'}
+                    {summary?.settlementType === 'balanced'
+                      ? 'Quyết toán cân bằng'
+                      : summary?.settlementType === 'payment_out'
+                        ? 'Công ty cần trả thêm NCC'
+                        : 'Nhà cung cấp hoàn lại công ty'}
                   </p>
                 </div>
               </div>

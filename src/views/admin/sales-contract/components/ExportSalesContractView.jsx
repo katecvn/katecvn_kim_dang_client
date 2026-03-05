@@ -53,7 +53,7 @@ const ExportSalesContractView = ({
 
   const handleExport = async () => {
     const response = await dispatch(getSetting('general_information'))
-    const { brandName, address, phone, email, website } = response?.payload?.payload || {}
+    const { brandName, address, phone, email } = response?.payload?.payload || {}
 
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('Hợp đồng bán', {
@@ -65,7 +65,7 @@ const ExportSalesContractView = ({
     const phoneEmail = []
     if (phone) phoneEmail.push(`SĐT: ${phone}`)
     if (email) phoneEmail.push(`Email: ${email}`)
-    if (website) phoneEmail.push(`Website: ${website}`)
+
 
     worksheet.mergeCells('A1:S1')
     const companyCell = worksheet.getCell('A1')

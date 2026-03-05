@@ -73,7 +73,7 @@ const ExportPurchaseOrderView = ({
   const handleExport = async () => {
     // Lấy thông tin công ty
     const response = await dispatch(getSetting('general_information'))
-    const { brandName, address, phone, email, website } = response?.payload?.payload || {}
+    const { brandName, address, phone, email } = response?.payload?.payload || {}
 
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('Chi tiết đơn mua hàng', {
@@ -85,7 +85,7 @@ const ExportPurchaseOrderView = ({
     const phoneEmail = []
     if (phone) phoneEmail.push(`SĐT: ${phone}`)
     if (email) phoneEmail.push(`Email: ${email}`)
-    if (website) phoneEmail.push(`Website: ${website}`)
+
 
     worksheet.mergeCells('A1:X1')
     const companyCell = worksheet.getCell('A1')

@@ -38,7 +38,7 @@ const ExportInvoiceView = ({
   const handleExport = async () => {
     // Lấy thông tin công ty
     const response = await dispatch(getSetting('general_information'))
-    const { brandName, address, phone, email, website } = response?.payload?.payload || {}
+    const { brandName, address, phone, email } = response?.payload?.payload || {}
 
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('Chi tiết hóa đơn', {
@@ -50,7 +50,7 @@ const ExportInvoiceView = ({
     const phoneEmail = []
     if (phone) phoneEmail.push(`SĐT: ${phone}`)
     if (email) phoneEmail.push(`Email: ${email}`)
-    if (website) phoneEmail.push(`Website: ${website}`)
+
 
     worksheet.mergeCells('A1:AC1')
     const companyCell = worksheet.getCell('A1')

@@ -81,7 +81,7 @@ const PurchaseOrderDialog = ({
   const [notes, setNotes] = useState({})
   const [selectedTaxes, setSelectedTaxes] = useState({})
 
-  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(null)
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(new Date())
 
   // Other Expenses
   const [showOtherExpenses, setShowOtherExpenses] = useState(false)
@@ -110,7 +110,7 @@ const PurchaseOrderDialog = ({
       paymentNote: '',
       contractNumber: '',
       paymentTerms: '',
-      expectedDeliveryDate: null,
+      expectedDeliveryDate: new Date(),
       isAutoApprove: true,
     },
   })
@@ -236,7 +236,7 @@ const PurchaseOrderDialog = ({
     setSelectedCustomer(null)
     setCustomerEditData(null)
     setSourceType('supplier')
-    setExpectedDeliveryDate(null)
+    setExpectedDeliveryDate(new Date())
     setSearchQuery('')
     setSelectedCategory('all')
     setMobileView('products')
@@ -257,7 +257,7 @@ const PurchaseOrderDialog = ({
       paymentNote: '',
       contractNumber: '',
       paymentTerms: '',
-      expectedDeliveryDate: null,
+      expectedDeliveryDate: new Date(),
       isAutoApprove: true,
     })
   }, [open, form])

@@ -27,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useEffect, useState } from 'react'
-import { getSalesContractDetail, cancelLiquidateSalesContract } from '@/stores/SalesContractSlice'
+import { getSalesContractDetail, cancelLiquidateSalesContract, increasePrintAttempt, increasePrintSuccess } from '@/stores/SalesContractSlice'
 import { Skeleton } from '@/components/ui/skeleton'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat, toVietnamese } from '@/utils/money-format'
@@ -1883,8 +1883,19 @@ const ViewSalesContractDialog = ({
               overlayClassName="z-[100029]"
               onConfirm={async (finalData) => {
                 try {
+                  // 1. Ghi nhận print attempt
+                  if (finalData.salesContractId) {
+                    dispatch(increasePrintAttempt(finalData.salesContractId))
+                  }
+
                   setInstallmentExporting(true)
                   await exportInstallmentWord(finalData, installmentFileName)
+
+                  // 2. Ghi nhận print success sau khi export thành công
+                  if (finalData.salesContractId) {
+                    await dispatch(increasePrintSuccess(finalData.salesContractId)).unwrap()
+                  }
+
                   toast.success('Đã xuất hợp đồng bán hàng thành công')
                   setShowInstallmentPreview(false)
                 } catch (error) {

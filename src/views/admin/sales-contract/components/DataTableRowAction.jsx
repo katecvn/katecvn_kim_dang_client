@@ -37,7 +37,7 @@ import LiquidateContractDialog from './LiquidateContractDialog'
 import { useDispatch } from 'react-redux'
 import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { toast } from 'sonner'
-import { getSalesContracts, getSalesContractDetail, cancelLiquidateSalesContract } from '@/stores/SalesContractSlice'
+import { getSalesContracts, getSalesContractDetail, cancelLiquidateSalesContract, increasePrintAttempt, increasePrintSuccess } from '@/stores/SalesContractSlice'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
 import { IconFileTypePdf } from '@tabler/icons-react'
 import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
@@ -385,8 +385,19 @@ const DataTableRowActions = ({ row }) => {
           initialData={installmentData}
           onConfirm={async (finalData) => {
             try {
+              // 1. Ghi nhận print attempt
+              if (finalData.salesContractId) {
+                dispatch(increasePrintAttempt(finalData.salesContractId))
+              }
+
               setInstallmentExporting(true)
               await exportInstallmentWord(finalData, installmentFileName)
+
+              // 2. Ghi nhận print success sau khi export thành công
+              if (finalData.salesContractId) {
+                await dispatch(increasePrintSuccess(finalData.salesContractId)).unwrap()
+              }
+
               toast.success('Đã xuất hợp đồng bán hàng thành công')
               setShowInstallmentPreview(false)
             } catch (error) {

@@ -110,7 +110,7 @@ async function prepareTemplateData(data) {
     customer_name: customer.name || '',
     customer_phone: customer.phone || '',
     id_number: customer.identityCard || '',
-    id_date: customer.identityDate || '',
+    id_date: formatDate(customer.identityDate),
     id_place: customer.identityPlace || '',
     customer_address: customer.address || '',
 
@@ -128,7 +128,7 @@ async function prepareTemplateData(data) {
     total_words: data?.amountText || '', // Số tiền bằng chữ
 
     // Payment info - match template placeholders
-    delivery_date: payment.deliveryDate || '',
+    delivery_date: formatDate(payment.deliveryDate),
 
     // QR Code - for {%qr_code} placeholder in template
     qr_code: data?.qrCode || null,
@@ -136,6 +136,19 @@ async function prepareTemplateData(data) {
     // Print tracking - for {print_count} placeholder in template
     print_count: (data?.printCount || 0) + 1,
   }
+}
+
+/**
+ * Format a date value to dd/mm/yyyy string
+ */
+function formatDate(value) {
+  if (!value) return ''
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return ''
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  return `${dd}/${mm}/${yyyy}`
 }
 
 /**

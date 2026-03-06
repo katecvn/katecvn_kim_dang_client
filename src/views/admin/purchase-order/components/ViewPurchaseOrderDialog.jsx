@@ -632,17 +632,17 @@ const ViewPurchaseOrderDialog = ({
                             </span>
                           </div>
                         )}
-                        {purchaseOrder.expectedDeliveryDate && (
+                        {purchaseOrder.orderDate && (
                           <div className="flex justify-between">
-                            <strong>Ngày nhận hàng dự kiến: </strong>
+                            <strong>Ngày đặt hàng: </strong>
                             <span className="text-orange-600 font-medium">
-                              {dateFormat(purchaseOrder.expectedDeliveryDate)}
+                              {dateFormat(purchaseOrder.orderDate)}
                             </span>
                           </div>
                         )}
                         {purchaseOrder.expectedReturnDate && (
                           <div className="flex justify-between">
-                            <strong>Ngày trả hàng dự kiến: </strong>
+                            <strong>Ngày nhận hàng dự kiến: </strong>
                             <span className="text-orange-600 font-medium">
                               {dateFormat(purchaseOrder.expectedReturnDate)}
                             </span>

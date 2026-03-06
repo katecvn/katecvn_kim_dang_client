@@ -47,6 +47,7 @@ import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/Co
 import { createWarehouseReceipt, postWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
 import { getInvoices } from '@/stores/InvoiceSlice'
 import { getStartOfCurrentMonth, getEndOfCurrentMonth } from '@/utils/date-format'
+import { increasePrintAttempt, increasePrintSuccess } from '@/stores/SalesContractSlice'
 
 const MobileInvoiceCard = ({
   invoice,
@@ -790,34 +791,19 @@ const MobileInvoiceCard = ({
             initialData={installmentData}
             onConfirm={async (finalData) => {
               try {
-                setInstallmentExporting(true)
-
-                // Save data if status is 'draft'
-                if (finalData.status === 'draft' && finalData.salesContractId) {
-                  const payload = {
-                    code: finalData.contract?.no,
-                    sellerName: finalData.seller?.name,
-                    sellerRepresentative: finalData.seller?.representative,
-                    sellerAddress: finalData.seller?.address,
-                    sellerPhone: finalData.seller?.phone,
-                    customerName: finalData.customer?.name,
-                    customerPhone: finalData.customer?.phone,
-                    customerAddress: finalData.customer?.address,
-                    customerIdentityCard: finalData.customer?.identityCard,
-                    customerIdentityDate: finalData.customer?.identityDate,
-                    customerIdentityPlace: finalData.customer?.identityPlace,
-                    deliveryDate: finalData.payment?.deliveryDate,
-                  }
-
-                  await dispatch(updateSalesContract({
-                    id: finalData.salesContractId,
-                    data: payload
-                  })).unwrap()
-
-                  toast.success('Đã lưu thông tin hợp đồng')
+                // 1. Ghi nhận print attempt
+                if (finalData.salesContractId) {
+                  dispatch(increasePrintAttempt(finalData.salesContractId))
                 }
 
+                setInstallmentExporting(true)
                 await exportInstallmentWord(finalData, installmentFileName)
+
+                // 2. Ghi nhận print success sau khi export thành công
+                if (finalData.salesContractId) {
+                  await dispatch(increasePrintSuccess(finalData.salesContractId)).unwrap()
+                }
+
                 toast.success('Đã xuất hợp đồng trả chậm thành công')
                 setShowInstallmentPreview(false)
               } catch (error) {

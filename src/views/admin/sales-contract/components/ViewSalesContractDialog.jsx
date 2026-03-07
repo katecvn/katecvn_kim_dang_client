@@ -1913,10 +1913,11 @@ const ViewSalesContractDialog = ({
               open={showLiquidationDialog}
               onOpenChange={setShowLiquidationDialog}
               contractId={contractId}
-              contentClassName="z-[10006]"
-              overlayClassName="z-[10005]"
+              contentClassName="z-[100070] md:z-[100070]"
+              overlayClassName="z-[100069] md:z-[100069]"
               onSuccess={() => {
                 fetchContractDetail()
+                if (onSuccess) onSuccess()
               }}
             />
           )}
@@ -1955,8 +1956,14 @@ const ViewSalesContractDialog = ({
               onOpenChange={setShowDeleteDialog}
               contractId={contractId}
               onSuccess={() => {
+                setShowDeleteDialog(false)
                 onOpenChange(false)
+                if (onSuccess) {
+                  onSuccess()
+                }
               }}
+              contentClassName="z-[100070] md:z-[100070]"
+              overlayClassName="z-[100069] md:z-[100069]"
             />
           )}
 

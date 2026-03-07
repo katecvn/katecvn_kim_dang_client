@@ -762,7 +762,7 @@ const ViewPurchaseOrderDialog = ({
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold">Phiếu chi</h3>
-                        {!['draft', 'completed', 'cancelled'].includes(purchaseOrder?.status) && (
+                        {!['draft', 'cancelled'].includes(purchaseOrder?.status) && (
                           <Button
                             size="sm"
                             className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"

@@ -2,7 +2,7 @@ import { DataTableRowActions } from './DataTableRowAction'
 import { DataTableColumnHeader } from './DataTableColumnHeader'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Phone, CreditCard, Pencil } from 'lucide-react'
+import { Phone, CreditCard, Pencil, FileCheck } from 'lucide-react'
 import { normalizeText } from '@/utils/normalize-text'
 import { dateFormat } from '@/utils/date-format'
 import { moneyFormat } from '@/utils/money-format'
@@ -372,6 +372,15 @@ export const columns = [
     cell: ({ row }) => {
       const deliveryDate = row.original.salesContract?.deliveryDate
       const status = row.original.status
+      const salesContractStatus = row.original.salesContract?.status
+
+      if (salesContractStatus === 'liquidated') {
+        return (
+          <span className="flex items-center gap-1 text-orange-500 font-medium">
+            <FileCheck className="h-4 w-4" /> Đã thanh lý
+          </span>
+        )
+      }
 
       if (!deliveryDate) {
         return <span className="text-muted-foreground italic">Đơn hàng không <br /> có Hợp Đồng</span>

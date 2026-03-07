@@ -1017,6 +1017,9 @@ const InvoiceDialog = ({
           setHasPrintInvoice(false)
           form.reset()
           onOpenChange?.(false)
+          if (onSuccess) {
+            onSuccess(invoice)
+          }
         }, 1000)
       } else if (shouldPrintAgreement) {
         const baseAgreementData = buildAgreementData(invoiceData)
@@ -1035,11 +1038,14 @@ const InvoiceDialog = ({
         toast.success(`Đã ${invoiceId ? 'cập nhật' : 'tạo'} hóa đơn thành công`)
         form.reset()
         onOpenChange?.(false)
+        if (onSuccess) {
+          onSuccess(invoice)
+        }
       } else {
         toast.success(`Đã ${invoiceId ? 'cập nhật' : 'tạo'} hóa đơn thành công`)
         form.reset()
         onOpenChange?.(false)
-        if (!invoiceId && onSuccess) {
+        if (onSuccess) {
           onSuccess(invoice)
         }
       }

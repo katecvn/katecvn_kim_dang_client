@@ -509,7 +509,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
 
   const handleCreateReceipt = () => {
     // Only allow for accepted invoices
-    if (invoice?.status !== 'accepted') {
+    if (invoice?.status !== 'accepted' && invoice?.status !== 'delivered') {
       toast.warning('Chỉ có thể tạo phiếu thu cho đơn hàng đã được duyệt')
       return
     }
@@ -981,6 +981,13 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                               </div>
                             )}
 
+                            {invoice?.date && (
+                              <div className="flex justify-between">
+                                <strong>Ngày đặt hàng:</strong>
+                                <span>{dateFormat(invoice.date)}</span>
+                              </div>
+                            )}
+
                             {invoice?.expectedDeliveryDate && (
                               <div className="flex justify-between">
                                 <strong>Ngày giao hàng dự kiến:</strong>
@@ -1189,7 +1196,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <h3 className="font-semibold">Phiếu thu</h3>
-                            {!['pending', 'delivered', 'rejected', 'cancelled'].includes(invoice?.status) ? (
+                            {!['pending', 'rejected', 'cancelled'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid' ? (
                               <Button
                                 size="sm"
                                 className="h-8 gap-1 bg-green-600 text-white hover:bg-green-700 border-transparent"
@@ -1293,7 +1300,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                               <Pencil className="h-4 w-4" />
                                             </Button>
                                           )}
-                                          {voucher.status === 'draft' && (
+                                          {voucher.status === 'draft' && voucher.paymentMethod === 'transfer' && (
                                             <Button
                                               variant="ghost"
                                               size="icon"
@@ -1355,7 +1362,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                             <Pencil className="h-4 w-4" />
                                           </Button>
                                         )}
-                                        {voucher.status === 'draft' && (
+                                        {voucher.status === 'draft' && voucher.paymentMethod === 'transfer' && (
                                           <Button
                                             variant="ghost"
                                             size="icon"
@@ -2165,7 +2172,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
           )}>
             {invoice && (
               <>
-                {(!['pending', 'cancelled', 'delivered', 'rejected'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid') && (
+                {(!['pending', 'cancelled', 'rejected'].includes(invoice?.status) && invoice?.paymentStatus !== 'paid') && (
                   <Button
                     size="sm"
                     className={cn("gap-2 bg-green-600 text-white hover:bg-green-700", !isDesktop && "w-full")}
@@ -2349,7 +2356,10 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
         showTrigger={false}
         contentClassName="z-[10003]"
         overlayClassName="z-[10002]"
-        onSuccess={fetchData}
+        onSuccess={() => {
+          fetchData()
+          onSuccess?.()
+        }}
       />
 
       {/* Delete Receipt Dialog */}

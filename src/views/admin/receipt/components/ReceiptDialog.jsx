@@ -295,6 +295,7 @@ const ReceiptDialog = ({
           try {
             const qrData = await dispatch(getReceiptQRCode(receiptId)).unwrap()
             setQrCodeData(qrData)
+            onOpenChange?.(false)
             setShowQrDialog(true)
           } catch (qrError) {
             console.error('Failed to fetch QR code:', qrError)

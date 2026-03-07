@@ -1013,7 +1013,7 @@ const PurchaseOrderSidebar = ({
                         minDay.setHours(0, 0, 0, 0)
                         const checkDay = new Date(date)
                         checkDay.setHours(0, 0, 0, 0)
-                        return checkDay <= minDay
+                        return checkDay < minDay
                       }}
                     />
                   </PopoverContent>

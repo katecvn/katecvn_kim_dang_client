@@ -54,6 +54,7 @@ function prepareTemplateData(data) {
   return {
     // Số hợp đồng
     contract_no: data?.contract_no || '',
+    sale_contract_no: data?.sale_contract_no || '',
 
     // Ngày tháng năm ký
     day: dateObj.day,

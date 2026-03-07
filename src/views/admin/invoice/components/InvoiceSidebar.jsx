@@ -862,14 +862,14 @@ const InvoiceSidebar = ({
                     setOpenDeliveryDatePicker(false)
                   }}
                   disabled={(date) => {
-                    const orderDate = form.getValues('orderDate')
-                    const minDate = orderDate ? new Date(orderDate) : new Date()
-                    // Disable dates <= orderDate (delivery must be strictly after order date)
+                    const orderDateStr = form.getValues('orderDate')
+                    const minDate = orderDateStr ? new Date(orderDateStr) : new Date()
+                    // Disable dates < orderDate (delivery must be >= order date)
                     const minDay = new Date(minDate)
                     minDay.setHours(0, 0, 0, 0)
                     const checkDay = new Date(date)
                     checkDay.setHours(0, 0, 0, 0)
-                    return checkDay <= minDay
+                    return checkDay < minDay
                   }}
                 />
               </PopoverContent>

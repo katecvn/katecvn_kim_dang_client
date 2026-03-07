@@ -229,7 +229,7 @@ const DataTableRowActions = ({ row, table }) => {
 
   const handleCreateReceipt = () => {
     if (invoice?.paymentStatus === 'paid' || invoice?.status === 'rejected') {
-      toast.warning('Không thể tạo phiếu thu cho hóa đơn đã thanh toán hoặc bị từ chối')
+      toast.warning('Không thể tạo phiếu thu cho đơn bán đã thanh toán hoặc bị từ chối')
       return
     }
     setShowReceiptDialog(true)
@@ -284,23 +284,21 @@ const DataTableRowActions = ({ row, table }) => {
         />
       )}
 
-      {showReceiptDialog && (
-        <ReceiptDialog
-          invoices={[invoice.id]}
-          open={showReceiptDialog}
-          onOpenChange={setShowReceiptDialog}
-          showTrigger={false}
-          table={{ resetRowSelection: () => { } }} // Mock table object needed for dialog
-          onSuccess={() => {
-            setShowReceiptDialog(false)
-            toast.success('Đã tạo phiếu thu thành công')
-            dispatch(getInvoices({
-              fromDate: getStartOfCurrentMonth(),
-              toDate: getEndOfCurrentMonth(),
-            }))
-          }}
-        />
-      )}
+      <ReceiptDialog
+        invoices={[invoice.id]}
+        open={showReceiptDialog}
+        onOpenChange={setShowReceiptDialog}
+        showTrigger={false}
+        table={{ resetRowSelection: () => { } }} // Mock table object needed for dialog
+        onSuccess={() => {
+          // Do not close dialogue here if it's transfer, ReceiptDialog handles it
+          toast.success('Đã tạo phiếu thu thành công')
+          dispatch(getInvoices({
+            fromDate: getStartOfCurrentMonth(),
+            toDate: getEndOfCurrentMonth(),
+          }))
+        }}
+      />
 
       {showCreateSalesContractDialog && (
         <CreateSalesContractDialog

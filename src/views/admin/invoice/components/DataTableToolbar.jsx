@@ -60,7 +60,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
     const invalidInvoices = selectedInvoices.filter(inv => !['draft', 'pending', 'rejected'].includes(inv.status))
 
     if (invalidInvoices.length > 0) {
-      toast.error('Chỉ có thể xóa các hóa đơn ở trạng thái Nháp, Chờ xác nhận hoặc Từ chối')
+      toast.error('Chỉ có thể xóa các đơn bán ở trạng thái Nháp, Chờ xác nhận, Đã hủy hoặc Từ chối')
       return
     }
 

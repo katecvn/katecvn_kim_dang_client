@@ -56,6 +56,9 @@ const PrintableContent = React.forwardRef(
 
       <div className="mb-6">
         <p className="mb-1 font-bold">Khách hàng: {invoice?.customer?.name}</p>
+        {invoice?.customer?.identityCard && (
+          <p>CCCD: {invoice.customer.identityCard}</p>
+        )}
         <p className="mb-1">
           Địa chỉ: {invoice?.customer.address || 'Không có địa chỉ'}
         </p>

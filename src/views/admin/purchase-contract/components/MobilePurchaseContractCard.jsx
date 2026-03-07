@@ -25,7 +25,7 @@ import React from 'react'
 import { IconPackageImport, IconPencil, IconTrash, IconReceiptRefund } from '@tabler/icons-react'
 import ConfirmImportWarehouseDialog from '@/views/admin/warehouse-receipt/components/ConfirmImportWarehouseDialog'
 import { createWarehouseReceipt } from '@/stores/WarehouseReceiptSlice'
-import { getPurchaseContracts } from '@/stores/PurchaseContractSlice'
+import { getPurchaseContracts, getPurchaseContractDetail } from '@/stores/PurchaseContractSlice'
 import UpdatePurchaseContractDialog from './UpdatePurchaseContractDialog'
 import DeletePurchaseContractDialog from './DeletePurchaseContractDialog'
 
@@ -42,6 +42,29 @@ const MobilePurchaseContractCard = ({
   const [showUpdateDialog, setShowUpdateDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const dispatch = useDispatch()
+
+  const handleImportWarehouse = async () => {
+    try {
+      const contractDetail = await dispatch(getPurchaseContractDetail(contract.id)).unwrap()
+
+      const firstPO = contractDetail?.purchaseOrders?.[0]
+      const hasCompletedPayment = firstPO?.paymentVouchers?.some(
+        (voucher) => voucher.status === 'completed'
+      ) || contractDetail?.paymentVouchers?.some(
+        (voucher) => voucher.status === 'completed'
+      ) || contract?.paymentStatus === 'partial' || contract?.paymentStatus === 'paid'
+
+      if (!hasCompletedPayment) {
+        toast.warning('Hợp đồng mua hàng phải có ít nhất một phiếu chi đã ghi sổ (đã chi) mới được tạo phiếu nhập kho')
+        return
+      }
+
+      setShowImportDialog(true)
+    } catch (error) {
+      console.error('Fetch contract detail error:', error)
+      toast.error('Không thể lấy chi tiết hợp đồng')
+    }
+  }
 
   const { supplierName, supplierPhone, supplierIdentityNo, supplierTaxCode, totalAmount, paidAmount, status, code, contractDate, paymentStatus } = contract
 
@@ -253,7 +276,7 @@ const MobilePurchaseContractCard = ({
 
               <Can permission={'WAREHOUSE_IMPORT_CREATE'}>
                 <DropdownMenuItem
-                  onClick={() => setShowImportDialog(true)}
+                  onClick={handleImportWarehouse}
                   className={`text-emerald-600 ${!['confirmed', 'shipping'].includes(status) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={!['confirmed', 'shipping'].includes(status)}
                 >

@@ -18,7 +18,8 @@ import { getSalesBacklog } from '@/stores/ReportSlice'
 import ViewSalesContractDialog from './components/ViewSalesContractDialog'
 
 import { DataTablePagination } from '../invoice/components/DataTablePagination'
-import { FileSpreadsheet } from 'lucide-react'
+import { FileSpreadsheet, Phone } from 'lucide-react'
+import { IconId } from '@tabler/icons-react'
 import { Button } from '@/components/custom/Button'
 import ExportSalesBacklogPreviewDialog from './components/ExportSalesBacklogPreviewDialog'
 
@@ -161,10 +162,21 @@ const SalesBacklogPage = () => {
                           </TableCell>
                           <TableCell>
                             <div className="font-semibold">
-                              {contract.buyerName}
+                              {contract.customer?.name || contract.buyerName}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              {contract.buyerPhone}
+                            <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
+                              {contract.customer?.phone || contract.buyerPhone ? (
+                                <div className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  <span>{contract.customer?.phone || contract.buyerPhone}</span>
+                                </div>
+                              ) : null}
+                              {contract.customer?.identityCard ? (
+                                <div className="flex items-center gap-1">
+                                  <IconId className="h-3 w-3" />
+                                  <span>{contract.customer.identityCard}</span>
+                                </div>
+                              ) : null}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -176,17 +188,12 @@ const SalesBacklogPage = () => {
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            {item.promisedDeliveryDate
+                            {item.expectedDeliveryDate || contract.expectedDeliveryDate
                               ? format(
-                                new Date(item.promisedDeliveryDate),
+                                new Date(item.expectedDeliveryDate || contract.expectedDeliveryDate),
                                 'dd/MM/yyyy',
                               )
-                              : contract.deliveryDate
-                                ? format(
-                                  new Date(contract.deliveryDate),
-                                  'dd/MM/yyyy',
-                                )
-                                : '-'}
+                              : '-'}
                           </TableCell>
                           <TableCell className="text-right">
                             {moneyFormat(itemTotal)}

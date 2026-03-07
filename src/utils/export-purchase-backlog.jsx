@@ -33,7 +33,7 @@ export const exportPurchaseBacklogToExcel = async (data) => {
     const columns = [
       { header: 'STT', key: 'stt', width: 8 },
       { header: 'Mã ĐH', key: 'code', width: 15 },
-      { header: 'Nhà cung cấp', key: 'supplier', width: 25 },
+      { header: 'Khách hàng / Nhà cung cấp', key: 'supplier', width: 25 },
       { header: 'SĐT', key: 'phone', width: 15 },
       { header: 'Sản phẩm', key: 'product', width: 30 },
       { header: 'SL Đặt', key: 'ordered', width: 10 },
@@ -88,9 +88,11 @@ export const exportPurchaseBacklogToExcel = async (data) => {
             flattenedData.push({
               ...item,
               orderCode: record.code,
-              supplierName: record.supplierName,
-              supplierPhone: record.supplierPhone,
-              deliveryDate: item.expectedDeliveryDate,
+              supplierName: record.supplier?.name || record.customer?.name || record.supplierName || record.customerName,
+              supplierPhone: record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone,
+              supplierTaxCode: record.supplier?.taxCode,
+              supplierIdentityCard: record.customer?.identityCard,
+              deliveryDate: item.expectedDeliveryDate || record.expectedDeliveryDate,
               itemTotal: total,
               itemPaid: paid,
               itemRemaining: remaining
@@ -113,9 +115,11 @@ export const exportPurchaseBacklogToExcel = async (data) => {
                 flattenedData.push({
                   ...item,
                   orderCode: order.code,
-                  supplierName: record.supplierName,
-                  supplierPhone: record.supplierPhone,
-                  deliveryDate: item.expectedDeliveryDate,
+                  supplierName: record.supplier?.name || record.customer?.name || record.supplierName || record.customerName,
+                  supplierPhone: record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone,
+                  supplierTaxCode: record.supplier?.taxCode,
+                  supplierIdentityCard: record.customer?.identityCard,
+                  deliveryDate: item.expectedDeliveryDate || order.expectedDeliveryDate,
                   itemTotal: total,
                   itemPaid: paid,
                   itemRemaining: remaining
@@ -188,7 +192,8 @@ export const exportPurchaseBacklogToExcel = async (data) => {
 
         row.getCell(2).value = item.orderCode
         row.getCell(3).value = item.supplierName
-        row.getCell(4).value = item.supplierPhone
+        const extraInfo = item.supplierTaxCode ? item.supplierTaxCode : item.supplierIdentityCard;
+        row.getCell(4).value = extraInfo ? `${item.supplierPhone} - ${extraInfo}` : item.supplierPhone
         row.getCell(5).value = item.productName
 
         row.getCell(6).value = Number(item.quantity) || 0 // SL Dat

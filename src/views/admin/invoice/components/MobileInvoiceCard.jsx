@@ -207,6 +207,14 @@ const MobileInvoiceCard = ({
       return
     }
 
+    const hasCompletedPayment = invoice?.paymentVouchers?.some(
+      (voucher) => voucher.status === 'completed'
+    )
+    if (!hasCompletedPayment) {
+      toast.warning('Đơn bán phải có ít nhất một phiếu thu đã ghi sổ (đã thu) mới được tạo phiếu xuất kho')
+      return
+    }
+
     if (invoice?.warehouseReceiptId) {
       toast.warning('Đơn hàng này đã có phiếu xuất kho')
       return

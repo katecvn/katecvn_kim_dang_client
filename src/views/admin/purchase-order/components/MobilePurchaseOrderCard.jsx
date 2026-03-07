@@ -200,6 +200,26 @@ const MobilePurchaseOrderCard = ({
   const canImportWarehouse = ['ordered', 'confirmed', 'partial'].includes(purchaseOrder?.status)
   const canPayment = !['draft', 'cancelled'].includes(purchaseOrder?.status) && purchaseOrder.paymentStatus !== 'paid'
 
+  const handleShowImportWarehouseDialog = async () => {
+    try {
+      const poDetails = await dispatch(getPurchaseOrderDetail(purchaseOrder.id)).unwrap()
+
+      const hasCompletedPayment = poDetails?.paymentVouchers?.some(
+        (voucher) => voucher.status === 'completed'
+      ) || purchaseOrder?.paymentStatus === 'partial' || purchaseOrder?.paymentStatus === 'paid'
+
+      if (!hasCompletedPayment) {
+        toast.warning('Đơn mua hàng phải có ít nhất một phiếu chi đã ghi sổ (đã chi) mới được tạo phiếu nhập kho')
+        return
+      }
+
+      setShowImportWarehouseDialog(true)
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin đơn hàng', error)
+      toast.error('Không thể lấy thông tin chi tiết đơn hàng')
+    }
+  }
+
   const handleShowPaymentDialog = async () => {
     try {
       setIsOpeningPayment(true)
@@ -366,7 +386,7 @@ const MobilePurchaseOrderCard = ({
 
               {canImportWarehouse && (
                 <Can permission="WAREHOUSE_IMPORT_CREATE">
-                  <DropdownMenuItem onClick={() => setShowImportWarehouseDialog(true)} className="text-orange-600">
+                  <DropdownMenuItem onClick={handleShowImportWarehouseDialog} className="text-orange-600">
                     <IconPackageImport className="mr-2 h-4 w-4" />
                     Tạo phiếu nhập
                   </DropdownMenuItem>

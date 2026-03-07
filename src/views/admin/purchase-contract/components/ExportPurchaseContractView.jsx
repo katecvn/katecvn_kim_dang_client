@@ -67,7 +67,7 @@ const ExportPurchaseContractView = ({
     if (email) phoneEmail.push(`Email: ${email}`)
 
 
-    worksheet.mergeCells('A1:R1')
+    worksheet.mergeCells('A1:T1')
     const companyCell = worksheet.getCell('A1')
     companyCell.value = {
       richText: [
@@ -80,7 +80,7 @@ const ExportPurchaseContractView = ({
     worksheet.getRow(1).height = 72
 
     // === TIÊU ĐỀ ===
-    worksheet.mergeCells('A2:R2')
+    worksheet.mergeCells('A2:T2')
     worksheet.getCell('A2').value = `Báo cáo danh sách hợp đồng mua từ ${fromLabel} đến ${toLabel}`
 
     // === ĐỌC DỮ LIỆU TỪ TABLE HTML ===
@@ -123,7 +123,7 @@ const ExportPurchaseContractView = ({
       fitToHeight: 0,
     }
 
-    // Độ rộng cột (18 cột: A–R)
+    // Độ rộng cột (20 cột: A–T)
     const colWidths = [
       6,   // A  STT
       22,  // B  Mã HĐ
@@ -132,7 +132,7 @@ const ExportPurchaseContractView = ({
       30,  // E  Địa chỉ
       20,  // F  Người tạo
       18,  // G  Ngày HĐ
-      18,  // H  Hạn HĐ
+      18,  // H  Ngày hẹn
       22,  // I  Tổng tiền
       18,  // J  Thuế
       18,  // K  Giảm giá
@@ -142,12 +142,14 @@ const ExportPurchaseContractView = ({
       20,  // O  Trạng thái
       25,  // P  DS đơn mua
       18,  // Q  Ngày tạo
-      30,  // R  Ghi chú
+      20,  // R  Giá trị thanh lý
+      20,  // S  Ngày thanh lý
+      30,  // T  Ghi chú
     ]
     worksheet.columns.forEach((col, i) => { col.width = colWidths[i] || 15 })
 
-    // Căn trái: B=2, C=3, D=4, E=5, F=6, P=16, R=18
-    const leftAlignCols = [2, 3, 4, 5, 6, 16, 18]
+    // Căn trái: B=2, C=3, D=4, E=5, F=6, P=16, T=20
+    const leftAlignCols = [2, 3, 4, 5, 6, 16, 20]
     leftAlignCols.forEach((col) => {
       worksheet.getColumn(col).alignment = { vertical: 'top', horizontal: 'left', wrapText: true }
     })
@@ -163,8 +165,8 @@ const ExportPurchaseContractView = ({
     worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
     worksheet.getCell('A2').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
 
-    // Chuyển thành số: Tổng(9), Thuế(10), GG(11), Đã TT(12), Công nợ(13)
-    const numberCols = [9, 10, 11, 12, 13]
+    // Chuyển thành số: Tổng(9), Thuế(10), GG(11), Đã TT(12), Công nợ(13), Giá trị thanh lý(18)
+    const numberCols = [9, 10, 11, 12, 13, 18]
     numberCols.forEach((col) => {
       worksheet.getColumn(col).eachCell((cell, rowNumber) => {
         if (typeof cell.value === 'string' && rowNumber > 3) {
@@ -219,7 +221,7 @@ const ExportPurchaseContractView = ({
                   <TableHead className="min-w-40">Địa chỉ</TableHead>
                   <TableHead className="min-w-36">Người tạo</TableHead>
                   <TableHead className="min-w-28">Ngày HĐ</TableHead>
-                  <TableHead className="min-w-28">Hạn HĐ</TableHead>
+                  <TableHead className="min-w-28">Ngày hẹn</TableHead>
                   <TableHead className="min-w-32">Tổng tiền</TableHead>
                   <TableHead className="min-w-28">Thuế</TableHead>
                   <TableHead className="min-w-28">Giảm giá</TableHead>
@@ -229,6 +231,8 @@ const ExportPurchaseContractView = ({
                   <TableHead className="min-w-28">Trạng thái</TableHead>
                   <TableHead className="min-w-40">DS đơn mua</TableHead>
                   <TableHead className="min-w-28">Ngày tạo</TableHead>
+                  <TableHead className="min-w-32">Giá trị thanh lý</TableHead>
+                  <TableHead className="min-w-32">Ngày thanh lý</TableHead>
                   <TableHead className="min-w-40">Ghi chú</TableHead>
                 </TableRow>
               </TableHeader>
@@ -254,7 +258,11 @@ const ExportPurchaseContractView = ({
                       </TableCell>
                       <TableCell>{contract.createdByUser?.fullName ?? '—'}</TableCell>
                       <TableCell>{contract.contractDate ? dateFormat(contract.contractDate, false) : '—'}</TableCell>
-                      <TableCell>{contract.validUntil ? dateFormat(contract.validUntil, false) : '—'}</TableCell>
+                      <TableCell>
+                        {contract.purchaseOrders?.[0]?.expectedDeliveryDate
+                          ? dateFormat(contract.purchaseOrders[0].expectedDeliveryDate, false)
+                          : '—'}
+                      </TableCell>
                       <TableCell>{moneyFormat(total, false)}</TableCell>
                       <TableCell>{moneyFormat(parseFloat(contract.taxAmount || 0), false)}</TableCell>
                       <TableCell>{moneyFormat(parseFloat(contract.discountAmount || 0), false)}</TableCell>
@@ -268,6 +276,16 @@ const ExportPurchaseContractView = ({
                           : '—'}
                       </TableCell>
                       <TableCell>{dateFormat(contract.createdAt, false)}</TableCell>
+                      <TableCell>
+                        {contract.status === 'liquidated' && contract.liquidationValue
+                          ? moneyFormat(contract.liquidationValue, false)
+                          : ''}
+                      </TableCell>
+                      <TableCell>
+                        {contract.status === 'liquidated' && contract.liquidationDate
+                          ? dateFormat(contract.liquidationDate, false)
+                          : ''}
+                      </TableCell>
                       <TableCell>{contract.note || ''}</TableCell>
                     </TableRow>
                   )

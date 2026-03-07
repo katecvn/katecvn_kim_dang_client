@@ -19,6 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import UpdatePurchaseOrderStatusDialog from './UpdatePurchaseOrderStatusDialog'
 import { Phone, CreditCard, Receipt } from 'lucide-react'
+import { IconReceiptRefund } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
 export const getColumns = (onView) => [
@@ -257,6 +258,7 @@ export const getColumns = (onView) => [
       }
 
       const isTerminalStatus = ['cancelled', 'completed'].includes(currentStatus)
+      const isLiquidated = row.original?.purchaseContract?.status === 'liquidated'
 
       return (
         <>
@@ -275,19 +277,23 @@ export const getColumns = (onView) => [
             <Badge
               className={cn(
                 'select-none',
-                currentStatus === 'completed'
-                  ? 'cursor-default bg-transparent p-0 text-green-500 hover:bg-transparent shadow-none border-0'
-                  : `cursor-pointer ${statusObj?.bgColor || ''}`,
+                isLiquidated
+                  ? 'cursor-default bg-transparent p-0 text-orange-600 hover:bg-transparent shadow-none border-0'
+                  : currentStatus === 'completed'
+                    ? 'cursor-default bg-transparent p-0 text-green-500 hover:bg-transparent shadow-none border-0'
+                    : `cursor-pointer ${statusObj?.bgColor || ''}`,
               )}
-              onClick={() => !isTerminalStatus && setOpenUpdateStatus(true)}
-              title={!isTerminalStatus ? 'Bấm để cập nhật trạng thái' : ''}
+              onClick={() => !isTerminalStatus && !isLiquidated && setOpenUpdateStatus(true)}
+              title={(!isTerminalStatus && !isLiquidated) ? 'Bấm để cập nhật trạng thái' : ''}
             >
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
-                {statusObj?.icon ? (
+                {isLiquidated ? (
+                  <IconReceiptRefund className="h-4 w-4" />
+                ) : statusObj?.icon ? (
                   <statusObj.icon className="h-4 w-4" />
                 ) : null}
               </span>
-              {statusObj?.label || 'Không xác định'}
+              {isLiquidated ? 'Đã thanh lý' : (statusObj?.label || 'Không xác định')}
             </Badge>
             <Badge
               variant="outline"

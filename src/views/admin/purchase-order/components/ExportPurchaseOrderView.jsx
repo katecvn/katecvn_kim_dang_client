@@ -46,7 +46,10 @@ import { getSetting } from '@/stores/SettingSlice'
 // R  DS phiếu nhập      ← merge
 // S  Trạng thái         ← merge
 // T  Ngày đặt hàng      ← MỚI + merge
-// U  Ngày tạo           ← merge
+// U  Ngày hẹn           ← MỚI + merge
+// V  Ngày tạo           ← merge
+// V  Giá trị thanh lý   ← MỚI
+// W  Ngày thanh lý      ← MỚI
 
 const STATUS_MAP = {
   draft: 'Nháp',
@@ -195,7 +198,10 @@ const ExportPurchaseOrderView = ({
       28, // U – DS phiếu nhập
       18, // V – Trạng thái
       18, // W – Ngày đặt hàng
+      18, // Ngày hẹn
       20, // X – Ngày tạo
+      20, // Chọn Cột Mới 1 (Giá trị thanh lý)
+      20, // Chọn Cột Mới 2 (Ngày thanh lý)
     ]
     worksheet.columns.forEach((column, index) => {
       column.width = customColumnWidths[index] || 15
@@ -213,7 +219,7 @@ const ExportPurchaseOrderView = ({
     })
 
       // Căn giữa ngang và trên dọc: STT (col 1), SL (col 9), Trạng thái (col 22)
-      ;[1, 9, 22].forEach((colIdx) => {
+      ;[1, 9, 22, 27].forEach((colIdx) => {
         worksheet.getColumn(colIdx).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
           if (rowNumber > 3) {
             cell.alignment = { vertical: 'top', horizontal: 'center', wrapText: false }
@@ -224,8 +230,8 @@ const ExportPurchaseOrderView = ({
     worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left', wrapText: true }
     worksheet.getCell('A2').alignment = { vertical: 'middle', horizontal: 'left' }
     // ── Format số (I=9, K=11, L=12, N=14, P=16, Q=17, R=18, S=19) ─────────────
-    // Format số: I=9,K=11,L=12,N=14,P=16,Q=17,R=18,S=19
-    const numberCols = [9, 11, 12, 14, 16, 17, 18, 19]
+    // Format số: I=9,K=11,L=12,N=14,P=16,Q=17,R=18,S=19, Y=26
+    const numberCols = [9, 11, 12, 14, 16, 17, 18, 19, 26]
     numberCols.forEach((colIdx) => {
       const col = worksheet.getColumn(colIdx)
       col.eachCell((cell, rowNumber) => {
@@ -318,7 +324,10 @@ const ExportPurchaseOrderView = ({
                   <TableHead className="min-w-28">Trạng thái</TableHead>
                   {/* ── CỘT MỚI ── */}
                   <TableHead className="min-w-28">Ngày đặt hàng</TableHead>
+                  <TableHead className="min-w-28">Ngày hẹn</TableHead>
                   <TableHead className="min-w-28">Ngày tạo</TableHead>
+                  <TableHead className="min-w-32">Giá trị thanh lý</TableHead>
+                  <TableHead className="min-w-32">Ngày thanh lý</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -427,16 +436,35 @@ const ExportPurchaseOrderView = ({
                             : 'Không có'}
                         </TableCell>
                         {/* S – Trạng thái */}
-                        <TableCell>{getStatusLabel(order.status)}</TableCell>
+                        <TableCell>
+                          {order.purchaseContract?.status === 'liquidated'
+                            ? 'Đã thanh lý'
+                            : getStatusLabel(order.status)}
+                        </TableCell>
                         {/* T – Ngày đặt hàng ← MỚI */}
                         <TableCell>
                           {order.orderDate
                             ? dateFormat(order.orderDate, false)
                             : '—'}
                         </TableCell>
+                        <TableCell>
+                          {order.expectedDeliveryDate
+                            ? dateFormat(order.expectedDeliveryDate, false)
+                            : '—'}
+                        </TableCell>
                         {/* U – Ngày tạo */}
                         <TableCell>
                           {dateFormat(order.createdAt, false)}
+                        </TableCell>
+                        <TableCell>
+                          {order.purchaseContract?.status === 'liquidated' && order.purchaseContract?.liquidationValue
+                            ? moneyFormat(order.purchaseContract.liquidationValue, false)
+                            : ''}
+                        </TableCell>
+                        <TableCell>
+                          {order.purchaseContract?.status === 'liquidated' && order.purchaseContract?.liquidationDate
+                            ? dateFormat(order.purchaseContract.liquidationDate, false)
+                            : ''}
                         </TableCell>
                       </TableRow>
                     )

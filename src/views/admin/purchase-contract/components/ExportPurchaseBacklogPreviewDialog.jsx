@@ -19,8 +19,9 @@ import { exportPurchaseBacklogToExcel } from '@/utils/export-purchase-backlog'
 import { moneyFormat } from '@/utils/money-format'
 import { IconDownload } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
-import { useMemo } from 'react'
 import { format } from 'date-fns'
+import { Phone, Building2 } from 'lucide-react'
+import { IconId } from '@tabler/icons-react'
 
 const ExportPurchaseBacklogPreviewDialog = ({
   open,
@@ -46,10 +47,11 @@ const ExportPurchaseBacklogPreviewDialog = ({
 
             list.push({
               ...item,
-              orderCode: record.code,
-              supplierName: record.supplierName,
-              supplierPhone: record.supplierPhone,
-              deliveryDate: item.expectedDeliveryDate,
+              supplierName: record.supplier?.name || record.customer?.name || record.supplierName || record.customerName,
+              supplierPhone: record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone,
+              supplierTaxCode: record.supplier?.taxCode,
+              supplierIdentityCard: record.customer?.identityCard,
+              deliveryDate: item.expectedDeliveryDate || record.expectedDeliveryDate,
               itemTotal: total,
               itemPaid: paid,
               itemRemaining: remaining
@@ -71,10 +73,11 @@ const ExportPurchaseBacklogPreviewDialog = ({
 
                 list.push({
                   ...item,
-                  orderCode: order.code,
-                  supplierName: record.supplierName,
-                  supplierPhone: record.supplierPhone,
-                  deliveryDate: item.expectedDeliveryDate,
+                  supplierName: record.supplier?.name || record.customer?.name || record.supplierName || record.customerName,
+                  supplierPhone: record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone,
+                  supplierTaxCode: record.supplier?.taxCode,
+                  supplierIdentityCard: record.customer?.identityCard,
+                  deliveryDate: item.expectedDeliveryDate || order.expectedDeliveryDate,
                   itemTotal: total,
                   itemPaid: paid,
                   itemRemaining: remaining
@@ -122,7 +125,7 @@ const ExportPurchaseBacklogPreviewDialog = ({
               <TableRow>
                 <TableHead className="w-[50px] border-r">STT</TableHead>
                 <TableHead className="min-w-[100px] border-r">Mã ĐH</TableHead>
-                <TableHead className="min-w-[150px] border-r">Nhà cung cấp</TableHead>
+                <TableHead className="min-w-[150px] border-r">Nhà cung cấp / Khách hàng</TableHead>
                 <TableHead className="min-w-[150px] border-r">Sản phẩm</TableHead>
                 <TableHead className="text-center border-r">SL Đặt</TableHead>
                 <TableHead className="text-center border-r">SL Nhận</TableHead>
@@ -158,7 +161,26 @@ const ExportPurchaseBacklogPreviewDialog = ({
                     <TableCell className="border-r font-medium text-primary">{item.orderCode}</TableCell>
                     <TableCell className="border-r">
                       <div className="font-semibold">{item.supplierName}</div>
-                      <div className="text-xs text-muted-foreground">{item.supplierPhone}</div>
+                      <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
+                        {item.supplierPhone ? (
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            <span>{item.supplierPhone}</span>
+                          </div>
+                        ) : null}
+                        {item.supplierTaxCode ? (
+                          <div className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3" />
+                            <span>{item.supplierTaxCode}</span>
+                          </div>
+                        ) : null}
+                        {item.supplierIdentityCard ? (
+                          <div className="flex items-center gap-1">
+                            <IconId className="h-3 w-3" />
+                            <span>{item.supplierIdentityCard}</span>
+                          </div>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell className="border-r">{item.productName}</TableCell>
                     <TableCell className="border-r text-center">{Number(item.quantity) || 0}</TableCell>

@@ -203,6 +203,19 @@ const ViewPurchaseContractDialog = ({
       toast.warning('Chỉ có thể tạo phiếu nhập kho cho hợp đồng đang giao hàng')
       return
     }
+
+    const firstPO = contract?.purchaseOrders?.[0]
+    const hasCompletedPayment = firstPO?.paymentVouchers?.some(
+      (voucher) => voucher.status === 'completed'
+    ) || contract?.paymentVouchers?.some(
+      (voucher) => voucher.status === 'completed'
+    ) || contract?.paymentStatus === 'partial' || contract?.paymentStatus === 'paid'
+
+    if (!hasCompletedPayment) {
+      toast.warning('Hợp đồng mua hàng phải có ít nhất một phiếu chi đã ghi sổ (đã chi) mới được tạo phiếu nhập kho')
+      return
+    }
+
     setShowConfirmImportDialog(true)
   }
 
@@ -461,6 +474,23 @@ const ViewPurchaseContractDialog = ({
                           </div>
                         )}
                       </div>
+
+                      {contract?.status === 'liquidated' && (
+                        <>
+                          {contract?.liquidationValue && (
+                            <div>
+                              <span className="text-muted-foreground">Giá trị thanh lý:</span>
+                              <p className="font-semibold text-primary">{moneyFormat(contract.liquidationValue)}</p>
+                            </div>
+                          )}
+                          {contract?.liquidationDate && (
+                            <div>
+                              <span className="text-muted-foreground">Ngày thanh lý:</span>
+                              <p className="font-medium text-destructive">{dateFormat(contract.liquidationDate)}</p>
+                            </div>
+                          )}
+                        </>
+                      )}
 
                       {contract?.paymentMethod && (
                         <div>
@@ -1591,6 +1621,7 @@ const ViewPurchaseContractDialog = ({
             open={showCreatePaymentDialog}
             onOpenChange={setShowCreatePaymentDialog}
             purchaseOrder={contract?.purchaseOrders?.[0]}
+            purchaseContract={contract}
             supplier={contract?.supplier}
             onSuccess={handlePaymentFormSuccess}
             contentClassName="!z-[100060]"

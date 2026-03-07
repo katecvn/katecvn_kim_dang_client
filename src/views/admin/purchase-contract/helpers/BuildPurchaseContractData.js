@@ -1,4 +1,4 @@
-import { toVietnamese } from '@/utils/money-format'
+import { toVietnamese, moneyFormat } from '@/utils/money-format'
 
 /**
  * Build data for HopDongKhachBanLai (purchase contract from customer)
@@ -35,8 +35,8 @@ export function buildPurchaseContractData(contract) {
     customer_bank_name: customer?.bankName || '',
 
     items,
-    total: grandTotal,
-    total_text: toVietnamese(grandTotal),
+    total: `${moneyFormat(grandTotal)} đồng`,
+    total_text: `Viết bằng chữ: ${toVietnamese(grandTotal)}`,
   }
 }
 

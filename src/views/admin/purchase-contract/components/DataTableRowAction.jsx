@@ -53,6 +53,7 @@ const DataTableRowActions = ({ row }) => {
   const [showCancelLiquidateConfirm, setShowCancelLiquidateConfirm] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [showCreatePaymentDialog, setShowCreatePaymentDialog] = useState(false)
+  const [fullContract, setFullContract] = useState(null)
 
   // Print contract state
   const [installmentData, setInstallmentData] = useState(null)
@@ -71,21 +72,52 @@ const DataTableRowActions = ({ row }) => {
   const canImport = contract.status === 'confirmed' || contract.status === 'shipping'
   const canCreatePayment = ['ordered', 'partial', 'completed'].includes(contract?.purchaseOrders?.[0]?.status)
 
-  const handleCreatePaymentClick = () => {
-    const totalAmount = parseFloat(contract?.totalAmount || 0)
-    const paidAmount = parseFloat(contract?.paidAmount || 0)
-    const pendingAmount = (contract?.paymentVouchers || contract?.payments || [])
-      .filter(p => p.status === 'pending' || p.status === 'draft')
-      .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
+  const handleCreatePaymentClick = async () => {
+    try {
+      const contractDetail = await dispatch(getPurchaseContractDetail(contract.id)).unwrap()
 
-    const remainingAmount = Math.max(0, totalAmount - paidAmount - pendingAmount)
+      const totalAmount = parseFloat(contractDetail?.totalAmount || 0)
+      const paidAmount = parseFloat(contractDetail?.paidAmount || 0)
+      const pendingAmount = (contractDetail?.paymentVouchers || contractDetail?.payments || [])
+        .filter(p => p.status === 'pending' || p.status === 'draft')
+        .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0)
 
-    if (remainingAmount <= 0) {
-      toast.error('Hợp đồng đã thanh toán đủ hoặc đang có phiếu chi nháp/chờ duyệt chờ xử lý hết số nợ.')
-      return
+      const remainingAmount = Math.max(0, totalAmount - paidAmount - pendingAmount)
+
+      if (remainingAmount <= 0) {
+        toast.error('Hợp đồng đã thanh toán đủ hoặc đang có phiếu chi nháp/chờ duyệt chờ xử lý hết số nợ.')
+        return
+      }
+
+      setFullContract(contractDetail)
+      setShowCreatePaymentDialog(true)
+    } catch (error) {
+      console.error('Fetch contract detail error:', error)
+      toast.error('Không thể lấy thông tin chi tiết hợp đồng')
     }
+  }
 
-    setShowCreatePaymentDialog(true)
+  const handleImportWarehouse = async () => {
+    try {
+      const contractDetail = await dispatch(getPurchaseContractDetail(contract.id)).unwrap()
+
+      const firstPO = contractDetail?.purchaseOrders?.[0]
+      const hasCompletedPayment = firstPO?.paymentVouchers?.some(
+        (voucher) => voucher.status === 'completed'
+      ) || contractDetail?.paymentVouchers?.some(
+        (voucher) => voucher.status === 'completed'
+      ) || contract?.paymentStatus === 'partial' || contract?.paymentStatus === 'paid'
+
+      if (!hasCompletedPayment) {
+        toast.warning('Hợp đồng mua hàng phải có ít nhất một phiếu chi đã ghi sổ (đã chi) mới được tạo phiếu nhập kho')
+        return
+      }
+
+      setShowImportDialog(true)
+    } catch (error) {
+      console.error('Fetch contract detail error:', error)
+      toast.error('Không thể lấy chi tiết hợp đồng')
+    }
   }
 
   const handlePrintContract = async () => {
@@ -194,7 +226,7 @@ const DataTableRowActions = ({ row }) => {
           {canImport && (
             <Can permission={'WAREHOUSE_IMPORT_CREATE'}>
               <DropdownMenuItem
-                onClick={() => setShowImportDialog(true)}
+                onClick={handleImportWarehouse}
                 className="text-blue-600"
               >
                 Nhập kho
@@ -276,8 +308,8 @@ const DataTableRowActions = ({ row }) => {
         <PaymentFormDialog
           open={showCreatePaymentDialog}
           onOpenChange={setShowCreatePaymentDialog}
-          purchaseOrder={contract?.purchaseOrders?.[0]}
-          supplier={contract?.supplier}
+          purchaseOrder={(fullContract || contract)?.purchaseOrders?.[0]}
+          supplier={(fullContract || contract)?.supplier}
           onSuccess={() => dispatch(getPurchaseContracts({}))}
           contentClassName="z-[100020]"
           overlayClassName="z-[100019]"

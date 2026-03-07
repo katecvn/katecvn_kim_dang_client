@@ -76,9 +76,10 @@ export const exportSalesBacklogToExcel = async (data) => {
             flattenedData.push({
               ...item,
               contractCode: contract.code,
-              buyerName: contract.buyerName,
-              buyerPhone: contract.buyerPhone,
-              deliveryDate: contract.deliveryDate,
+              buyerName: contract.customer?.name || contract.buyerName,
+              buyerPhone: contract.customer?.phone || contract.buyerPhone,
+              buyerIdentityCard: contract.customer?.identityCard,
+              deliveryDate: item.expectedDeliveryDate || contract.expectedDeliveryDate,
               itemTotal,
               itemPaid,
               itemRemaining
@@ -140,18 +141,16 @@ export const exportSalesBacklogToExcel = async (data) => {
         const row = worksheet.getRow(currentRow + index)
         row.font = { name: 'Times New Roman', size: 11 }
 
-        const dateStr = item.promisedDeliveryDate
-          ? new Date(item.promisedDeliveryDate).toLocaleDateString('en-GB')
-          : item.deliveryDate
-            ? new Date(item.deliveryDate).toLocaleDateString('en-GB')
-            : '-'
+        const dateStr = item.deliveryDate
+          ? new Date(item.deliveryDate).toLocaleDateString('en-GB')
+          : '-'
 
         row.getCell(1).value = index + 1
         row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
 
         row.getCell(2).value = item.contractCode
         row.getCell(3).value = item.buyerName
-        row.getCell(4).value = item.buyerPhone
+        row.getCell(4).value = item.buyerIdentityCard ? `${item.buyerPhone} - ${item.buyerIdentityCard}` : item.buyerPhone
         row.getCell(5).value = item.productName
 
         row.getCell(6).value = Number(item.quantity) || 0 // SL Dat

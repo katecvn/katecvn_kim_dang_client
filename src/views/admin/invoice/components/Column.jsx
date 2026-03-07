@@ -16,6 +16,7 @@ import { updateInvoiceStatus } from '@/stores/InvoiceSlice'
 import UpdateInvoiceStatusDialog from './UpdateInvoiceStatusDialog'
 import InvoiceDialog from './InvoiceDialog'
 import { cn } from '@/lib/utils'
+import { IconReceiptRefund } from '@tabler/icons-react'
 
 export const columns = [
   {
@@ -312,6 +313,9 @@ export const columns = [
         }
       }
 
+      const isTerminalStatus = ['delivered', 'cancelled'].includes(currentStatus)
+      const isLiquidated = row.original?.salesContract?.status === 'liquidated'
+
       return (
         <>
           {openUpdateStatus && (
@@ -330,17 +334,23 @@ export const columns = [
             <Badge
               className={cn(
                 "select-none",
-                ['delivered', 'cancelled'].includes(currentStatus)
-                  ? `cursor-default p-0 shadow-none border-0 bg-transparent ${currentStatus === 'delivered' ? 'text-green-500' : 'text-slate-500'} hover:bg-transparent`
-                  : `cursor-pointer ${statusObj?.color || ''}`
+                isLiquidated
+                  ? 'cursor-default p-0 shadow-none border-0 bg-transparent text-orange-600 hover:bg-transparent'
+                  : isTerminalStatus
+                    ? `cursor-default p-0 shadow-none border-0 bg-transparent ${currentStatus === 'delivered' ? 'text-green-500' : 'text-slate-500'} hover:bg-transparent`
+                    : `cursor-pointer ${statusObj?.color || ''}`
               )}
-              onClick={() => !['delivered', 'cancelled'].includes(currentStatus) && setOpenUpdateStatus(true)}
-              title={!['delivered', 'cancelled'].includes(currentStatus) ? "Bấm để cập nhật trạng thái" : ""}
+              onClick={() => !isTerminalStatus && !isLiquidated && setOpenUpdateStatus(true)}
+              title={(!isTerminalStatus && !isLiquidated) ? "Bấm để cập nhật trạng thái" : ""}
             >
               <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
-                {statusObj?.icon ? <statusObj.icon className="h-4 w-4" /> : null}
+                {isLiquidated ? (
+                  <IconReceiptRefund className="h-4 w-4" />
+                ) : statusObj?.icon ? (
+                  <statusObj.icon className="h-4 w-4" />
+                ) : null}
               </span>
-              {statusObj?.label || 'Không xác định'}
+              {isLiquidated ? 'Đã thanh lý' : (statusObj?.label || 'Không xác định')}
             </Badge>
             <Badge
               variant="outline"
@@ -372,15 +382,6 @@ export const columns = [
     cell: ({ row }) => {
       const deliveryDate = row.original.salesContract?.deliveryDate
       const status = row.original.status
-      const salesContractStatus = row.original.salesContract?.status
-
-      if (salesContractStatus === 'liquidated') {
-        return (
-          <span className="flex items-center gap-1 text-orange-500 font-medium">
-            <FileCheck className="h-4 w-4" /> Đã thanh lý
-          </span>
-        )
-      }
 
       if (!deliveryDate) {
         return <span className="text-muted-foreground italic">Đơn hàng không <br /> có Hợp Đồng</span>

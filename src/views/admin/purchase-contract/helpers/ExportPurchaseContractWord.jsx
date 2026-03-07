@@ -80,7 +80,7 @@ function prepareTemplateData(data) {
     })),
 
     // Tổng tiền
-    total: formatMoney(data?.total),
+    total: `${formatMoney(data?.total)} đồng`,
     total_text: data?.total_text || '',
   }
 }

@@ -169,6 +169,12 @@ export const sideLinks = [
         icon: <IconPackageImport size={18} />,
         permission: 'REPORT_UNRECEIVED_VIEW',
       },
+      {
+        title: 'Thống kê sản phẩm',
+        href: '/inventory-detail-report',
+        icon: <IconBox size={18} />,
+        permission: 'GET_REPORT',
+      },
     ],
   },
   {

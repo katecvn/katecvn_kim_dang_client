@@ -17,7 +17,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { getPurchaseBacklog } from '@/stores/ReportSlice'
 import ViewPurchaseOrderDialog from '../purchase-order/components/ViewPurchaseOrderDialog'
 import { DataTablePagination } from '../invoice/components/DataTablePagination'
-import { FileSpreadsheet } from 'lucide-react'
+import { FileSpreadsheet, Phone, Building2 } from 'lucide-react'
+import { IconId } from '@tabler/icons-react'
 import { Button } from '@/components/custom/Button'
 import ExportPurchaseBacklogPreviewDialog from './components/ExportPurchaseBacklogPreviewDialog'
 
@@ -88,7 +89,7 @@ const PurchaseBacklogPage = () => {
             <TableHeader className="sticky top-0 z-10 bg-secondary">
               <TableRow>
                 <TableHead>Mã ĐH</TableHead>
-                <TableHead className="w-[200px]">Nhà cung cấp</TableHead>
+                <TableHead className="w-[200px]">Nhà cung cấp / Khách hàng</TableHead>
                 <TableHead className="min-w-[300px]">Sản phẩm</TableHead>
                 <TableHead className="text-center">Ngày hẹn</TableHead>
                 <TableHead className="text-right">Tổng tiền</TableHead>
@@ -149,10 +150,27 @@ const PurchaseBacklogPage = () => {
                           </TableCell>
                           <TableCell>
                             <div className="font-semibold">
-                              {record.supplierName}
+                              {record.supplier?.name || record.customer?.name || record.supplierName || record.customerName}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              {record.supplierPhone}
+                            <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
+                              {record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone ? (
+                                <div className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  <span>{record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone}</span>
+                                </div>
+                              ) : null}
+                              {record.supplier?.taxCode ? (
+                                <div className="flex items-center gap-1">
+                                  <Building2 className="h-3 w-3" />
+                                  <span>{record.supplier.taxCode}</span>
+                                </div>
+                              ) : null}
+                              {record.customer?.identityCard ? (
+                                <div className="flex items-center gap-1">
+                                  <IconId className="h-3 w-3" />
+                                  <span>{record.customer.identityCard}</span>
+                                </div>
+                              ) : null}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -165,9 +183,9 @@ const PurchaseBacklogPage = () => {
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            {item.expectedDeliveryDate
+                            {(item.expectedDeliveryDate || record.expectedDeliveryDate)
                               ? format(
-                                new Date(item.expectedDeliveryDate),
+                                new Date((item.expectedDeliveryDate || record.expectedDeliveryDate)),
                                 'dd/MM/yyyy',
                               )
                               : '-'}
@@ -213,10 +231,27 @@ const PurchaseBacklogPage = () => {
                             </TableCell>
                             <TableCell>
                               <div className="font-semibold">
-                                {record.supplierName}
+                                {record.supplier?.name || record.customer?.name || record.supplierName || record.customerName}
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                {record.supplierPhone}
+                              <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
+                                {record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone ? (
+                                  <div className="flex items-center gap-1">
+                                    <Phone className="h-3 w-3" />
+                                    <span>{record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone}</span>
+                                  </div>
+                                ) : null}
+                                {record.supplier?.taxCode ? (
+                                  <div className="flex items-center gap-1">
+                                    <Building2 className="h-3 w-3" />
+                                    <span>{record.supplier.taxCode}</span>
+                                  </div>
+                                ) : null}
+                                {record.customer?.identityCard ? (
+                                  <div className="flex items-center gap-1">
+                                    <IconId className="h-3 w-3" />
+                                    <span>{record.customer.identityCard}</span>
+                                  </div>
+                                ) : null}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -229,9 +264,9 @@ const PurchaseBacklogPage = () => {
                               </div>
                             </TableCell>
                             <TableCell className="text-center">
-                              {item.expectedDeliveryDate
+                              {(item.expectedDeliveryDate || order.expectedDeliveryDate)
                                 ? format(
-                                  new Date(item.expectedDeliveryDate),
+                                  new Date((item.expectedDeliveryDate || order.expectedDeliveryDate)),
                                   'dd/MM/yyyy',
                                 )
                                 : '-'}

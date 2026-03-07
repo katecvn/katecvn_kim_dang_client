@@ -209,6 +209,19 @@ const MobileSalesContractCard = ({
       setWarehouseLoading(true)
       const contractDetail = await dispatch(getSalesContractDetail(contract.id)).unwrap()
 
+      const detailFirstInvoice = contractDetail?.invoices?.[0]
+      const hasCompletedPayment = detailFirstInvoice?.paymentVouchers?.some(
+        (voucher) => voucher.status === 'completed'
+      ) || contractDetail?.paymentVouchers?.some(
+        (voucher) => voucher.status === 'completed'
+      ) || contract?.paymentStatus === 'partial' || contract?.paymentStatus === 'paid'
+
+      if (!hasCompletedPayment) {
+        toast.warning('Hợp đồng bán phải có ít nhất một phiếu thu đã ghi sổ (đã thu) mới được tạo phiếu xuất kho')
+        setWarehouseLoading(false)
+        return
+      }
+
       const mappedItems = contractDetail?.items?.map(item => ({
         id: item.id,
         productId: item.productId,

@@ -50,6 +50,7 @@ import WarehouseOutPage from '@/views/admin/warehouse-receipt/WarehouseOutPage'
 import LotPage from '@/views/admin/lot'
 import InventorySummaryPage from '@/views/admin/warehouse-report/InventorySummaryPage'
 import InventoryDetailPage from '@/views/admin/warehouse-report/InventoryDetailPage'
+import InventoryStatisticsPage from '@/views/admin/warehouse-report/InventoryStatisticsPage'
 import PurchaseReportPage from '@/views/admin/purchase-order/PurchaseReportPage'
 import SalesBacklogPage from '@/views/admin/sales-contract/SalesBacklogPage'
 import PurchaseBacklogPage from '@/views/admin/purchase-contract/PurchaseBacklogPage'
@@ -223,6 +224,11 @@ const routes = [
   {
     path: '/warehouse-report/detail',
     element: InventoryDetailPage,
+    layout: AdminLayout,
+  },
+  {
+    path: '/inventory-detail-report',
+    element: InventoryStatisticsPage,
     layout: AdminLayout,
   },
   {

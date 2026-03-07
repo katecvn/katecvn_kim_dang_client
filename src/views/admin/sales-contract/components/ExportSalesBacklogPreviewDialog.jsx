@@ -21,6 +21,8 @@ import { IconDownload } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { useMemo } from 'react'
 import { format } from 'date-fns'
+import { Phone } from 'lucide-react'
+import { IconId } from '@tabler/icons-react'
 
 const ExportSalesBacklogPreviewDialog = ({
   open,
@@ -45,9 +47,10 @@ const ExportSalesBacklogPreviewDialog = ({
             list.push({
               ...item,
               contractCode: contract.code,
-              buyerName: contract.buyerName,
-              buyerPhone: contract.buyerPhone,
-              deliveryDate: contract.deliveryDate,
+              buyerName: contract.customer?.name || contract.buyerName,
+              buyerPhone: contract.customer?.phone || contract.buyerPhone,
+              buyerIdentityCard: contract.customer?.identityCard,
+              deliveryDate: item.expectedDeliveryDate || contract.expectedDeliveryDate,
               itemTotal,
               itemPaid,
               itemRemaining
@@ -119,11 +122,9 @@ const ExportSalesBacklogPreviewDialog = ({
               </TableRow>
 
               {flattenedData.map((item, index) => {
-                const dateStr = item.promisedDeliveryDate
-                  ? format(new Date(item.promisedDeliveryDate), 'dd/MM/yyyy')
-                  : item.deliveryDate
-                    ? format(new Date(item.deliveryDate), 'dd/MM/yyyy')
-                    : '-'
+                const dateStr = item.deliveryDate
+                  ? format(new Date(item.deliveryDate), 'dd/MM/yyyy')
+                  : '-'
 
                 return (
                   <TableRow key={index}>
@@ -131,7 +132,20 @@ const ExportSalesBacklogPreviewDialog = ({
                     <TableCell className="border-r font-medium text-primary">{item.contractCode}</TableCell>
                     <TableCell className="border-r">
                       <div className="font-semibold">{item.buyerName}</div>
-                      <div className="text-xs text-muted-foreground">{item.buyerPhone}</div>
+                      <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
+                        {item.buyerPhone ? (
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            <span>{item.buyerPhone}</span>
+                          </div>
+                        ) : null}
+                        {item.buyerIdentityCard ? (
+                          <div className="flex items-center gap-1">
+                            <IconId className="h-3 w-3" />
+                            <span>{item.buyerIdentityCard}</span>
+                          </div>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell className="border-r">{item.productName}</TableCell>
                     <TableCell className="border-r text-center">{Number(item.quantity) || 0}</TableCell>

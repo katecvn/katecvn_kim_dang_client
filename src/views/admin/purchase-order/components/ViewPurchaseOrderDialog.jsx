@@ -28,6 +28,7 @@ import { moneyFormat, toVietnamese } from '@/utils/money-format'
 import { MobileIcon, PlusIcon } from '@radix-ui/react-icons'
 import React, { useEffect, useState, useMemo } from 'react'
 import { purchaseOrderStatuses, purchaseOrderPaymentStatuses } from '../data'
+import { purchaseContractStatuses } from '../../purchase-contract/data'
 import { paymentStatus } from '../../payment/data'
 import { warehouseReceiptStatuses } from '../../warehouse-receipt/data'
 import { Separator } from '@/components/ui/separator'
@@ -40,7 +41,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { getPublicUrl } from '@/utils/file'
 import { Mail, MapPin, Pencil, Trash2, Printer, X, CreditCard, Receipt, PackagePlus } from 'lucide-react'
-import { IconPlus, IconPencil, IconCheck } from '@tabler/icons-react'
+import { IconPlus, IconPencil, IconCheck, IconReceiptRefund } from '@tabler/icons-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/ConfirmImportWarehouseDialog'
 import PaymentFormDialog from '../../payment/components/PaymentDialog'
@@ -249,6 +250,16 @@ const ViewPurchaseOrderDialog = ({
       toast.error('Chỉ có thể tạo phiếu nhập kho cho đơn hàng đã xác nhận (Đã đặt).')
       return
     }
+
+    const hasCompletedPayment = purchaseOrder?.paymentVouchers?.some(
+      (voucher) => voucher.status === 'completed'
+    ) || purchaseOrder?.paymentStatus === 'partial' || purchaseOrder?.paymentStatus === 'paid'
+
+    if (!hasCompletedPayment) {
+      toast.warning('Đơn mua hàng phải có ít nhất một phiếu chi đã ghi sổ (đã chi) mới được tạo phiếu nhập kho')
+      return
+    }
+
     setShowConfirmImportDialog(true)
   }
 
@@ -696,10 +707,49 @@ const ViewPurchaseOrderDialog = ({
                                 {purchaseOrder.purchaseContract.code}
                               </span>
                             </div>
-                            <div className="flex justify-between">
-                              <strong>Ngày ký:</strong>
-                              <span>{dateFormat(purchaseOrder.purchaseContract.contractDate, true)}</span>
+                            <div className="flex justify-between items-center">
+                              <strong>Ngày hợp đồng:</strong>
+                              <span>{dateFormat(purchaseOrder.purchaseContract.contractDate)}</span>
                             </div>
+                            <div className="flex justify-between items-center">
+                              <strong>Trạng thái HĐ:</strong>
+                              <span className="font-medium text-xs">
+                                {(() => {
+                                  const contractStatus = purchaseContractStatuses.find((s) => s.value === purchaseOrder.purchaseContract.status)
+                                  if (!contractStatus) return 'Không xác định'
+                                  const isLiquidated = purchaseOrder.purchaseContract.status === 'liquidated'
+                                  return (
+                                    <Badge
+                                      className={cn(
+                                        'select-none cursor-default pb-0 pt-0.5 px-0 h-auto',
+                                        isLiquidated
+                                          ? 'bg-transparent text-orange-600 hover:bg-transparent shadow-none border-0'
+                                          : purchaseOrder.purchaseContract.status === 'completed'
+                                            ? 'bg-transparent text-green-500 hover:bg-transparent shadow-none border-0'
+                                            : contractStatus?.bgColor || ''
+                                      )}
+                                    >
+                                      <span className="mr-1 inline-flex h-4 w-4 items-center justify-center">
+                                        {isLiquidated ? (
+                                          <IconReceiptRefund className="h-4 w-4" />
+                                        ) : contractStatus?.icon ? (
+                                          <contractStatus.icon className="h-4 w-4" />
+                                        ) : null}
+                                      </span>
+                                      {isLiquidated ? 'Đã thanh lý' : contractStatus?.label}
+                                    </Badge>
+                                  )
+                                })()}
+                              </span>
+                            </div>
+                            {purchaseOrder.expectedDeliveryDate && (
+                              <div className="flex justify-between">
+                                <strong>Ngày nhận hàng dự kiến:</strong>
+                                <span className="text-orange-600 font-medium">
+                                  {dateFormat(purchaseOrder.expectedDeliveryDate)}
+                                </span>
+                              </div>
+                            )}
                             {/* Tổng tiền hàng = totalAmount + discount - tax - otherCosts */}
                             <div className="flex justify-between">
                               <strong>Tổng tiền hàng:</strong>

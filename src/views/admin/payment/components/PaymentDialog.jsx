@@ -59,6 +59,7 @@ const PaymentDialog = ({
   paymentId, // Optional: for Edit mode
   payment: propPayment, // Legacy: may contains object with id
   purchaseOrder, // If provided (and no payment), create mode from PO
+  purchaseContract, // If provided, create mode from Purchase Contract
   open,
   onOpenChange,
   showTrigger = true,
@@ -85,18 +86,22 @@ const PaymentDialog = ({
 
   // Determine source of items and supplier/receiver
   const effectivePurchaseOrder = payment?.purchaseOrder || purchaseOrder
+  const effectivePurchaseContract = payment?.purchaseContract || purchaseContract
   const salesContract = payment?.salesContract
 
   // Determine if this is a customer purchase order
   const isCustomerPO = !!(effectivePurchaseOrder?.customer || effectivePurchaseOrder?.customerId) && !effectivePurchaseOrder?.supplier
   const party = propSupplier || payment?.receiver ||
     (isCustomerPO ? effectivePurchaseOrder?.customer : effectivePurchaseOrder?.supplier) ||
-    effectivePurchaseOrder?.supplier
+    effectivePurchaseOrder?.supplier ||
+    effectivePurchaseContract?.supplier
   const supplier = party // keep alias for backward compat below
 
   let items = []
   if (effectivePurchaseOrder?.items?.length > 0) {
     items = effectivePurchaseOrder.items
+  } else if (effectivePurchaseContract?.items?.length > 0) {
+    items = effectivePurchaseContract.items
   } else if (salesContract?.items?.length > 0) {
     items = salesContract.items
   } else if (payment?.products?.length > 0) {
@@ -105,13 +110,15 @@ const PaymentDialog = ({
 
 
 
-  const totalAmount = parseFloat(effectivePurchaseOrder?.totalAmount || salesContract?.totalAmount || payment?.amount || 0)
-  const paidAmount = parseFloat(effectivePurchaseOrder?.paidAmount || salesContract?.paidAmount || 0)
+  const totalAmount = parseFloat(effectivePurchaseOrder?.totalAmount || effectivePurchaseContract?.totalAmount || salesContract?.totalAmount || payment?.amount || 0)
+  const paidAmount = parseFloat(effectivePurchaseOrder?.paidAmount || effectivePurchaseContract?.paidAmount || salesContract?.paidAmount || 0)
 
-  // Tính tổng số tiền đang chờ duyệt (pending/draft) từ các phiếu chi của Đơn mua hàng (hoặc hợp đồng bán)
+  // Tính tổng số tiền đang chờ duyệt (pending/draft) từ các phiếu chi của Đơn mua hàng (hoặc hợp đồng bán, hợp đồng mua)
   const pendingAmount = (
     effectivePurchaseOrder?.paymentVouchers ||
     effectivePurchaseOrder?.payments ||
+    effectivePurchaseContract?.paymentVouchers ||
+    effectivePurchaseContract?.payments ||
     salesContract?.paymentVouchers ||
     salesContract?.payments ||
     []
@@ -189,7 +196,7 @@ const PaymentDialog = ({
           status: dataToUse.status || 'draft',
           dueDate: dataToUse.dueDate || null,
         })
-      } else if (effectivePurchaseOrder) {
+      } else if (effectivePurchaseOrder || effectivePurchaseContract) {
         // Create Mode
         const initialAmount = remainingAmount > 0 ? remainingAmount : 0
         form.reset({
@@ -202,7 +209,7 @@ const PaymentDialog = ({
         })
       }
     }
-  }, [open, isEditMode, payment, fetchedPayment, effectivePurchaseOrder, remainingAmount, form])
+  }, [open, isEditMode, payment, fetchedPayment, effectivePurchaseOrder, effectivePurchaseContract, remainingAmount, form])
 
 
   const onSubmit = async (data) => {
@@ -227,7 +234,7 @@ const PaymentDialog = ({
           bankBranch: data.bankAccount.bankBranch
         }
         : null,
-      reason: data.note || (effectivePurchaseOrder ? `Chi trả đơn hàng ${effectivePurchaseOrder.code}` : ''),
+      reason: data.note || (effectivePurchaseOrder ? `Chi trả đơn hàng ${effectivePurchaseOrder.code}` : (effectivePurchaseContract ? `Chi trả hợp đồng ${effectivePurchaseContract.code}` : '')),
       note: data.paymentNote,
     }
 
@@ -246,7 +253,8 @@ const PaymentDialog = ({
         const dataToSend = {
           ...data,
           ...commonData,
-          purchaseOrderId: effectivePurchaseOrder?.id,
+          purchaseOrderId: effectivePurchaseOrder?.id || null,
+          purchaseContractId: effectivePurchaseContract?.id || null,
           voucherType: 'payment_out',
           transactionType: 'payment',
           receiverType: isCustomerPO ? 'customer' : 'supplier',

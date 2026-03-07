@@ -126,167 +126,97 @@ const PurchaseBacklogPage = () => {
                 ))
               ) : data && data.length > 0 ? (
                 data.flatMap((record) => {
-                  // Case 1: Direct items (New API structure or Sales Backlog style)
+                  // Convert both Case 1 and Case 2 into a flat list of orders
                   if (record.items && record.items.length > 0) {
-                    return record.items.map((item) => {
-                      const total = Number(item.totalAmount) || 0
-                      const receivedQty = Number(item.receivedQuantity) || 0
-                      const orderedQty = Number(item.quantity) || 0
-                      const unitPrice = Number(item.unitPrice) || 0
-                      const receivedAmount = receivedQty * unitPrice
-                      const remainingAmount =
-                        (orderedQty - receivedQty) * unitPrice
-
-                      return (
-                        <TableRow key={`${record.id}-${item.id}`}>
-                          <TableCell
-                            className="font-medium cursor-pointer text-primary hover:underline"
-                            onClick={() => {
-                              setSelectedOrderId(record.id)
-                              setShowViewOrderDialog(true)
-                            }}
-                          >
-                            {record.code}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold">
-                              {record.supplier?.name || record.customer?.name || record.supplierName || record.customerName}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
-                              {record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone ? (
-                                <div className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  <span>{record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone}</span>
-                                </div>
-                              ) : null}
-                              {record.supplier?.taxCode ? (
-                                <div className="flex items-center gap-1">
-                                  <Building2 className="h-3 w-3" />
-                                  <span>{record.supplier.taxCode}</span>
-                                </div>
-                              ) : null}
-                              {record.customer?.identityCard ? (
-                                <div className="flex items-center gap-1">
-                                  <IconId className="h-3 w-3" />
-                                  <span>{record.customer.identityCard}</span>
-                                </div>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm font-medium">
-                              {item.productName}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Đã nhận: {receivedQty} / {orderedQty}{' '}
-                              {item.unitName}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {(item.expectedDeliveryDate || record.expectedDeliveryDate)
-                              ? format(
-                                new Date((item.expectedDeliveryDate || record.expectedDeliveryDate)),
-                                'dd/MM/yyyy',
-                              )
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {moneyFormat(total)}
-                          </TableCell>
-                          <TableCell className="text-right text-green-600">
-                            {moneyFormat(receivedAmount)}
-                          </TableCell>
-                          <TableCell className="text-right text-red-600">
-                            {moneyFormat(remainingAmount)}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })
+                    return [record]
                   }
-
-                  // Case 2: Nested purchaseOrders (Legacy structure)
                   if (record.purchaseOrders && record.purchaseOrders.length > 0) {
-                    return record.purchaseOrders.flatMap((order) =>
-                      order.items?.map((item) => {
-                        const total = Number(item.totalAmount) || 0
-                        const receivedQty = Number(item.receivedQuantity) || 0
-                        const orderedQty = Number(item.quantity) || 0
-                        const unitPrice = Number(item.unitPrice) || 0
-                        const receivedAmount = receivedQty * unitPrice
-                        const remainingAmount =
-                          (orderedQty - receivedQty) * unitPrice
-
-                        return (
-                          <TableRow
-                            key={`${record.id}-${order.id}-${item.id}`}
-                          >
-                            <TableCell
-                              className="font-medium cursor-pointer text-primary hover:underline"
-                              onClick={() => {
-                                setSelectedOrderId(order.id)
-                                setShowViewOrderDialog(true)
-                              }}
-                            >
-                              {order.code}
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-semibold">
-                                {record.supplier?.name || record.customer?.name || record.supplierName || record.customerName}
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
-                                {record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone ? (
-                                  <div className="flex items-center gap-1">
-                                    <Phone className="h-3 w-3" />
-                                    <span>{record.supplier?.phone || record.customer?.phone || record.supplierPhone || record.customerPhone}</span>
-                                  </div>
-                                ) : null}
-                                {record.supplier?.taxCode ? (
-                                  <div className="flex items-center gap-1">
-                                    <Building2 className="h-3 w-3" />
-                                    <span>{record.supplier.taxCode}</span>
-                                  </div>
-                                ) : null}
-                                {record.customer?.identityCard ? (
-                                  <div className="flex items-center gap-1">
-                                    <IconId className="h-3 w-3" />
-                                    <span>{record.customer.identityCard}</span>
-                                  </div>
-                                ) : null}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm font-medium">
-                                {item.productName}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Đã nhận: {receivedQty} / {orderedQty}{' '}
-                                {item.unitName}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {(item.expectedDeliveryDate || order.expectedDeliveryDate)
-                                ? format(
-                                  new Date((item.expectedDeliveryDate || order.expectedDeliveryDate)),
-                                  'dd/MM/yyyy',
-                                )
-                                : '-'}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {moneyFormat(total)}
-                            </TableCell>
-                            <TableCell className="text-right text-green-600">
-                              {moneyFormat(receivedAmount)}
-                            </TableCell>
-                            <TableCell className="text-right text-red-600">
-                              {moneyFormat(remainingAmount)}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      }) || []
-                    )
+                    return record.purchaseOrders.map((order) => ({
+                      ...order,
+                      supplier: record.supplier || order.supplier,
+                      customer: record.customer || order.customer,
+                      supplierName: record.supplierName || order.supplierName,
+                      customerName: record.customerName || order.customerName,
+                      supplierPhone: record.supplierPhone || order.supplierPhone,
+                      customerPhone: record.customerPhone || order.customerPhone,
+                    }))
                   }
-
                   return []
+                }).map((order) => {
+                  const orderTotal = Number(order.totalAmount) || 0
+                  const orderPaid = Number(order.paidAmount) || 0
+                  const remainingAmount = orderTotal - orderPaid
+
+                  return (
+                    <TableRow key={order.id}>
+                      <TableCell
+                        className="font-medium cursor-pointer text-primary hover:underline align-middle"
+                        onClick={() => {
+                          setSelectedOrderId(order.id)
+                          setShowViewOrderDialog(true)
+                        }}
+                      >
+                        {order.code}
+                      </TableCell>
+                      <TableCell className="align-middle">
+                        <div className="font-semibold">
+                          {order.supplier?.name || order.customer?.name || order.supplierName || order.customerName}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
+                          {order.supplier?.phone || order.customer?.phone || order.supplierPhone || order.customerPhone ? (
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              <span>{order.supplier?.phone || order.customer?.phone || order.supplierPhone || order.customerPhone}</span>
+                            </div>
+                          ) : null}
+                          {order.supplier?.taxCode ? (
+                            <div className="flex items-center gap-1">
+                              <Building2 className="h-3 w-3" />
+                              <span>{order.supplier.taxCode}</span>
+                            </div>
+                          ) : null}
+                          {order.customer?.identityCard ? (
+                            <div className="flex items-center gap-1">
+                              <IconId className="h-3 w-3" />
+                              <span>{order.customer.identityCard}</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-middle">
+                        <div className="flex flex-col gap-2">
+                          {order.items?.map((item) => {
+                            const orderedQty = Number(item.quantity) || 0
+                            const receivedQty = Number(item.receivedQuantity) || 0
+                            return (
+                              <div key={item.id} className="pb-2 border-b last:border-0 last:pb-0">
+                                <div className="text-sm font-medium">
+                                  {item.productName}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Đã nhận: {receivedQty} / {orderedQty} {item.unitName}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center align-middle">
+                        {order.expectedDeliveryDate
+                          ? format(new Date(order.expectedDeliveryDate), 'dd/MM/yyyy')
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="text-right align-middle">
+                        {moneyFormat(orderTotal)}
+                      </TableCell>
+                      <TableCell className="text-right text-green-600 align-middle">
+                        {moneyFormat(orderPaid)}
+                      </TableCell>
+                      <TableCell className="text-right text-red-600 align-middle">
+                        {moneyFormat(remainingAmount)}
+                      </TableCell>
+                    </TableRow>
+                  )
                 })
               ) : (
                 <TableRow>

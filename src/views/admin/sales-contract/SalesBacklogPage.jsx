@@ -15,7 +15,7 @@ import { format } from 'date-fns'
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getSalesBacklog } from '@/stores/ReportSlice'
-import ViewSalesContractDialog from './components/ViewSalesContractDialog'
+import ViewInvoiceDialog from '../invoice/components/ViewInvoiceDialog'
 
 import { DataTablePagination } from '../invoice/components/DataTablePagination'
 import { FileSpreadsheet, Phone } from 'lucide-react'
@@ -29,8 +29,8 @@ const SalesBacklogPage = () => {
 
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(50)
-  const [showViewContractDialog, setShowViewContractDialog] = useState(false)
-  const [selectedContractId, setSelectedContractId] = useState(null)
+  const [showViewInvoiceDialog, setShowViewInvoiceDialog] = useState(false)
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
   const [showExportPreview, setShowExportPreview] = useState(false)
 
   useEffect(() => {
@@ -85,11 +85,11 @@ const SalesBacklogPage = () => {
           />
         )}
 
-        {selectedContractId && (
-          <ViewSalesContractDialog
-            open={showViewContractDialog}
-            onOpenChange={setShowViewContractDialog}
-            contractId={selectedContractId}
+        {selectedInvoiceId && (
+          <ViewInvoiceDialog
+            open={showViewInvoiceDialog}
+            onOpenChange={setShowViewInvoiceDialog}
+            invoiceId={selectedInvoiceId}
             showTrigger={false}
           />
         )}
@@ -135,79 +135,76 @@ const SalesBacklogPage = () => {
                   </TableRow>
                 ))
               ) : data && data.length > 0 ? (
-                data.flatMap(
-                  (contract) =>
-                    contract.items?.map((item) => {
-                      const orderedQty = Number(item.quantity) || 0
-                      const deliveredQty = Number(item.deliveredQuantity) || 0
-                      const remainingQty = orderedQty - deliveredQty
+                data.map((contract) => {
+                  const contractTotal = Number(contract.totalAmount) || 0
+                  const contractPaid = Number(contract.paidAmount) || 0
+                  const itemRemaining = contractTotal - contractPaid
 
-                      const contractTotal = Number(contract.totalAmount) || 0
-                      const contractPaid = Number(contract.paidAmount) || 0
-                      const itemCount = contract.items?.length || 1
-                      const itemTotal = contractTotal / itemCount
-                      const itemPaid = contractPaid / itemCount
-                      const itemRemaining = itemTotal - itemPaid
-
-                      return (
-                        <TableRow key={`${contract.id}-${item.id}`}>
-                          <TableCell
-                            className="font-medium cursor-pointer text-primary hover:underline"
-                            onClick={() => {
-                              setSelectedContractId(contract.id)
-                              setShowViewContractDialog(true)
-                            }}
-                          >
-                            {contract.code}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold">
-                              {contract.customer?.name || contract.buyerName}
+                  return (
+                    <TableRow key={contract.id}>
+                      <TableCell
+                        className="font-medium cursor-pointer text-primary hover:underline"
+                        onClick={() => {
+                          setSelectedInvoiceId(contract.id)
+                          setShowViewInvoiceDialog(true)
+                        }}
+                      >
+                        {contract.code}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-semibold">
+                          {contract.customer?.name || contract.buyerName}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
+                          {contract.customer?.phone || contract.buyerPhone ? (
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              <span>{contract.customer?.phone || contract.buyerPhone}</span>
                             </div>
-                            <div className="text-xs text-muted-foreground mt-1 flex flex-col gap-1">
-                              {contract.customer?.phone || contract.buyerPhone ? (
-                                <div className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  <span>{contract.customer?.phone || contract.buyerPhone}</span>
+                          ) : null}
+                          {contract.customer?.identityCard ? (
+                            <div className="flex items-center gap-1">
+                              <IconId className="h-3 w-3" />
+                              <span>{contract.customer.identityCard}</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2">
+                          {contract.items?.map((item) => {
+                            const orderedQty = Number(item.quantity) || 0
+                            const deliveredQty = Number(item.deliveredQuantity) || 0
+                            return (
+                              <div key={item.id} className="pb-2 border-b last:border-0 last:pb-0">
+                                <div className="text-sm font-medium">
+                                  {item.productName}
                                 </div>
-                              ) : null}
-                              {contract.customer?.identityCard ? (
-                                <div className="flex items-center gap-1">
-                                  <IconId className="h-3 w-3" />
-                                  <span>{contract.customer.identityCard}</span>
+                                <div className="text-xs text-muted-foreground">
+                                  Đã giao: {deliveredQty} / {orderedQty}
                                 </div>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm font-medium">
-                              {item.productName}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Đã giao: {deliveredQty} / {orderedQty}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {item.expectedDeliveryDate || contract.expectedDeliveryDate
-                              ? format(
-                                new Date(item.expectedDeliveryDate || contract.expectedDeliveryDate),
-                                'dd/MM/yyyy',
-                              )
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {moneyFormat(itemTotal)}
-                          </TableCell>
-                          <TableCell className="text-right text-green-600">
-                            {moneyFormat(itemPaid)}
-                          </TableCell>
-                          <TableCell className="text-right text-red-600">
-                            {moneyFormat(itemRemaining)}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    }) || [],
-                )
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center align-middle">
+                        {contract.expectedDeliveryDate
+                          ? format(new Date(contract.expectedDeliveryDate), 'dd/MM/yyyy')
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="text-right align-middle">
+                        {moneyFormat(contractTotal)}
+                      </TableCell>
+                      <TableCell className="text-right text-green-600 align-middle">
+                        {moneyFormat(contractPaid)}
+                      </TableCell>
+                      <TableCell className="text-right text-red-600 align-middle">
+                        {moneyFormat(itemRemaining)}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               ) : (
                 <TableRow>
                   <TableCell

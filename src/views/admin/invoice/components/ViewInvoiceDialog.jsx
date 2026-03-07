@@ -2488,6 +2488,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
             setTimeout(() => setReceiptToEdit(null), 300)
           }
         }}
+        showTrigger={false}
         invoices={[invoice?.id]}
         receipt={receiptToEdit}
         invoiceCode={invoice?.code}

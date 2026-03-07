@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { getCategories } from '@/stores/CategorySlice'
 import { getSuppliers } from '@/stores/SupplierSlice'
@@ -31,6 +31,7 @@ export default function InventoryStatisticsPage() {
   const [reportData, setReportData] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const initialFetchRef = useRef(false)
 
   // Redux data
   const { categories } = useSelector((state) => state.category)
@@ -90,9 +91,10 @@ export default function InventoryStatisticsPage() {
     }
   }, [selectedSupplierId, selectedCategoryId, setError, setLoading, setReportData])
 
-  // Automatically fetch report when both are selected
+  // Automatically fetch report initially
   useEffect(() => {
-    if (selectedCategoryId && selectedSupplierId) {
+    if (selectedCategoryId && selectedSupplierId && !initialFetchRef.current) {
+      initialFetchRef.current = true
       handleFetchReport()
     }
   }, [selectedCategoryId, selectedSupplierId, handleFetchReport])
@@ -149,13 +151,13 @@ export default function InventoryStatisticsPage() {
 
           {/* Data Table */}
           {reportData.length > 0 && (
-            <div className="overflow-x-auto rounded-lg border bg-white">
-              <Table className="min-w-full">
+            <div className="overflow-x-auto overflow-y-auto max-h-[65vh] rounded-lg border bg-white relative">
+              <Table className="min-w-max border-collapse">
                 <TableHeader>
                   <TableRow className="bg-secondary/50">
-                    <TableHead className="w-1/4 border-r font-bold text-center text-primary">CHỈ SỐ</TableHead>
+                    <TableHead className="min-w-[120px] max-w-[150px] border-r border-b font-bold text-center text-primary sticky top-0 bg-secondary/80 z-10 align-middle">CHỈ SỐ</TableHead>
                     {reportData.map((prod) => (
-                      <TableHead key={prod.productId} className="border-r font-bold text-center">
+                      <TableHead key={prod.productId} className="min-w-[90px] max-w-[130px] border-r border-b font-bold text-center align-middle sticky top-0 bg-secondary/80 z-10">
                         {prod.productName}
                       </TableHead>
                     ))}

@@ -44,13 +44,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import React from 'react'
 import ViewInvoiceDialog from '@/views/admin/invoice/components/ViewInvoiceDialog'
 import InvoiceDialog from '@/views/admin/invoice/components/InvoiceDialog'
-import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
+import { buildInstallmentDataV2 } from '../../invoice/helpers/BuildInstallmentDataV2'
 import { getInvoiceDetail } from '@/api/invoice'
-import InstallmentPreviewDialog from '../../invoice/components/InstallmentPreviewDialog'
+import InstallmentPreviewDialogV2 from '../../invoice/components/InstallmentPreviewDialogV2'
 import LiquidateContractDialog from './LiquidateContractDialog'
 import DeleteSalesContractDialog from './DeleteSalesContractDialog'
 import MobileSalesContractActions from './MobileSalesContractActions'
-import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWord'
+import { exportInstallmentWordV2 } from '../../invoice/helpers/ExportInstallmentWordV2'
 import { Package } from 'lucide-react'
 import { getPublicUrl } from '@/utils/file'
 import ViewProductDialog from '../../product/components/ViewProductDialog'
@@ -170,7 +170,10 @@ const ViewSalesContractDialog = ({
       const invoiceId = contract.invoices[0].id
       const fullInvoiceData = await getInvoiceDetail(invoiceId)
 
-      const baseInstallmentData = await buildInstallmentData(fullInvoiceData)
+      const baseInstallmentData = await buildInstallmentDataV2({
+        ...fullInvoiceData,
+        salesContract: contract
+      })
 
       setInstallmentData(baseInstallmentData)
       setInstallmentFileName(`hop-dong-ban-hang-${contract.code || 'contract'}.docx`)
@@ -1884,7 +1887,7 @@ const ViewSalesContractDialog = ({
           </DialogFooter>
 
           {installmentData && (
-            <InstallmentPreviewDialog
+            <InstallmentPreviewDialogV2
               open={showInstallmentPreview}
               onOpenChange={(open) => {
                 if (!open) {
@@ -1902,7 +1905,7 @@ const ViewSalesContractDialog = ({
                   }
 
                   setInstallmentExporting(true)
-                  await exportInstallmentWord(finalData, installmentFileName)
+                  await exportInstallmentWordV2(finalData, installmentFileName)
 
                   // 2. Ghi nhận print success sau khi export thành công
                   if (finalData.salesContractId) {

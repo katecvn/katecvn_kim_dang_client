@@ -7,6 +7,7 @@ import CustomerDetailDialog from './CustomerDetailDialog'
 import { useState } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
+import { Phone, CreditCard } from 'lucide-react'
 
 export const columns = [
   {
@@ -75,20 +76,32 @@ export const columns = [
     cell: ({ row }) => {
       const name = row.original?.name
       const phone = row.original?.phone
+      const identityCard = row.original?.identityCard
 
       return (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           <div className="whitespace-normal break-words font-medium">
             {name}
           </div>
 
-          {phone && (
-            <a
-              href={`tel:${phone}`}
-              className="text-sm text-primary underline dark:text-secondary-foreground"
-            >
-              {phone}
-            </a>
+          {(phone || identityCard) && (
+            <div className="flex flex-col gap-1 mt-0.5">
+              {phone && (
+                <a
+                  href={`tel:${phone}`}
+                  className="flex items-center gap-1.5 text-sm text-primary underline dark:text-secondary-foreground"
+                >
+                  <Phone className="h-3.5 w-3.5" />
+                  {phone}
+                </a>
+              )}
+              {identityCard && (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-medium">
+                  <CreditCard className="h-3.5 w-3.5" />
+                  {identityCard}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )
@@ -96,11 +109,12 @@ export const columns = [
     enableSorting: true,
     enableHiding: true,
     filterFn: (row, id, value) => {
-      const name = normalizeText(row.original.name)
+      const name = normalizeText(row.original.name || '')
       const phone = normalizeText(row.original.phone || '')
+      const identityCard = normalizeText(row.original.identityCard || '')
       const searchValue = normalizeText(value)
 
-      return name.includes(searchValue) || phone.includes(searchValue)
+      return name.includes(searchValue) || phone.includes(searchValue) || identityCard.includes(searchValue)
     },
   },
 

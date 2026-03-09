@@ -46,6 +46,7 @@ const createCustomerSchema = z.object({
     .string()
     .max(255, { message: 'Nơi cấp không được vượt quá 255 ký tự' })
     .nullable(),
+  dateOfBirth: z.string().nullable(),
 })
 
 const updateCustomerSchema = z.object({
@@ -92,6 +93,7 @@ const updateCustomerSchema = z.object({
     .string()
     .max(255, { message: 'Nơi cấp không được vượt quá 255 ký tự' })
     .nullable(),
+  dateOfBirth: z.string().nullable(),
 })
 
 export { createCustomerSchema, updateCustomerSchema }

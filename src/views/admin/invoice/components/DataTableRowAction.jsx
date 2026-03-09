@@ -45,11 +45,18 @@ import { toast } from 'sonner'
 import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
 import PrintInvoiceView from './PrintInvoiceView'
 import AgreementPreviewDialog from './AgreementPreviewDialog'
+// V1 Legacy Imports left here for reference:
 import InstallmentPreviewDialog from './InstallmentPreviewDialog'
-import { buildAgreementData } from '../helpers/BuildAgreementData'
 import { buildInstallmentData } from '../helpers/BuildInstallmentData'
-import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
+
+// V2 Imports:
+import InstallmentPreviewDialogV2 from './InstallmentPreviewDialogV2'
+import { buildInstallmentDataV2 } from '../helpers/BuildInstallmentDataV2'
+import { exportInstallmentWordV2 } from '../helpers/ExportInstallmentWordV2'
+
+import { buildAgreementData } from '../helpers/BuildAgreementData'
+import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 
 const DataTableRowActions = ({ row, table }) => {
   const invoice = row?.original || {}
@@ -73,6 +80,7 @@ const DataTableRowActions = ({ row, table }) => {
   const [agreementData, setAgreementData] = useState(null)
   const [agreementFileName, setAgreementFileName] = useState('thoa-thuan-mua-ban.pdf')
   const [agreementExporting, setAgreementExporting] = useState(false)
+
   const [showInstallmentPreview, setShowInstallmentPreview] = useState(false)
   const [installmentData, setInstallmentData] = useState(null)
   const [installmentFileName, setInstallmentFileName] = useState('hop-dong-tra-cham.docx')
@@ -105,8 +113,6 @@ const DataTableRowActions = ({ row, table }) => {
       toast.warning('Đơn bán phải có ít nhất một phiếu thu đã ghi sổ (đã thu) mới được tạo phiếu xuất kho')
       return
     }
-
-
 
     // Show confirmation dialog
     setShowConfirmWarehouseDialog(true)
@@ -225,13 +231,14 @@ const DataTableRowActions = ({ row, table }) => {
         return
       }
 
-      const baseInstallmentData = await buildInstallmentData(data)
+      // USING V2 DATA BUILDER
+      const baseInstallmentData = await buildInstallmentDataV2(data)
       setInstallmentData(baseInstallmentData)
-      setInstallmentFileName(`hop-dong-tra-cham-${data.code || 'contract'}.docx`)
+      setInstallmentFileName(`hop-dong-ban-hang-${data.code || 'contract'}.docx`)
       setShowInstallmentPreview(true)
     } catch (error) {
       console.error('Load installment data error:', error)
-      toast.error('Không lấy được dữ liệu hợp đồng trả chậm')
+      toast.error('Không lấy được dữ liệu hợp đồng bán hàng')
     }
   }
 
@@ -475,9 +482,9 @@ const DataTableRowActions = ({ row, table }) => {
         />
       )}
 
-      {/* Print Installment Dialog */}
+      {/* Print Installment Dialog (V2) */}
       {installmentData && (
-        <InstallmentPreviewDialog
+        <InstallmentPreviewDialogV2
           open={showInstallmentPreview}
           onOpenChange={(open) => {
             if (!open) setShowInstallmentPreview(false)
@@ -491,19 +498,19 @@ const DataTableRowActions = ({ row, table }) => {
               }
 
               setInstallmentExporting(true)
-              await exportInstallmentWord(finalData, installmentFileName)
+              // EXPORT USING V2 FUNCTION
+              await exportInstallmentWordV2(finalData, installmentFileName)
 
               // 2. Ghi nhận print success sau khi export thành công
               if (finalData.salesContractId) {
                 await dispatch(increasePrintSuccess(finalData.salesContractId)).unwrap()
-                // Không cần refresh invoice list ở đây vì print count chỉ hiện trong dialog chi tiết
               }
 
-              toast.success('Đã xuất hợp đồng trả chậm thành công')
+              toast.success('Đã xuất hợp đồng bán hàng thành công')
               setShowInstallmentPreview(false)
             } catch (error) {
               console.error('Export installment error:', error)
-              toast.error('Xuất hợp đồng trả chậm thất bại')
+              toast.error('Xuất hợp đồng bán hàng thất bại')
             } finally {
               setInstallmentExporting(false)
             }

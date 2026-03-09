@@ -62,10 +62,12 @@ const UpdateCustomerDialog = ({
       identityCard: customer.identityCard || '',
       identityDate: customer.identityDate || null,
       identityPlace: customer.identityPlace || '',
+      dateOfBirth: customer.dateOfBirth || null,
     },
   })
 
   const [openIdentityDatePicker, setOpenIdentityDatePicker] = useState(false)
+  const [openDobDatePicker, setOpenDobDatePicker] = useState(false)
 
   const dispatch = useDispatch()
   const onSubmit = async (data) => {
@@ -256,6 +258,57 @@ const UpdateCustomerDialog = ({
                       <FormControl>
                         <Input placeholder="Nhập nơi cấp" {...field} value={field.value || ''} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <FormItem className="mb-2 space-y-1">
+                      <FormLabel>Ngày sinh</FormLabel>
+                      <Popover open={openDobDatePicker} onOpenChange={setOpenDobDatePicker}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground',
+                              )}
+                            >
+                              {field.value ? (
+                                format(new Date(field.value), 'dd/MM/yyyy', {
+                                  locale: vi,
+                                })
+                              ) : (
+                                <span>Chọn ngày sinh</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : undefined}
+                            onSelect={(date) => {
+                              field.onChange(date ? format(date, 'yyyy-MM-dd') : null)
+                              setOpenDobDatePicker(false)
+                            }}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date('1900-01-01')
+                            }
+                            initialFocus
+                            locale={vi}
+                            captionLayout="dropdown-buttons"
+                            fromYear={1900}
+                            toYear={new Date().getFullYear()}
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}

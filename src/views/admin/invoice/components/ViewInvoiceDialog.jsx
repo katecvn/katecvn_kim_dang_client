@@ -74,9 +74,9 @@ import ViewProductDialog from '../../product/components/ViewProductDialog'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
 import { getPublicUrl } from '@/utils/file'
-import InstallmentPreviewDialog from './InstallmentPreviewDialog'
-import { buildInstallmentData } from '../helpers/BuildInstallmentData'
-import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
+import InstallmentPreviewDialogV2 from './InstallmentPreviewDialogV2'
+import { buildInstallmentDataV2 } from '../helpers/BuildInstallmentDataV2'
+import { exportInstallmentWordV2 } from '../helpers/ExportInstallmentWordV2'
 import { updateReceiptStatus, getReceiptQRCode } from '@/stores/ReceiptSlice'
 import UpdateReceiptStatusDialog from '../../receipt/components/UpdateReceiptStatusDialog'
 import { DeleteReceiptDialog } from '../../receipt/components/DeleteReceiptDialog'
@@ -305,7 +305,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
     }
 
     try {
-      const baseInstallmentData = await buildInstallmentData(invoice)
+      const baseInstallmentData = await buildInstallmentDataV2(invoice)
       setInstallmentData(baseInstallmentData)
       setInstallmentFileName(`hop-dong-tra-cham-${invoice.code || 'contract'}.docx`)
       setShowInstallmentPreview(true)
@@ -2293,35 +2293,31 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
       {/* InstallmentPreviewDialog outside Dialog to avoid z-index issues on mobile */}
       {
         installmentData && (
-          <InstallmentPreviewDialog
+          <InstallmentPreviewDialogV2
             open={showInstallmentPreview}
-            onOpenChange={(open) => {
-              if (!open) setShowInstallmentPreview(false)
-            }}
+            onOpenChange={setShowInstallmentPreview}
             initialData={installmentData}
             onConfirm={async (finalData) => {
               try {
-                // 1. Ghi nhận print attempt
-                if (finalData.salesContractId) {
-                  dispatch(increasePrintAttempt(finalData.salesContractId))
-                }
-
                 setInstallmentExporting(true)
-                await exportInstallmentWord(finalData, installmentFileName)
+                await exportInstallmentWordV2(finalData, installmentFileName)
 
-                // 2. Ghi nhận print success sau khi export thành công
-                if (finalData.salesContractId) {
-                  await dispatch(increasePrintSuccess(finalData.salesContractId)).unwrap()
-
-                  // Refresh invoice data to get updated contract info (print count)
-                  fetchData()
+                // Track print attempt in background
+                if (invoice?.salesContract?.id) {
+                  dispatch(increasePrintAttempt(invoice.salesContract.id))
+                    .unwrap()
+                    .then(() => {
+                      dispatch(increasePrintSuccess(invoice.salesContract.id))
+                      fetchData() // Refresh to get new print count
+                    })
+                    .catch(e => console.error('Failed to log print attempt:', e))
                 }
 
-                toast.success('Đã xuất hợp đồng trả chậm thành công')
+                toast.success('Đã xuất file Hợp đồng trả chậm')
                 setShowInstallmentPreview(false)
               } catch (error) {
-                console.error('Export installment error:', error)
-                toast.error('Xuất hợp đồng trả chậm thất bại')
+                console.error('Export error:', error)
+                toast.error('Có lỗi xảy ra khi xuất file')
               } finally {
                 setInstallmentExporting(false)
               }

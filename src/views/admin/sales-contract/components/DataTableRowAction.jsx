@@ -40,10 +40,10 @@ import { toast } from 'sonner'
 import { getSalesContracts, getSalesContractDetail, cancelLiquidateSalesContract, increasePrintAttempt, increasePrintSuccess } from '@/stores/SalesContractSlice'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
 import { IconFileTypePdf } from '@tabler/icons-react'
-import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
-import InstallmentPreviewDialog from '../../invoice/components/InstallmentPreviewDialog'
+import { buildInstallmentDataV2 } from '../../invoice/helpers/BuildInstallmentDataV2'
+import InstallmentPreviewDialogV2 from '../../invoice/components/InstallmentPreviewDialogV2'
 import { getInvoiceDetail } from '@/api/invoice'
-import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWord'
+import { exportInstallmentWordV2 } from '../../invoice/helpers/ExportInstallmentWordV2'
 import ReceiptDialog from '@/views/admin/receipt/components/ReceiptDialog'
 
 const DataTableRowActions = ({ row }) => {
@@ -107,7 +107,10 @@ const DataTableRowActions = ({ row }) => {
       const invoiceId = contractDetail.invoices[0].id
       const fullInvoiceData = await getInvoiceDetail(invoiceId)
 
-      const baseInstallmentData = await buildInstallmentData(fullInvoiceData)
+      const baseInstallmentData = await buildInstallmentDataV2({
+        ...fullInvoiceData,
+        salesContract: contractDetail
+      })
 
       setInstallmentData(baseInstallmentData)
       setInstallmentFileName(`hop-dong-ban-hang-${contractDetail.code || 'contract'}.docx`)
@@ -388,27 +391,23 @@ const DataTableRowActions = ({ row }) => {
       )}
 
       {installmentData && (
-        <InstallmentPreviewDialog
+        <InstallmentPreviewDialogV2
           open={showInstallmentPreview}
-          onOpenChange={(open) => {
-            if (!open) {
-              setShowInstallmentPreview(false)
-            }
-          }}
+          onOpenChange={setShowInstallmentPreview}
           initialData={installmentData}
           onConfirm={async (finalData) => {
             try {
-              // 1. Ghi nhận print attempt
+              setInstallmentExporting(true)
+              await exportInstallmentWordV2(finalData, installmentFileName)
+
+              // 1. Ghi nhận print attempt (Track print attempt in background)
               if (finalData.salesContractId) {
                 dispatch(increasePrintAttempt(finalData.salesContractId))
-              }
-
-              setInstallmentExporting(true)
-              await exportInstallmentWord(finalData, installmentFileName)
-
-              // 2. Ghi nhận print success sau khi export thành công
-              if (finalData.salesContractId) {
-                await dispatch(increasePrintSuccess(finalData.salesContractId)).unwrap()
+                  .unwrap()
+                  .then(() => {
+                    dispatch(increasePrintSuccess(finalData.salesContractId))
+                  })
+                  .catch(e => console.error('Failed to log print attempt:', e))
               }
 
               toast.success('Đã xuất hợp đồng bán hàng thành công')

@@ -24,6 +24,7 @@ import {
   Pencil,
   Trash2,
   X,
+  Cake,
 } from 'lucide-react'
 import { useDispatch } from 'react-redux'
 import Can from '@/utils/can'
@@ -298,6 +299,12 @@ const CustomerDetailDialog = ({ customer, showTrigger = true, ...props }) => {
                       <a href={`mailto:${customer?.email}`}>
                         {customer?.email || 'Chưa cập nhật'}
                       </a>
+                    </div>
+                    <div className="flex items-center text-primary hover:text-secondary-foreground">
+                      <div className="mr-2 h-4 w-4">
+                        <Cake className="h-4 w-4" />
+                      </div>
+                      {customer?.dateOfBirth ? dateFormat(customer.dateOfBirth) : 'Chưa có ngày sinh'}
                     </div>
                     <div className="flex items-center text-primary hover:text-secondary-foreground">
                       <div className="mr-2 h-4 w-4">

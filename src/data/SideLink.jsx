@@ -309,7 +309,7 @@ export const sideLinks = [
         title: 'Sổ chi tiết',
         href: '/warehouse-report/detail',
         icon: <IconBook size={18} />,
-        permission: 'INVENTORY_LEDGER_VIEW',
+        permission: 'INVENTORY_PRODUCT_VIEW',
       },
     ],
   },

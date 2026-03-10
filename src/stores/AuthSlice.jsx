@@ -72,19 +72,11 @@ export const redirectToGoogle = createAsyncThunk(
 
 export const callbackGoogle = createAsyncThunk(
   'auth/callback-google',
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await api.get('/auth/callback/google', {
-        params: data,
-      })
-      const { data: token } = response.data
-      localStorage.setItem('accessToken', token)
-      toast.success('Đăng nhập thành công')
-      return response.data
-    } catch (error) {
-      const message = handleError(error)
-      return rejectWithValue(message)
-    }
+  async (_, { rejectWithValue }) => {
+    // This thunk is no longer used
+    // Server now redirects directly to frontend with ?accessToken=JWT param
+    // The accessToken param is handled in AuthForm.jsx useEffect
+    return null
   },
 )
 

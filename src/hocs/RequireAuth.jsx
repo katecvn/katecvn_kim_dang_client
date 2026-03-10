@@ -36,7 +36,7 @@ const privateRoutes = {
   '/warehouse-in': ['WAREHOUSE_IMPORT_VIEW_ALL'],
   '/warehouse-out': ['WAREHOUSE_EXPORT_VIEW_ALL'],
   '/warehouse-report/summary': ['INVENTORY_NXT_VIEW'],
-  '/warehouse-report/detail': ['INVENTORY_LEDGER_VIEW'],
+  '/warehouse-report/detail': ['INVENTORY_PRODUCT_VIEW'],
   '/purchase-report': ['REPORT_PURCHASE_VIEW'],
   '/sales-backlog': ['REPORT_UNDELIVERED_VIEW'],
   '/purchase-backlog': ['REPORT_UNRECEIVED_VIEW'],

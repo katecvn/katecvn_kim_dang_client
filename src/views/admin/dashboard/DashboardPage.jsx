@@ -8,6 +8,7 @@ import DailyRevenueChart from './components/DailyRevenueChart'
 import BacklogWidget from './components/PendingOrders'
 import RecentSales from './components/RecentSales'
 import TransactionList from './components/TransactionList'
+import InventoryStatisticsWidget from './components/InventoryStatisticsWidget'
 import api from '@/utils/axios'
 import { startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns'
 
@@ -197,6 +198,9 @@ const DashboardPage = () => {
                 loading={loading}
               />
             </div>
+
+            {/* Inventory Statistics Report Section */}
+            <InventoryStatisticsWidget />
           </div>
         </div>
       </LayoutBody>

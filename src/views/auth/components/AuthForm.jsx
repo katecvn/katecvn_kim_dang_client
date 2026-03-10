@@ -18,7 +18,6 @@ import {
   getAuthUserRolePermissions,
   login,
   redirectToGoogle,
-  callbackGoogle,
 } from '@/stores/AuthSlice'
 import { useEffect } from 'react'
 import { loginSchema } from '../schema'
@@ -54,29 +53,17 @@ const AuthForm = ({ className, ...props }) => {
     document.title = 'Đăng nhập'
   }, [])
 
-  // Handle Google OAuth callback with code/state
-  useEffect(() => {
-    const code = searchParams.get('code')
-    const state = searchParams.get('state')
-
-    if (code && state) {
-      const handleGoogleCallback = async () => {
-        try {
-          await dispatch(callbackGoogle({ code, state })).unwrap()
-          await dispatch(getAuthUserRolePermissions()).unwrap()
-          navigate('/dashboard')
-        } catch (error) {
-          console.log('Google callback error: ', error)
-        }
-      }
-
-      handleGoogleCallback()
-    }
-  }, [searchParams, dispatch, navigate])
-
   // Handle Google OAuth callback with accessToken (direct token)
+  // Server redirects to: http://localhost:5174?accessToken=JWT
   useEffect(() => {
     const accessToken = searchParams.get('accessToken')
+    const error = searchParams.get('error')
+
+    if (error) {
+      console.error('Google OAuth error:', error)
+      toast.error(`Lỗi đăng nhập: ${error}`)
+      return
+    }
 
     if (accessToken) {
       const handleDirectTokenCallback = async () => {
@@ -93,9 +80,10 @@ const AuthForm = ({ className, ...props }) => {
           // Navigate to dashboard
           navigate('/dashboard')
         } catch (error) {
-          console.log('Direct token callback error: ', error)
+          console.error('Direct token callback error:', error)
           // Clear invalid token
           localStorage.removeItem('accessToken')
+          toast.error('Không thể lấy thông tin người dùng')
         }
       }
 

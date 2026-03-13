@@ -17,6 +17,7 @@ const DeletePurchaseOrderDialog = ({
   onOpenChange,
   purchaseOrder,
   showTrigger = true,
+  onRefresh,
 }) => {
   const dispatch = useDispatch()
 
@@ -25,6 +26,7 @@ const DeletePurchaseOrderDialog = ({
       await dispatch(deletePurchaseOrder(purchaseOrder.id)).unwrap()
       toast.success('Xóa đơn đặt hàng thành công')
       onOpenChange(false)
+      onRefresh?.()
     } catch (error) {
       console.error('Delete error:', error)
       toast.error('Xóa đơn đặt hàng thất bại')

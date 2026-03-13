@@ -42,7 +42,7 @@ import ConfirmImportWarehouseDialog from '../../warehouse-receipt/components/Con
 import PaymentFormDialog from '../../payment/components/PaymentDialog'
 import PrintPurchaseOrderView from './PrintPurchaseOrderView'
 
-const DataTableRowActions = ({ row, table }) => {
+const DataTableRowActions = ({ row, table, onRefresh }) => {
   const purchaseOrder = row?.original || {}
   const setting = useSelector((state) => state.setting.setting)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -110,7 +110,7 @@ const DataTableRowActions = ({ row, table }) => {
     try {
       await dispatch(createWarehouseReceipt(payload)).unwrap()
       // Refresh list
-      await dispatch(getPurchaseOrders({})).unwrap()
+      await (onRefresh ? onRefresh() : dispatch(getPurchaseOrders({}))).unwrap()
     } catch (error) {
       console.error(error)
       // Error handled in slice typically or toast here if needed
@@ -130,7 +130,7 @@ const DataTableRowActions = ({ row, table }) => {
       // We might need to refresh purchase orders to see the new status if backend updates PO too
       // (Usually posting receipt updates receipt status, PO might track it via relation)
       // Refreshing PO list just in case
-      await dispatch(getPurchaseOrders({})).unwrap() // Assuming generic fetch works or pass filters if needed
+      await (onRefresh ? onRefresh() : dispatch(getPurchaseOrders({}))).unwrap() // Assuming generic fetch works or pass filters if needed
     } catch (error) {
       console.error('Post warehouse receipt error:', error)
     }
@@ -328,6 +328,7 @@ const DataTableRowActions = ({ row, table }) => {
         <DeletePurchaseOrderDialog
           open={showDeleteDialog}
           onOpenChange={setShowDeleteDialog}
+          onRefresh={onRefresh}
           purchaseOrder={purchaseOrder}
           showTrigger={false}
         />

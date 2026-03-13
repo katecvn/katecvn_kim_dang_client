@@ -29,7 +29,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
+const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder, onRefresh }) => {
   const dispatch = useDispatch()
   const isFiltered = table.getState().columnFilters.length > 0
 
@@ -55,6 +55,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
       await dispatch(deleteMultiplePurchaseOrders(selectedIds)).unwrap()
       table.resetRowSelection()
       setShowDeleteDialog(false)
+      onRefresh?.()
     } catch (error) {
       console.log(error)
     }
@@ -175,6 +176,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
             open={showCreateDialog}
             onOpenChange={setShowCreateDialog}
             onSuccess={onCreated}
+            onRefresh={onRefresh}
             showTrigger={false}
           />
         )}
@@ -361,6 +363,7 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder }) => {
             open={showCreateDialog}
             onOpenChange={setShowCreateDialog}
             onSuccess={onCreated}
+            onRefresh={onRefresh}
             showTrigger={false}
           />
         )}

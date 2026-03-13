@@ -41,42 +41,39 @@ const PurchaseOrderPage = () => {
 
   const [columnFilters, setColumnFilters] = useState([])
 
-  const columns = useMemo(() => getColumns(setViewPurchaseOrderId), [])
+  const handleRefresh = useMemo(() => {
+    return () => {
+      const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
+      const userFilter = columnFilters.find((f) => f.id === 'user')?.value
+      const sourceTypeFilter = columnFilters.find((f) => f.id === 'sourceType')?.value
 
-  useEffect(() => {
-    document.title = 'Danh sách đơn đặt hàng'
-    const statusFilter = columnFilters.find((f) => f.id === 'status')?.value
-    const userFilter = columnFilters.find((f) => f.id === 'user')?.value
-    const sourceTypeFilter = columnFilters.find((f) => f.id === 'sourceType')?.value
-
-    const apiFilters = {
-      ...filters,
-      fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
-      toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
-      page: pageIndex + 1,
-      limit: pageSize,
-      search: debouncedSearch,
-      status: statusFilter,
-      creator: userFilter,
-      type: sourceTypeFilter?.[0] ?? undefined,
-    }
-    dispatch(getPurchaseOrders(apiFilters))
-  }, [dispatch, filters, pageIndex, pageSize, debouncedSearch, columnFilters])
-
-  const handlePurchaseOrderCreated = (newPurchaseOrder) => {
-    if (newPurchaseOrder?.id) {
-      setViewPurchaseOrderId(newPurchaseOrder.id)
-      setViewPurchaseOrderId(newPurchaseOrder.id)
-      // Refresh the list as Create Action in Slice might only refresh my-purchase-orders
       const apiFilters = {
         ...filters,
         fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
         toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
         page: pageIndex + 1,
         limit: pageSize,
-        search: debouncedSearch
+        search: debouncedSearch,
+        status: statusFilter,
+        creator: userFilter,
+        type: sourceTypeFilter?.[0] ?? undefined,
       }
       dispatch(getPurchaseOrders(apiFilters))
+    }
+  }, [dispatch, filters, pageIndex, pageSize, debouncedSearch, columnFilters])
+
+  useEffect(() => {
+    document.title = 'Danh sách đơn đặt hàng'
+    handleRefresh()
+  }, [handleRefresh])
+
+  const columns = useMemo(() => getColumns(setViewPurchaseOrderId, handleRefresh), [handleRefresh])
+
+  const handlePurchaseOrderCreated = (newPurchaseOrder) => {
+    if (newPurchaseOrder?.id) {
+      setViewPurchaseOrderId(newPurchaseOrder.id)
+      // Refresh the list as Create Action in Slice might only refresh my-purchase-orders
+      handleRefresh()
     }
   }
 
@@ -134,6 +131,7 @@ const PurchaseOrderPage = () => {
               }}
               columnFilters={columnFilters}
               onColumnFiltersChange={setColumnFilters}
+              onRefresh={handleRefresh}
             />
           )}
         </div>
@@ -156,7 +154,7 @@ const PurchaseOrderPage = () => {
                 setShowUpdatePurchaseOrderDialog(true)
               }, 100)
             }}
-            onRefresh={() => dispatch(getPurchaseOrders(filters))}
+            onRefresh={handleRefresh}
           />
         )}
 

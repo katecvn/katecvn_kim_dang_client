@@ -40,6 +40,7 @@ const PurchaseOrderDataTable = ({
   onSearchChange,
   columnFilters = [], // Add columnFilters prop
   onColumnFiltersChange, // Add onColumnFiltersChange prop
+  onRefresh,
 }) => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [rowSelection, setRowSelection] = useState({})
@@ -129,7 +130,7 @@ const PurchaseOrderDataTable = ({
   if (isMobile) {
     return (
       <div className="space-y-4">
-        <DataTableToolbar table={table} onCreated={onCreated} isMyPurchaseOrder={isMyPurchaseOrder} />
+      <DataTableToolbar table={table} onCreated={onCreated} isMyPurchaseOrder={isMyPurchaseOrder} onRefresh={onRefresh} />
 
         <div className="space-y-2">
           {loading ? (
@@ -150,6 +151,7 @@ const PurchaseOrderDataTable = ({
                 isSelected={row.getIsSelected()}
                 onSelectChange={(checked) => row.toggleSelected(checked)}
                 onRowAction={() => { }}
+                onRefresh={onRefresh}
               />
             ))
           ) : (
@@ -166,7 +168,7 @@ const PurchaseOrderDataTable = ({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} onCreated={onCreated} isMyPurchaseOrder={isMyPurchaseOrder} />
+      <DataTableToolbar table={table} onCreated={onCreated} isMyPurchaseOrder={isMyPurchaseOrder} onRefresh={onRefresh} />
 
       <div className="rounded-md border">
         <Table>

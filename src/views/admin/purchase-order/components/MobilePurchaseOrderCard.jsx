@@ -59,6 +59,7 @@ const MobilePurchaseOrderCard = ({
   isSelected,
   onSelectChange,
   onRowAction,
+  onRefresh,
 }) => {
   const dispatch = useDispatch()
   const setting = useSelector((state) => state.setting.setting)
@@ -258,6 +259,7 @@ const MobilePurchaseOrderCard = ({
           onOpenChange={setShowViewDialog}
           purchaseOrderId={purchaseOrder.id}
           showTrigger={false}
+          onRefresh={onRefresh}
           onEdit={() => {
             setShowViewDialog(false)
             setTimeout(() => setShowUpdateDialog(true), 100)
@@ -278,6 +280,7 @@ const MobilePurchaseOrderCard = ({
         <DeletePurchaseOrderDialog
           open={showDeleteDialog}
           onOpenChange={setShowDeleteDialog}
+          onRefresh={onRefresh}
           purchaseOrder={purchaseOrder}
           showTrigger={false}
         />

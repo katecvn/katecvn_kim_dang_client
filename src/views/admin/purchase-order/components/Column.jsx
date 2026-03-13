@@ -22,7 +22,7 @@ import { Phone, CreditCard, Receipt } from 'lucide-react'
 import { IconReceiptRefund } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
-export const getColumns = (onView) => [
+export const getColumns = (onView, onRefresh) => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -380,6 +380,6 @@ export const getColumns = (onView) => [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Thao tác" />
     ),
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => <DataTableRowActions row={row} onRefresh={onRefresh} />,
   },
 ]

@@ -204,7 +204,7 @@ const ViewPurchaseOrderDialog = ({
       await dispatch(deletePurchaseOrder(purchaseOrderId)).unwrap()
       toast.success('Xóa đơn mua hàng thành công')
       onOpenChange(false)
-      dispatch(getPurchaseOrders({}))
+      onRefresh?.()
     } catch (error) {
       console.error('Delete purchase order error:', error)
       toast.error('Xóa đơn mua hàng thất bại')

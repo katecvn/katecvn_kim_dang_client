@@ -151,19 +151,6 @@ export const deletePurchaseOrder = createAsyncThunk(
       deleteAdminPurchaseOrders
         ? await api.delete(`/purchase-orders/${id}`)
         : await api.delete(`/purchase-orders/${id}`)
-      deleteAdminPurchaseOrders
-        ? await dispatch(
-          getPurchaseOrders({
-            fromDate: getStartOfCurrentMonth(),
-            toDate: getEndOfCurrentMonth(),
-          }),
-        ).unwrap()
-        : await dispatch(
-          getMyPurchaseOrders({
-            fromDate: getStartOfCurrentMonth(),
-            toDate: getEndOfCurrentMonth(),
-          }),
-        ).unwrap()
       toast.success('Xóa thành công')
     } catch (error) {
       const message = handleError(error)
@@ -177,24 +164,6 @@ export const deleteMultiplePurchaseOrders = createAsyncThunk(
   async (ids, { rejectWithValue, dispatch }) => {
     try {
       await api.post('/purchase-orders/bulk-delete', { ids })
-
-      const deleteAdminPurchaseOrders = JSON.parse(
-        localStorage.getItem('permissionCodes'),
-      ).includes('PURCHASE_ORDER_DELETE')
-
-      deleteAdminPurchaseOrders
-        ? await dispatch(
-          getPurchaseOrders({
-            fromDate: getStartOfCurrentMonth(),
-            toDate: getEndOfCurrentMonth(),
-          }),
-        ).unwrap()
-        : await dispatch(
-          getMyPurchaseOrders({
-            fromDate: getStartOfCurrentMonth(),
-            toDate: getEndOfCurrentMonth(),
-          }),
-        ).unwrap()
       toast.success('Xóa các đơn mua hàng đã chọn thành công')
     } catch (error) {
       return rejectWithValue(handleError(error))

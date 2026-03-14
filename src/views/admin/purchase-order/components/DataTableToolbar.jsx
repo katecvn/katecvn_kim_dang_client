@@ -52,10 +52,12 @@ const DataTableToolbar = ({ table, onCreated, isMyPurchaseOrder, onRefresh }) =>
     }
 
     try {
-      await dispatch(deleteMultiplePurchaseOrders(selectedIds)).unwrap()
+      const result = await dispatch(deleteMultiplePurchaseOrders(selectedIds)).unwrap()
       table.resetRowSelection()
       setShowDeleteDialog(false)
-      onRefresh?.()
+      if (result?.data?.success?.length > 0) {
+        onRefresh?.()
+      }
     } catch (error) {
       console.log(error)
     }

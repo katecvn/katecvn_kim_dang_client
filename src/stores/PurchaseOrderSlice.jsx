@@ -163,8 +163,24 @@ export const deleteMultiplePurchaseOrders = createAsyncThunk(
   'purchaseOrder/deleteMultiple',
   async (ids, { rejectWithValue, dispatch }) => {
     try {
-      await api.post('/purchase-orders/bulk-delete', { ids })
-      toast.success('Xóa các đơn mua hàng đã chọn thành công')
+      const response = await api.post('/purchase-orders/bulk-delete', { ids })
+      const { status, message, data } = response.data
+
+      if (data?.failed?.length > 0) {
+        const errorMessages = Array.from(new Set(data.failed.map(f => f.message))).join('. ')
+        if (data?.success?.length > 0) {
+          toast.warning(message || `Đã xóa ${data.success.length} đơn mua, thất bại ${data.failed.length}`, {
+            description: errorMessages
+          })
+        } else {
+          toast.error(message || `Xóa thất bại ${data.failed.length} đơn mua`, {
+            description: errorMessages
+          })
+        }
+      } else {
+        toast.success(message || 'Xóa các đơn mua hàng đã chọn thành công')
+      }
+      return response.data
     } catch (error) {
       return rejectWithValue(handleError(error))
     }

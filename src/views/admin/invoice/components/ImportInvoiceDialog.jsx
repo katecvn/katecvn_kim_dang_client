@@ -79,15 +79,38 @@ const ImportInvoiceDialog = ({
         if (rowNumber === 1) return // header
 
         const getVal = (idx) => {
-          const val = row.getCell(idx).value
-          return val?.text || val || ''
+          const cell = row.getCell(idx)
+          let val = cell.value
+
+          if (val === null || val === undefined) return ''
+
+          // Handle Formulas
+          if (typeof val === 'object' && val.result !== undefined) {
+            val = val.result
+          }
+
+          // Handle Rich Text
+          if (val.richText) {
+            val = val.richText.map((rt) => rt.text).join('')
+          }
+
+          // Handle Hyperlinks
+          if (val.hyperlink) {
+            val = val.text || val.hyperlink
+          }
+
+          return String(val).trim()
         }
 
-        const getDateVal = (idx) => parseDate(row.getCell(idx).value)
-        const getBoolVal = (idx) => String(getVal(idx)).toUpperCase() === 'TRUE'
+        const getDateVal = (idx) => {
+          const val = row.getCell(idx).value
+          const date = val?.result instanceof Date ? val.result : (val instanceof Date ? val : null)
+          return parseDate(date)
+        }
+        const getBoolVal = (idx) => getVal(idx).toUpperCase() === 'TRUE'
         const getNumVal = (idx) => {
           const val = getVal(idx)
-          return val ? Number(val) : 0
+          return val ? Number(val.replace(/[^0-9.-]+/g, '')) : 0
         }
 
         // Updated Mapping (20 Columns):
@@ -114,22 +137,22 @@ const ImportInvoiceDialog = ({
 
         rows.push({
           rowNumber,
-          groupCode: String(getVal(1)),
-          identityCard: String(getVal(2)),
-          customerName: String(getVal(3)),
-          phone: String(getVal(4)),
-          email: String(getVal(5)),
-          address: String(getVal(6)),
+          groupCode: getVal(1),
+          identityCard: getVal(2),
+          customerName: getVal(3),
+          phone: getVal(4),
+          email: getVal(5),
+          address: getVal(6),
           identityDate: getDateVal(7),
-          identityPlace: String(getVal(8)),
+          identityPlace: getVal(8),
           orderDate: getDateVal(9),
-          transactionType: String(getVal(10) || 'RETAIL'),
-          note: String(getVal(11)),
+          transactionType: getVal(10) || 'RETAIL',
+          note: getVal(11),
           isPrintContract: getBoolVal(12),
           expectedDeliveryDate: getDateVal(13),
           // Product Info
-          productCode: String(getVal(14)),
-          unitCode: String(getVal(15)),
+          productCode: getVal(14),
+          unitCode: getVal(15),
           taxAmount: getNumVal(16),
           quantity: getNumVal(17),
           price: getNumVal(18),
@@ -145,26 +168,25 @@ const ImportInvoiceDialog = ({
 
       // Grouping Logic: Group by groupCode (preferred) OR Key (IdentityCard + OrderDate)
       const invoicesMap = new Map()
+      let currentKey = null
 
       rows.forEach((row) => {
-        // Determine grouping key
-        let key = row.groupCode
-        if (!key || key === 'undefined' || key === 'null' || key === '') {
-          // Fallback if groupCode is missing: Use IdentityCard + OrderDate
-          if (row.identityCard) {
-            key = `${row.identityCard}_${row.orderDate || 'nodate'}`
-          } else {
-            // If both groupCode and IdentityCard missing, skip or log warning?
-            // Since it might be an item row belonging to previous group?
-            // But without groupCode, we can't link it reliably if sequential logic isn't guaranteed.
-            // We'll rely on groupCode being present as per user requirement, or valid context.
-            return
-          }
+        // Determine if this is a "Header Row" (starts a new group)
+        const hasGroupCode = row.groupCode && row.groupCode !== 'undefined' && row.groupCode !== 'null'
+        const hasIdentity = row.identityCard && row.identityCard !== 'undefined' && row.identityCard !== 'null'
+
+        if (hasGroupCode) {
+          currentKey = row.groupCode
+        } else if (hasIdentity) {
+          currentKey = `${row.identityCard}_${row.orderDate || 'nodate'}`
         }
 
-        if (!invoicesMap.has(key)) {
-          // Initialize Invoice Header with potential empty values if row is just an item row (though unlikely for first row of group)
-          invoicesMap.set(key, {
+        // If we still don't have a currentKey (e.g. first row is invalid), skip
+        if (!currentKey) return
+
+        if (!invoicesMap.has(currentKey)) {
+          // Initialize Invoice Header
+          invoicesMap.set(currentKey, {
             identityCard: row.identityCard,
             newCustomer: {
               name: row.customerName,
@@ -183,15 +205,13 @@ const ImportInvoiceDialog = ({
             hasPrintInvoice: true,
             hasPrintQuotation: true,
             expectedDeliveryDate: row.expectedDeliveryDate,
-            // rowNumbers: [],
           })
         }
 
-        const invoice = invoicesMap.get(key)
-        // invoice.rowNumbers.push(row.rowNumber)
+        const invoice = invoicesMap.get(currentKey)
 
-        // Update Header Info if current row has it (and previous didn't or we want to overwrite)
-        if (row.identityCard) {
+        // If this row has header info, update the invoice header (case where multiple rows have info but same group)
+        if (hasIdentity) {
           invoice.identityCard = row.identityCard
           invoice.newCustomer = {
             name: row.customerName,
@@ -205,41 +225,13 @@ const ImportInvoiceDialog = ({
           invoice.orderDate = row.orderDate
           invoice.transactionType = row.transactionType
           invoice.note = row.note
-          invoice.isPrintContract = row.isPrintContract // Update contract flag from header row
+          invoice.isPrintContract = row.isPrintContract
           if (row.expectedDeliveryDate) {
             invoice.expectedDeliveryDate = row.expectedDeliveryDate
           }
         }
 
-        // Calculate line totals
-        // Tax is per unit or total tax amount? Column says "Thuế".
-        // Usually tax amount. Let's assume it's total tax for the line or per unit?
-        // Given "Số lượng" * "Đơn giá", "Thuế" is likely Tax Amount for the line or Tax Rate?
-        // User example says "mathue01" (Tax Code) or Amount?
-        // User sample: "18020000" (Price), "0" (Discount). "Thuế" column is empty/0 in example?
-        // Wait, user example: "Thuế" column has `1`? Or is `1` the UnitCode?
-        // Let's re-read user Request:
-        // Headers: ... Mã đơn vị (*) Thuế Số lượng (*) Đơn giá (*) ...
-        // Data: ... `mathue01` `1` `18020000` ...
-        // So `mathue01` is Unit Code? No.
-        // `SJC` -> Product Code (14)
-        // `luong` -> Unit Code (15)
-        // `mathue01` -> Tax (16)? Or is `mathue01` a Tax Code?
-        // If it's a Tax Code, we might need to look it up.
-        // If it's a number, it's amount.
-        // User text: `mathue01`. This looks like a Tax Code (e.g., VAT10).
-        // If it's a code, we can't calculate amount easily without rates.
-        // HOWEVER, `importInvoice` payload usually expects calculated values or simple structure.
-        // Let's assume `taxAmount` should be 0 if parsing fails, or pass the code if backend handles it?
-        // My `getNumVal` will return `NaN` or 0 for `mathue01`.
-        // I should probably treat it as string if it's a code.
-        // But `invoice.items` in existing logic `taxAmount` was set to 0.
-        // Let's stick to 0 for now or try to parse.
-        // Given I'm just verifying Logic, I will use `getNumVal` for safety.
-        // If user says "Tax" is "mathue01", maybe they mean Tax Code? Use `taxCode` field?
-        // I'll add `taxCode` to item structure just in case.
-
-        const lineSubTotal = (row.quantity * row.price) // + taxAmount (if we had it)
+        const lineSubTotal = (row.quantity * row.price)
         const lineTotal = lineSubTotal - row.discount
 
         if (row.productCode) {
@@ -248,8 +240,7 @@ const ImportInvoiceDialog = ({
             unitCode: row.unitCode,
             quantity: row.quantity,
             price: row.price,
-            taxAmount: row.taxAmount || 0, // Using the parsed number (or 0)
-            // taxCode: row.taxVal, // If we needed code
+            taxAmount: row.taxAmount || 0,
             subTotal: lineSubTotal,
             discount: row.discount,
             total: lineTotal,

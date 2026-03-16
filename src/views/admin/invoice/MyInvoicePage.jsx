@@ -1,6 +1,7 @@
 import { Layout, LayoutBody } from '@/components/custom/Layout'
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useSearchParams } from 'react-router-dom'
 import InvoiceDataTable from './components/InvoiceDataTable'
 import ViewInvoiceDialog from './components/ViewInvoiceDialog'
 import { getMyInvoices } from '@/stores/InvoiceSlice'
@@ -31,6 +32,7 @@ const MyInvoicePage = () => {
   })
 
   // State for ViewInvoiceDialog
+  const [searchParams, setSearchParams] = useSearchParams()
   const [viewInvoiceId, setViewInvoiceId] = useState(null)
 
   const pagination = useSelector((state) => state.invoice.pagination)
@@ -78,6 +80,17 @@ const MyInvoicePage = () => {
   useEffect(() => {
     setPageIndex(0)
   }, [debouncedSearch])
+
+  // Handle ?view=invoiceId query parameter
+  useEffect(() => {
+    const viewParam = searchParams.get('view')
+    if (viewParam) {
+      const invoiceId = parseInt(viewParam, 10)
+      if (!isNaN(invoiceId)) {
+        setViewInvoiceId(invoiceId)
+      }
+    }
+  }, [searchParams])
 
   return (
     <Layout>
@@ -142,7 +155,12 @@ const MyInvoicePage = () => {
             <ViewInvoiceDialog
               open={!!viewInvoiceId}
               onOpenChange={(open) => {
-                if (!open) setViewInvoiceId(null)
+                if (!open) {
+                  setViewInvoiceId(null)
+                  // Remove ?view param from URL
+                  searchParams.delete('view')
+                  setSearchParams(searchParams)
+                }
               }}
               invoiceId={viewInvoiceId}
               showTrigger={false}

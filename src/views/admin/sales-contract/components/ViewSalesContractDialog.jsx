@@ -1867,7 +1867,7 @@ const ViewSalesContractDialog = ({
               In Hợp Đồng
             </Button>
 
-            {contract?.status === 'draft' && (
+            {(contract?.status === 'draft' || contract?.status === 'cancelled') && (
               <Button
                 size="sm"
                 onClick={() => setShowDeleteDialog(true)}
@@ -1966,7 +1966,7 @@ const ViewSalesContractDialog = ({
             </AlertDialogContent>
           </AlertDialog>
 
-          {showDeleteDialog && contract?.status === 'draft' && (
+          {showDeleteDialog && (contract?.status === 'draft' || contract?.status === 'cancelled') && (
             <DeleteSalesContractDialog
               open={showDeleteDialog}
               onOpenChange={setShowDeleteDialog}

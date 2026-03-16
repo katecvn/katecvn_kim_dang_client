@@ -70,9 +70,9 @@ export default function ExportInstallmentV2({ data = {} }) {
             <td style={{ width: '30%', verticalAlign: 'top', textAlign: 'right' }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <img
-                  src="/QR.png"
+                  src={data.qrCode || "/QR.png"}
                   alt="QR Code"
-                  style={{ width: '80px', height: '80px', objectFit: 'contain' }}
+                  style={{ width: '100px', height: '100px', objectFit: 'contain' }}
                 />
               </div>
             </td>

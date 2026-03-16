@@ -30,7 +30,7 @@ export async function exportInstallmentWordV2(data, filename = 'hop_dong_ban_han
         return dataURLtoBuffer(tagValue)
       },
       getSize: () => {
-        return [80, 80]
+        return [100, 100]
       }
     }
 
@@ -122,6 +122,9 @@ async function prepareTemplateData(data) {
 
     // QR Code - for {%qr_code} placeholder in template
     qr_code: data?.qrCode || null,
+
+    // Print count
+    print_count: (data?.printCount || 0) + 1,
   }
 }
 
@@ -185,10 +188,12 @@ function formatMoney(n) {
  * Convert data URL to ArrayBuffer for ImageModule
  */
 function dataURLtoBuffer(dataURL) {
-  if (!dataURL) return null
+  if (!dataURL || typeof dataURL !== 'string') return null
 
   // Extract base64 data from data URL
-  const base64 = dataURL.split(',')[1]
+  const parts = dataURL.split(',')
+  if (parts.length < 2) return null
+  const base64 = parts[1]
   if (!base64) return null
 
   // Decode base64 to binary string

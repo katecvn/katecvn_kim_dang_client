@@ -56,7 +56,7 @@ const DataTableRowActions = ({ row }) => {
   const canEdit = contract.status === 'draft'
 
   // Chỉ có thể xóa khi status = 'draft' (Đang chờ)
-  const canDelete = contract.status === 'draft'
+  const canDelete = contract.status === 'draft' || contract.status === 'cancelled'
 
   // Chỉ có thể xuất kho khi status = 'confirmed'
   const canExport = contract.status === 'confirmed'

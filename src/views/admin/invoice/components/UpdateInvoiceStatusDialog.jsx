@@ -81,8 +81,8 @@ const UpdateInvoiceStatusDialog = ({
     const canApprove = permissions.includes('APPROVE_INVOICE')
 
     return statuses.filter((s) => {
-      // Hide 'completed' status as it is automated
-      if (s.value === 'delivered') return false
+      // Hide 'completed' and 'cancelled' status as it is automated or not selectable
+      if (['delivered', 'cancelled'].includes(s.value)) return false
 
       // Permission check for 'accepted' (approve)
       if (s.value === 'accepted') {

@@ -87,21 +87,14 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
   }, [])
 
   const dispatch = useDispatch()
-  useEffect(() => {
-    dispatch(getSetting('general_information'))
-  }, [dispatch])
 
   const setting = useSelector((state) => state.setting.setting)
-  const loading = useSelector((state) => state.setting.loading)
+  const loadingSetting = useSelector((state) => state.setting.loading)
   const [invoice, setInvoice] = useState(null)
 
   const [showExportDialog, setShowExportDialog] = useState(false)
 
   const users = useSelector((state) => state.user.users)
-  useEffect(() => {
-    dispatch(getUsers())
-    dispatch(getCustomers())
-  }, [dispatch])
 
   const isMobile = useMediaQuery('(max-width: 768px)')
 
@@ -331,7 +324,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
             className="text-green-600 border-green-200 hover:bg-green-50"
             variant="outline"
             size="sm"
-            loading={loading}
+            loading={loadingSetting}
             onClick={() => setShowExportDialog(true)}
           >
             <IconFileTypeXls className="mr-2 size-4" aria-hidden="true" />

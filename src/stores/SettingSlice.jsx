@@ -29,6 +29,15 @@ export const getSetting = createAsyncThunk(
       return rejectWithValue(message)
     }
   },
+  {
+    condition: (key, { getState }) => {
+      const { setting, loading } = getState().setting
+      // If we're already loading or we have the setting for this key, skip
+      if (loading) return false
+      if (setting && setting.key === key) return false
+      return true
+    },
+  },
 )
 
 export const syncSystemSetting = createAsyncThunk(

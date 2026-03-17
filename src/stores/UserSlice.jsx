@@ -16,6 +16,14 @@ export const getUsers = createAsyncThunk(
       return rejectWithValue(message)
     }
   },
+  {
+    condition: (_, { getState }) => {
+      const { users, loading } = getState().user
+      if (loading) return false
+      if (users && users.length > 0) return false
+      return true
+    },
+  },
 )
 
 export const deleteUser = createAsyncThunk(

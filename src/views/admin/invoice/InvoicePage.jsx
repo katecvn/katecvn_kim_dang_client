@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useSearchParams } from 'react-router-dom'
 import { columns } from './components/Column'
+import { getSetting } from '@/stores/SettingSlice'
+import { getUsers } from '@/stores/UserSlice'
+import { getCustomers } from '@/stores/CustomerSlice'
 import InvoiceDataTable from './components/InvoiceDataTable'
 import ViewInvoiceDialog from './components/ViewInvoiceDialog'
 import InvoiceDialog from './components/InvoiceDialog'
@@ -47,6 +50,11 @@ const InvoicePage = () => {
   // Fetch data when filters or pagination changes
   useEffect(() => {
     document.title = 'Danh sách đơn bán'
+
+    // Fetch static data needed for the page/toolbar (guards will prevent duplicates)
+    dispatch(getSetting('general_information'))
+    dispatch(getUsers())
+    dispatch(getCustomers())
 
     // Extract status and user filters
     const statusFilter = columnFilters.find((f) => f.id === 'status')?.value

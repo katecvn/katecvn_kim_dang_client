@@ -15,6 +15,14 @@ export const getCustomers = createAsyncThunk(
       return rejectWithValue(message)
     }
   },
+  {
+    condition: (_, { getState }) => {
+      const { customers, loading } = getState().customer
+      if (loading) return false
+      if (customers && customers.length > 0) return false
+      return true
+    },
+  },
 )
 
 export const createCustomer = createAsyncThunk(

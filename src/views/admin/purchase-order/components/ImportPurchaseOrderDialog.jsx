@@ -79,10 +79,21 @@ const ImportPurchaseOrderDialog = ({
         if (rowNumber === 1) return // header
 
         const getVal = (idx) => {
-          const val = row.getCell(idx).value
-          return val?.text || val || ''
+          const cell = row.getCell(idx)
+          let val = cell.value
+          if (val && typeof val === 'object' && 'result' in val) {
+            val = val.result
+          }
+          return val?.text || (val !== null && val !== undefined ? val : '')
         }
-        const getDateVal = (idx) => parseDate(row.getCell(idx).value)
+        const getDateVal = (idx) => {
+          const cell = row.getCell(idx)
+          let val = cell.value
+          if (val && typeof val === 'object' && 'result' in val) {
+            val = val.result
+          }
+          return parseDate(val)
+        }
 
         // Mapping:
         // 1. Mã nhóm đơn mua (purchaseNo)
@@ -117,7 +128,7 @@ const ImportPurchaseOrderDialog = ({
           supplierRep: String(getVal(11)),
           productCode: String(getVal(12)),
           quantity: Number(getVal(13)) || 0,
-          unitCode: String(getVal(14)),
+          unitName: String(getVal(14)),
           unitPrice: Number(getVal(15)) || 0,
           discountRate: Number(getVal(16)) || 0,
         })
@@ -132,14 +143,21 @@ const ImportPurchaseOrderDialog = ({
       // Group by: purchaseNo
       const ordersMap = new Map()
 
+      let lastPurchaseNo = null
       rows.forEach(row => {
-        if (!row.purchaseNo) return
+        // Lấy purchaseNo và ép kiểu chuỗi, sau đó trim
+        const currentPurchaseNo = row.purchaseNo ? String(row.purchaseNo).trim() : ''
+        
+        if (currentPurchaseNo) {
+          lastPurchaseNo = currentPurchaseNo
+        }
 
-        const key = row.purchaseNo
+        if (!lastPurchaseNo) return
+
+        const key = lastPurchaseNo
 
         if (!ordersMap.has(key)) {
           ordersMap.set(key, {
-
             externalOrderCode: row.externalOrderCode,
             orderDate: row.orderDate,
             expectedDeliveryDate: row.expectedDeliveryDate,
@@ -166,7 +184,7 @@ const ImportPurchaseOrderDialog = ({
             quantity: row.quantity,
             unitPrice: row.unitPrice,
             discountRate: row.discountRate,
-            unitCode: row.unitCode
+            unitName: row.unitName
           })
         }
       })

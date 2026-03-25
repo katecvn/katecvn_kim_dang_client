@@ -94,15 +94,19 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Khách hàng" />
     ),
     cell: function Cell({ row, table }) {
-      const { customer, createdAt, id } = row.original
+      const { customer, invoiceDate, date, id } = row.original
+      const currentOrderDate = invoiceDate || date
       const rows = table.getPrePaginationRowModel().rows.map((r) => r.original)
       const isDuplicate = rows.some(
-        (r) =>
-          r.customer.phone === customer.phone &&
-          new Date(r.createdAt).getMonth() === new Date(createdAt).getMonth() &&
-          new Date(r.createdAt).getFullYear() ===
-          new Date(createdAt).getFullYear() &&
-          r.id !== id,
+        (r) => {
+          const rDate = r.invoiceDate || r.date
+          return r.customer.phone === customer.phone &&
+            currentOrderDate && rDate &&
+            new Date(rDate).getMonth() === new Date(currentOrderDate).getMonth() &&
+            new Date(rDate).getFullYear() ===
+            new Date(currentOrderDate).getFullYear() &&
+            r.id !== id
+        }
       )
 
       return (
@@ -374,37 +378,52 @@ export const columns = [
     enableSorting: true,
     enableHiding: true,
   },
+
   {
-    accessorKey: 'expectedDeliveryDate',
+    id: 'dates',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Ngày dự kiến giao" />
+      <DataTableColumnHeader column={column} title="Ngày" />
     ),
     cell: ({ row }) => {
+      const { invoiceDate, date, status } = row.original
       const deliveryDate = row.original.salesContract?.deliveryDate
-      const status = row.original.status
 
-      if (!deliveryDate) {
-        return <span className="text-muted-foreground italic">Đơn hàng không <br /> có Hợp Đồng</span>
-      }
-
-      const date = new Date(deliveryDate)
+      const orderDate = invoiceDate || date
+      const dateObj = deliveryDate ? new Date(deliveryDate) : null
       const today = new Date()
       today.setHours(0, 0, 0, 0)
-
-      // Check if overdue: date < today AND status is not delivered
-      const isOverdue = date < today && status !== 'delivered'
+      const isOverdue = dateObj && dateObj < today && status !== 'delivered'
 
       return (
-        <span
-          className={isOverdue ? 'text-red-500 font-bold' : ''}
-          title={isOverdue ? 'Quá hạn giao hàng' : ''}
-        >
-          {dateFormat(deliveryDate)}
-        </span>
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground">Đặt hàng:</span>
+            <span className="font-medium text-blue-600">
+              {dateFormat(orderDate, false)}
+            </span>
+          </div>
+          {deliveryDate ? (
+            <div className="flex flex-col border-t pt-1">
+              <span className="text-xs text-muted-foreground">Dự kiến giao:</span>
+              <span className={cn("font-medium", isOverdue ? "text-red-500 font-bold" : "text-orange-600")}>
+                {dateFormat(deliveryDate, false)}
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col border-t pt-1">
+              <span className="text-xs text-muted-foreground italic">Không có HĐ</span>
+            </div>
+          )}
+        </div>
       )
     },
     enableSorting: true,
     enableHiding: true,
+    sortingFn: (rowA, rowB) => {
+      const dateA = rowA.original.invoiceDate || rowA.original.date
+      const dateB = rowB.original.invoiceDate || rowB.original.date
+      return new Date(dateA) - new Date(dateB)
+    }
   },
   {
     id: 'user',

@@ -314,7 +314,7 @@ const ExportInvoiceView = ({
               </TableHeader>
               <TableBody>
                 {props?.data.map((invoice) =>
-                  invoice.invoiceItems.map((invoiceItem) => (
+                  invoice.invoiceItems?.map((invoiceItem) => (
                     <TableRow key={`${invoice.id}-${invoiceItem.id}`}>
                       <TableCell>{indexTable++}</TableCell>
                       <TableCell>{invoice.code}</TableCell>

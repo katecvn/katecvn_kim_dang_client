@@ -49,7 +49,8 @@ const ExportInvoiceDialog = ({
         params: {
           fromDate: filters.fromDate ? format(filters.fromDate, 'yyyy-MM-dd') : undefined,
           toDate: filters.toDate ? format(filters.toDate, 'yyyy-MM-dd') : undefined,
-          limit: 1000 // Get all records for export
+          limit: 1000, // Get all records for export
+          includeItems: true
         },
       })
 

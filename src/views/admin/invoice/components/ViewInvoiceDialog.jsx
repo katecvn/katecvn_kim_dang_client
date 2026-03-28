@@ -74,9 +74,9 @@ import ViewProductDialog from '../../product/components/ViewProductDialog'
 import { useMediaQuery } from '@/hooks/UseMediaQuery'
 import { cn } from '@/lib/utils'
 import { getPublicUrl } from '@/utils/file'
-import InstallmentPreviewDialogV2 from './InstallmentPreviewDialogV2'
-import { buildInstallmentDataV2 } from '../helpers/BuildInstallmentDataV2'
-import { exportInstallmentWordV2 } from '../helpers/ExportInstallmentWordV2'
+import InstallmentPreviewDialogV3 from './InstallmentPreviewDialogV3'
+import { buildInstallmentDataV3 } from '../helpers/BuildInstallmentDataV3'
+import { exportInstallmentWordV3 } from '../helpers/ExportInstallmentWordV3'
 import { updateReceiptStatus, getReceiptQRCode } from '@/stores/ReceiptSlice'
 import UpdateReceiptStatusDialog from '../../receipt/components/UpdateReceiptStatusDialog'
 import { DeleteReceiptDialog } from '../../receipt/components/DeleteReceiptDialog'
@@ -305,7 +305,7 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
     }
 
     try {
-      const baseInstallmentData = await buildInstallmentDataV2(invoice)
+      const baseInstallmentData = await buildInstallmentDataV3(invoice)
       setInstallmentData(baseInstallmentData)
       setInstallmentFileName(`hop-dong-tra-cham-${invoice.code || 'contract'}.docx`)
       setShowInstallmentPreview(true)
@@ -2293,14 +2293,14 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
       {/* InstallmentPreviewDialog outside Dialog to avoid z-index issues on mobile */}
       {
         installmentData && (
-          <InstallmentPreviewDialogV2
+          <InstallmentPreviewDialogV3
             open={showInstallmentPreview}
             onOpenChange={setShowInstallmentPreview}
             initialData={installmentData}
             onConfirm={async (finalData) => {
               try {
                 setInstallmentExporting(true)
-                await exportInstallmentWordV2(finalData, installmentFileName)
+                await exportInstallmentWordV3(finalData, installmentFileName)
 
                 // Track print attempt in background
                 if (invoice?.salesContract?.id) {

@@ -314,34 +314,53 @@ export const getColumns = (onView, onRefresh) => [
     enableHiding: true,
   },
   {
-    accessorKey: 'expectedDeliveryDate',
+    id: 'dates',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Ngày dự kiến giao" />
+      <DataTableColumnHeader column={column} title="Ngày" />
     ),
     cell: ({ row }) => {
-      const deliveryDate = row.original.expectedDeliveryDate
-      const status = row.original.status
+      const { orderDate, createdAt, expectedDeliveryDate, status } = row.original
 
-      if (!deliveryDate) return <span className="text-muted-foreground italic">—</span>
-
-      const date = new Date(deliveryDate)
+      const displayOrderDate = orderDate || createdAt
+      const dateObj = expectedDeliveryDate ? new Date(expectedDeliveryDate) : null
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
-      // Check if overdue: date < today AND not delivered /received
-      const isOverdue = date < today && !['received', 'completed', 'cancelled'].includes(status)
+      // Overdue check: past date AND not yet received/completed/cancelled
+      const isOverdue = dateObj && dateObj < today && !['received', 'completed', 'cancelled'].includes(status)
 
       return (
-        <span
-          className={isOverdue ? 'text-red-500 font-bold' : ''}
-          title={isOverdue ? 'Quá hạn giao hàng' : ''}
-        >
-          {dateFormat(deliveryDate)}
-        </span>
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground">Đặt hàng:</span>
+            <span className="font-medium text-blue-600">
+              {dateFormat(displayOrderDate, false)}
+            </span>
+          </div>
+          {expectedDeliveryDate ? (
+            <div className="flex flex-col border-t pt-1">
+              <span className="text-xs text-muted-foreground">Dự kiến giao:</span>
+              <span className={cn("font-medium", isOverdue ? "text-red-500 font-bold" : "text-orange-600")}>
+                {dateFormat(expectedDeliveryDate, false)}
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col border-t pt-1">
+              <span className="text-xs text-muted-foreground italic">—</span>
+            </div>
+          )}
+        </div>
       )
     },
     enableSorting: true,
     enableHiding: true,
+    sortingFn: (rowA, rowB) => {
+      const dateA = rowA.original.orderDate || rowA.original.createdAt
+      const dateB = rowB.original.orderDate || rowB.original.createdAt
+      const timeA = dateA ? new Date(dateA).getTime() : 0
+      const timeB = dateB ? new Date(dateB).getTime() : 0
+      return timeA - timeB
+    }
   },
   {
     id: 'user', // Match with PurchaseOrderPage filter logic

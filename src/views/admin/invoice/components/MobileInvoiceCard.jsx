@@ -34,11 +34,11 @@ import { toast } from 'sonner'
 import { getInvoiceDetail, getInvoiceDetailByUser } from '@/api/invoice'
 import PrintInvoiceView from './PrintInvoiceView'
 import AgreementPreviewDialog from './AgreementPreviewDialog'
-import InstallmentPreviewDialog from './InstallmentPreviewDialog'
+import InstallmentPreviewDialogV3 from './InstallmentPreviewDialogV3'
 import { buildAgreementData } from '../helpers/BuildAgreementData'
-import { buildInstallmentData } from '../helpers/BuildInstallmentData'
+import { buildInstallmentDataV3 } from '../helpers/BuildInstallmentDataV3'
 import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
-import { exportInstallmentWord } from '../helpers/ExportInstallmentWord'
+import { exportInstallmentWordV3 } from '../helpers/ExportInstallmentWordV3'
 import { IconPlus, IconPackageExport, IconCheck, IconPackage } from '@tabler/icons-react'
 import ReceiptDialog from '../../receipt/components/ReceiptDialog'
 import CreateSalesContractDialog from '../../sales-contract/components/CreateSalesContractDialog'
@@ -371,7 +371,7 @@ const MobileInvoiceCard = ({
         return
       }
 
-      const baseInstallmentData = await buildInstallmentData(data)
+      const baseInstallmentData = await buildInstallmentDataV3(data)
       setInstallmentData(baseInstallmentData)
       setInstallmentFileName(`hop-dong-tra-cham-${data.code || 'contract'}.docx`)
       setShowInstallmentPreview(true)
@@ -791,7 +791,7 @@ const MobileInvoiceCard = ({
 
         {/* Print Installment Dialog */}
         {installmentData && (
-          <InstallmentPreviewDialog
+          <InstallmentPreviewDialogV3
             open={showInstallmentPreview}
             onOpenChange={(open) => {
               if (!open) setShowInstallmentPreview(false)
@@ -805,7 +805,7 @@ const MobileInvoiceCard = ({
                 }
 
                 setInstallmentExporting(true)
-                await exportInstallmentWord(finalData, installmentFileName)
+                await exportInstallmentWordV3(finalData, installmentFileName)
 
                 // 2. Ghi nhận print success sau khi export thành công
                 if (finalData.salesContractId) {

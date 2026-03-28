@@ -27,9 +27,9 @@ import { getSalesContracts } from '@/stores/SalesContractSlice'
 import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 import { getSalesContractDetail } from '@/stores/SalesContractSlice'
-import InstallmentPreviewDialog from '../../invoice/components/InstallmentPreviewDialog'
-import { buildInstallmentData } from '../../invoice/helpers/BuildInstallmentData'
-import { exportInstallmentWord } from '../../invoice/helpers/ExportInstallmentWord'
+import InstallmentPreviewDialogV3 from '../../invoice/components/InstallmentPreviewDialogV3'
+import { buildInstallmentDataV3 } from '../../invoice/helpers/BuildInstallmentDataV3'
+import { exportInstallmentWordV3 } from '../../invoice/helpers/ExportInstallmentWordV3'
 import React from 'react'
 import { MobileIcon } from '@radix-ui/react-icons'
 import ReceiptDialog from '@/views/admin/receipt/components/ReceiptDialog'
@@ -182,7 +182,7 @@ const MobileSalesContractCard = ({
         salesContract: contract
       }
 
-      const baseInstallmentData = await buildInstallmentData(invoiceData)
+      const baseInstallmentData = await buildInstallmentDataV3(invoiceData)
 
       setInstallmentData(baseInstallmentData)
       setInstallmentFileName(`hop-dong-ban-hang-${contract.code || 'contract'}.docx`)
@@ -327,14 +327,14 @@ const MobileSalesContractCard = ({
       )}
 
       {installmentData && (
-        <InstallmentPreviewDialog
+        <InstallmentPreviewDialogV3
           open={showInstallmentPreview}
           onOpenChange={setShowInstallmentPreview}
           initialData={installmentData}
           onConfirm={async (finalData) => {
             try {
               setInstallmentExporting(true)
-              await exportInstallmentWord(finalData, installmentFileName)
+              await exportInstallmentWordV3(finalData, installmentFileName)
               toast.success('Đã xuất hợp đồng bán hàng thành công')
               setShowInstallmentPreview(false)
             } catch (error) {

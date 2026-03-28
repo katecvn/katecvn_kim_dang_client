@@ -24,24 +24,20 @@ import { cn } from '@/lib/utils'
 const ExportInventoryDetailPreviewDialog = ({
   open,
   onOpenChange,
-  data,
+  reportData, // Thay đổi từ 'data' sang 'reportData'
   filters,
   productName,
   contentClassName,
   overlayClassName,
 }) => {
+  const { data, openingBalance, summary } = reportData || {}
+
   const handleExport = () => {
-    if (data) {
-      exportDetailedLedgerToExcel(data, { productName }, filters)
+    if (reportData) {
+      exportDetailedLedgerToExcel(reportData, { productName }, filters)
       onOpenChange(false)
     }
   }
-
-  // Calculate generic totals if not provided by backend (assuming 0 for now based on current page implementation)
-  const totalInQty = data?.reduce((sum, item) => sum + (parseFloat(item.qtyIn) || 0), 0) || 0
-  const totalInAmount = data?.reduce((sum, item) => sum + (parseFloat(item.amountIn) || 0), 0) || 0
-  const totalOutQty = data?.reduce((sum, item) => sum + (parseFloat(item.qtyOut) || 0), 0) || 0
-  const totalOutAmount = data?.reduce((sum, item) => sum + (parseFloat(item.amountOut) || 0), 0) || 0
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,9 +93,15 @@ const ExportInventoryDetailPreviewDialog = ({
                 <TableCell className="border-r"></TableCell>
                 <TableCell className="border-r"></TableCell>
 
-                <TableCell className="text-right border-r font-medium">0</TableCell>
-                <TableCell className="text-right border-r">0</TableCell>
-                <TableCell className="text-right font-medium">0</TableCell>
+                <TableCell className="text-right border-r font-medium">
+                  {parseFloat(openingBalance?.qty || 0)}
+                </TableCell>
+                <TableCell className="text-right border-r">
+                   {moneyFormat(openingBalance?.unitPrice || 0)}
+                </TableCell>
+                <TableCell className="text-right font-medium">
+                   {moneyFormat(openingBalance?.amount || 0)}
+                </TableCell>
               </TableRow>
 
               {data?.map((item, index) => (
@@ -107,14 +109,14 @@ const ExportInventoryDetailPreviewDialog = ({
                   <TableCell className="border-r font-medium text-blue-600">{item.documentCode}</TableCell>
                   <TableCell className="border-r">{dateFormat(item.postingDate)}</TableCell>
                   <TableCell className="border-r">{item.objectName || item.description}</TableCell>
-                  <TableCell className="border-r text-center">{item.unit?.name}</TableCell>
+                  <TableCell className="border-r text-center">{item.unitName || item.unit?.name}</TableCell>
 
                   {/* Nhập */}
                   <TableCell className="text-right border-r font-medium text-green-600">
                     {parseFloat(item.qtyIn) > 0 ? parseFloat(item.qtyIn) : ''}
                   </TableCell>
                   <TableCell className="text-right border-r">
-                    {parseFloat(item.qtyIn) > 0 ? moneyFormat(item.unitCost) : ''}
+                    {parseFloat(item.qtyIn) > 0 ? moneyFormat(item.unitPriceIn || item.unitCost) : ''}
                   </TableCell>
                   <TableCell className="text-right border-r">
                     {parseFloat(item.amountIn) > 0 ? moneyFormat(item.amountIn) : ''}
@@ -125,7 +127,7 @@ const ExportInventoryDetailPreviewDialog = ({
                     {parseFloat(item.qtyOut) > 0 ? parseFloat(item.qtyOut) : ''}
                   </TableCell>
                   <TableCell className="text-right border-r">
-                    {parseFloat(item.qtyOut) > 0 ? moneyFormat(item.unitCost) : ''}
+                    {parseFloat(item.qtyOut) > 0 ? moneyFormat(item.unitPriceOut || item.unitCost) : ''}
                   </TableCell>
                   <TableCell className="text-right border-r">
                     {parseFloat(item.amountOut) > 0 ? moneyFormat(item.amountOut) : ''}
@@ -133,29 +135,44 @@ const ExportInventoryDetailPreviewDialog = ({
 
                   {/* Tồn */}
                   <TableCell className="text-right border-r font-bold">{parseFloat(item.balanceQty)}</TableCell>
-                  <TableCell className="text-right border-r">{moneyFormat(item.unitCost)}</TableCell>
+                  <TableCell className="text-right border-r">{moneyFormat(item.balanceUnitPrice || item.unitCost)}</TableCell>
                   <TableCell className="text-right font-bold">{moneyFormat(item.balanceAmount)}</TableCell>
                 </TableRow>
               ))}
 
-              {/* Cộng */}
+              {/* Cộng phát sinh + Cuối kỳ */}
               <TableRow className="font-bold bg-muted/50 border-t-2">
                 <TableCell className="border-r"></TableCell>
                 <TableCell className="border-r"></TableCell>
-                <TableCell className="border-r text-center">Cộng phát sinh</TableCell>
+                <TableCell className="border-r text-center">Cộng phát sinh + Cuối kỳ</TableCell>
                 <TableCell className="border-r"></TableCell>
 
-                <TableCell className="text-right border-r">{totalInQty}</TableCell>
-                <TableCell className="text-right border-r"></TableCell>
-                <TableCell className="text-right border-r">{moneyFormat(totalInAmount)}</TableCell>
+                {/* Tổng Nhập */}
+                <TableCell className="text-right border-r text-green-700">
+                  {parseFloat(summary?.totalQtyIn || 0)}
+                </TableCell>
+                <TableCell className="border-r"></TableCell>
+                <TableCell className="text-right border-r text-green-700">
+                   {moneyFormat(summary?.totalAmountIn || 0)}
+                </TableCell>
 
-                <TableCell className="text-right border-r">{totalOutQty}</TableCell>
-                <TableCell className="text-right border-r"></TableCell>
-                <TableCell className="text-right border-r">{moneyFormat(totalOutAmount)}</TableCell>
+                {/* Tổng Xuất */}
+                <TableCell className="text-right border-r text-orange-700">
+                  {parseFloat(summary?.totalQtyOut || 0)}
+                </TableCell>
+                <TableCell className="border-r"></TableCell>
+                <TableCell className="text-right border-r text-orange-700">
+                   {moneyFormat(summary?.totalAmountOut || 0)}
+                </TableCell>
 
-                <TableCell className="text-right border-r"></TableCell>
-                <TableCell className="text-right border-r"></TableCell>
-                <TableCell className="text-right"></TableCell>
+                {/* Cuối kỳ */}
+                <TableCell className="text-right border-r bg-blue-50">
+                  {parseFloat(summary?.closingQty || 0)}
+                </TableCell>
+                <TableCell className="border-r bg-blue-50"></TableCell>
+                <TableCell className="text-right bg-blue-50">
+                  {moneyFormat(summary?.closingAmount || 0)}
+                </TableCell>
               </TableRow>
             </TableBody>
           </Table>

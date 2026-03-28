@@ -3,8 +3,9 @@ import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 
 
-export const exportDetailedLedgerToExcel = async (data, snapshot, dateRange) => {
+export const exportDetailedLedgerToExcel = async (reportData, snapshot, dateRange) => {
   try {
+    const { data, openingBalance, summary } = reportData || {}
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('Sổ Chi Tiết')
 
@@ -98,21 +99,17 @@ export const exportDetailedLedgerToExcel = async (data, snapshot, dateRange) => 
     rowOpen.font = { name: 'Times New Roman' }
     rowOpen.getCell(3).value = 'Dư đầu kỳ'
     rowOpen.getCell(3).font = { name: 'Times New Roman', bold: true }
-    // Fill dummy or 0
+    
     rowOpen.eachCell({ includeEmpty: true }, (cell, col) => {
       if (col <= 13) cell.border = borderStyle
-      if (col >= 5 && col <= 13) { // Qty, Price, Amount cols
-        cell.numFmt = '#,##0'
-      }
-      if (col >= 11 && col <= 13) {
-        cell.font = { name: 'Times New Roman', bold: true }
-      }
+      if (col >= 5 && col <= 13) cell.numFmt = '#,##0'
+      if (col >= 11 && col <= 13) cell.font = { name: 'Times New Roman', bold: true }
     })
-    // Explicitly set 0 for opening balance columns (K, L, M) as per UI? 
-    // The UI shows 0 for opening. 
-    rowOpen.getCell(11).value = 0 // Tồn SL
-    rowOpen.getCell(12).value = 0 // Tồn ĐG
-    rowOpen.getCell(13).value = 0 // Tồn TT
+
+    // Điền số dư đầu kỳ từ Backend
+    rowOpen.getCell(11).value = parseFloat(openingBalance?.qty || 0)
+    rowOpen.getCell(12).value = parseFloat(openingBalance?.unitPrice || 0)
+    rowOpen.getCell(13).value = parseFloat(openingBalance?.amount || 0)
 
     currentRow++
 
@@ -125,14 +122,14 @@ export const exportDetailedLedgerToExcel = async (data, snapshot, dateRange) => 
         row.getCell(1).value = item.documentCode || ''
         row.getCell(2).value = item.postingDate ? new Date(item.postingDate).toLocaleDateString('en-GB') : ''
         row.getCell(3).value = item.objectName || item.description || ''
-        row.getCell(4).value = item.unit?.name || ''
+        row.getCell(4).value = item.unitName || item.unit?.name || ''
 
         // In
         const qtyIn = parseFloat(item.qtyIn) || 0
         const amountIn = parseFloat(item.amountIn) || 0
         if (qtyIn > 0) {
           row.getCell(5).value = qtyIn
-          row.getCell(6).value = parseFloat(item.unitCost) || 0
+          row.getCell(6).value = parseFloat(item.unitPriceIn || item.unitCost) || 0
           row.getCell(7).value = amountIn
         }
 
@@ -141,13 +138,13 @@ export const exportDetailedLedgerToExcel = async (data, snapshot, dateRange) => 
         const amountOut = parseFloat(item.amountOut) || 0
         if (qtyOut > 0) {
           row.getCell(8).value = qtyOut
-          row.getCell(9).value = parseFloat(item.unitCost) || 0
+          row.getCell(9).value = parseFloat(item.unitPriceOut || item.unitCost) || 0
           row.getCell(10).value = amountOut
         }
 
         // Balance
         row.getCell(11).value = parseFloat(item.balanceQty) || 0
-        row.getCell(12).value = parseFloat(item.unitCost) || 0
+        row.getCell(12).value = parseFloat(item.balanceUnitPrice || item.unitCost) || 0
         row.getCell(13).value = parseFloat(item.balanceAmount) || 0
 
         // Styling
@@ -164,22 +161,20 @@ export const exportDetailedLedgerToExcel = async (data, snapshot, dateRange) => 
     }
 
     // Cộng Row
-    const totalInQty = data?.reduce((sum, item) => sum + (parseFloat(item.qtyIn) || 0), 0) || 0
-    const totalInAmount = data?.reduce((sum, item) => sum + (parseFloat(item.amountIn) || 0), 0) || 0
-    const totalOutQty = data?.reduce((sum, item) => sum + (parseFloat(item.qtyOut) || 0), 0) || 0
-    const totalOutAmount = data?.reduce((sum, item) => sum + (parseFloat(item.amountOut) || 0), 0) || 0
-
     const rowTotal = worksheet.getRow(currentRow)
     rowTotal.font = { name: 'Times New Roman', bold: true }
-    rowTotal.getCell(3).value = 'Cộng phát sinh'
+    rowTotal.getCell(3).value = 'Cộng phát sinh + Cuối kỳ'
 
-    // In Totals
-    rowTotal.getCell(5).value = totalInQty
-    rowTotal.getCell(7).value = totalInAmount
-
-    // Out Totals
-    rowTotal.getCell(8).value = totalOutQty
-    rowTotal.getCell(10).value = totalOutAmount
+    // Totals from summary
+    rowTotal.getCell(5).value = parseFloat(summary?.totalQtyIn || 0)
+    rowTotal.getCell(7).value = parseFloat(summary?.totalAmountIn || 0)
+    rowTotal.getCell(8).value = parseFloat(summary?.totalQtyOut || 0)
+    rowTotal.getCell(10).value = parseFloat(summary?.totalAmountOut || 0)
+    
+    // Closing from summary
+    rowTotal.getCell(11).value = parseFloat(summary?.closingQty || 0)
+    rowTotal.getCell(12).value = parseFloat(summary?.closingUnitPrice || 0)
+    rowTotal.getCell(13).value = parseFloat(summary?.closingAmount || 0)
 
     rowTotal.eachCell({ includeEmpty: true }, (cell, col) => {
       if (col <= 13) {

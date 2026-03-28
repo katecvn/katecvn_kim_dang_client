@@ -55,6 +55,11 @@ import InstallmentPreviewDialogV2 from './InstallmentPreviewDialogV2'
 import { buildInstallmentDataV2 } from '../helpers/BuildInstallmentDataV2'
 import { exportInstallmentWordV2 } from '../helpers/ExportInstallmentWordV2'
 
+// V3 Imports:
+import InstallmentPreviewDialogV3 from './InstallmentPreviewDialogV3'
+import { buildInstallmentDataV3 } from '../helpers/BuildInstallmentDataV3'
+import { exportInstallmentWordV3 } from '../helpers/ExportInstallmentWordV3'
+
 import { buildAgreementData } from '../helpers/BuildAgreementData'
 import { exportAgreementPdf } from '../helpers/ExportAgreementPdfV2'
 
@@ -231,8 +236,8 @@ const DataTableRowActions = ({ row, table }) => {
         return
       }
 
-      // USING V2 DATA BUILDER
-      const baseInstallmentData = await buildInstallmentDataV2(data)
+      // USING V3 DATA BUILDER
+      const baseInstallmentData = await buildInstallmentDataV3(data)
       setInstallmentData(baseInstallmentData)
       setInstallmentFileName(`hop-dong-ban-hang-${data.code || 'contract'}.docx`)
       setShowInstallmentPreview(true)
@@ -482,9 +487,9 @@ const DataTableRowActions = ({ row, table }) => {
         />
       )}
 
-      {/* Print Installment Dialog (V2) */}
+      {/* Print Installment Dialog (V3) */}
       {installmentData && (
-        <InstallmentPreviewDialogV2
+        <InstallmentPreviewDialogV3
           open={showInstallmentPreview}
           onOpenChange={(open) => {
             if (!open) setShowInstallmentPreview(false)
@@ -498,8 +503,8 @@ const DataTableRowActions = ({ row, table }) => {
               }
 
               setInstallmentExporting(true)
-              // EXPORT USING V2 FUNCTION
-              await exportInstallmentWordV2(finalData, installmentFileName)
+              // EXPORT USING V3 FUNCTION
+              await exportInstallmentWordV3(finalData, installmentFileName)
 
               // 2. Ghi nhận print success sau khi export thành công
               if (finalData.salesContractId) {

@@ -40,10 +40,10 @@ import { toast } from 'sonner'
 import { getSalesContracts, getSalesContractDetail, cancelLiquidateSalesContract, increasePrintAttempt, increasePrintSuccess } from '@/stores/SalesContractSlice'
 import ConfirmWarehouseReceiptDialog from '../../warehouse-receipt/components/ConfirmWarehouseReceiptDialog'
 import { IconFileTypePdf } from '@tabler/icons-react'
-import { buildInstallmentDataV2 } from '../../invoice/helpers/BuildInstallmentDataV2'
-import InstallmentPreviewDialogV2 from '../../invoice/components/InstallmentPreviewDialogV2'
+import { buildInstallmentDataV3 } from '../../invoice/helpers/BuildInstallmentDataV3'
+import InstallmentPreviewDialogV3 from '../../invoice/components/InstallmentPreviewDialogV3'
 import { getInvoiceDetail } from '@/api/invoice'
-import { exportInstallmentWordV2 } from '../../invoice/helpers/ExportInstallmentWordV2'
+import { exportInstallmentWordV3 } from '../../invoice/helpers/ExportInstallmentWordV3'
 import ReceiptDialog from '@/views/admin/receipt/components/ReceiptDialog'
 
 const DataTableRowActions = ({ row }) => {
@@ -107,7 +107,7 @@ const DataTableRowActions = ({ row }) => {
       const invoiceId = contractDetail.invoices[0].id
       const fullInvoiceData = await getInvoiceDetail(invoiceId)
 
-      const baseInstallmentData = await buildInstallmentDataV2({
+      const baseInstallmentData = await buildInstallmentDataV3({
         ...fullInvoiceData,
         salesContract: contractDetail
       })
@@ -391,14 +391,14 @@ const DataTableRowActions = ({ row }) => {
       )}
 
       {installmentData && (
-        <InstallmentPreviewDialogV2
+        <InstallmentPreviewDialogV3
           open={showInstallmentPreview}
           onOpenChange={setShowInstallmentPreview}
           initialData={installmentData}
           onConfirm={async (finalData) => {
             try {
               setInstallmentExporting(true)
-              await exportInstallmentWordV2(finalData, installmentFileName)
+              await exportInstallmentWordV3(finalData, installmentFileName)
 
               // 1. Ghi nhận print attempt (Track print attempt in background)
               if (finalData.salesContractId) {

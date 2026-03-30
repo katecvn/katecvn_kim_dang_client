@@ -40,6 +40,8 @@ import { moneyFormat } from '@/utils/money-format'
 import { exportDetailedLedgerToExcel } from '@/utils/export-detailed-ledger'
 import { dateFormat } from '@/utils/date-format'
 import ExportInventoryDetailPreviewDialog from './components/ExportInventoryDetailPreviewDialog'
+import ViewWarehouseReceiptDialog from '../warehouse-receipt/components/ViewWarehouseReceiptDialog'
+import ViewProductDialog from '../product/components/ViewProductDialog'
 
 const InventoryDetailPage = () => {
   const dispatch = useDispatch()
@@ -55,6 +57,9 @@ const InventoryDetailPage = () => {
 
   const [openCombobox, setOpenCombobox] = useState(false)
   const [showExportPreview, setShowExportPreview] = useState(false)
+  const [showViewReceiptDialog, setShowViewReceiptDialog] = useState(false)
+  const [selectedReceiptId, setSelectedReceiptId] = useState(null)
+  const [showViewProductDialog, setShowViewProductDialog] = useState(false)
 
   // Fetch products on mount
   useEffect(() => {
@@ -96,7 +101,19 @@ const InventoryDetailPage = () => {
               Sổ Chi Tiết Vật Tư
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Sản phẩm: <span className="font-semibold text-primary">{productName}</span>
+              Sản phẩm: <span
+                className={cn(
+                  "font-semibold text-primary",
+                  filters.productId && "cursor-pointer hover:underline"
+                )}
+                onClick={() => {
+                  if (filters.productId) {
+                    setShowViewProductDialog(true)
+                  }
+                }}
+              >
+                {productName}
+              </span>
             </p>
           </div>
 
@@ -258,6 +275,22 @@ const InventoryDetailPage = () => {
                 productName={productName}
               />
             )}
+            {showViewReceiptDialog && (
+              <ViewWarehouseReceiptDialog
+                open={showViewReceiptDialog}
+                onOpenChange={setShowViewReceiptDialog}
+                receiptId={selectedReceiptId}
+                showTrigger={false}
+              />
+            )}
+            {showViewProductDialog && (
+              <ViewProductDialog
+                open={showViewProductDialog}
+                onOpenChange={setShowViewProductDialog}
+                productId={filters.productId}
+                showTrigger={false}
+              />
+            )}
           </div>
         </div>
 
@@ -330,7 +363,20 @@ const InventoryDetailPage = () => {
               ) : (
                 inventoryDetail.data.map((item, index) => (
                   <TableRow key={index}>
-                    <TableCell className="border-r font-medium text-blue-600">{item.documentCode}</TableCell>
+                    <TableCell
+                      className={cn(
+                        "border-r font-medium",
+                        item.warehouseReceiptId ? "text-blue-600 cursor-pointer hover:underline" : "text-foreground"
+                      )}
+                      onClick={() => {
+                        if (item.warehouseReceiptId) {
+                          setSelectedReceiptId(item.warehouseReceiptId)
+                          setShowViewReceiptDialog(true)
+                        }
+                      }}
+                    >
+                      {item.documentCode}
+                    </TableCell>
                     <TableCell className="border-r">{dateFormat(item.postingDate)}</TableCell>
                     <TableCell className="border-r">{item.objectName || item.description}</TableCell>
                     <TableCell className="border-r text-center">{item.unit?.name || item.unitName}</TableCell>

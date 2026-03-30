@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/table'
 import { moneyFormat } from '@/utils/money-format'
 import ExportInventorySummaryPreviewDialog from './components/ExportInventorySummaryPreviewDialog'
+import ViewProductDialog from '../product/components/ViewProductDialog'
 
 const InventorySummaryPage = () => {
   const dispatch = useDispatch()
@@ -41,6 +42,8 @@ const InventorySummaryPage = () => {
     toDate: endOfMonth(current),
   })
   const [showExportPreview, setShowExportPreview] = useState(false)
+  const [showViewProductDialog, setShowViewProductDialog] = useState(false)
+  const [selectedProductId, setSelectedProductId] = useState(null)
 
   // Calculate totals
   const totals = inventorySummary.reduce((acc, item) => {
@@ -201,6 +204,14 @@ const InventorySummaryPage = () => {
                 filters={filters}
               />
             )}
+            {showViewProductDialog && (
+              <ViewProductDialog
+                open={showViewProductDialog}
+                onOpenChange={setShowViewProductDialog}
+                productId={selectedProductId}
+                showTrigger={false}
+              />
+            )}
           </div>
         </div>
 
@@ -266,7 +277,15 @@ const InventorySummaryPage = () => {
                 inventorySummary.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell className="border-r text-center">{index + 1}</TableCell>
-                    <TableCell className="border-r font-medium">{item.product?.name}</TableCell>
+                    <TableCell
+                      className="border-r font-medium text-blue-600 cursor-pointer hover:underline"
+                      onClick={() => {
+                        setSelectedProductId(item.product?.id)
+                        setShowViewProductDialog(true)
+                      }}
+                    >
+                      {item.product?.name}
+                    </TableCell>
                     <TableCell className="border-r text-center">{item.product?.unit?.name}</TableCell>
 
                     {/* Opening */}

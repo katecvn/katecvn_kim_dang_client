@@ -76,11 +76,11 @@ const LiquidateContractDialog = ({
     }
   }
 
-  const handlePriceChange = (productId, newPrice) => {
+  const handleItemChange = (productId, field, value) => {
     setItems((prevItems) =>
       prevItems.map((item) =>
         item.productId === productId
-          ? { ...item, marketPrice: Number(newPrice) }
+          ? { ...item, [field]: Number(value) }
           : item
       )
     )
@@ -100,13 +100,17 @@ const LiquidateContractDialog = ({
     // settlement > 0: HĐ mới > HĐ cũ → khách còn nợ thêm (payment_in)
     // settlement < 0: HĐ mới < HĐ cũ → công ty hoàn lại khách (payment_out)
     const settlement = newTotalAmount - originalContractValue + depositAmount
+    
+    // Use a small epsilon to handle floating point precision issues
+    const threshold = 0.01
+    const isBalanced = Math.abs(settlement) < threshold
 
     return {
       newTotalAmount,
       originalContractValue,
       depositAmount,
-      settlement,
-      settlementType: settlement > 0 ? 'payment_out' : settlement < 0 ? 'payment_in' : 'balanced'
+      settlement: isBalanced ? 0 : settlement,
+      settlementType: isBalanced ? 'balanced' : settlement > 0 ? 'payment_out' : 'payment_in'
     }
   }, [previewData, items])
 
@@ -119,6 +123,7 @@ const LiquidateContractDialog = ({
         liquidationItems: items.map((item) => ({
           productId: item.productId,
           marketPrice: item.marketPrice,
+          quantity: item.quantity,
         })),
       }
 
@@ -208,12 +213,21 @@ const LiquidateContractDialog = ({
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">{item.quantity}</TableCell>
+                          <TableCell className="text-right">
+                            <MoneyInputQuick
+                              className="text-right h-8"
+                              value={item.quantity}
+                              onChange={(value) => handleItemChange(item.productId, 'quantity', value)}
+                              onFocus={(e) => e.target.select()}
+                              min={0}
+                              decimalScale={3}
+                            />
+                          </TableCell>
                           <TableCell className="text-right">
                             <MoneyInputQuick
                               className="text-right h-8"
                               value={item.marketPrice}
-                              onChange={(value) => handlePriceChange(item.productId, value)}
+                              onChange={(value) => handleItemChange(item.productId, 'marketPrice', value)}
                               onFocus={(e) => e.target.select()}
                               min={0}
                             />
@@ -243,9 +257,16 @@ const LiquidateContractDialog = ({
                         </div>
                       </div>
 
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">Số Lượng:</span>
-                        <span className="ml-2 font-medium">{item.quantity}</span>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">Số lượng</label>
+                        <MoneyInputQuick
+                          className="text-right h-9 w-full"
+                          value={item.quantity}
+                          onChange={(value) => handleItemChange(item.productId, 'quantity', value)}
+                          onFocus={(e) => e.target.select()}
+                          min={0}
+                          decimalScale={3}
+                        />
                       </div>
 
                       <div>
@@ -253,7 +274,7 @@ const LiquidateContractDialog = ({
                         <MoneyInputQuick
                           className="text-right h-9 w-full"
                           value={item.marketPrice}
-                          onChange={(value) => handlePriceChange(item.productId, value)}
+                          onChange={(value) => handleItemChange(item.productId, 'marketPrice', value)}
                           onFocus={(e) => e.target.select()}
                           min={0}
                         />

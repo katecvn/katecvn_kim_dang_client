@@ -66,6 +66,7 @@ export const columns = [
     ),
     cell: function Cell({ row, table }) {
       const { buyerName, buyerPhone, buyerIdentityNo, buyerTaxCode, contractDate, id } = row.original
+      const customerName = row.original.customer?.name || buyerName
       const rows = table.getPrePaginationRowModel().rows.map((r) => r.original)
 
       const isDuplicate = rows.some(
@@ -81,9 +82,9 @@ export const columns = [
         <div
           className={`flex w-40 flex-col break-words ${isDuplicate ? 'bg-yellow-200 p-2' : ''
             }`}
-          title={buyerName}
+          title={customerName}
         >
-          <span className="font-semibold">{buyerName}</span>
+          <span className="font-semibold">{customerName}</span>
 
           {buyerIdentityNo && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -109,8 +110,9 @@ export const columns = [
     enableSorting: true,
     enableHiding: true,
     filterFn: (row, id, value) => {
+      const customerName = row.original.customer?.name || row.original.buyerName || ''
       const searchableText = normalizeText(
-        `${row.original.buyerName || ''} ${row.original.buyerPhone || ''}`,
+        `${customerName} ${row.original.buyerPhone || ''}`,
       )
       const searchValue = normalizeText(value)
       return searchableText.includes(searchValue)

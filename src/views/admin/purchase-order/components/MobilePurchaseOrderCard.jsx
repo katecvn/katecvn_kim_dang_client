@@ -137,6 +137,8 @@ const MobilePurchaseOrderCard = ({
   }
 
   const selectedStatusObj = purchaseOrderStatuses.find((s) => s.value === status)
+  const isLiquidated = purchaseOrder?.purchaseContract?.status === 'liquidated'
+  const liquidationValue = purchaseOrder?.purchaseContract?.liquidationValue
 
   const handleStatusChange = async (nextStatus) => {
     try {
@@ -458,9 +460,21 @@ const MobilePurchaseOrderCard = ({
         {/* Amount Section */}
         <div className="p-3 border-b bg-background/30 space-y-1">
           <div className="flex justify-between items-start">
-            <span className="text-xs text-muted-foreground">Tổng tiền:</span>
+            <span className="text-xs text-muted-foreground">{isLiquidated ? 'Ban đầu:' : 'Tổng tiền:'}</span>
             <span className="text-sm font-semibold text-primary">{moneyFormat(totalAmount)}</span>
           </div>
+          {paidAmount > 0 && (
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-muted-foreground">Đã trả:</span>
+              <span className="text-xs font-medium text-green-600">{moneyFormat(paidAmount)}</span>
+            </div>
+          )}
+          {isLiquidated && liquidationValue != null && (
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-muted-foreground">Bán lại:</span>
+              <span className="text-xs font-semibold text-orange-600">{moneyFormat(liquidationValue)}</span>
+            </div>
+          )}
         </div>
 
         {/* Status & Debt Section */}
@@ -468,45 +482,52 @@ const MobilePurchaseOrderCard = ({
           <div className="flex justify-between items-center">
             <span className="text-xs text-muted-foreground">Trạng thái:</span>
 
-            <div className="w-[140px]">
-              <Select
-                value={status}
-                onValueChange={handleStatusChange}
-                disabled={['cancelled', 'completed'].includes(status)}
-              >
-                <SelectTrigger className="h-7 text-xs px-2">
-                  <SelectValue placeholder="Chọn trạng thái">
-                    {selectedStatusObj ? (
-                      <span
-                        className={`inline-flex items-center gap-1 font-medium ${selectedStatusObj.color || ''
-                          }`}
-                      >
-                        {selectedStatusObj.icon ? (
-                          <selectedStatusObj.icon className="h-3 w-3" />
+            <div className="flex justify-end">
+              {isLiquidated ? (
+                <Badge className="cursor-default bg-transparent p-0 text-orange-600 hover:bg-transparent shadow-none border-0 select-none">
+                  <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">&#x21BA;</span>
+                  Đã thanh lý
+                </Badge>
+              ) : (
+                <div className="w-[140px]">
+                  <Select
+                    value={status}
+                    onValueChange={handleStatusChange}
+                    disabled={['cancelled', 'completed'].includes(status)}
+                  >
+                    <SelectTrigger className="h-7 text-xs px-2">
+                      <SelectValue placeholder="Chọn trạng thái">
+                        {selectedStatusObj ? (
+                          <span
+                            className={`inline-flex items-center gap-1 font-medium ${selectedStatusObj.color || ''}`}
+                          >
+                            {selectedStatusObj.icon ? (
+                              <selectedStatusObj.icon className="h-3 w-3" />
+                            ) : null}
+                            {selectedStatusObj.label}
+                          </span>
                         ) : null}
-                        {selectedStatusObj.label}
-                      </span>
-                    ) : null}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent position="popper" align="end" className="w-[140px] z-[10005]">
-                  {filteredStatuses.map((s) => (
-                    <SelectItem
-                      key={s.value}
-                      value={s.value}
-                      className="cursor-pointer text-xs"
-                    >
-                      <span
-                        className={`inline-flex items-center gap-1 font-medium ${s.color || ''
-                          }`}
-                      >
-                        {s.icon ? <s.icon className="h-3 w-3" /> : null}
-                        {s.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent position="popper" align="end" className="w-[140px] z-[10005]">
+                      {filteredStatuses.map((s) => (
+                        <SelectItem
+                          key={s.value}
+                          value={s.value}
+                          className="cursor-pointer text-xs"
+                        >
+                          <span
+                            className={`inline-flex items-center gap-1 font-medium ${s.color || ''}`}
+                          >
+                            {s.icon ? <s.icon className="h-3 w-3" /> : null}
+                            {s.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex justify-between items-center">

@@ -90,6 +90,7 @@ const MobileInvoiceCard = ({
   const isPaid = paymentStatus === 'paid'
   const isLocked = ['delivered', 'rejected'].includes(status)
   const isActionDisabled = isPaid || isLocked
+  const isLiquidated = invoice?.salesContract?.status === 'liquidated'
 
   const filteredStatuses = useMemo(() => {
     const permissions = JSON.parse(localStorage.getItem('permissionCodes') || '[]')
@@ -623,9 +624,15 @@ const MobileInvoiceCard = ({
         {/* Amount Section */}
         <div className="p-3 border-b bg-background/30 space-y-1">
           <div className="flex justify-between items-start">
-            <span className="text-xs text-muted-foreground">Tổng tiền:</span>
+            <span className="text-xs text-muted-foreground">Ban đầu:</span>
             <span className="text-sm font-semibold text-primary">{moneyFormat(amount)}</span>
           </div>
+          {invoice?.salesContract?.status === 'liquidated' && invoice?.salesContract?.liquidationValue != null && (
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-muted-foreground">Bán lại:</span>
+              <span className="text-sm font-semibold text-orange-600">{moneyFormat(invoice.salesContract.liquidationValue)}</span>
+            </div>
+          )}
           {discount > 0 && (
             <div className="flex justify-between items-start">
               <span className="text-xs text-muted-foreground">Giảm giá:</span>
@@ -649,17 +656,21 @@ const MobileInvoiceCard = ({
               <Badge
                 className={cn(
                   "select-none",
-                  ['delivered', 'cancelled'].includes(status)
-                    ? `cursor-default p-0 shadow-none border-0 bg-transparent ${status === 'delivered' ? 'text-green-500' : 'text-slate-500'} hover:bg-transparent`
-                    : `cursor-pointer ${selectedStatusObj?.color || ''}`,
-                  isActionDisabled && !['delivered', 'cancelled'].includes(status) ? "opacity-70 cursor-not-allowed" : ""
+                  isLiquidated
+                    ? 'cursor-default p-0 shadow-none border-0 bg-transparent text-orange-600 hover:bg-transparent'
+                    : ['delivered', 'cancelled'].includes(status)
+                      ? `cursor-default p-0 shadow-none border-0 bg-transparent ${status === 'delivered' ? 'text-green-500' : 'text-slate-500'} hover:bg-transparent`
+                      : `cursor-pointer ${selectedStatusObj?.color || ''}`,
+                  isActionDisabled && !['delivered', 'cancelled'].includes(status) && !isLiquidated ? "opacity-70 cursor-not-allowed" : ""
                 )}
-                onClick={() => !isActionDisabled && !['delivered', 'cancelled'].includes(status) && setShowUpdateStatusDialog(true)}
+                onClick={() => !isActionDisabled && !['delivered', 'cancelled'].includes(status) && !isLiquidated && setShowUpdateStatusDialog(true)}
               >
                 <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">
-                  {selectedStatusObj?.icon ? <selectedStatusObj.icon className="h-3 w-3" /> : null}
+                  {isLiquidated
+                    ? <span>&#x21BA;</span>
+                    : selectedStatusObj?.icon ? <selectedStatusObj.icon className="h-3 w-3" /> : null}
                 </span>
-                {selectedStatusObj?.label || 'Không xác định'}
+                {isLiquidated ? 'Đã thanh lý' : (selectedStatusObj?.label || 'Không xác định')}
               </Badge>
             </div>
           </div>

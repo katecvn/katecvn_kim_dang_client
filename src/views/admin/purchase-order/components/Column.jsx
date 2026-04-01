@@ -146,10 +146,17 @@ export const getColumns = (onView, onRefresh) => [
     cell: ({ row }) => {
       const amount = row.original.totalAmount
       const discount = row.original.discountAmount
+      const isLiquidated = row.original.purchaseContract?.status === 'liquidated'
+      const liquidationValue = row.original.purchaseContract?.liquidationValue
 
       return (
         <div className="flex flex-col">
-          <span className="font-medium">{moneyFormat(amount)}</span>
+          <span className="font-medium">
+            {isLiquidated && liquidationValue != null && (
+              <span className="text-xs font-normal text-muted-foreground mr-1">Ban đầu:</span>
+            )}
+            {moneyFormat(amount)}
+          </span>
 
           {discount > 0 && (
             <span className="text-xs text-red-500">
@@ -160,6 +167,13 @@ export const getColumns = (onView, onRefresh) => [
           {row.original.paidAmount > 0 && (
             <span className="text-xs text-green-600">
               Đã trả: {moneyFormat(row.original.paidAmount)}
+            </span>
+          )}
+
+          {isLiquidated && liquidationValue != null && (
+            <span className="font-medium text-orange-600">
+              <span className="text-xs font-normal mr-1">Bán lại:</span>
+              {moneyFormat(liquidationValue)}
             </span>
           )}
         </div>

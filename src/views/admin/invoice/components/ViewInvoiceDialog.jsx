@@ -1160,6 +1160,63 @@ const ViewInvoiceDialog = ({ invoiceId, showTrigger = true, onEdit, onSuccess, c
                                   </div>
                                 </div>
 
+                                {invoice.salesContract.status === 'liquidated' && invoice.salesContract.liquidationValue != null && (
+                                  <div className="border border-orange-200 bg-orange-50/50 rounded-lg p-4 text-sm mt-4">
+                                    <h4 className="font-semibold text-orange-800 border-b border-orange-200 pb-2 mb-3">Thông tin bán lại (Thanh lý)</h4>
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between">
+                                        <strong>Ngày bán lại:</strong>
+                                        <span className="font-medium text-orange-700">
+                                          {dateFormat(invoice.salesContract.liquidationDate, true)}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <strong>Giá trị bán lại:</strong>
+                                        <span className="font-bold text-orange-700">
+                                          {moneyFormat(invoice.salesContract.liquidationValue)}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between pt-2 border-t border-orange-200/60">
+                                        <strong>{invoice.salesContract.liquidationRemainingAmount < 0 ? 'Phải trả khách:' : 'Khách còn nợ:'}</strong>
+                                        <span className={"font-bold text-base " + (invoice.salesContract.liquidationRemainingAmount < 0 ? 'text-red-600' : 'text-green-600')}>
+                                          {moneyFormat(Math.abs(invoice.salesContract.liquidationRemainingAmount))}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Liquidation Items Table */}
+                                    {invoice.salesContract.liquidationItems && invoice.salesContract.liquidationItems.length > 0 && (
+                                      <div className="mt-4 pt-1">
+                                        <div className="text-xs font-semibold mb-2 text-orange-800">Chi tiết sản phẩm bán lại:</div>
+                                        <div className="overflow-auto max-h-48 rounded-md border border-orange-200 bg-white">
+                                          <Table className="min-w-full text-xs">
+                                            <TableHeader className="bg-orange-100/50">
+                                              <TableRow>
+                                                <TableHead className="w-8 py-2 h-auto text-orange-800 font-semibold">TT</TableHead>
+                                                <TableHead className="py-2 h-auto text-orange-800 font-semibold">Sản phẩm</TableHead>
+                                                <TableHead className="text-right py-2 h-auto text-orange-800 font-semibold">SL</TableHead>
+                                                <TableHead className="text-right py-2 h-auto text-orange-800 font-semibold">Đơn giá</TableHead>
+                                                <TableHead className="text-right py-2 h-auto text-orange-800 font-semibold">Thành tiền</TableHead>
+                                              </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                              {invoice.salesContract.liquidationItems.map((item, index) => (
+                                                <TableRow key={item.id || index} className="border-orange-100/50">
+                                                  <TableCell className="py-2 text-muted-foreground">{index + 1}</TableCell>
+                                                  <TableCell className="font-medium py-2">{item.productName}</TableCell>
+                                                  <TableCell className="text-right py-2">{parseInt(item.quantity) || 0}</TableCell>
+                                                  <TableCell className="text-right py-2 text-muted-foreground">{moneyFormat(item.unitPrice)}</TableCell>
+                                                  <TableCell className="text-right font-medium py-2">{moneyFormat(item.totalAmount)}</TableCell>
+                                                </TableRow>
+                                              ))}
+                                            </TableBody>
+                                          </Table>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
                                 {/* Contract Items Table */}
                                 {invoice.salesContract.items && invoice.salesContract.items.length > 0 && (
                                   <div className="w-full overflow-hidden">

@@ -159,10 +159,15 @@ export const columns = [
       const amount = row.original.amount
       const discount = row.original.discount
       const paidAmount = row.original.paidAmount
+      const isLiquidated = row.original?.salesContract?.status === 'liquidated'
+      const liquidationValue = row.original?.salesContract?.liquidationValue
 
       return (
         <div className="flex flex-col">
-          <span className="font-medium">{moneyFormat(amount)}</span>
+          <span className="font-medium">
+            <span className="text-xs font-normal text-muted-foreground mr-1">Ban đầu:</span>
+            {moneyFormat(amount)}
+          </span>
 
           {discount > 0 && (
             <span className="text-xs text-red-500">
@@ -173,6 +178,13 @@ export const columns = [
           {paidAmount > 0 && (
             <span className="text-xs text-green-600">
               Đã thu: {moneyFormat(paidAmount)}
+            </span>
+          )}
+
+          {isLiquidated && liquidationValue != null && (
+            <span className="font-medium text-orange-600">
+              <span className="text-xs font-normal mr-1">Bán lại:</span>
+              {moneyFormat(liquidationValue)}
             </span>
           )}
         </div>

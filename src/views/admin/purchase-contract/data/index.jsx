@@ -35,7 +35,7 @@ const purchaseContractStatuses = [
     value: 'liquidated',
     label: 'Đã thanh lý',
     icon: IconArchive,
-    color: 'text-red-500',
+    color: 'text-orange-600',
   }
 ]
 

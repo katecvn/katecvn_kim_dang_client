@@ -122,14 +122,28 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Tổng tiền" />
     ),
     cell: ({ row }) => {
+      const amount = row.original.totalAmount
+      const paidAmount = row.original.paidAmount
+      const isLiquidated = row.original.status === 'liquidated'
+      const liquidationValue = row.original.liquidationValue
+
       return (
         <div className="flex flex-col">
-          <span className="font-semibold">
-            {moneyFormat(row.original.totalAmount)}
+          <span className="font-medium">
+            {isLiquidated && liquidationValue != null && <span className="text-xs font-normal text-muted-foreground mr-1">Ban đầu:</span>}
+            {moneyFormat(amount)}
           </span>
-          {/* {row.original.paidAmount > 0 && (
-            <span className="text-xs text-green-600">
-              Đã thu: {moneyFormat(row.original.paidAmount)}
+
+          {isLiquidated && liquidationValue != null && (
+            <span className="font-medium text-orange-600">
+              <span className="text-xs font-normal mr-1">Bán lại:</span>
+              {moneyFormat(liquidationValue)}
+            </span>
+          )}
+          
+          {/* {paidAmount > 0 && (
+            <span className="text-xs text-green-600 flex items-center gap-1 mt-0.5">
+              Đã thu: {moneyFormat(paidAmount)}
             </span>
           )} */}
         </div>

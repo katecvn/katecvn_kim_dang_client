@@ -873,6 +873,65 @@ const ViewSalesContractDialog = ({
                         </div>
                       </div>
 
+                      {/* Liquidation Information Section */}
+                      {contract?.status === 'liquidated' && contract?.liquidationValue != null && (
+                        <div className="border border-orange-200 bg-orange-50/50 rounded-lg p-4 text-sm mt-4">
+                          <h3 className="font-semibold text-orange-800 border-b border-orange-200 pb-2 mb-3">Thông tin bán lại (Thanh lý)</h3>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <strong>Ngày bán lại:</strong>
+                              <span className="font-medium text-orange-700">
+                                {dateFormat(contract.liquidationDate, true)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <strong>Giá trị bán lại:</strong>
+                              <span className="font-bold text-orange-700">
+                                {moneyFormat(contract.liquidationValue)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between pt-2 border-t border-orange-200/60">
+                              <strong>{contract.liquidationRemainingAmount < 0 ? 'Phải trả khách:' : 'Khách còn nợ:'}</strong>
+                              <span className={"font-bold text-base " + (contract.liquidationRemainingAmount < 0 ? 'text-red-600' : 'text-green-600')}>
+                                {moneyFormat(Math.abs(contract.liquidationRemainingAmount))}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Liquidation Items Table */}
+                          {contract.liquidationItems && contract.liquidationItems.length > 0 && (
+                            <div className="mt-4 pt-1">
+                              <div className="text-xs font-semibold mb-2 text-orange-800">Chi tiết sản phẩm bán lại:</div>
+                              <div className="overflow-x-auto rounded-lg border border-orange-200 bg-white">
+                                <Table className="min-w-full text-xs">
+                                  <TableHeader>
+                                    <TableRow className="bg-orange-100/50">
+                                      <TableHead className="py-2 text-orange-800">Sản phẩm</TableHead>
+                                      <TableHead className="py-2 text-right text-orange-800">SL</TableHead>
+                                      <TableHead className="py-2 text-right text-orange-800">Đơn giá</TableHead>
+                                      <TableHead className="py-2 text-right text-orange-800">Thành tiền</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {contract.liquidationItems.map((item, idx) => (
+                                      <TableRow key={idx} className="border-t-orange-100 hover:bg-orange-50/50 transition-colors">
+                                        <TableCell className="py-2">
+                                          <div className="font-medium text-orange-950">{item.productName}</div>
+                                          {item.unitName && <div className="text-[10px] text-orange-700/80">{item.unitName}</div>}
+                                        </TableCell>
+                                        <TableCell className="py-2 text-right font-medium text-orange-900">{parseFloat(item.quantity)}</TableCell>
+                                        <TableCell className="py-2 text-right text-orange-900/90">{moneyFormat(item.unitPrice)}</TableCell>
+                                        <TableCell className="py-2 text-right font-medium text-orange-950">{moneyFormat(item.totalAmount)}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Invoices Section */}
                       {contract?.invoices && contract.invoices.length > 0 && (
                         <>

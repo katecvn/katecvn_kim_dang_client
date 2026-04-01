@@ -347,13 +347,19 @@ const MobilePurchaseContractCard = ({
         {/* Amount Section */}
         <div className="p-3 border-b bg-background/30 space-y-1">
           <div className="flex justify-between items-start">
-            <span className="text-xs text-muted-foreground">Tổng giá trị:</span>
+            <span className="text-xs text-muted-foreground">{status === 'liquidated' ? 'Ban đầu:' : 'Tổng giá trị:'}</span>
             <span className="text-sm font-semibold text-primary">{moneyFormat(totalAmount)}</span>
           </div>
           <div className="flex justify-between items-start">
             <span className="text-xs text-muted-foreground">Đã thanh toán:</span>
             <span className="text-xs text-green-600 font-medium">{moneyFormat(paidAmount || 0)}</span>
           </div>
+          {status === 'liquidated' && contract.liquidationValue != null && (
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-muted-foreground">Bán lại:</span>
+              <span className="text-xs font-semibold text-orange-600">{moneyFormat(contract.liquidationValue)}</span>
+            </div>
+          )}
         </div>
 
         {/* Status & Debt Section */}

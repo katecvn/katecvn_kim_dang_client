@@ -698,6 +698,87 @@ const ViewPurchaseContractDialog = ({
                       </div>
                     </div>
 
+                    {/* Liquidation Information Section */}
+                    {contract?.status === 'liquidated' && contract?.liquidationValue != null && (
+                      <div className="border border-orange-200 bg-orange-50/50 rounded-lg p-4 text-sm">
+                        <h3 className="font-semibold text-orange-800 border-b border-orange-200 pb-2 mb-3">Thông tin bán lại (Thanh lý)</h3>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <strong>Ngày bán lại:</strong>
+                            <span className="font-medium text-orange-700">
+                              {dateFormat(contract.liquidationDate, true)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <strong>Giá trị bán lại:</strong>
+                            <span className="font-bold text-orange-700">
+                              {moneyFormat(contract.liquidationValue)}
+                            </span>
+                          </div>
+                          {contract.liquidationRemainingAmount != null && (
+                            <div className="flex justify-between pt-2 border-t border-orange-200/60">
+                              <strong>
+                                {Number(contract.liquidationRemainingAmount) < 0 ? 'NCC cần hoàn tiền:' : 'Còn nợ NCC:'}
+                              </strong>
+                              <span className={`font-bold text-base ${Number(contract.liquidationRemainingAmount) < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {moneyFormat(Math.abs(Number(contract.liquidationRemainingAmount)))}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Liquidation items table */}
+                          {(() => {
+                            const liquidatedItems = (contract.purchaseOrders || [])
+                              .flatMap(po => po.items || [])
+                              .filter(item => parseFloat(item.liquidationQuantity) > 0)
+                            if (liquidatedItems.length === 0) return null
+                            return (
+                              <div className="pt-3 border-t border-orange-200/60">
+                                <p className="font-semibold text-orange-800 mb-2">Chi tiết sản phẩm bán lại:</p>
+                                <div className="overflow-x-auto rounded border border-orange-200">
+                                  <Table className="min-w-full text-xs">
+                                    <TableHeader>
+                                      <TableRow className="bg-orange-100/80">
+                                        <TableHead className="w-8 text-orange-900">STT</TableHead>
+                                        <TableHead className="text-orange-900">Sản phẩm</TableHead>
+                                        <TableHead className="text-orange-900">ĐVT</TableHead>
+                                        <TableHead className="text-right text-orange-900">SL bán lại</TableHead>
+                                        <TableHead className="text-right text-orange-900">Đơn giá</TableHead>
+                                        <TableHead className="text-right text-orange-900">Thành tiền</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {liquidatedItems.map((item, idx) => {
+                                        const liqQty = parseFloat(item.liquidationQuantity) || 0
+                                        const unitPrice = parseFloat(item.unitPrice) || 0
+                                        return (
+                                          <TableRow key={item.id || idx} className="hover:bg-orange-50">
+                                            <TableCell>{idx + 1}</TableCell>
+                                            <TableCell>
+                                              <div className="font-medium">{item.productName || item.product?.name}</div>
+                                              {(item.productCode || item.product?.code) && (
+                                                <div className="text-muted-foreground text-xs">{item.productCode || item.product?.code}</div>
+                                              )}
+                                            </TableCell>
+                                            <TableCell>{item.unitName || item.unit?.name || '—'}</TableCell>
+                                            <TableCell className="text-right font-medium">{liqQty.toLocaleString('vi-VN')}</TableCell>
+                                            <TableCell className="text-right">{moneyFormat(unitPrice)}</TableCell>
+                                            <TableCell className="text-right font-semibold text-orange-700">
+                                              {moneyFormat(liqQty * unitPrice)}
+                                            </TableCell>
+                                          </TableRow>
+                                        )
+                                      })}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Purchase Orders Section */}
                     {contract?.purchaseOrders && contract.purchaseOrders.length > 0 && (
                       <>

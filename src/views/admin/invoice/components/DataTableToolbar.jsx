@@ -68,6 +68,9 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
       await dispatch(deleteMultipleInvoices(selectedIds)).unwrap()
       table.resetRowSelection()
       setShowDeleteDialog(false)
+      if (table?.options?.meta?.onDeleted) {
+        table.options.meta.onDeleted()
+      }
     } catch (error) {
       console.log(error)
     }
@@ -184,6 +187,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
             <ImportInvoiceDialog
               open={showImportDialog}
               onOpenChange={setShowImportDialog}
+              onSuccess={onCreated}
             />
           )}
         </div>
@@ -353,6 +357,7 @@ const DataTableToolbar = ({ table, isMyInvoice, onCreated }) => {
             <ImportInvoiceDialog
               open={showImportDialog}
               onOpenChange={setShowImportDialog}
+              onSuccess={onCreated}
             />
           )}
 

@@ -23,6 +23,7 @@ import { format, parse, isValid } from 'date-fns'
 const ImportInvoiceDialog = ({
   open,
   onOpenChange,
+  onSuccess,
   ...props
 }) => {
   const dispatch = useDispatch()
@@ -276,6 +277,7 @@ const ImportInvoiceDialog = ({
         toast.success(result.message || `Đã import thành công ${payload.items.length} hóa đơn`)
         onOpenChange(false)
         setFile(null)
+        if (onSuccess) onSuccess()
       }
 
     } catch (error) {

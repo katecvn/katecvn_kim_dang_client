@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Layout, LayoutBody } from '@/components/custom/Layout'
-import { getInventoryDetail } from '@/stores/WarehouseReportSlice'
+import { getInventoryDetail, clearInventoryDetail } from '@/stores/WarehouseReportSlice'
 import { getProducts } from '@/stores/ProductSlice'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -42,6 +42,7 @@ import { dateFormat } from '@/utils/date-format'
 import ExportInventoryDetailPreviewDialog from './components/ExportInventoryDetailPreviewDialog'
 import ViewWarehouseReceiptDialog from '../warehouse-receipt/components/ViewWarehouseReceiptDialog'
 import ViewProductDialog from '../product/components/ViewProductDialog'
+import { useSearchParams } from 'react-router-dom'
 
 const InventoryDetailPage = () => {
   const dispatch = useDispatch()
@@ -49,10 +50,15 @@ const InventoryDetailPage = () => {
   const { products } = useSelector((state) => state.product)
   const current = new Date()
 
+  const [searchParams] = useSearchParams()
+  const urlProductId = searchParams.get('productId')
+  const urlFromDate = searchParams.get('fromDate')
+  const urlToDate = searchParams.get('toDate')
+
   const [filters, setFilters] = useState({
-    fromDate: startOfMonth(current),
-    toDate: endOfMonth(current),
-    productId: '',
+    fromDate: urlFromDate ? new Date(urlFromDate) : startOfMonth(current),
+    toDate: urlToDate ? new Date(urlToDate) : endOfMonth(current),
+    productId: urlProductId ? Number(urlProductId) : '',
   })
 
   const [openCombobox, setOpenCombobox] = useState(false)
@@ -73,6 +79,13 @@ const InventoryDetailPage = () => {
       dispatch(getInventoryDetail(filters))
     }
   }, [dispatch, filters])
+
+  // Clear data on unmount
+  useEffect(() => {
+    return () => {
+      dispatch(clearInventoryDetail())
+    }
+  }, [dispatch])
 
   const form = useForm({
     defaultValues: {

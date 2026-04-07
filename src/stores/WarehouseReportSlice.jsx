@@ -52,6 +52,9 @@ export const warehouseReportSlice = createSlice({
       state.inventoryDetail = []
       state.error = null
     },
+    clearInventoryDetail: (state) => {
+      state.inventoryDetail = []
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -88,6 +91,6 @@ export const warehouseReportSlice = createSlice({
   },
 })
 
-export const { clearReportData } = warehouseReportSlice.actions
+export const { clearReportData, clearInventoryDetail } = warehouseReportSlice.actions
 
 export default warehouseReportSlice.reducer

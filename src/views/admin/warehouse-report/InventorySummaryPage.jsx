@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/popover'
 import { Button } from '@/components/custom/Button'
 import { cn } from '@/lib/utils'
-import { CalendarIcon, FileSpreadsheet } from 'lucide-react'
+import { CalendarIcon, FileSpreadsheet, FileText } from 'lucide-react'
 import { DatePicker } from '@/components/custom/DatePicker'
 import {
   Table,
@@ -31,9 +31,11 @@ import {
 import { moneyFormat } from '@/utils/money-format'
 import ExportInventorySummaryPreviewDialog from './components/ExportInventorySummaryPreviewDialog'
 import ViewProductDialog from '../product/components/ViewProductDialog'
+import { useNavigate } from 'react-router-dom'
 
 const InventorySummaryPage = () => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { inventorySummary, loading } = useSelector((state) => state.warehouseReport)
   const current = new Date()
 
@@ -226,7 +228,8 @@ const InventorySummaryPage = () => {
                 <TableHead colSpan={2} className="text-center border-r border-b">Nhập</TableHead>
                 <TableHead colSpan={2} className="text-center border-r border-b">Xuất</TableHead>
                 <TableHead colSpan={2} className="text-center border-r border-b">Tồn</TableHead>
-                <TableHead rowSpan={2} className="text-right min-w-[100px]">Đơn giá</TableHead>
+                <TableHead rowSpan={2} className="text-right border-r min-w-[100px]">Đơn giá</TableHead>
+                <TableHead rowSpan={2} className="text-center min-w-[120px]">Thao tác</TableHead>
               </TableRow>
               <TableRow>
                 {/* Tồn đầu */}
@@ -262,7 +265,8 @@ const InventorySummaryPage = () => {
                 <TableCell className="text-right border-r">{totals.closingQty || '-'}</TableCell>
                 <TableCell className="text-right border-r">{totals.closingAmount ? moneyFormat(totals.closingAmount) : '-'}</TableCell>
 
-                <TableCell className="text-right"></TableCell>
+                <TableCell className="text-right border-r"></TableCell>
+                <TableCell></TableCell>
               </TableRow>
 
               {loading ? (
@@ -305,7 +309,24 @@ const InventorySummaryPage = () => {
                     <TableCell className="text-right border-r font-medium">{moneyFormat(item.closingAmount || 0)}</TableCell>
 
                     {/* Unit Price */}
-                    <TableCell className="text-right">{moneyFormat(item.averageUnitPrice || 0)}</TableCell>
+                    <TableCell className="text-right border-r">{moneyFormat(item.averageUnitPrice || 0)}</TableCell>
+
+                    <TableCell className="text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-800"
+                        onClick={() => {
+                          const fromDateStr = format(filters.fromDate, 'yyyy-MM-dd')
+                          const toDateStr = format(filters.toDate, 'yyyy-MM-dd')
+                          navigate(`/warehouse-report/detail?productId=${item.product?.id}&fromDate=${fromDateStr}&toDate=${toDateStr}`)
+                        }}
+                        title="Xem sổ chi tiết vật tư"
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        Chi tiết
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}

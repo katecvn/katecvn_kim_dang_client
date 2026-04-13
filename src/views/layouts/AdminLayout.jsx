@@ -7,9 +7,12 @@ import useIsCollapsed from '@/hooks/UseIsCollapsed'
 import Notification from '@/components/custom/Notification'
 import NotificationBell from '@/components/NotificationBell'
 import MobileNavigation from '@/components/MobileNavigation'
+import TrialExpiryModal from '@/components/custom/TrialExpiryModal'
+import useTrialExpiry from '@/hooks/useTrialExpiry'
 
 const AdminLayout = () => {
   const [isCollapsed, setIsCollapsed] = useIsCollapsed()
+  const { isExpired } = useTrialExpiry()
 
   const handleCategoryClick = () => {
     // Trigger sidebar toggle by clicking the menu button in sidebar header
@@ -17,6 +20,15 @@ const AdminLayout = () => {
     if (menuButton) {
       menuButton.click()
     }
+  }
+
+  // Nếu hết hạn: chỉ hiển thị modal, ẩn toàn bộ giao diện
+  if (isExpired) {
+    return (
+      <div className="relative h-full overflow-hidden bg-background">
+        <TrialExpiryModal />
+      </div>
+    )
   }
 
   return (
@@ -47,6 +59,8 @@ const AdminLayout = () => {
         </Layout>
       </main>
       <MobileNavigation onCategoryClick={handleCategoryClick} />
+      {/* Modal thông báo hạn dùng thử - hiển thị mỗi lần vào trang */}
+      <TrialExpiryModal />
     </div>
   )
 }
